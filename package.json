@@ -25,7 +25,7 @@
     "testUrl": "/_status_check/healthcheck.json",
     "memory": 2048,
     "fastlyServiceId!important": "",
-    "awsRole!important": "arn:aws:iam::118435662149:role/helix-service-role-pipeline",
+    "awsRole!important": "arn:aws:iam::118435662149:role/helix-lambda-role",
     "awsAttachAuthorizer": "helix-token-authorizer_v2"
   },
   "mocha": {

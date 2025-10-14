@@ -1,6 +1,6 @@
-# Helix Admin API Service
+# Helix Config Service
 
-> An example library to be used in and with Project Helix
+> Helix service that resolves project configuration.
 
 ## Status
 [![codecov](https://img.shields.io/codecov/c/github/adobe/helix-api-service.svg)](https://codecov.io/gh/adobe/helix-api-service)
@@ -14,14 +14,10 @@
 
 ## Usage
 
-```bash
-curl https://helix-pages.anywhere.run/helix-services/api-service@v1
-```
-
 For more, see the [API documentation](docs/API.md).
 
 ## Development
 
-### Deploying Helix Admin API Service
+### Deploying Helix Admin Service
 
-All commits to main that pass the testing will be deployed automatically. All commits to branches that will pass the testing will get commited as `/helix-services/api-service@ci<num>` and tagged with the CI build number.
+All commits to main that pass the testing will be deployed automatically. All commits to branches that will pass the testing will get commited as `/helix-services/service@ci<num>` and tagged with the CI build number.

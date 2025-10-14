@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Adobe. All rights reserved.
+ * Copyright 2025 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,9 @@ import { main } from '../src/index.js';
 
 describe('Index Tests', () => {
   it('index function is present', async () => {
-    const result = await main(new Request('https://localhost/'), {});
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+    });
     assert.strictEqual(await result.text(), 'Hello, world.');
   });
 });

@@ -9,21 +9,18 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import wrap from '@adobe/helix-shared-wrap';
-import { helixStatus } from '@adobe/helix-status';
-import timing from '@adobe/helix-shared-server-timing';
-import { Response } from '@adobe/fetch';
-import bodyData from '@adobe/helix-shared-body-data';
-import secrets from '@adobe/helix-shared-secrets';
+import { defineConfig, globalIgnores } from '@eslint/config-helpers';
+import { recommended, source, test } from '@adobe/eslint-config-helix';
 
-function run(request, context) {
-  const name = new URL(request.url).searchParams.get('name') || 'world';
-  context.log.info(`Saying hello to: ${name}.`);
-  return new Response(`Hello, ${name}.`);
-}
-
-export const main = wrap(run)
-  .with(timing)
-  .with(bodyData)
-  .with(secrets)
-  .with(helixStatus);
+export default defineConfig([
+  globalIgnores([
+    '.vscode/*',
+    'coverage/*',
+    'dist/*',
+  ]),
+  {
+    extends: [recommended],
+  },
+  source,
+  test,
+]);

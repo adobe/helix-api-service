@@ -9,23 +9,19 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { DevelopmentServer } from '@adobe/helix-universal-devserver';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 
-module.exports = {
-  root: true,
-  extends: '@adobe/helix',
-  env: {
-    node: true,
-    es6: true,
-  },
-  parserOptions: {
-    sourceType: 'module',
-    ecmaVersion: 13,
-  },
-  rules: {
-    'import/extensions': [2, 'ignorePackages'],
-    'import/prefer-default-export': 0,
-  },
-  globals: {
-    __rootdir: true,
-  },
-};
+import { main } from '../../src/index.js';
+
+// eslint-disable-next-line no-underscore-dangle
+global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
+
+async function run() {
+  const devServer = await new DevelopmentServer(main)
+    .init();
+  await devServer.start();
+}
+
+run().then(process.stdout).catch(process.stderr);

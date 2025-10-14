@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Adobe. All rights reserved.
+ * Copyright 2019 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,40 +16,20 @@ import packjson from './package.cjs';
 
 config();
 
-export class OpenwhiskTarget {
+export class AWSTarget {
   constructor(opts = {}) {
     Object.assign(this, {
       namespace: 'helix',
-      package: 'helix-services',
+      package: 'helix3',
       name: packjson.name.replace('@adobe/helix-', ''),
       version: String(packjson.version),
     }, opts);
-    if (process.env.CI && process.env.CIRCLE_BUILD_NUM && process.env.CIRCLE_BRANCH !== 'main' && !opts.version) {
-      this.version = `ci${process.env.CIRCLE_BUILD_NUM}`;
+    if (process.env.CI && process.env.CI_BUILD_NUM && process.env.CI_BRANCH !== 'main' && !opts.version) {
+      this.version = `ci${process.env.CI_BUILD_NUM}`;
     }
+    this.headers = process.env.HLX_TEST_HEADERS ? JSON.parse(process.env.HLX_TEST_HEADERS) : {};
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  title() {
-    return 'OpenWhisk';
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  host() {
-    return 'https://adobeioruntime.net';
-  }
-
-  urlPath() {
-    return `/api/v1/web/${this.namespace}/${this.package}/${this.name}@${this.version}`;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  enabled() {
-    return true;
-  }
-}
-
-export class AWSTarget extends OpenwhiskTarget {
   // eslint-disable-next-line class-methods-use-this
   title() {
     return 'AWS';
@@ -64,34 +44,22 @@ export class AWSTarget extends OpenwhiskTarget {
     return `/${this.package}/${this.name}/${this.version}`;
   }
 
+  url(path, query) {
+    const url = new URL(`${this.host()}${this.urlPath()}${path}`);
+    if (query) {
+      Object.entries(query).forEach(([name, value]) => url.searchParams.append(name, value));
+    }
+    return url;
+  }
+
   // eslint-disable-next-line class-methods-use-this
   enabled() {
     return process.env.HLX_AWS_API && process.env.HLX_AWS_REGION;
   }
 }
 
-export class GoogleTarget extends OpenwhiskTarget {
-  title() {
-    return 'Google';
-  }
-
-  host() {
-    return `https://${process.env.HLX_GOOGLE_REGION}-${process.env.HLX_GOOGLE_PROJECT_ID}.cloudfunctions.net`;
-  }
-
-  urlPath() {
-    return `/${this.package}--${this.name}_${this.version.replace(/\./g, '_')}`;
-  }
-
-  enabled() {
-    return process.env.HLX_GOOGLE_PROJECT_ID;
-  }
-}
-
 const ALL_TARGETS = [
-  // OpenwhiskTarget,
   AWSTarget,
-  // GoogleTarget,
 ];
 
 export function createTargets(opts) {

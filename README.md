@@ -1,6 +1,6 @@
 # Helix Admin API Service
 
-> An example library to be used in and with Project Helix
+> Helix Admin API Service.
 
 ## Status
 [![codecov](https://img.shields.io/codecov/c/github/adobe/helix-api-service.svg)](https://codecov.io/gh/adobe/helix-api-service)

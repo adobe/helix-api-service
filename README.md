@@ -1,4 +1,4 @@
-# Helix Config Service
+# Helix Admin API Service
 
 > Helix Admin API Service.
 

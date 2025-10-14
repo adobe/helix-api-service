@@ -16,10 +16,34 @@ import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 
 describe('Index Tests', () => {
-  it('index function is present', async () => {
+  it('succeeds calling code handler', async () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/code/main',
+      },
     });
-    assert.strictEqual(await result.text(), 'Hello, world.');
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('succeeds calling code handler with trailing path', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/code/main/src/scripts.js',
+      },
+    });
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('fails calling inexistant handler', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/code',
+      },
+    });
+    assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
   });
 });

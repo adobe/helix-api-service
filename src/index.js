@@ -16,13 +16,15 @@ import secrets from '@adobe/helix-shared-secrets';
 import timing from '@adobe/helix-shared-server-timing';
 import { helixStatus } from '@adobe/helix-status';
 
-import Router from './support/router.js';
+import login from './login/handler.js';
+import status from './status/handler.js';
+import Router from './router/router.js';
 
-const notImplemented = () => new Response('', 405);
+const notImplemented = () => new Response('', { status: 405 });
 
 function run(request, context) {
   const router = new Router()
-    .add('/login', notImplemented)
+    .add('/login', login)
     .add('/logout', notImplemented)
     .add('/profile', notImplemented)
     .add('/:org', notImplemented)
@@ -32,20 +34,20 @@ function run(request, context) {
     .add('/:org/profiles', notImplemented)
     .add('/:org/profiles/:profile/versions', notImplemented)
     .add('/:org/sites', notImplemented)
-    .add('/:org/sites/:site/status', notImplemented)
+    .add('/:org/sites/:site/status/*', status)
     .add('/:org/sites/:site/config/da', notImplemented)
     .add('/:org/sites/:site/config/sidekick', notImplemented)
     .add('/:org/sites/:site/config/access', notImplemented)
     .add('/:org/sites/:site/config/versions', notImplemented)
-    .add('/:org/sites/:site/preview', notImplemented)
-    .add('/:org/sites/:site/live', notImplemented)
-    .add('/:org/sites/:site/media', notImplemented)
-    .add('/:org/sites/:site/code/:branch', notImplemented)
-    .add('/:org/sites/:site/cache', notImplemented)
-    .add('/:org/sites/:site/index', notImplemented)
-    .add('/:org/sites/:site/sitemap', notImplemented)
-    .add('/:org/sites/:site/snapshots', notImplemented)
-    .add('/:org/sites/:site/source', notImplemented)
+    .add('/:org/sites/:site/preview/*', notImplemented)
+    .add('/:org/sites/:site/live/*', notImplemented)
+    .add('/:org/sites/:site/media/*', notImplemented)
+    .add('/:org/sites/:site/code/:branch/*', notImplemented)
+    .add('/:org/sites/:site/cache/*', notImplemented)
+    .add('/:org/sites/:site/index/*', notImplemented)
+    .add('/:org/sites/:site/sitemap/*', notImplemented)
+    .add('/:org/sites/:site/snapshots/*', notImplemented)
+    .add('/:org/sites/:site/source/*', notImplemented)
     .add('/:org/sites/:site/jobs', notImplemented)
     .add('/:org/sites/:site/log', notImplemented);
 

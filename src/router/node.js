@@ -66,15 +66,26 @@ export class Node {
     return this.#label;
   }
 
+  /**
+   * Matches a path by traversing a tree of nodes.
+   *
+   * @param {string[]} segs path segments to match
+   * @param {object} variables variables extracted while matching
+   * @returns {Node} matching node or null
+   */
   match(segs, variables) {
     if (segs.length === 0) {
       return this;
     }
     const seg = segs.shift();
+
+    // find exact match
     let next = this.#children.find((child) => child.#label === seg);
     if (next) {
       return next.match(segs, variables);
     }
+
+    // find first variable extracting match (e.g. ':org')
     next = this.#children.find((child) => child.#label.startsWith(':'));
     if (next) {
       const key = next.#label.substring(1);
@@ -82,6 +93,8 @@ export class Node {
       variables[key] = seg;
       return next.match(segs, variables);
     }
+
+    // find trailing '*' match
     next = this.#children.find((child) => child.#label === '*');
     if (next) {
       segs.unshift(seg);

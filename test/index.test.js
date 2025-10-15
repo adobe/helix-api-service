@@ -16,6 +16,28 @@ import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 
 describe('Index Tests', () => {
+  it('succeeds calling login handler', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/login',
+      },
+    });
+    assert.strictEqual(result.status, 405);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('fails calling login handler with suffix', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/login/path',
+      },
+    });
+    assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
+  });
+
   it('succeeds calling code handler', async () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -23,6 +45,7 @@ describe('Index Tests', () => {
         suffix: '/owner/sites/repo/code/main',
       },
     });
+    assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
 
@@ -33,10 +56,11 @@ describe('Index Tests', () => {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
       },
     });
+    assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
 
-  it('fails calling inexistant handler', async () => {
+  it('fails calling handler with incomplete match', async () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
@@ -44,6 +68,17 @@ describe('Index Tests', () => {
       },
     });
     assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('succeeds calling status handler with trailing path', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status/index.md',
+      },
+    });
+    assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
 });

@@ -7,8 +7,8 @@
   "type": "module",
   "scripts": {
     "start": "nodemon",
-    "test": "c8 mocha  -i -g 'Post-Deploy'",
-    "test-postdeploy": "mocha -g 'Post-Deploy'",
+    "test": "c8 mocha --ignore=test/post-deploy.test.js --spec=test/**/*.test.js",
+    "test-postdeploy": "mocha --spec=test/post-deploy.test.js",
     "lint": "eslint .",
     "semantic-release": "semantic-release",
     "commit": "git-cz",
@@ -29,7 +29,6 @@
     "awsAttachAuthorizer": "helix-token-authorizer_v2"
   },
   "mocha": {
-    "spec": "test/**/*.test.js",
     "require": "test/setup-env.js",
     "recursive": "true",
     "reporter": "mocha-multi-reporters",

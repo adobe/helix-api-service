@@ -9,63 +9,16 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-/* eslint-disable max-classes-per-file */
-
 import { Response } from '@adobe/fetch';
-
-class Node {
-  #label;
-
-  #children;
-
-  #handler;
-
-  constructor(label, handler) {
-    this.#label = label;
-    this.#children = [];
-    this.#handler = handler;
-  }
-
-  #getOrCreateChild(seg) {
-    let ret = this.#children.find((child) => child.#label === seg);
-    if (!ret) {
-      ret = new Node(seg);
-      this.#children.push(ret);
-    }
-    return ret;
-  }
-
-  add(segs, handler) {
-    if (segs.length === 0) {
-      this.#handler = handler;
-    } else {
-      const seg = segs.shift();
-      this.#getOrCreateChild(seg).add(segs, handler);
-    }
-  }
-
-  get handler() {
-    return this.#handler;
-  }
-
-  match(seg, variables) {
-    let next = this.#children.find((child) => child.#label === seg);
-    if (!next) {
-      next = this.#children.find((child) => child.#label.startsWith(':'));
-      if (next) {
-        const key = next.#label.substring(1);
-        // eslint-disable-next-line no-param-reassign
-        variables[key] = seg;
-      }
-    }
-    return next;
-  }
-}
+import { Node } from './node.js';
 
 /**
  * Router that will match an incoming request to a handler.
  */
 export default class Router {
+  /**
+   * Root node.
+   */
   #root;
 
   constructor() {
@@ -87,29 +40,24 @@ export default class Router {
   }
 
   /**
-   * Find handler that should handle a request.
+   * Find and execute handler that should handle a request. If none is found
+   * we return a 404 response.
    *
    * @param {import('@adobe/fetch').Request} request request
    * @param {import('@adobe/helix-universal').UniversalContext} context context
-   * @returns {Function|null} handler or null
+   * @returns {Response} response
    */
   handle(request, context) {
     const { pathInfo: { suffix } } = context;
     const segs = suffix.split('/').slice(1);
+
     const variables = {};
+    const match = this.#root.match(segs, variables);
 
-    let current = this.#root;
-
-    for (const seg of segs) {
-      const child = current.match(seg, variables);
-      if (!child) {
-        break;
-      }
-      current = child;
-    }
-    const { handler } = current;
+    const { handler, label } = match ?? {};
     if (handler) {
-      return handler(request, context);
+      variables.route = label;
+      return handler(request, context, variables);
     }
     return new Response('', { status: 404 });
   }

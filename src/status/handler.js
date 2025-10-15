@@ -13,8 +13,8 @@ import { Response } from '@adobe/fetch';
 
 export default function handler(request, context, variables) {
   const { log } = context;
-  const { route, path } = variables;
+  const { org, site, path } = variables;
 
-  log.info(`handler for ${route} called, with path: ${path}`);
+  log.info(`handler called, with org/site: ${org}/${site}, and path: ${path}`);
   return new Response('', { status: 405 });
 }

@@ -12,9 +12,10 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { computePaths, PathInfo } from '../../src/support/PathInfo.js';
+import { Request } from '@adobe/fetch';
+import { computePaths, RequestInfo } from '../../src/support/RequestInfo.js';
 
-describe('PathInfo Tests', () => {
+describe('RequestInfo Tests', () => {
   it('check computePaths', () => {
     // special cases: '*' and 'plain.html'
     assert.deepStrictEqual(computePaths('/*'), {
@@ -77,10 +78,10 @@ describe('PathInfo Tests', () => {
     });
   });
 
-  it('check PathInfo creation', () => {
+  it('check RequestInfo creation', () => {
     // deny .aspx
     assert.strictEqual(
-      PathInfo.create({ org: 'org', path: '/test.aspx' }),
+      RequestInfo.create(new Request('http:/localhost'), { org: 'org', path: '/test.aspx' }),
       null,
     );
   });

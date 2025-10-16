@@ -48,7 +48,7 @@ export default class Router {
    * @returns {Response} response
    */
   handle(request, context) {
-    const { pathInfo: { suffix } } = context;
+    const { suffix } = context;
     const segs = suffix.split('/').slice(1);
 
     const variables = {};

@@ -86,7 +86,8 @@ export function computePaths(path) {
       resourcePath: combine(segs, 'index.md'),
       ext: '.md',
     };
-  } else if (!ext || ext === '.md') {
+  }
+  if (!ext || ext === '.md') {
     // if last segment has no extension or is .md, use `.md`
     return {
       webPath: combine(segs, basename),
@@ -101,25 +102,33 @@ export function computePaths(path) {
   };
 }
 
-export class PathInfo {
-  constructor(org) {
+export class RequestInfo {
+  /**
+   * @constructs RequestInfo
+   * @param {import('@adobe/fetch').Request} request request
+   * @param {string} org org
+   */
+  constructor(request, org) {
+    this.method = request.method.toUpperCase();
+    this.headers = request.headers.plain();
+    this.cookies = this.headers.cookies;
+
     this.org = org;
   }
 
   /**
    * Create a new path info.
    *
+   * @param {import('@adobe/fetch').Request} request request
    * @param {object} param0 params
    * @param {string} param0.org org
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
    * @returns {PathInfo}
    */
-  static create({ org, site, path }) {
-    const info = new PathInfo(org);
-    if (org) {
-      info.org = org;
-    }
+  static create(request, { org, site, path }) {
+    const info = new RequestInfo(request, org);
+
     if (site) {
       info.site = site;
     }

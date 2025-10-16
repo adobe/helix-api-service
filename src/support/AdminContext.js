@@ -9,25 +9,22 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response } from '@adobe/fetch';
+import { parseBucketNames } from '@adobe/helix-shared-storage';
 
-/**
- * Handles status.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns
- */
-export default async function status(context, info) {
-  const { resourcePath, webPath } = info;
+export class AdminContext {
+  /**
+   * @constructs AdminContext
+   * @param {import('@adobe/helix-universal').UniversalContext} context universal context
+   */
+  constructor(context) {
+    this.suffix = context.pathInfo.suffix;
+    this.log = context.log;
+    this.env = context.env;
 
-  const ret = {
-    resourcePath, webPath,
-  };
-
-  return new Response(JSON.stringify(ret, null, 2), {
-    headers: {
-      'content-type': 'application/json',
-    },
-  });
+    this.attributes = {
+      errors: [],
+      details: [],
+      bucketMap: parseBucketNames(this.env.HELIX_BUCKET_NAMES),
+    };
+  }
 }

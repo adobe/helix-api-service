@@ -113,6 +113,7 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
+      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');

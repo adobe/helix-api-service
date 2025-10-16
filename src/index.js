@@ -19,12 +19,9 @@ import { helixStatus } from '@adobe/helix-status';
 import login from './login/handler.js';
 import status from './status/handler.js';
 import Router from './router/router.js';
+import { AdminContext } from './support/AdminContext.js';
 
 const notImplemented = () => new Response('', { status: 405 });
-
-function prepareContext(context) {
-  context.attributes = {};
-}
 
 function run(request, context) {
   const router = new Router()
@@ -55,11 +52,15 @@ function run(request, context) {
     .add('/:org/sites/:site/jobs', notImplemented)
     .add('/:org/sites/:site/log', notImplemented);
 
-  prepareContext(context);
   return router.handle(request, context);
 }
 
+export default function adminContext(func) {
+  return async (request, context) => func(request, new AdminContext(context));
+}
+
 export const main = wrap(run)
+  .with(adminContext)
   .with(timing)
   .with(bodyData)
   .with(secrets)

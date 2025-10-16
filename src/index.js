@@ -22,6 +22,10 @@ import Router from './router/router.js';
 
 const notImplemented = () => new Response('', { status: 405 });
 
+function prepareContext(context) {
+  context.attributes = {};
+}
+
 function run(request, context) {
   const router = new Router()
     .add('/login', login)
@@ -51,6 +55,7 @@ function run(request, context) {
     .add('/:org/sites/:site/jobs', notImplemented)
     .add('/:org/sites/:site/log', notImplemented);
 
+  prepareContext(context);
   return router.handle(request, context);
 }
 

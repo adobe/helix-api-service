@@ -86,7 +86,7 @@ export function computePaths(path) {
       resourcePath: combine(segs, 'index.md'),
       ext: '.md',
     };
-  } else if (!ext || ext === '.html' || ext === '.md') {
+  } else if (!ext || ext === '.md') {
     // if last segment has no extension or is .html or .md, use `.md`
     return {
       webPath: combine(segs, basename),

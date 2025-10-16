@@ -27,6 +27,11 @@ describe('PathInfo Tests', () => {
       resourcePath: '/index.md',
       ext: '.md',
     });
+    assert.deepStrictEqual(computePaths('/foo/document.plain.html'), {
+      webPath: '/foo/document.plain.html',
+      resourcePath: '/foo/document.md',
+      ext: '.md',
+    });
 
     // starting with a dot
     assert.deepStrictEqual(computePaths('/.hlxignore'), {
@@ -54,9 +59,9 @@ describe('PathInfo Tests', () => {
       ext: '.md',
     });
     assert.deepStrictEqual(computePaths('/document.html'), {
-      webPath: '/document',
-      resourcePath: '/document.md',
-      ext: '.md',
+      webPath: '/document.html',
+      resourcePath: '/document.html',
+      ext: '.html',
     });
     assert.deepStrictEqual(computePaths('/document.md'), {
       webPath: '/document',

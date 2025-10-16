@@ -78,7 +78,18 @@ describe('Index Tests', () => {
         suffix: '/owner/sites/repo/status/index.md',
       },
     });
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(await result.json(), { webPath: '/index.md' });
+  });
+
+  it('fails calling status handler with forbidden method', async () => {
+    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status/index.md',
+      },
+    });
     assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), '');
+    assert.strictEqual(await result.text(), 'method not allowed');
   });
 });

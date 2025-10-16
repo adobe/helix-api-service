@@ -29,7 +29,11 @@
     "awsAttachAuthorizer": "helix-token-authorizer_v2"
   },
   "mocha": {
-    "require": "test/setup-env.js",
+    "require": [
+      "nock",
+      "test/setup-env.js",
+      "mocha-suppress-logs"
+    ],
     "recursive": "true",
     "reporter": "mocha-multi-reporters",
     "reporter-options": "configFile=.mocha-multi.json"
@@ -74,6 +78,7 @@
     "lint-staged": "16.2.3",
     "mocha": "11.7.2",
     "mocha-multi-reporters": "1.5.1",
+    "mocha-suppress-logs": "0.6.0",
     "nock": "13.5.6",
     "nodemon": "3.1.10",
     "semantic-release": "24.2.9",

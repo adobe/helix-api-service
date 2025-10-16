@@ -15,11 +15,21 @@ import assert from 'assert';
 import { loadSiteConfig } from '../../src/config/utils.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
+function siteConfig({
+  org = 'owner',
+  site = 'repo',
+} = {}) {
+  return this('https://config.aem.page')
+    .get(`/main--${site}--${org}/config.json?scope=admin`);
+}
+
 describe('Config Utils Tests', () => {
+  /** @type {import('../utils.js').nocker} */
   let nock;
 
   beforeEach(() => {
     nock = new Nock();
+    nock.siteConfig = siteConfig.bind(nock);
   });
 
   afterEach(() => {
@@ -27,10 +37,12 @@ describe('Config Utils Tests', () => {
   });
 
   it('return null for legacy config', async () => {
-    nock.siteConfig({
-      ...SITE_CONFIG,
-      legacy: true,
-    });
+    nock.siteConfig()
+      .reply(200, {
+        ...SITE_CONFIG,
+        legacy: true,
+      });
+
     const cfg = await loadSiteConfig({
       log: console,
       attributes: {},
@@ -45,9 +57,9 @@ describe('Config Utils Tests', () => {
   });
 
   it('return null for non 404 error config response', async () => {
-    nock('https://config.aem.page')
-      .get('/main--repo--owner/config.json?scope=admin')
+    nock.siteConfig()
       .reply(500);
+
     const cfg = await loadSiteConfig({
       log: console,
       attributes: {},
@@ -62,9 +74,9 @@ describe('Config Utils Tests', () => {
   });
 
   it('throws error for error config', async () => {
-    nock('https://config.aem.page')
-      .get('/main--repo--owner/config.json?scope=admin')
+    nock.siteConfig()
       .replyWithError(new Error('boom!'));
+
     const task = loadSiteConfig({
       log: console,
       attributes: {},
@@ -81,3 +93,7 @@ describe('Config Utils Tests', () => {
     );
   });
 });
+
+export {
+  siteConfig,
+};

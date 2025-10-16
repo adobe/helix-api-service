@@ -46,7 +46,11 @@ export const SITE_CONFIG = {
 };
 
 /**
- * @returns {Nock}
+ * @typedef {Object} nocker
+ * @property {function()} done done
+ * @property {function(string)} siteConfig site config
+ *
+ * @returns {nocker}
  */
 export function Nock() {
   /** @type {Record<string, nock.Scope} */
@@ -87,10 +91,6 @@ export function Nock() {
       nock.cleanAll();
     }
   };
-
-  nocker.siteConfig = (config = SITE_CONFIG, org = 'owner', site = 'repo') => nocker('https://config.aem.page')
-    .get(`/main--${site}--${org}/config.json?scope=admin`)
-    .reply(config ? 200 : 404, config);
 
   nock.disableNetConnect();
   return nocker;

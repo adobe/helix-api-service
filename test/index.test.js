@@ -14,13 +14,16 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
-import { Nock } from './utils.js';
+import { Nock, SITE_CONFIG } from './utils.js';
+import { siteConfig } from './config/utils.test.js';
 
 describe('Index Tests', () => {
+  /** @type {import('./utils.js').nocker} */
   let nock;
 
   beforeEach(() => {
     nock = new Nock();
+    nock.siteConfig = siteConfig.bind(nock);
   });
 
   afterEach(() => {
@@ -88,7 +91,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling status handler with trailing path', async () => {
-    nock.siteConfig();
+    nock.siteConfig()
+      .reply(200, SITE_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -104,7 +108,8 @@ describe('Index Tests', () => {
   });
 
   it('fails calling status handler with missing site config', async () => {
-    nock.siteConfig(null);
+    nock.siteConfig()
+      .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,

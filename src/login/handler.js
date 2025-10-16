@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 
-export default function handler(request, context, variables) {
+export default function loginHandler(request, context, variables) {
   const { log } = context;
   const { route } = variables;
 

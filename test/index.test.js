@@ -14,14 +14,26 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
+import { Nock, SITE_CONFIG } from './utils.js';
 
 describe('Index Tests', () => {
+  let nock;
+
+  beforeEach(() => {
+    nock = new Nock();
+  });
+
+  afterEach(() => {
+    nock.done();
+  });
+
   it('succeeds calling login handler', async () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
         suffix: '/login',
       },
+      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -33,6 +45,7 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/login/path',
       },
+      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
@@ -44,6 +57,7 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main',
       },
+      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -55,6 +69,7 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
       },
+      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -66,19 +81,43 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code',
       },
+      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
 
   it('succeeds calling status handler with trailing path', async () => {
+    nock.siteConfig()
+      .reply(200, SITE_CONFIG);
+
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',
       },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
     });
     assert.strictEqual(result.status, 405);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('fails calling status handler with missing site config', async () => {
+    nock.siteConfig()
+      .reply(404);
+
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status/index.md',
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    });
+    assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
 });

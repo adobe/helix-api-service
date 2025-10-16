@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { loadSiteConfig } from '../../src/config/utils.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
+import { Nock } from '../utils.js';
 
 function siteConfig({ org = 'owner', site = 'repo' } = {}) {
   return this('https://config.aem.page')
@@ -30,26 +30,6 @@ describe('Config Utils Tests', () => {
 
   afterEach(() => {
     nock.done();
-  });
-
-  it('return null for legacy config', async () => {
-    nock.siteConfig()
-      .reply(200, {
-        ...SITE_CONFIG,
-        legacy: true,
-      });
-
-    const cfg = await loadSiteConfig({
-      log: console,
-      attributes: {},
-      pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }, 'owner', 'repo');
-    assert.deepStrictEqual(cfg, null);
   });
 
   it('return null for non 404 error config response', async () => {

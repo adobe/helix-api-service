@@ -29,7 +29,7 @@ export async function loadSiteConfig(context, org, site) {
     if (ok) {
       log.info(`loaded config from ${url}`);
       const config = await response.json();
-      return config.legacy ? null : config;
+      return config;
     }
     if (status !== 404) {
       log.warn(`error loading config from ${url}: ${response.status}`);

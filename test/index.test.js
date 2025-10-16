@@ -94,21 +94,24 @@ describe('Index Tests', () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
+        suffix: '/owner/sites/repo/status/document',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
     });
     assert.strictEqual(result.status, 200);
-    assert.deepStrictEqual(await result.json(), { webPath: '/index.md' });
+    assert.deepStrictEqual(await result.json(), {
+      resourcePath: '/document.md',
+      webPath: '/document',
+    });
   });
 
   it('fails calling status handler with forbidden method', async () => {
     const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
+        suffix: '/owner/sites/repo/status/document',
       },
     });
     assert.strictEqual(result.status, 405);
@@ -122,7 +125,7 @@ describe('Index Tests', () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
+        suffix: '/owner/sites/repo/status/document',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',

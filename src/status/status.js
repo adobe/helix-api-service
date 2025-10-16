@@ -11,11 +11,11 @@
  */
 import { Response } from '@adobe/fetch';
 
-export default async function status(request, context, variables) {
-  const { path } = variables;
+export default async function status(request, context, info) {
+  const { resourcePath, webPath } = info;
 
   const ret = {
-    webPath: path,
+    resourcePath, webPath,
   };
 
   return new Response(JSON.stringify(ret, null, 2), {

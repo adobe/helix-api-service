@@ -12,11 +12,11 @@
 import { Response } from '@adobe/fetch';
 import { loadSiteConfig } from '../config/utils.js';
 import status from './status.js';
+import { PathInfo } from '../support/PathInfo.js';
 
 const ALLOWED_METHODS = ['GET', 'POST'];
 
 export default async function statusHandler(request, context, variables) {
-  const { log } = context;
   const { org, site, path } = variables;
 
   if (ALLOWED_METHODS.indexOf(request.method) < 0) {
@@ -28,7 +28,6 @@ export default async function statusHandler(request, context, variables) {
   if (config === null) {
     return new Response('', { status: 404 });
   }
-
-  log.info(`handler called, with org/site: ${org}/${site}, and path: ${path}`);
-  return status(request, context, variables);
+  const info = PathInfo.create({ org, site, path });
+  return status(request, context, info);
 }

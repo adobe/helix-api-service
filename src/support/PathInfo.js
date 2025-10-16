@@ -11,6 +11,12 @@
  */
 import { sanitizeName } from '@adobe/helix-shared-string';
 
+/**
+ * Split a filename into basename and extension.
+ *
+ * @param {string} filename filename
+ * @returns {object} containing `basename` and `extension`
+ */
 function splitExtension(filename) {
   const idx = filename.lastIndexOf('.');
   if (idx > 0) {
@@ -25,10 +31,23 @@ function splitExtension(filename) {
   };
 }
 
-function combinePath(segs, filename) {
+/**
+ * Combine directory name and filename.
+ *
+ * @param {string[]} segs directory name as segments
+ * @param {string} filename filename
+ * @returns {string} combined path
+ */
+function combine(segs, filename) {
   return `/${[...segs, filename].join('/')}`;
 }
 
+/**
+ * Compute web path, resource path and extension.
+ *
+ * @param {string} path path
+ * @returns {object} containing `webPath`, `resourcePath` and `extension
+ */
 export function computePaths(path) {
   const segs = path.split('/').slice(1);
   const filename = segs.pop();
@@ -43,8 +62,8 @@ export function computePaths(path) {
   if (filename.endsWith('.plain.html')) {
     const basename = sanitizeName(filename.substring(0, filename.length - '.plain.html'.length));
     return {
-      webPath: combinePath(segs, `${basename}.plain.html`),
-      resourcePath: combinePath(segs, `${basename}.md`),
+      webPath: combine(segs, `${basename}.plain.html`),
+      resourcePath: combine(segs, `${basename}.md`),
       ext: '.md',
     };
   }
@@ -53,8 +72,8 @@ export function computePaths(path) {
   if (idx === 0) {
     // code-bus resource starting with '.', eg: .hlxignore
     return {
-      webPath: combinePath(segs, filename),
-      resourcePath: combinePath(segs, filename),
+      webPath: combine(segs, filename),
+      resourcePath: combine(segs, filename),
       ext: '',
     };
   }
@@ -63,21 +82,21 @@ export function computePaths(path) {
   if (!basename || basename === 'index') {
     // last segment empty or index
     return {
-      webPath: combinePath(segs, ''),
-      resourcePath: combinePath(segs, 'index.md'),
+      webPath: combine(segs, ''),
+      resourcePath: combine(segs, 'index.md'),
       ext: '.md',
     };
   } else if (!ext || ext === '.html' || ext === '.md') {
     // if last segment has no extension or is .html or .md, use `.md`
     return {
-      webPath: combinePath(segs, basename),
-      resourcePath: combinePath(segs, `${basename}.md`),
+      webPath: combine(segs, basename),
+      resourcePath: combine(segs, `${basename}.md`),
       ext: '.md',
     };
   }
   return {
-    webPath: combinePath(segs, `${basename}${ext}`),
-    resourcePath: combinePath(segs, `${basename}${ext}`),
+    webPath: combine(segs, `${basename}${ext}`),
+    resourcePath: combine(segs, `${basename}${ext}`),
     ext,
   };
 }
@@ -87,6 +106,15 @@ export class PathInfo {
     this.org = org;
   }
 
+  /**
+   * Create a new path info.
+   *
+   * @param {object} param0 params
+   * @param {string} param0.org org
+   * @param {string} [param0.site] site, optional
+   * @param {string} [param0.path] path, optional
+   * @returns {PathInfo}
+   */
   static create({ org, site, path }) {
     const info = new PathInfo(org);
     if (org) {

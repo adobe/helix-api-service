@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/adobe/helix-api-service/compare/v1.1.0...v1.2.0) (2025-10-16)
+
+
+### Features
+
+* add fetching config step ([#6](https://github.com/adobe/helix-api-service/issues/6)) ([ee4743a](https://github.com/adobe/helix-api-service/commit/ee4743ad1fb35aa2b0b47f2ccc62cd11529a44c4))
+
 # [1.1.0](https://github.com/adobe/helix-api-service/compare/v1.0.0...v1.1.0) (2025-10-15)
 
 

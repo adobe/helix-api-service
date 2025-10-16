@@ -10,11 +10,12 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import { loadSiteConfig } from '../config/utils.js';
 import status from './status.js';
 
 const ALLOWED_METHODS = ['GET', 'POST'];
 
-export default function statusHandler(request, context, variables) {
+export default async function statusHandler(request, context, variables) {
   const { log } = context;
   const { org, site, path } = variables;
 
@@ -22,6 +23,10 @@ export default function statusHandler(request, context, variables) {
     return new Response('method not allowed', {
       status: 405,
     });
+  }
+  const config = await loadSiteConfig(context, org, site);
+  if (config === null) {
+    return new Response('', { status: 404 });
   }
 
   log.info(`handler called, with org/site: ${org}/${site}, and path: ${path}`);

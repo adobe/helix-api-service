@@ -45,13 +45,6 @@ export const SITE_CONFIG = {
   },
 };
 
-/**
- * @typedef {Object} nocker
- * @property {function()} done done
- * @property {function(string)} siteConfig site config
- *
- * @returns {nocker}
- */
 export function Nock() {
   /** @type {Record<string, nock.Scope} */
   const scopes = {};

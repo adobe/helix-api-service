@@ -18,7 +18,6 @@ import { Nock, SITE_CONFIG } from './utils.js';
 import { siteConfig } from './config/utils.test.js';
 
 describe('Index Tests', () => {
-  /** @type {import('./utils.js').nocker} */
   let nock;
 
   beforeEach(() => {

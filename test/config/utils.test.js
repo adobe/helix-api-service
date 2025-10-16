@@ -15,16 +15,12 @@ import assert from 'assert';
 import { loadSiteConfig } from '../../src/config/utils.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
-function siteConfig({
-  org = 'owner',
-  site = 'repo',
-} = {}) {
+function siteConfig({ org = 'owner', site = 'repo' } = {}) {
   return this('https://config.aem.page')
     .get(`/main--${site}--${org}/config.json?scope=admin`);
 }
 
 describe('Config Utils Tests', () => {
-  /** @type {import('../utils.js').nocker} */
   let nock;
 
   beforeEach(() => {

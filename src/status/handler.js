@@ -16,7 +16,6 @@ export default async function handler(request, context, variables) {
   const { log } = context;
   const { org, site, path } = variables;
 
-  // TODO: move this to a "base" handler ???
   const config = await loadSiteConfig(context, org, site);
   if (config === null) {
     return new Response('', { status: 404 });

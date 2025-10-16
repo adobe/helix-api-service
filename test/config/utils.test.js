@@ -15,17 +15,11 @@ import assert from 'assert';
 import { loadSiteConfig } from '../../src/config/utils.js';
 import { Nock } from '../utils.js';
 
-function siteConfig({ org = 'owner', site = 'repo' } = {}) {
-  return this('https://config.aem.page')
-    .get(`/main--${site}--${org}/config.json?scope=admin`);
-}
-
 describe('Config Utils Tests', () => {
   let nock;
 
   beforeEach(() => {
     nock = new Nock();
-    nock.siteConfig = siteConfig.bind(nock);
   });
 
   afterEach(() => {
@@ -69,7 +63,3 @@ describe('Config Utils Tests', () => {
     );
   });
 });
-
-export {
-  siteConfig,
-};

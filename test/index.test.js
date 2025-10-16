@@ -15,14 +15,12 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 import { Nock, SITE_CONFIG } from './utils.js';
-import { siteConfig } from './config/utils.test.js';
 
 describe('Index Tests', () => {
   let nock;
 
   beforeEach(() => {
     nock = new Nock();
-    nock.siteConfig = siteConfig.bind(nock);
   });
 
   afterEach(() => {

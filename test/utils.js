@@ -85,6 +85,9 @@ export function Nock() {
     }
   };
 
+  nocker.siteConfig = ({ org = 'owner', site = 'repo' } = {}) => nock('https://config.aem.page')
+    .get(`/main--${site}--${org}/config.json?scope=admin`);
+
   nock.disableNetConnect();
   return nocker;
 }

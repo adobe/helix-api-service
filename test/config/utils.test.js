@@ -59,7 +59,7 @@ describe('Config Utils Tests', () => {
     }, 'owner', 'repo');
     await assert.rejects(
       task,
-      /Fetching config from https:\/\/config.aem.page\/main--repo--owner\/config.json\?scope=admin failed: boom!/,
+      /Fetching site config from https:\/\/config.aem.page\/main--repo--owner\/config.json\?scope=admin failed: boom!/,
     );
   });
 });

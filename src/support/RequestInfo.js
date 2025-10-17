@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { sanitizeName } from '@adobe/helix-shared-string';
+import { StatusCodeError } from './StatusCodeError.js';
 
 /**
  * Split a filename into basename and extension.
@@ -106,14 +107,11 @@ export class RequestInfo {
   /**
    * @constructs RequestInfo
    * @param {import('@adobe/fetch').Request} request request
-   * @param {string} org org
    */
-  constructor(request, org) {
+  constructor(request) {
     this.method = request.method.toUpperCase();
     this.headers = request.headers.plain();
     this.cookies = this.headers.cookies;
-
-    this.org = org;
   }
 
   /**
@@ -126,19 +124,24 @@ export class RequestInfo {
    * @param {string} [param0.path] path, optional
    * @returns {PathInfo}
    */
-  static create(request, { org, site, path }) {
-    const info = new RequestInfo(request, org);
+  static create(request, {
+    org, site, path, route,
+  }) {
+    const info = new RequestInfo(request);
 
-    if (site) {
-      info.site = site;
-    }
+    info.route = route;
+    info.org = org;
+    info.site = site;
+
     if (path) {
       const { webPath, resourcePath, ext } = computePaths(path);
       if (ext === '.aspx') {
         // onedrive doesn't like .aspx extension and reports wit 500. so we just reject it.
-        return null;
+        throw new StatusCodeError('', 404);
       }
-      Object.assign(info, { webPath, resourcePath, ext });
+      Object.assign(info, {
+        rawPath: path, webPath, resourcePath, ext,
+      });
     }
     return info;
   }

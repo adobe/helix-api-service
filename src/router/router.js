@@ -9,7 +9,6 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response } from '@adobe/fetch';
 import { Node } from './node.js';
 
 /**
@@ -40,16 +39,14 @@ export default class Router {
   }
 
   /**
-   * Find and execute handler that should handle a request. If none is found
-   * we return a 404 response.
+   * Find handler that should handle a request.
    *
-   * @param {import('@adobe/fetch').Request} request request
-   * @param {import('@adobe/helix-universal').UniversalContext} context context
-   * @returns {Response} response
+   * @param {string} path path to match
+   * @returns {object} containing `handler` and `variables` or `null`
+   * @throws {StatusCodeError} if we're unable to find a matching handler
    */
-  handle(request, context) {
-    const { suffix } = context;
-    const segs = suffix.split('/').slice(1);
+  match(path) {
+    const segs = path.split('/').slice(1);
 
     const variables = {};
     const match = this.#root.match(segs, variables);
@@ -57,8 +54,8 @@ export default class Router {
     const { handler, label } = match ?? {};
     if (handler) {
       variables.route = label;
-      return handler(request, context, variables);
+      return { handler, variables };
     }
-    return new Response('', { status: 404 });
+    return null;
   }
 }

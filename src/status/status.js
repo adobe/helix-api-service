@@ -16,7 +16,7 @@ import { Response } from '@adobe/fetch';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns
+ * @returns {Promise<Response>} response
  */
 export default async function status(context, info) {
   const { resourcePath, webPath } = info;

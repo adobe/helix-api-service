@@ -14,7 +14,7 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
-import { Nock, SITE_CONFIG } from './utils.js';
+import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
 
 describe('Index Tests', () => {
   let nock;
@@ -52,6 +52,9 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler', async () => {
+    nock.siteConfig()
+      .reply(200, SITE_CONFIG);
+
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
@@ -64,7 +67,15 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    const result = await main(new Request('https://localhost/'), {
+    nock.siteConfig()
+      .reply(200, SITE_CONFIG);
+
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'x-github-token': 'token',
+        'x-github-base': 'https://my.github.com',
+      },
+    }), {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
@@ -75,7 +86,7 @@ describe('Index Tests', () => {
     assert.strictEqual(await result.text(), '');
   });
 
-  it('fails calling handler with incomplete match', async () => {
+  it('fails calling code handler with incomplete match', async () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
@@ -108,6 +119,9 @@ describe('Index Tests', () => {
   });
 
   it('fails calling status handler with forbidden method', async () => {
+    nock.siteConfig()
+      .reply(200, SITE_CONFIG);
+
     const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
       log: console,
       pathInfo: {
@@ -131,6 +145,36 @@ describe('Index Tests', () => {
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
+    });
+    assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('succeeds calling profiles handler', async () => {
+    nock.orgConfig()
+      .reply(200, ORG_CONFIG);
+
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/profiles',
+      },
+      env: {},
+    });
+    assert.strictEqual(result.status, 405);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('fails calling profiles handler with missing org', async () => {
+    nock.orgConfig()
+      .reply(404);
+
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/profiles',
+      },
+      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');

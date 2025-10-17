@@ -56,6 +56,7 @@
     "@adobe/helix-shared-server-timing": "1.0.0",
     "@adobe/helix-shared-storage": "1.5.0",
     "@adobe/helix-shared-string": "2.1.0",
+    "@adobe/helix-shared-utils": "3.0.2",
     "@adobe/helix-shared-wrap": "2.0.2",
     "@adobe/helix-status": "10.1.5",
     "aws4": "1.13.2",

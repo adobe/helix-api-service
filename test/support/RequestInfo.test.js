@@ -14,6 +14,7 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { computePaths, RequestInfo } from '../../src/support/RequestInfo.js';
+import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 
 describe('RequestInfo Tests', () => {
   it('check computePaths', () => {
@@ -80,9 +81,9 @@ describe('RequestInfo Tests', () => {
 
   it('check RequestInfo creation', () => {
     // deny .aspx
-    assert.strictEqual(
-      RequestInfo.create(new Request('http:/localhost'), { org: 'org', path: '/test.aspx' }),
-      null,
+    assert.throws(
+      () => RequestInfo.create(new Request('http:/localhost'), { org: 'org', path: '/test.aspx' }),
+      new StatusCodeError('', 404),
     );
   });
 });

@@ -45,6 +45,23 @@ export const SITE_CONFIG = {
   },
 };
 
+export const ORG_CONFIG = {
+  org: 'org',
+  version: 1,
+  access: {
+    admin: {
+      role: {
+        admin: [
+          'bob@example.com',
+        ],
+        config: [
+          'spacecat@example.com',
+        ],
+      },
+    },
+  },
+};
+
 export function Nock() {
   /** @type {Record<string, nock.Scope} */
   const scopes = {};
@@ -87,6 +104,9 @@ export function Nock() {
 
   nocker.siteConfig = ({ org = 'owner', site = 'repo' } = {}) => nock('https://config.aem.page')
     .get(`/main--${site}--${org}/config.json?scope=admin`);
+
+  nocker.orgConfig = ({ org = 'owner' } = {}) => nock('https://config.aem.page')
+    .get(`/${org}/config.json?scope=admin`);
 
   nock.disableNetConnect();
   return nocker;

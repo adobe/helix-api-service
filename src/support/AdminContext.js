@@ -10,13 +10,17 @@
  * governing permissions and limitations under the License.
  */
 import { parseBucketNames } from '@adobe/helix-shared-storage';
+import { AuthInfo } from '../auth/AuthInfo.js';
+import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
+import { StatusCodeError } from './StatusCodeError.js';
 
 export class AdminContext {
   /**
    * @constructs AdminContext
+   * @param {import('@adobe/fetch').Request} request request
    * @param {import('@adobe/helix-universal').UniversalContext} context universal context
    */
-  constructor(context) {
+  constructor(request, context) {
     this.suffix = context.pathInfo.suffix;
     this.log = context.log;
     this.env = context.env;
@@ -26,5 +30,68 @@ export class AdminContext {
       details: [],
       bucketMap: parseBucketNames(this.env.HELIX_BUCKET_NAMES),
     };
+
+    const { headers } = request;
+    this.requestId = headers.get('x-request-id')
+      || headers.get('x-cdn-request-id')
+      || '';
+    this.githubToken = headers.get('x-github-token') || '';
+
+    // If we have a github token, we want to check if we have a base url override as well
+    if (this.githubToken) {
+      const GH_BASE_URL = headers.get('x-github-base');
+      const GH_RAW_URL = headers.get('x-github-raw');
+      if (GH_BASE_URL && GH_BASE_URL !== 'https://api.github.com') {
+        this.env.GH_BASE_URL = GH_BASE_URL;
+        this.env.GH_RAW_URL = GH_RAW_URL;
+        // this is used to differentiate to a configured byogit
+        this.env.GH_EXTERNAL = true;
+      }
+    }
   }
+
+  /**
+   * Authenticates current user. It checks if the request contains authentication information and
+   * sets user data.
+   *
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @returns {Promise<AuthInfo>} the authentication info
+   */
+  // eslint-disable-next-line no-unused-vars
+  async authenticate(info) {
+    /* c8 ignore next 5 */
+    if (this.attributes.authInfo === undefined) {
+      // TODO: ctx.attributes.authInfo = await getAuthInfo(context, info);
+      return AuthInfo.Basic();
+    }
+    return this.attributes.authInfo;
+  }
+
+  /**
+   * Authorizes the current user by loading the project config and assigning the roles.
+   *
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @returns {Promise<void>}
+   */
+  async authorize(info) {
+    const { org, site } = info;
+
+    if (org && site) {
+      const config = await loadSiteConfig(this, org, site);
+      if (config === null) {
+        throw new StatusCodeError('', 404);
+      }
+      // TODO: evaluate roles
+    } else if (org) {
+      const config = await loadOrgConfig(this, org, site);
+      if (config === null) {
+        throw new StatusCodeError('', 404);
+      }
+      // TODO: evaluate roles
+    }
+  }
+}
+
+export function adminContext(func) {
+  return async (request, context) => func(request, new AdminContext(request, context));
 }

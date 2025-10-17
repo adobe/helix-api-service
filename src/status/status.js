@@ -10,6 +10,10 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
+import { AccessDeniedError } from '../auth/AccessDeniedError.js';
+import getLiveInfo from '../live/info.js';
+import getPreviewInfo from '../preview/info.js';
 
 /**
  * Handles status.
@@ -19,13 +23,104 @@ import { Response } from '@adobe/fetch';
  * @returns {Promise<Response>} response
  */
 export default async function status(context, info) {
-  const { resourcePath, webPath } = info;
+  const { log, attributes: { authInfo } } = context;
+  const { editUrl } = context.data;
 
-  const ret = {
-    resourcePath, webPath,
+  if (editUrl && editUrl !== 'auto' && info.webPath !== '/') {
+    const msg = 'status lookup cannot have path and editUrl.';
+    log.error(msg);
+    return new Response('', {
+      status: 400,
+      headers: {
+        'x-error': msg,
+      },
+    });
+  }
+
+  // calculate edit location
+  const edit = {};
+
+  if (!authInfo.hasPermissions('edit:read')) {
+    // if edit url is not auto, it can't be used as information for preview, live and code.
+    // so we render them `403` as well.
+    if (editUrl) {
+      if (editUrl !== 'auto') {
+        throw new AccessDeniedError('forbidden');
+      }
+    }
+    edit.status = 403;
+  } else {
+    let result = {};
+    if (editUrl) {
+      if (editUrl === 'auto') {
+        result = {}; // await web2edit(context, info);
+      } else {
+        result = {}; /* await edit2web(context, {
+          editUrl,
+          ...info,
+        }); */
+      }
+      if (result.error) {
+        if (result.status !== 404 || editUrl !== 'auto') {
+          const headers = {
+            'x-error': cleanupHeaderValue(result.error),
+          };
+          if (result.severity) {
+            headers['x-severity'] = result.severity;
+          }
+          return new Response('', { status: result.status, headers });
+        }
+      } else {
+        // ensure info is updated
+        // eslint-disable-next-line no-param-reassign
+        info.resourcePath = result.resourcePath;
+        // eslint-disable-next-line no-param-reassign
+        info.webPath = result.path;
+
+        edit.url = result.editUrl;
+        edit.name = result.editName;
+        edit.contentType = result.editContentType;
+        edit.folders = result.editFolders;
+        if (result.illegalPath) {
+          edit.illegalPath = result.illegalPath;
+        }
+      }
+      edit.lastModified = result.sourceLastModified;
+      edit.sourceLocation = result.sourceLocation;
+      edit.status = result.status;
+    }
+  }
+
+  // adjust preview and live delete permissions, depending on edit status
+  if (edit.status !== 404) {
+    if (!authInfo.hasPermissions('preview:delete-forced')) {
+      authInfo.removePermissions('preview:delete');
+    }
+    if (!authInfo.hasPermissions('live:delete-forced')) {
+      authInfo.removePermissions('live:delete');
+    }
+    if (!authInfo.hasPermissions('code:delete-forced')) {
+      authInfo.removePermissions('code:delete');
+    }
+  }
+
+  const resp = {
+    webPath: info.webPath,
+    resourcePath: info.resourcePath,
+    live: await getLiveInfo(context, info),
+    preview: await getPreviewInfo(context, info),
+    edit,
+    // links: getAPIUrls(context, info, 'status', 'preview', 'live', 'code'),
   };
 
-  return new Response(JSON.stringify(ret, null, 2), {
+  if (authInfo.profile) {
+    resp.profile = authInfo.profile;
+  }
+  if (authInfo.authenticated) {
+    // resp.links.logout = getProjectLinkUrl(context, info, LOGOUT_PATH);
+  }
+
+  return new Response(JSON.stringify(resp, null, 2), {
     headers: {
       'content-type': 'application/json',
     },

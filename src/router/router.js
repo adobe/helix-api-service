@@ -53,7 +53,7 @@ export default class Router {
 
     const { handler, label } = match ?? {};
     if (handler) {
-      variables.route = label;
+      variables.route = `/${label}`;
       return { handler, variables };
     }
     return null;

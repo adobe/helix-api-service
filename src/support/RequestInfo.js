@@ -44,6 +44,31 @@ function combine(segs, filename) {
 }
 
 /**
+ * Compute resource path from a web path.
+ *
+ * @param {string} path path
+ * @returns {string} resource path
+ */
+export function toResourcePath(path) {
+  const { pathname } = new URL(path, 'https://api.aem.live');
+  const segs = pathname.split('/').slice(1);
+  const filename = segs.pop();
+
+  const { basename, ext } = splitExtension(filename);
+  if (!basename) {
+    // last segment empty
+    return combine(segs, 'index.md');
+  }
+  if (!ext) {
+    return combine(segs, `${basename}.md`);
+  }
+  if (basename.endsWith('.plain')) {
+    return combine(segs, `${basename.substring(0, basename.length - 6)}.md`);
+  }
+  return combine(segs, `${basename}.${ext}`);
+}
+
+/**
  * Compute web path, resource path and extension.
  *
  * @param {string} path path
@@ -144,5 +169,13 @@ export class RequestInfo {
       });
     }
     return info;
+  }
+
+  getPreviewUrl() {
+    return `https://main--${this.site}--${this.org}.aem.page${this.webPath}`;
+  }
+
+  getLiveUrl() {
+    return `https://main--${this.site}--${this.org}.aem.live${this.webPath}`;
   }
 }

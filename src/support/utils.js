@@ -9,37 +9,28 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
 
-export function getFetch() {
-  if (!this.attributes.fetchContext) {
-    // eslint-disable-next-line no-param-reassign
-    this.attributes.fetchContext = keepAliveNoCache({
-      userAgent: 'adobe-fetch', // static user-agent for recorded tests
-    });
+/**
+ * From a JSON response, retrieves the `data` sheet if this is a single sheet,
+ * or it returns the first existing sheet given by a list of names, if it is a
+ * multisheet.
+ * Returns `null` if there is neither.
+ *
+ * @param {any} json JSON object
+ * @param {String[]} names names to check in a multi sheet
+ */
+export function getSheetData(json, names) {
+  if (Array.isArray(json.data)) {
+    return json.data;
   }
-  return this.attributes.fetchContext.fetch;
-}
+  let sheet;
 
-export function getFetchOptions(opts) {
-  const fetchopts = {
-    headers: {
-      'cache-control': 'no-cache', // respected by runtime
-    },
-  };
-  if (this.requestId) {
-    fetchopts.headers['x-request-id'] = this.requestId;
+  const match = names.find((name) => !!json[name]);
+  if (match) {
+    sheet = json[match];
   }
-  if (this.githubToken) {
-    fetchopts.headers['x-github-token'] = this.githubToken;
+  if (Array.isArray(sheet?.data)) {
+    return sheet.data;
   }
-  if (opts?.fetchTimeout) {
-    fetchopts.signal = timeoutSignal(opts.fetchTimeout);
-    delete fetchopts.fetchTimeout;
-  }
-  if (opts?.lastModified) {
-    fetchopts.headers['if-modified-since'] = opts.lastModified;
-    delete fetchopts.lastModified;
-  }
-  return fetchopts;
+  return null;
 }

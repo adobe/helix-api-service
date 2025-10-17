@@ -20,7 +20,7 @@ describe('Config Utils Tests', () => {
   let nock;
 
   beforeEach(() => {
-    nock = new Nock();
+    nock = new Nock().env();
   });
 
   afterEach(() => {

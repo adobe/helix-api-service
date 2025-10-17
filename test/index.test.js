@@ -20,7 +20,7 @@ describe('Index Tests', () => {
   let nock;
 
   beforeEach(() => {
-    nock = new Nock();
+    nock = new Nock().env();
   });
 
   afterEach(() => {
@@ -52,8 +52,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler', async () => {
-    nock.siteConfig().reply(200, SITE_CONFIG);
-    nock.orgConfig().reply(200, ORG_CONFIG);
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -67,8 +67,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    nock.siteConfig().reply(200, SITE_CONFIG);
-    nock.orgConfig().reply(200, ORG_CONFIG);
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/', {
       headers: {
@@ -99,8 +99,20 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling status handler with trailing path', async () => {
-    nock.siteConfig().reply(200, SITE_CONFIG);
-    nock.orgConfig().reply(200, ORG_CONFIG);
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
+
+    nock.content()
+      .head('/live/document.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+      .get('/live/redirects.json')
+      .query(true)
+      .reply(404)
+      .head('/preview/document.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' })
+      .get('/preview/redirects.json')
+      .query(true)
+      .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -113,14 +125,39 @@ describe('Index Tests', () => {
     });
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
+      edit: {},
+      live: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/document.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.live/document',
+      },
+      preview: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/document.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 09:04:16 GMT',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.page/document',
+      },
       resourcePath: '/document.md',
       webPath: '/document',
     });
   });
 
   it('fails calling status handler with forbidden method', async () => {
-    nock.siteConfig().reply(200, SITE_CONFIG);
-    nock.orgConfig().reply(200, ORG_CONFIG);
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
       log: console,
@@ -150,7 +187,7 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling profiles handler', async () => {
-    nock.orgConfig().reply(200, ORG_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,

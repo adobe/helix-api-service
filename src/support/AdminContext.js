@@ -14,6 +14,7 @@ import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { AuthInfo } from '../auth/AuthInfo.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
 import { StatusCodeError } from './StatusCodeError.js';
+import fetchRedirects from '../redirects/fetch.js';
 
 export class AdminContext {
   /**
@@ -23,8 +24,9 @@ export class AdminContext {
    */
   constructor(context, headers) {
     this.suffix = context.pathInfo.suffix;
+    this.data = context.data;
     this.log = context.log;
-    this.env = context.env;
+    this.env = { ...context.env };
 
     this.attributes = {
       errors: [],
@@ -59,8 +61,6 @@ export class AdminContext {
           throw new StatusCodeError('', 404);
         }
         this.attributes.config = config;
-      } else {
-        this.attributes.config = null;
       }
     }
     return this.attributes.config;
@@ -75,11 +75,21 @@ export class AdminContext {
           throw new StatusCodeError('', 404);
         }
         this.attributes.orgConfig = config;
-      } else {
-        this.attributes.orgConfig = null;
       }
     }
     return this.attributes.orgConfig;
+  }
+
+  async getRedirects(partition) {
+    const { attributes } = this;
+
+    if (!attributes.redirects) {
+      attributes.redirects = {};
+    }
+    if (!attributes.redirects[partition]) {
+      attributes.redirects[partition] = await fetchRedirects(this, partition);
+    }
+    return attributes.redirects[partition];
   }
 
   /**
@@ -91,15 +101,17 @@ export class AdminContext {
    */
   // eslint-disable-next-line no-unused-vars
   async authenticate(info) {
+    const { attributes } = this;
+
     // eslint-disable-next-line no-unused-vars
     const config = await this.getConfig(info);
 
-    if (this.attributes.authInfo === undefined) {
+    if (attributes.authInfo === undefined) {
       // TODO: ctx.attributes.authInfo = await getAuthInfo(context, info);
-      return AuthInfo.Basic();
+      attributes.authInfo = AuthInfo.Basic();
     }
     /* c8 ignore next */
-    return this.attributes.authInfo;
+    return attributes.authInfo;
   }
 
   /**

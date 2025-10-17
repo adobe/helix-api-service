@@ -16,18 +16,21 @@ import { StatusCodeError } from './StatusCodeError.js';
  * Split a filename into basename and extension.
  *
  * @param {string} filename filename
+ * @param {boolean} [sanitize] whether to sanitize basename
  * @returns {object} containing `basename` and `extension`
  */
-function splitExtension(filename) {
+function splitExtension(filename, sanitize) {
+  const transform = sanitize ? sanitizeName : (s) => s;
+
   const idx = filename.lastIndexOf('.');
   if (idx > 0) {
     return {
-      basename: sanitizeName(filename.substring(0, idx)),
+      basename: transform(filename.substring(0, idx)),
       ext: filename.substring(idx),
     };
   }
   return {
-    basename: sanitizeName(filename),
+    basename: transform(filename),
     ext: '',
   };
 }
@@ -65,7 +68,7 @@ export function toResourcePath(path) {
   if (basename.endsWith('.plain')) {
     return combine(segs, `${basename.substring(0, basename.length - 6)}.md`);
   }
-  return combine(segs, `${basename}.${ext}`);
+  return combine(segs, `${basename}${ext}`);
 }
 
 /**
@@ -104,7 +107,7 @@ export function computePaths(path) {
     };
   }
 
-  const { basename, ext } = splitExtension(filename);
+  const { basename, ext } = splitExtension(filename, true);
   if (!basename || basename === 'index') {
     // last segment empty or index
     return {

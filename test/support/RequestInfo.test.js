@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { computePaths, RequestInfo } from '../../src/support/RequestInfo.js';
+import { computePaths, toResourcePath, RequestInfo } from '../../src/support/RequestInfo.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 
 describe('RequestInfo Tests', () => {
@@ -77,6 +77,17 @@ describe('RequestInfo Tests', () => {
       resourcePath: '/image.png',
       ext: '.png',
     });
+  });
+
+  it('check toResourcePath', () => {
+    // empty basename
+    assert.strictEqual(toResourcePath('/'), '/index.md');
+
+    // ending with plain
+    assert.strictEqual(toResourcePath('/document.plain.html'), '/document.md');
+
+    // everything else
+    assert.strictEqual(toResourcePath('https://api.aem.live/image.png'), '/image.png');
   });
 
   it('check RequestInfo creation', () => {

@@ -10,14 +10,13 @@
  * governing permissions and limitations under the License.
  */
 import { AbortError } from '@adobe/fetch';
-import { getFetch, getFetchOptions } from '../support/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 async function loadConfig(context, url, type) {
-  const { log, env, attributes } = context;
-  const fetch = getFetch(attributes);
+  const { log, env } = context;
+  const fetch = context.getFetch();
 
-  const fopts = getFetchOptions();
+  const fopts = context.getFetchOptions();
   fopts.headers['x-access-token'] = env.HLX_CONFIG_SERVICE_TOKEN;
   fopts.headers['x-backend-type'] = 'aws';
 

@@ -9,6 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
 import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { AuthInfo } from '../auth/AuthInfo.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
@@ -17,10 +18,10 @@ import { StatusCodeError } from './StatusCodeError.js';
 export class AdminContext {
   /**
    * @constructs AdminContext
-   * @param {import('@adobe/fetch').Request} request request
    * @param {import('@adobe/helix-universal').UniversalContext} context universal context
+   * @param {import('@adobe/fetch').Headers} [headers] headers
    */
-  constructor(request, context) {
+  constructor(context, headers) {
     this.suffix = context.pathInfo.suffix;
     this.log = context.log;
     this.env = context.env;
@@ -31,11 +32,10 @@ export class AdminContext {
       bucketMap: parseBucketNames(this.env.HELIX_BUCKET_NAMES),
     };
 
-    const { headers } = request;
-    this.requestId = headers.get('x-request-id')
-      || headers.get('x-cdn-request-id')
+    this.requestId = headers?.get('x-request-id')
+      || headers?.get('x-cdn-request-id')
       || '';
-    this.githubToken = headers.get('x-github-token') || '';
+    this.githubToken = headers?.get('x-github-token') || '';
 
     // If we have a github token, we want to check if we have a base url override as well
     if (this.githubToken) {
@@ -114,8 +114,43 @@ export class AdminContext {
 
     // TODO: evaluate roles
   }
+
+  getFetch() {
+    if (!this.attributes.fetchContext) {
+      // eslint-disable-next-line no-param-reassign
+      this.attributes.fetchContext = keepAliveNoCache({
+        userAgent: 'adobe-fetch', // static user-agent for recorded tests
+      });
+    }
+    return this.attributes.fetchContext.fetch;
+  }
+
+  getFetchOptions(opts) {
+    const fetchopts = {
+      headers: {
+        'cache-control': 'no-cache', // respected by runtime
+      },
+    };
+    /* c8 ignore start */
+    if (this.requestId) {
+      fetchopts.headers['x-request-id'] = this.requestId;
+    }
+    if (this.githubToken) {
+      fetchopts.headers['x-github-token'] = this.githubToken;
+    }
+    if (opts?.fetchTimeout) {
+      fetchopts.signal = timeoutSignal(opts.fetchTimeout);
+      delete fetchopts.fetchTimeout;
+    }
+    if (opts?.lastModified) {
+      fetchopts.headers['if-modified-since'] = opts.lastModified;
+      delete fetchopts.lastModified;
+    }
+    /* c8 ignore end */
+    return fetchopts;
+  }
 }
 
 export function adminContext(func) {
-  return async (request, context) => func(request, new AdminContext(request, context));
+  return async (request, context) => func(request, new AdminContext(context, request.headers));
 }

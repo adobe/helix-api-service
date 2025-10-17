@@ -9,23 +9,37 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { keepAliveNoCache } from '@adobe/fetch';
+import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
 
-export function getFetch(attributes) {
-  if (!attributes.fetchContext) {
+export function getFetch() {
+  if (!this.attributes.fetchContext) {
     // eslint-disable-next-line no-param-reassign
-    attributes.fetchContext = keepAliveNoCache({
+    this.attributes.fetchContext = keepAliveNoCache({
       userAgent: 'adobe-fetch', // static user-agent for recorded tests
     });
   }
-  return attributes.fetchContext.fetch;
+  return this.attributes.fetchContext.fetch;
 }
 
-export function getFetchOptions() {
+export function getFetchOptions(opts) {
   const fetchopts = {
     headers: {
       'cache-control': 'no-cache', // respected by runtime
     },
   };
+  if (this.requestId) {
+    fetchopts.headers['x-request-id'] = this.requestId;
+  }
+  if (this.githubToken) {
+    fetchopts.headers['x-github-token'] = this.githubToken;
+  }
+  if (opts?.fetchTimeout) {
+    fetchopts.signal = timeoutSignal(opts.fetchTimeout);
+    delete fetchopts.fetchTimeout;
+  }
+  if (opts?.lastModified) {
+    fetchopts.headers['if-modified-since'] = opts.lastModified;
+    delete fetchopts.lastModified;
+  }
   return fetchopts;
 }

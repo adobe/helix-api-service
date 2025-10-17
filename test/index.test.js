@@ -52,8 +52,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler', async () => {
-    nock.siteConfig()
-      .reply(200, SITE_CONFIG);
+    nock.siteConfig().reply(200, SITE_CONFIG);
+    nock.orgConfig().reply(200, ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -67,8 +67,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    nock.siteConfig()
-      .reply(200, SITE_CONFIG);
+    nock.siteConfig().reply(200, SITE_CONFIG);
+    nock.orgConfig().reply(200, ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/', {
       headers: {
@@ -99,8 +99,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling status handler with trailing path', async () => {
-    nock.siteConfig()
-      .reply(200, SITE_CONFIG);
+    nock.siteConfig().reply(200, SITE_CONFIG);
+    nock.orgConfig().reply(200, ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -119,8 +119,8 @@ describe('Index Tests', () => {
   });
 
   it('fails calling status handler with forbidden method', async () => {
-    nock.siteConfig()
-      .reply(200, SITE_CONFIG);
+    nock.siteConfig().reply(200, SITE_CONFIG);
+    nock.orgConfig().reply(200, ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
       log: console,
@@ -134,8 +134,7 @@ describe('Index Tests', () => {
   });
 
   it('fails calling status handler with missing site config', async () => {
-    nock.siteConfig()
-      .reply(404);
+    nock.siteConfig().reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -151,8 +150,7 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling profiles handler', async () => {
-    nock.orgConfig()
-      .reply(200, ORG_CONFIG);
+    nock.orgConfig().reply(200, ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -166,8 +164,7 @@ describe('Index Tests', () => {
   });
 
   it('fails calling profiles handler with missing org', async () => {
-    nock.orgConfig()
-      .reply(404);
+    nock.orgConfig().reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,

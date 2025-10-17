@@ -93,7 +93,7 @@ function catchAll(func) {
       return response;
     } catch (e) {
       const { log, attributes: { authInfo } } = context;
-      /* c8 ignore next 22 */
+      /* c8 ignore start */
       if (e instanceof AccessDeniedError) {
         if (authInfo.authenticated) {
           log.warn(`request authenticated but needs permissions: ${e.message}`);
@@ -118,6 +118,7 @@ function catchAll(func) {
           'x-error': cleanupHeaderValue(e instanceof StatusCodeError ? e.message : e.toString()),
         },
       });
+      /* c8 ignore end */
     }
   };
 }

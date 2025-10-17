@@ -50,6 +50,38 @@ export class AdminContext {
     }
   }
 
+  async getConfig(info) {
+    if (this.attributes.config === undefined) {
+      const { org, site } = info;
+      if (org && site) {
+        const config = await loadSiteConfig(this, org, site);
+        if (config === null) {
+          throw new StatusCodeError('', 404);
+        }
+        this.attributes.config = config;
+      } else {
+        this.attributes.config = null;
+      }
+    }
+    return this.attributes.config;
+  }
+
+  async getOrgConfig(info) {
+    if (this.attributes.orgConfig === undefined) {
+      const { org } = info;
+      if (org) {
+        const config = await loadOrgConfig(this, org);
+        if (config === null) {
+          throw new StatusCodeError('', 404);
+        }
+        this.attributes.orgConfig = config;
+      } else {
+        this.attributes.orgConfig = null;
+      }
+    }
+    return this.attributes.orgConfig;
+  }
+
   /**
    * Authenticates current user. It checks if the request contains authentication information and
    * sets user data.
@@ -59,11 +91,14 @@ export class AdminContext {
    */
   // eslint-disable-next-line no-unused-vars
   async authenticate(info) {
-    /* c8 ignore next 5 */
+    // eslint-disable-next-line no-unused-vars
+    const config = await this.getConfig(info);
+
     if (this.attributes.authInfo === undefined) {
       // TODO: ctx.attributes.authInfo = await getAuthInfo(context, info);
       return AuthInfo.Basic();
     }
+    /* c8 ignore next */
     return this.attributes.authInfo;
   }
 
@@ -74,21 +109,10 @@ export class AdminContext {
    * @returns {Promise<void>}
    */
   async authorize(info) {
-    const { org, site } = info;
+    // eslint-disable-next-line no-unused-vars
+    const orgConfig = await this.getOrgConfig(info);
 
-    if (org && site) {
-      const config = await loadSiteConfig(this, org, site);
-      if (config === null) {
-        throw new StatusCodeError('', 404);
-      }
-      // TODO: evaluate roles
-    } else if (org) {
-      const config = await loadOrgConfig(this, org, site);
-      if (config === null) {
-        throw new StatusCodeError('', 404);
-      }
-      // TODO: evaluate roles
-    }
+    // TODO: evaluate roles
   }
 }
 

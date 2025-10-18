@@ -35,10 +35,10 @@ export class Node {
     this.#handler = handler;
   }
 
-  #getOrCreateChild(seg) {
+  #getOrCreateChild(seg, handler) {
     let ret = this.#children.find((child) => child.#label === seg);
     if (!ret) {
-      ret = new Node(seg);
+      ret = new Node(seg, handler);
       this.#children.push(ret);
     }
     return ret;
@@ -52,8 +52,7 @@ export class Node {
       if (seg !== '*') {
         this.#getOrCreateChild(seg).add(segs, handler);
       } else {
-        this.#getOrCreateChild(seg);
-        this.#handler = handler;
+        this.#getOrCreateChild(seg, handler);
       }
     }
   }
@@ -100,7 +99,7 @@ export class Node {
       segs.unshift(seg);
       // eslint-disable-next-line no-param-reassign
       variables.path = `/${segs.join('/')}`;
-      return this;
+      return next;
     }
     return null;
   }

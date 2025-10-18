@@ -119,7 +119,11 @@ export function Nock() {
     }
   };
 
-  nocker.content = (contentBusId) => nock(`https://helix-content-bus.s3.us-east-1.amazonaws.com/${contentBusId ?? SITE_CONFIG.content.contentBusId}`);
+  nocker.content = (contentBusId) => {
+    const scope = nock(`https://helix-content-bus.s3.us-east-1.amazonaws.com/${contentBusId ?? SITE_CONFIG.content.contentBusId}`);
+    scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
+    return scope;
+  };
 
   nocker.siteConfig = (config, { org = 'owner', site = 'repo' } = {}) => {
     const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);

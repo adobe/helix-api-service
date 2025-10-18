@@ -56,7 +56,7 @@ describe('Index Tests', () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/code/main',
+        suffix: '/owner/sites/repo/code/main/',
       },
     });
     assert.strictEqual(result.status, 405);
@@ -93,6 +93,17 @@ describe('Index Tests', () => {
     assert.strictEqual(await result.text(), '');
   });
 
+  it('fails calling status handler without trailing path', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status',
+      },
+    });
+    assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
+  });
+
   it('succeeds calling status handler with trailing path', async () => {
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
@@ -100,13 +111,11 @@ describe('Index Tests', () => {
     nock.content()
       .head('/live/document.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
-      .get('/live/redirects.json')
-      .query(true)
+      .getObject('/live/redirects.json')
       .reply(404)
       .head('/preview/document.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' })
-      .get('/preview/redirects.json')
-      .query(true)
+      .getObject('/preview/redirects.json')
       .reply(404);
 
     const result = await main(new Request('https://localhost/'), {

@@ -37,8 +37,7 @@ describe('Redirects Fetch Tests', () => {
 
   it('returns empty result when sheet is malformed', async () => {
     nock.content()
-      .get('/preview/redirects.json')
-      .query(true)
+      .getObject('/preview/redirects.json')
       .reply(200, {});
 
     const ret = await fetchRedirects(
@@ -50,8 +49,7 @@ describe('Redirects Fetch Tests', () => {
 
   it('returns redirects from sheet', async () => {
     nock.content()
-      .get('/preview/redirects.json')
-      .query(true)
+      .getObject('/preview/redirects.json')
       .reply(200, {
         data: [{
           source: '/', destination: '/other',
@@ -76,8 +74,7 @@ describe('Redirects Fetch Tests', () => {
 
   it('throws on response status other than 404', async () => {
     nock.content()
-      .get('/preview/redirects.json')
-      .query(true)
+      .getObject('/preview/redirects.json')
       .reply(500);
 
     const ret = fetchRedirects(

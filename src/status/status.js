@@ -16,7 +16,7 @@ import getLiveInfo from '../live/info.js';
 import getPreviewInfo from '../preview/info.js';
 
 /**
- * Handles status.
+ * Handles GET status.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
@@ -53,9 +53,9 @@ export default async function status(context, info) {
     let result = {};
     if (editUrl) {
       if (editUrl === 'auto') {
-        result = {}; // await web2edit(context, info);
+        result = {}; // TODO await web2edit(context, info);
       } else {
-        result = {}; /* await edit2web(context, {
+        result = {}; /* TODO await edit2web(context, {
           editUrl,
           ...info,
         }); */
@@ -110,14 +110,14 @@ export default async function status(context, info) {
     live: await getLiveInfo(context, info),
     preview: await getPreviewInfo(context, info),
     edit,
-    // links: getAPIUrls(context, info, 'status', 'preview', 'live', 'code'),
+    // TODO links: getAPIUrls(context, info, 'status', 'preview', 'live', 'code'),
   };
 
   if (authInfo.profile) {
     resp.profile = authInfo.profile;
   }
   if (authInfo.authenticated) {
-    // resp.links.logout = getProjectLinkUrl(context, info, LOGOUT_PATH);
+    // TODO resp.links.logout = getProjectLinkUrl(context, info, LOGOUT_PATH);
   }
 
   return new Response(JSON.stringify(resp, null, 2), {

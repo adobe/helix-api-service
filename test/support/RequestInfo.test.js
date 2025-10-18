@@ -80,6 +80,9 @@ describe('RequestInfo Tests', () => {
   });
 
   it('check toResourcePath', () => {
+    // path not starting with '/'
+    assert.strictEqual(toResourcePath('invalid'), '');
+
     // empty basename
     assert.strictEqual(toResourcePath('/'), '/index.md');
 

@@ -61,5 +61,7 @@ export default async function fetchRedirects(context, partition) {
     log.info(`unable to load redirects from ${bucket}/${key}: ${resp.status}`);
     return redirects;
   }
+
+  // really?
   throw new Error(`error while loading redirects from ${bucket}/${key}: ${resp.status}`);
 }

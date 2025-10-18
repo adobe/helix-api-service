@@ -33,7 +33,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/login',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -45,7 +44,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/login/path',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
@@ -60,7 +58,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -80,7 +77,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -92,7 +88,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
@@ -164,7 +159,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');
@@ -194,7 +188,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/profiles',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -208,7 +201,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/profiles',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');

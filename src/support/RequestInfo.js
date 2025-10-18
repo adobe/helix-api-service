@@ -53,6 +53,10 @@ function combine(segs, filename) {
  * @returns {string} resource path
  */
 export function toResourcePath(path) {
+  if (!path.startsWith('https://') && !path.startsWith('/')) {
+    return '';
+  }
+
   const { pathname } = new URL(path, 'https://api.aem.live');
   const segs = pathname.split('/').slice(1);
   const filename = segs.pop();

@@ -20,9 +20,11 @@ export class AdminContext {
   /**
    * @constructs AdminContext
    * @param {import('@adobe/helix-universal').UniversalContext} context universal context
-   * @param {import('@adobe/fetch').Headers} [headers] headers
+   * @param {object} [opts]
+   * @param {import('@adobe/fetch').Headers} [opts.headers] headers
+   * @param {object} [opts.attributes] attributes
    */
-  constructor(context, headers) {
+  constructor(context, { headers = null, attributes = {} } = {}) {
     this.suffix = context.pathInfo.suffix;
     this.data = context.data;
     this.log = context.log;
@@ -32,6 +34,7 @@ export class AdminContext {
       errors: [],
       details: [],
       bucketMap: parseBucketNames(this.env.HELIX_BUCKET_NAMES),
+      ...attributes,
     };
 
     this.requestId = headers?.get('x-request-id')
@@ -164,5 +167,7 @@ export class AdminContext {
 }
 
 export function adminContext(func) {
-  return async (request, context) => func(request, new AdminContext(context, request.headers));
+  return async (request, context) => func(request, new AdminContext(context, {
+    headers: request.headers,
+  }));
 }

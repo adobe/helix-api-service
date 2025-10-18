@@ -40,7 +40,7 @@ describe('Config Utils Tests', () => {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
     }), 'owner', 'repo');
-    assert.deepStrictEqual(cfg, null);
+    assert.strictEqual(cfg, null);
   });
 
   it('throws error for error config', async () => {

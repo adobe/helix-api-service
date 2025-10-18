@@ -45,12 +45,32 @@ export const SITE_CONFIG = {
   },
 };
 
+export const ORG_CONFIG = {
+  org: 'org',
+  version: 1,
+  access: {
+    admin: {
+      role: {
+        admin: [
+          'bob@example.com',
+        ],
+        config: [
+          'spacecat@example.com',
+        ],
+      },
+    },
+  },
+};
+
 export function Nock() {
   /** @type {Record<string, nock.Scope} */
   const scopes = {};
 
   /** @type {any[]} */
   let unmatched;
+
+  /** @type {object} */
+  let savedEnv;
 
   function noMatchHandler(req) {
     unmatched.push(req);
@@ -73,7 +93,21 @@ export function Nock() {
     return scope;
   }
 
+  nocker.env = (overrides = {}) => {
+    savedEnv = { ...process.env };
+    Object.assign(process.env, {
+      AWS_REGION: 'us-east-1',
+      AWS_ACCESS_KEY_ID: 'dummy-id',
+      AWS_SECRET_ACCESS_KEY: 'dummy-key',
+      ...overrides,
+    });
+    return nocker;
+  };
+
   nocker.done = () => {
+    if (savedEnv) {
+      process.env = savedEnv;
+    }
     if (unmatched) {
       assert.deepStrictEqual(unmatched.map((req) => req.options || req), []);
       nock.emitter.off('no match', noMatchHandler);
@@ -85,8 +119,27 @@ export function Nock() {
     }
   };
 
-  nocker.siteConfig = ({ org = 'owner', site = 'repo' } = {}) => nock('https://config.aem.page')
-    .get(`/main--${site}--${org}/config.json?scope=admin`);
+  nocker.content = (contentBusId) => {
+    const scope = nock(`https://helix-content-bus.s3.us-east-1.amazonaws.com/${contentBusId ?? SITE_CONFIG.content.contentBusId}`);
+    scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
+    return scope;
+  };
+
+  nocker.siteConfig = (config, { org = 'owner', site = 'repo' } = {}) => {
+    const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);
+    if (config) {
+      scope.reply(200, config);
+    }
+    return scope;
+  };
+
+  nocker.orgConfig = (config, { org = 'owner' } = {}) => {
+    const scope = nock('https://config.aem.page').get(`/${org}/config.json?scope=admin`);
+    if (config) {
+      scope.reply(200, config);
+    }
+    return scope;
+  };
 
   nock.disableNetConnect();
   return nocker;

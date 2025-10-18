@@ -10,17 +10,23 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { loadSiteConfig } from '../config/utils.js';
+import status from './status.js';
 
-export default async function handler(request, context, variables) {
-  const { log } = context;
-  const { org, site, path } = variables;
+const ALLOWED_METHODS = ['GET', 'POST'];
 
-  const config = await loadSiteConfig(context, org, site);
-  if (config === null) {
-    return new Response('', { status: 404 });
+/**
+ * Handles status requests.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} response
+ */
+export default async function statusHandler(context, info) {
+  if (ALLOWED_METHODS.indexOf(info.method) < 0) {
+    return new Response('method not allowed', {
+      status: 405,
+    });
   }
 
-  log.info(`handler called, with org/site: ${org}/${site}, and path: ${path}`);
-  return new Response('', { status: 405 });
+  return status(context, info);
 }

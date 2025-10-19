@@ -48,13 +48,12 @@ export default class Router {
   match(path) {
     const segs = path.split('/').slice(1);
 
-    const variables = {};
+    const variables = new Map();
     const match = this.#root.match(segs, variables);
 
-    const { handler, label } = match ?? {};
+    const { handler } = match ?? {};
     if (handler) {
-      variables.route = `/${label}`;
-      return { handler, variables };
+      return { handler, variables: Object.fromEntries(variables) };
     }
     return null;
   }

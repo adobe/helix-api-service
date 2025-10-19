@@ -53,13 +53,22 @@ export default async function status(context, info) {
     let result = {};
     if (editUrl) {
       if (editUrl === 'auto') {
-        result = {}; // TODO await web2edit(context, info);
+        result = {
+          resourcePath: info.resourcePath,
+          webPath: info.webPath,
+        };
+        // TODO result = await web2edit(context, info);
       } else {
-        result = {}; /* TODO await edit2web(context, {
+        result = {
+          resourcePath: info.resourcePath,
+          webPath: info.webPath,
+        };
+        /* TODO result = await edit2web(context, {
           editUrl,
           ...info,
         }); */
       }
+      /* c8 ignore start */
       if (result.error) {
         if (result.status !== 404 || editUrl !== 'auto') {
           const headers = {
@@ -71,11 +80,12 @@ export default async function status(context, info) {
           return new Response('', { status: result.status, headers });
         }
       } else {
+      /* c8 ignore end */
         // ensure info is updated
         // eslint-disable-next-line no-param-reassign
         info.resourcePath = result.resourcePath;
         // eslint-disable-next-line no-param-reassign
-        info.webPath = result.path;
+        info.webPath = result.webPath;
 
         edit.url = result.editUrl;
         edit.name = result.editName;

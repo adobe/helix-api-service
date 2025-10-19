@@ -119,11 +119,13 @@ export function Nock() {
     }
   };
 
-  nocker.content = (contentBusId) => {
-    const scope = nock(`https://helix-content-bus.s3.us-east-1.amazonaws.com/${contentBusId ?? SITE_CONFIG.content.contentBusId}`);
+  nocker.s3 = (bucket, prefix) => {
+    const scope = nock(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
     scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
     return scope;
   };
+
+  nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.siteConfig = (config, { org = 'owner', site = 'repo' } = {}) => {
     const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);

@@ -14,7 +14,7 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { router } from '../../src/index.js';
-import { Nock } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { AdminContext } from '../../src/support/AdminContext.js';
 import { RequestInfo } from '../../src/support/RequestInfo.js';
@@ -94,5 +94,51 @@ describe('Status GET Tests', () => {
       resourcePath: '/index.md',
       webPath: '/',
     });
+  });
+
+  it('calls `web2edit` when `editUrl` is `auto`', async () => {
+    const suffix = '/owner/sites/repo/status/';
+
+    nock.content()
+      .head('/preview/index.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+      .head('/live/index.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const result = await status(
+      createContext(suffix, 'auto', {
+        authInfo: AuthInfo.Admin(),
+        config: SITE_CONFIG,
+        redirects: {
+          preview: [],
+          live: [],
+        },
+      }),
+      createInfo(suffix),
+    );
+    assert.strictEqual(result.status, 200);
+  });
+
+  it('calls `web2edit` when `editUrl` is not `auto`', async () => {
+    const suffix = '/owner/sites/repo/status/';
+
+    nock.content()
+      .head('/preview/index.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+      .head('/live/index.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const result = await status(
+      createContext(suffix, 'other', {
+        authInfo: AuthInfo.Admin(),
+        config: SITE_CONFIG,
+        redirects: {
+          preview: [],
+          live: [],
+        },
+      }),
+      createInfo(suffix),
+    );
+    assert.strictEqual(result.status, 200);
   });
 });

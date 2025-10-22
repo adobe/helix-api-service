@@ -10,33 +10,30 @@
  * governing permissions and limitations under the License.
  */
 import { AbortError } from '@adobe/fetch';
-import { getFetch, getFetchOptions } from '../support/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
-export async function loadSiteConfig(context, org, site) {
-  const { log, env, attributes } = context;
-  const fetch = getFetch(attributes);
+async function loadConfig(context, url, type) {
+  const { log, env } = context;
+  const fetch = context.getFetch();
 
-  const fopts = getFetchOptions();
+  const fopts = context.getFetchOptions();
   fopts.headers['x-access-token'] = env.HLX_CONFIG_SERVICE_TOKEN;
   fopts.headers['x-backend-type'] = 'aws';
-
-  const url = `https://config.aem.page/main--${site}--${org}/config.json?scope=admin`;
 
   try {
     const response = await fetch(url, fopts);
     const { ok, status } = response;
     if (ok) {
-      log.info(`loaded config from ${url}`);
+      log.info(`loaded ${type} config from ${url}`);
       const config = await response.json();
       return config;
     }
     if (status !== 404) {
-      log.warn(`error loading config from ${url}: ${response.status}`);
+      log.warn(`error loading ${type} config from ${url}: ${response.status}`);
     }
     return null;
   } catch (e) {
-    const msg = `Fetching config from ${url} failed: ${e.message}`;
+    const msg = `Fetching ${type} config from ${url} failed: ${e.message}`;
     throw new StatusCodeError(msg, e instanceof AbortError ? 504 : /* c8 ignore next */ 502);
     /* c8 ignore next 5 */
   } finally {
@@ -44,4 +41,14 @@ export async function loadSiteConfig(context, org, site) {
       fopts.signal.clear();
     }
   }
+}
+
+export async function loadSiteConfig(context, org, site) {
+  const url = `https://config.aem.page/main--${site}--${org}/config.json?scope=admin`;
+  return loadConfig(context, url, 'site');
+}
+
+export async function loadOrgConfig(context, org) {
+  const url = `https://config.aem.page/${org}/config.json?scope=admin`;
+  return loadConfig(context, url, 'org');
 }

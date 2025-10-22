@@ -14,13 +14,13 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
-import { Nock, SITE_CONFIG } from './utils.js';
+import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
 
 describe('Index Tests', () => {
   let nock;
 
   beforeEach(() => {
-    nock = new Nock();
+    nock = new Nock().env();
   });
 
   afterEach(() => {
@@ -33,7 +33,6 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/login',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -45,76 +44,171 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/login/path',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
 
   it('succeeds calling code handler', async () => {
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
+
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/code/main',
+        suffix: '/owner/sites/repo/code/main/',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    const result = await main(new Request('https://localhost/'), {
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
+
+    const result = await main(new Request('https://localhost/', {
+      headers: {
+        'x-github-token': 'token',
+        'x-github-base': 'https://my.github.com',
+      },
+    }), {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
 
-  it('fails calling handler with incomplete match', async () => {
+  it('fails calling code handler with incomplete match', async () => {
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/code',
       },
-      env: {},
+    });
+    assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('fails calling status handler without trailing path', async () => {
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status',
+      },
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
 
   it('succeeds calling status handler with trailing path', async () => {
-    nock.siteConfig()
-      .reply(200, SITE_CONFIG);
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
+
+    nock.content()
+      .head('/live/document.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+      .getObject('/live/redirects.json')
+      .reply(404)
+      .head('/preview/document.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' })
+      .getObject('/preview/redirects.json')
+      .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
+        suffix: '/owner/sites/repo/status/document',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    });
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(await result.json(), {
+      edit: {},
+      live: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/document.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.live/document',
+      },
+      preview: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/document.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 09:04:16 GMT',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.page/document',
+      },
+      resourcePath: '/document.md',
+      webPath: '/document',
+    });
+  });
+
+  it('fails calling status handler with forbidden method', async () => {
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
+
+    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status/document',
+      },
+    });
+    assert.strictEqual(result.status, 405);
+    assert.strictEqual(await result.text(), 'method not allowed');
+  });
+
+  it('fails calling status handler with missing site config', async () => {
+    nock.siteConfig().reply(404);
+
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/sites/repo/status/document',
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    });
+    assert.strictEqual(result.status, 404);
+    assert.strictEqual(await result.text(), '');
+  });
+
+  it('succeeds calling profiles handler', async () => {
+    nock.orgConfig(ORG_CONFIG);
+
+    const result = await main(new Request('https://localhost/'), {
+      log: console,
+      pathInfo: {
+        suffix: '/owner/profiles',
       },
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
 
-  it('fails calling status handler with missing site config', async () => {
-    nock.siteConfig()
-      .reply(404);
+  it('fails calling profiles handler with missing org', async () => {
+    nock.orgConfig().reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
+        suffix: '/owner/profiles',
       },
     });
     assert.strictEqual(result.status, 404);

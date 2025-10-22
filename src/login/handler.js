@@ -11,9 +11,16 @@
  */
 import { Response } from '@adobe/fetch';
 
-export default function handler(request, context, variables) {
+/**
+ * Handles login requests.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} response
+ */
+export default function loginHandler(context, info) {
   const { log } = context;
-  const { route } = variables;
+  const { route } = info;
 
   log.info(`handler for ${route} called`);
   return new Response('', { status: 405 });

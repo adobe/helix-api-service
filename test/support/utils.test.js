@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Adobe. All rights reserved.
+ * Copyright 2025 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -9,20 +9,28 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { DevelopmentServer } from '@adobe/helix-universal-devserver';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
 
-import { main } from '../../src/index.js';
+/* eslint-env mocha */
+import assert from 'assert';
+import { Nock } from '../utils.js';
+import { getSheetData } from '../../src/contentproxy/utils.js';
 
-// eslint-disable-next-line no-underscore-dangle
-global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
+describe('ContentProxy Utils Tests', () => {
+  let nock;
 
-async function run() {
-  const devServer = await new DevelopmentServer(main)
-    .withPort(3001)
-    .init();
-  await devServer.start();
-}
+  beforeEach(() => {
+    nock = new Nock().env();
+  });
 
-run().then(process.stdout).catch(process.stderr);
+  afterEach(() => {
+    nock.done();
+  });
+
+  it('tests `getSheetData`', () => {
+    assert.deepStrictEqual(getSheetData({
+      custom: {
+        data: [],
+      },
+    }, ['custom']), []);
+  });
+});

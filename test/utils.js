@@ -9,6 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { S3CachePlugin } from '@adobe/helix-shared-tokencache';
 import assert from 'assert';
 import nock from 'nock';
 
@@ -45,12 +46,32 @@ export const SITE_CONFIG = {
   },
 };
 
+export const ORG_CONFIG = {
+  org: 'org',
+  version: 1,
+  access: {
+    admin: {
+      role: {
+        admin: [
+          'bob@example.com',
+        ],
+        config: [
+          'spacecat@example.com',
+        ],
+      },
+    },
+  },
+};
+
 export function Nock() {
   /** @type {Record<string, nock.Scope} */
   const scopes = {};
 
   /** @type {any[]} */
   let unmatched;
+
+  /** @type {object} */
+  let savedEnv;
 
   function noMatchHandler(req) {
     unmatched.push(req);
@@ -73,7 +94,21 @@ export function Nock() {
     return scope;
   }
 
+  nocker.env = (overrides = {}) => {
+    savedEnv = { ...process.env };
+    Object.assign(process.env, {
+      AWS_REGION: 'us-east-1',
+      AWS_ACCESS_KEY_ID: 'dummy-id',
+      AWS_SECRET_ACCESS_KEY: 'dummy-key',
+      ...overrides,
+    });
+    return nocker;
+  };
+
   nocker.done = () => {
+    if (savedEnv) {
+      process.env = savedEnv;
+    }
     if (unmatched) {
       assert.deepStrictEqual(unmatched.map((req) => req.options || req), []);
       nock.emitter.off('no match', noMatchHandler);
@@ -85,8 +120,90 @@ export function Nock() {
     }
   };
 
-  nocker.siteConfig = ({ org = 'owner', site = 'repo' } = {}) => nock('https://config.aem.page')
-    .get(`/main--${site}--${org}/config.json?scope=admin`);
+  nocker.s3 = (bucket, prefix) => {
+    const scope = nock(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
+    scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
+    scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
+    return scope;
+  };
+
+  nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
+
+  nocker.siteConfig = (config, { org = 'owner', site = 'repo' } = {}) => {
+    const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);
+    if (config) {
+      scope.reply(200, config);
+    }
+    return scope;
+  };
+
+  nocker.orgConfig = (config, { org = 'owner' } = {}) => {
+    const scope = nock('https://config.aem.page').get(`/${org}/config.json?scope=admin`);
+    if (config) {
+      scope.reply(200, config);
+    }
+    return scope;
+  };
+
+  nocker.google = {
+    user: (contentBusId, cacheData = {
+      refresh_token: 'dummy-refresh-token',
+      access_token: 'dummy-access-token',
+    }) => {
+      nocker.content(contentBusId)
+        .head('/.helix-auth/auth-google-content.json')
+        .optionally(contentBusId === 'default')
+        .reply(200)
+        .getObject('/.helix-auth/auth-google-content.json')
+        .reply(200, S3CachePlugin.encrypt(
+          contentBusId ?? SITE_CONFIG.content.contentBusId,
+          JSON.stringify(cacheData),
+        ))
+        .putObject('/.helix-auth/auth-google-content.json')
+        .optionally()
+        .reply(200);
+      return nocker.google;
+    },
+    folders: (files, id = SITE_CONFIG.content.source.id) => {
+      nocker('https://www.googleapis.com')
+        .get('/drive/v3/files')
+        .query({
+          q: `'${id}' in parents and trashed=false and mimeType = 'application/vnd.google-apps.folder'`,
+          fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size)',
+          includeItemsFromAllDrives: 'true',
+          supportsAllDrives: 'true',
+          pageSize: 1000,
+        })
+        .reply(200, { files });
+      return nocker.google;
+    },
+    documents: (files, id = SITE_CONFIG.content.source.id) => {
+      nocker('https://www.googleapis.com')
+        .get('/drive/v3/files')
+        .query({
+          q: `'${id}' in parents and trashed=false and mimeType = 'application/vnd.google-apps.document'`,
+          fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size)',
+          includeItemsFromAllDrives: 'true',
+          supportsAllDrives: 'true',
+          pageSize: 1000,
+        })
+        .reply(200, { files });
+      return nocker.google;
+    },
+    files: (files, id = SITE_CONFIG.content.source.id) => {
+      nocker('https://www.googleapis.com')
+        .get('/drive/v3/files')
+        .query({
+          q: `'${id}' in parents and trashed=false and mimeType != 'application/vnd.google-apps.folder'`,
+          fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size)',
+          includeItemsFromAllDrives: 'true',
+          supportsAllDrives: 'true',
+          pageSize: 1000,
+        })
+        .reply(200, { files });
+      return nocker.google;
+    },
+  };
 
   nock.disableNetConnect();
   return nocker;

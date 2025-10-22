@@ -25,11 +25,15 @@
     "testUrl": "/_status_check/healthcheck.json",
     "memory": 2048,
     "fastlyServiceId!important": "",
-    "awsRole!important": "arn:aws:iam::118435662149:role/helix-lambda-role",
+    "awsRole!important": "arn:aws:iam::118435662149:role/helix-role-api-service",
     "awsAttachAuthorizer": "helix-token-authorizer_v2"
   },
   "mocha": {
-    "require": "test/setup-env.js",
+    "require": [
+      "nock",
+      "test/setup-env.js",
+      "mocha-suppress-logs"
+    ],
     "recursive": "true",
     "reporter": "mocha-multi-reporters",
     "reporter-options": "configFile=.mocha-multi.json"
@@ -46,11 +50,17 @@
   "homepage": "https://github.com/adobe/helix-api-service#readme",
   "dependencies": {
     "@adobe/fetch": "4.2.3",
+    "@adobe/helix-admin-support": "5.0.1",
     "@adobe/helix-config": "5.6.8",
+    "@adobe/helix-google-support": "4.0.0",
     "@adobe/helix-shared-body-data": "2.2.1",
+    "@adobe/helix-shared-config": "11.1.12",
     "@adobe/helix-shared-secrets": "2.2.10",
     "@adobe/helix-shared-server-timing": "1.0.0",
+    "@adobe/helix-shared-storage": "1.5.0",
     "@adobe/helix-shared-string": "2.1.0",
+    "@adobe/helix-shared-tokencache": "1.5.0",
+    "@adobe/helix-shared-utils": "3.0.2",
     "@adobe/helix-shared-wrap": "2.0.2",
     "@adobe/helix-status": "10.1.5",
     "aws4": "1.13.2",
@@ -74,10 +84,12 @@
     "lint-staged": "16.2.3",
     "mocha": "11.7.2",
     "mocha-multi-reporters": "1.5.1",
+    "mocha-suppress-logs": "0.6.0",
     "nock": "13.5.6",
     "nodemon": "3.1.10",
     "semantic-release": "24.2.9",
-    "semantic-release-slack-bot": "4.0.2"
+    "semantic-release-slack-bot": "4.0.2",
+    "sinon": "21.0.0"
   },
   "lint-staged": {
     "*.js": "eslint"

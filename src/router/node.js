@@ -35,10 +35,10 @@ export class Node {
     this.#handler = handler;
   }
 
-  #getOrCreateChild(seg) {
+  #getOrCreateChild(seg, handler) {
     let ret = this.#children.find((child) => child.#label === seg);
     if (!ret) {
-      ret = new Node(seg);
+      ret = new Node(seg, handler);
       this.#children.push(ret);
     }
     return ret;
@@ -52,8 +52,7 @@ export class Node {
       if (seg !== '*') {
         this.#getOrCreateChild(seg).add(segs, handler);
       } else {
-        this.#getOrCreateChild(seg);
-        this.#handler = handler;
+        this.#getOrCreateChild(seg, handler);
       }
     }
   }
@@ -70,11 +69,12 @@ export class Node {
    * Matches a path by traversing a tree of nodes.
    *
    * @param {string[]} segs path segments to match
-   * @param {object} variables variables extracted while matching
+   * @param {Map} variables variables extracted while matching
    * @returns {Node} matching node or null
    */
   match(segs, variables) {
     if (segs.length === 0) {
+      variables.set('route', this.label);
       return this;
     }
     const seg = segs.shift();
@@ -89,8 +89,7 @@ export class Node {
     next = this.#children.find((child) => child.#label.startsWith(':'));
     if (next) {
       const key = next.#label.substring(1);
-      // eslint-disable-next-line no-param-reassign
-      variables[key] = seg;
+      variables.set(key, seg);
       return next.match(segs, variables);
     }
 
@@ -98,9 +97,9 @@ export class Node {
     next = this.#children.find((child) => child.#label === '*');
     if (next) {
       segs.unshift(seg);
-      // eslint-disable-next-line no-param-reassign
-      variables.path = `/${segs.join('/')}`;
-      return this;
+      variables.set('path', `/${segs.join('/')}`);
+      variables.set('route', this.label);
+      return next;
     }
     return null;
   }

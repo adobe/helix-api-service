@@ -14,12 +14,13 @@
 import assert from 'assert';
 import { loadSiteConfig } from '../../src/config/utils.js';
 import { Nock } from '../utils.js';
+import { AdminContext } from '../../src/support/AdminContext.js';
 
 describe('Config Utils Tests', () => {
   let nock;
 
   beforeEach(() => {
-    nock = new Nock();
+    nock = new Nock().env();
   });
 
   afterEach(() => {
@@ -30,36 +31,34 @@ describe('Config Utils Tests', () => {
     nock.siteConfig()
       .reply(500);
 
-    const cfg = await loadSiteConfig({
+    const cfg = await loadSiteConfig(new AdminContext({
       log: console,
-      attributes: {},
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
-    }, 'owner', 'repo');
-    assert.deepStrictEqual(cfg, null);
+    }), 'owner', 'repo');
+    assert.strictEqual(cfg, null);
   });
 
   it('throws error for error config', async () => {
     nock.siteConfig()
       .replyWithError(new Error('boom!'));
 
-    const task = loadSiteConfig({
+    const task = loadSiteConfig(new AdminContext({
       log: console,
-      attributes: {},
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
-    }, 'owner', 'repo');
+    }), 'owner', 'repo');
     await assert.rejects(
       task,
-      /Fetching config from https:\/\/config.aem.page\/main--repo--owner\/config.json\?scope=admin failed: boom!/,
+      /Fetching site config from https:\/\/config.aem.page\/main--repo--owner\/config.json\?scope=admin failed: boom!/,
     );
   });
 });

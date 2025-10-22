@@ -9,23 +9,5 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { keepAliveNoCache } from '@adobe/fetch';
-
-export function getFetch(attributes) {
-  if (!attributes.fetchContext) {
-    // eslint-disable-next-line no-param-reassign
-    attributes.fetchContext = keepAliveNoCache({
-      userAgent: 'adobe-fetch', // static user-agent for recorded tests
-    });
-  }
-  return attributes.fetchContext.fetch;
-}
-
-export function getFetchOptions() {
-  const fetchopts = {
-    headers: {
-      'cache-control': 'no-cache', // respected by runtime
-    },
-  };
-  return fetchopts;
+export class AccessDeniedError extends Error {
 }

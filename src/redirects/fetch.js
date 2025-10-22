@@ -10,8 +10,8 @@
  * governing permissions and limitations under the License.
  */
 import { fetchS3 } from '@adobe/helix-admin-support';
+import { getSheetData } from '../contentproxy/utils.js';
 import { toResourcePath } from '../support/RequestInfo.js';
-import { getSheetData } from '../support/utils.js';
 
 export const REDIRECTS_JSON_PATH = '/redirects.json';
 

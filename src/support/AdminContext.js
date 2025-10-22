@@ -11,6 +11,8 @@
  */
 import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
 import { parseBucketNames } from '@adobe/helix-shared-storage';
+import { getCachePlugin } from '@adobe/helix-shared-tokencache';
+import { GoogleClient } from '@adobe/helix-google-support';
 import { AuthInfo } from '../auth/AuthInfo.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
 import { StatusCodeError } from './StatusCodeError.js';
@@ -163,6 +165,31 @@ export class AdminContext {
     }
     /* c8 ignore end */
     return fetchopts;
+  }
+
+  async getGoogleClient(contentBusId) {
+    const { attributes, env, log } = this;
+    if (!attributes.google) {
+      attributes.google = {};
+    }
+    if (!attributes.google[contentBusId]) {
+      const { code: codeBucket, content: contentBucket } = attributes.bucketMap;
+      const cachePlugin = await getCachePlugin({
+        contentBusId,
+        log,
+        codeBucket,
+        contentBucket,
+      }, 'google');
+
+      attributes.google[contentBusId] = await new GoogleClient({
+        log,
+        clientId: env.GOOGLE_HELIX_SERVICE_CLIENT_ID,
+        clientSecret: env.GOOGLE_HELIX_SERVICE_CLIENT_SECRET,
+        cachePlugin,
+        googleApiOpts: attributes.googleApiOpts,
+      }).init();
+    }
+    return attributes.google[contentBusId];
   }
 }
 

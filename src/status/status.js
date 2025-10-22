@@ -14,6 +14,7 @@ import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import getLiveInfo from '../live/info.js';
 import getPreviewInfo from '../preview/info.js';
+import web2edit from '../lookup/web2edit.js';
 
 /**
  * Handles GET status.
@@ -53,11 +54,7 @@ export default async function status(context, info) {
     let result = {};
     if (editUrl) {
       if (editUrl === 'auto') {
-        result = {
-          resourcePath: info.resourcePath,
-          webPath: info.webPath,
-        };
-        // TODO result = await web2edit(context, info);
+        result = await web2edit(context, info);
       } else {
         result = {
           resourcePath: info.resourcePath,

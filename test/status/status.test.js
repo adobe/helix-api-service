@@ -97,31 +97,101 @@ describe('Status GET Tests', () => {
   });
 
   it('calls `web2edit` when `editUrl` is `auto`', async () => {
-    const suffix = '/owner/sites/repo/status/';
+    const suffix = '/owner/sites/repo/status/folder/page';
 
+    nock.google
+      .user()
+      .folders([{
+        mimeType: 'application/vnd.google-apps.folder',
+        name: 'folder',
+        id: '1BHM3lyqi0bEeaBZho8UD328oFsmsisyJ',
+      }])
+      .documents([{
+        mimeType: 'application/vnd.google-apps.document',
+        name: 'page',
+        id: '1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
+        modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
+      }], '1BHM3lyqi0bEeaBZho8UD328oFsmsisyJ');
+
+    // getContentBusInfo (preview/live)
     nock.content()
-      .head('/preview/index.md')
+      .head('/preview/folder/page.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
-      .head('/live/index.md')
+      .head('/live/folder/page.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await status(
       createContext(suffix, 'auto', {
         authInfo: AuthInfo.Admin(),
         config: SITE_CONFIG,
-        redirects: {
-          preview: [],
-          live: [],
-        },
+        redirects: { preview: [], live: [] },
       }),
       createInfo(suffix),
     );
     assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(await result.json(), {
+      webPath: '/folder/page',
+      resourcePath: '/folder/page.md',
+      live: {
+        url: 'https://main--repo--owner.aem.live/folder/page',
+        status: 200,
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/folder/page.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        sourceLocation: 'google:*',
+        permissions: [
+          'delete',
+          'delete-forced',
+          'list',
+          'read',
+          'write',
+        ],
+      },
+      preview: {
+        url: 'https://main--repo--owner.aem.page/folder/page',
+        status: 200,
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/folder/page.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        sourceLocation: 'google:*',
+        permissions: [
+          'delete',
+          'delete-forced',
+          'list',
+          'read',
+          'write',
+        ],
+      },
+      edit: {
+        url: 'https://docs.google.com/document/d/1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4/edit',
+        name: 'page',
+        contentType: 'application/vnd.google-apps.document',
+        folders: [
+          {
+            name: 'folder',
+            url: 'https://drive.google.com/drive/u/0/folders/1BHM3lyqi0bEeaBZho8UD328oFsmsisyJ',
+            path: '/folder',
+          },
+          {
+            name: '',
+            url: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+            path: '/',
+          },
+        ],
+        lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
+        sourceLocation: 'gdrive:1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
+        status: 200,
+      },
+      profile: {
+        userId: 'admin',
+      },
+    });
   });
 
   it('calls `web2edit` when `editUrl` is not `auto`', async () => {
     const suffix = '/owner/sites/repo/status/';
 
+    // getContentBusInfo (preview/live)
     nock.content()
       .head('/preview/index.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
@@ -132,10 +202,7 @@ describe('Status GET Tests', () => {
       createContext(suffix, 'other', {
         authInfo: AuthInfo.Admin(),
         config: SITE_CONFIG,
-        redirects: {
-          preview: [],
-          live: [],
-        },
+        redirects: { preview: [], live: [] },
       }),
       createInfo(suffix),
     );

@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Nock } from '../utils.js';
-import { getSheetData } from '../../src/contentproxy/utils.js';
+import { computeSourceUrl, getSheetData } from '../../src/contentproxy/utils.js';
 
 describe('ContentProxy Utils Tests', () => {
   let nock;
@@ -32,5 +32,25 @@ describe('ContentProxy Utils Tests', () => {
         data: [],
       },
     }, ['custom']), []);
+  });
+
+  it('tests `computeSourceUrl`', async () => {
+    await assert.rejects(
+      () => computeSourceUrl(null, null, {
+        url: 'nope',
+      }),
+      /Bad mountpoint URL in fstab/,
+    );
+
+    const mp = {
+      type: 'markup',
+      url: 'https://content.da.live/org/site/',
+      suffix: '/?a=1&b=2',
+    };
+    const { href } = await computeSourceUrl(null, {
+      resourcePath: '/index.md',
+      ext: '.md',
+    }, mp);
+    assert.strictEqual(href, 'https://content.da.live/org/site/index/?a=1&b=2');
   });
 });

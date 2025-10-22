@@ -80,9 +80,9 @@ export default async function status(context, info) {
       /* c8 ignore end */
         // ensure info is updated
         // eslint-disable-next-line no-param-reassign
-        info.resourcePath = result.resourcePath;
+        // TODO info.resourcePath = result.resourcePath;
         // eslint-disable-next-line no-param-reassign
-        info.webPath = result.webPath;
+        // TODO info.webPath = result.webPath;
 
         edit.url = result.editUrl;
         edit.name = result.editName;

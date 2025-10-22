@@ -175,7 +175,7 @@ export class RequestInfo {
         rawPath: path, webPath, resourcePath, ext,
       });
     }
-    return info;
+    return Object.freeze(info);
   }
 
   getPreviewUrl() {

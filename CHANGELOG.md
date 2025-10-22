@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/adobe/helix-api-service/compare/v1.2.0...v1.3.0) (2025-10-22)
+
+
+### Features
+
+* implement status request ([#7](https://github.com/adobe/helix-api-service/issues/7)) ([41113bc](https://github.com/adobe/helix-api-service/commit/41113bc43008eaa388289600825b022c75a718be))
+
 # [1.2.0](https://github.com/adobe/helix-api-service/compare/v1.1.0...v1.2.0) (2025-10-16)
 
 

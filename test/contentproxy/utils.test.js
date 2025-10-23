@@ -42,7 +42,7 @@ describe('ContentProxy Utils Tests', () => {
       /Bad mountpoint URL in fstab/,
     );
 
-    const mp = {
+    const contentSource = {
       type: 'markup',
       url: 'https://content.da.live/org/site/',
       suffix: '/?a=1&b=2',
@@ -50,7 +50,7 @@ describe('ContentProxy Utils Tests', () => {
     const { href } = await computeSourceUrl(null, {
       resourcePath: '/index.md',
       ext: '.md',
-    }, mp);
+    }, contentSource);
     assert.strictEqual(href, 'https://content.da.live/org/site/index/?a=1&b=2');
   });
 });

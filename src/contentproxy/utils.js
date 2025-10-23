@@ -17,15 +17,15 @@ import { StatusCodeError } from '../support/StatusCodeError.js';
  * resource directly from the source location or via html2md.
  * @param {object} log logger
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} mp mount point
+ * @param {object} contentSource content source
  * @returns {Promise<URL>}
  */
-export async function computeSourceUrl(log, info, mp) {
-  let { suffix } = mp;
+export async function computeSourceUrl(log, info, contentSource) {
+  let { suffix } = contentSource;
 
   let url;
   try {
-    url = new URL(mp.url);
+    url = new URL(contentSource.url);
   } catch (e) {
     throw new StatusCodeError('Bad mountpoint URL in fstab', 400);
   }

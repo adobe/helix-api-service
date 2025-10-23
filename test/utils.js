@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { S3CachePlugin } from '@adobe/helix-shared-tokencache';
+import { OneDrive } from '@adobe/helix-onedrive-support';
 import assert from 'assert';
 import nock from 'nock';
 
@@ -203,6 +204,176 @@ export function Nock() {
         .reply(200, { files });
       return nocker.google;
     },
+  };
+
+  nocker.onedrive = (content) => {
+    const { contentBusId, source: { url } } = content;
+    const onedrive = {
+      user: () => {
+        nocker.content(contentBusId)
+          .head('/.helix-auth/auth-onedrive-content.json')
+          .optionally(contentBusId === 'default')
+          .reply(200)
+          .getObject('/.helix-auth/auth-onedrive-content.json')
+          .reply(200, S3CachePlugin.encrypt(contentBusId, JSON.stringify({
+            Account: {}, AccessToken: {}, RefreshToken: {}, IdToken: {}, AppMetadata: {},
+          })))
+          .putObject('/.helix-auth/auth-onedrive-content.json')
+          .optionally()
+          .reply(200);
+        return onedrive;
+      },
+      login: (auth = {
+        token_type: 'Bearer',
+        refresh_token: 'dummy',
+        access_token: 'dummy',
+        expires_in: 181000,
+      }, tenant = 'adobe') => {
+        nocker('https://login.windows.net')
+          .get(`/${tenant}.onmicrosoft.com/.well-known/openid-configuration`)
+          .optionally(true)
+          .reply(200, {
+            issuer: `https://login.microsoftonline.com/${tenant}/v2.0`,
+          });
+        nocker('https://login.microsoftonline.com')
+          .get(`/common/discovery/instance?api-version=1.1&authorization_endpoint=https://login.windows.net/${tenant}/oauth2/v2.0/authorize`)
+          .optionally(true)
+          .reply(200, {
+            tenant_discovery_endpoint: `https://login.windows.net/${tenant}/v2.0/.well-known/openid-configuration`,
+            'api-version': '1.1',
+            metadata: [
+              {
+                preferred_network: 'login.microsoftonline.com',
+                preferred_cache: 'login.windows.net',
+                aliases: [
+                  'login.microsoftonline.com',
+                  'login.windows.net',
+                  'login.microsoft.com',
+                  'sts.windows.net',
+                ],
+              },
+            ],
+          })
+          .get(`/${tenant}/v2.0/.well-known/openid-configuration`)
+          .optionally(true)
+          .reply(200, {
+            token_endpoint: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
+            issuer: `https://login.microsoftonline.com/${tenant}/v2.0`,
+            authorization_endpoint: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
+            token_endpoint_auth_methods_supported: ['client_secret_post', 'private_key_jwt', 'client_secret_basic'],
+            jwks_uri: `https://login.microsoftonline.com/${tenant}/discovery/v2.0/keys`,
+            response_modes_supported: ['query', 'fragment', 'form_post'],
+            subject_types_supported: ['pairwise'],
+            id_token_signing_alg_values_supported: ['RS256'],
+            response_types_supported: ['code', 'id_token', 'code id_token', 'id_token token'],
+            scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
+          })
+          .post(`/${tenant}/oauth2/v2.0/token`)
+          .query((query) => {
+            /* we only accept client-request-id or no query */
+            if (query) {
+              return Object.keys(query).every((key) => key === 'client-request-id');
+            }
+            return true;
+          })
+          .reply(200, auth);
+        return onedrive;
+      },
+      resolve: () => {
+        nocker('https://graph.microsoft.com/v1.0')
+          .get(`/shares/${OneDrive.encodeSharingUrl(url)}/driveItem`)
+          .reply(200, {
+            id: 'share-id',
+            webUrl: url,
+            parentReference: {
+              driveId: 'drive-id',
+            },
+          });
+        return onedrive;
+      },
+      getDocument: (path, {
+        id = 'document-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+      } = {}) => {
+        const scope = nocker('https://graph.microsoft.com/v1.0')
+          .get(`/drives/drive-id/items/share-id:${path}`);
+        if (id === null) {
+          scope.reply(404);
+        } else {
+          scope.reply(200, {
+            file: {
+              mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            },
+            lastModifiedDateTime,
+            name: path.split('/').at(-1),
+            id,
+            webUrl: `${url}${path}`,
+            parentReference: {
+              id: 'folder-id',
+              driveId: 'drive-id',
+            },
+          });
+        }
+        return onedrive;
+      },
+      getWorkbook: (path, {
+        id = 'workbook-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+      } = {}) => {
+        nocker('https://graph.microsoft.com/v1.0')
+          .get(`/drives/drive-id/items/share-id:${path}`)
+          .reply(200, {
+            file: {
+              mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            },
+            lastModifiedDateTime,
+            name: path.split('/').at(-1),
+            id,
+            webUrl: `${url}${path}`,
+            parentReference: {
+              id: 'folder-id',
+              driveId: 'drive-id',
+            },
+          });
+        return onedrive;
+      },
+      getFolder: (path, {
+        id = 'folder-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+      } = {}) => {
+        const scope = nocker('https://graph.microsoft.com/v1.0')
+          .get(`/drives/drive-id/items/${id}`);
+        if (path === null) {
+          scope.reply(404);
+        } else {
+          scope.reply(200, {
+            webUrl: `${url}${path}`,
+            lastModifiedDateTime,
+          });
+        }
+        return onedrive;
+      },
+      getChildren: (items) => {
+        nocker('https://graph.microsoft.com/v1.0')
+          .get('/drives/drive-id/items/share-id/children')
+          .query({
+            $top: '999',
+            $select: 'name,parentReference,file,id,size,webUrl,lastModifiedDateTime',
+          })
+          .reply(200, {
+            value: items.map(({ path, id, lastModifiedDateTime }) => ({
+              lastModifiedDateTime,
+              file: true,
+              name: path.split('/').at(-1),
+              id,
+              webUrl: `${url}${path}`,
+              parentReference: {
+                id: 'folder-id',
+                driveId: 'drive-id',
+              },
+            })),
+          });
+        return onedrive;
+      },
+    };
+    return onedrive;
   };
 
   nock.disableNetConnect();

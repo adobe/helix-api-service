@@ -12,8 +12,8 @@
 
 import { computeSourceUrl } from '../contentproxy/utils.js';
 
-function test(mp) {
-  return mp && mp.type === 'markup';
+function test(contentSource) {
+  return contentSource?.type === 'markup';
 }
 
 /**

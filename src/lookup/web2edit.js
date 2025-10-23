@@ -9,16 +9,13 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { MountConfig } from '@adobe/helix-shared-config';
 import google from './web2edit-google.js';
-// import onedrive from './web2edit-onedrive.js';
-// import github from './web2edit-github.js';
+import onedrive from './web2edit-onedrive.js';
 import markup from './web2edit-markup.js';
 
 const HANDLERS = [
   google,
-  // onedrive,
-  // github,
+  onedrive,
   markup,
 ];
 
@@ -76,14 +73,7 @@ export default async function web2edit(context, info) {
 
   const { contentBusId, source: base, overlay } = config.content;
 
-  // TODO: fstab no longer required
-  const fstab = await new MountConfig().withJSON({
-    mountpoints: {
-      '/': base,
-    },
-  }).init();
-
-  const sources = [fstab.match(info.resourcePath)];
+  const sources = [base];
   if (overlay) {
     sources.unshift(overlay);
   }

@@ -13,10 +13,13 @@ import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
 import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { GoogleClient } from '@adobe/helix-google-support';
+import { OneDrive, OneDriveAuth } from '@adobe/helix-onedrive-support';
 import { AuthInfo } from '../auth/AuthInfo.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
 import { StatusCodeError } from './StatusCodeError.js';
 import fetchRedirects from '../redirects/fetch.js';
+
+const APP_USER_AGENT = 'NONISV|Adobe|AEMContentSync/1.0';
 
 export class AdminContext {
   /**
@@ -190,6 +193,51 @@ export class AdminContext {
       }).init();
     }
     return attributes.google[contentBusId];
+  }
+
+  /**
+   * Get or create a OneDrive client.
+   *
+   * @param {string} owner owner
+   * @param {string} contentBusId content bus id
+   * @param {string} tenant tenant id
+   * @param {object} logFields log fields
+   * @returns {Promise<OneDrive>} client
+   */
+  async getOneDriveClient(owner, contentBusId, tenant, logFields = {}) {
+    const { attributes, env, log } = this;
+    if (!attributes.onedrive) {
+      // TODO: check source lock
+      // if (!(route === 'discover' && method === 'GET')) {
+      //   await assertSourceLock(context, info);
+      // }
+
+      const { code: codeBucket, content: contentBucket } = attributes.bucketMap;
+      const cachePlugin = await getCachePlugin({
+        owner,
+        contentBusId,
+        log,
+        codeBucket,
+        contentBucket,
+      }, 'onedrive');
+
+      const auth = new OneDriveAuth({
+        log,
+        clientId: env.AZURE_HELIX_SERVICE_CLIENT_ID,
+        clientSecret: env.AZURE_HELIX_SERVICE_CLIENT_SECRET,
+        cachePlugin,
+        tenant,
+        acquireMethod: env.AZURE_HELIX_SERVICE_ACQUIRE_METHOD,
+        logFields,
+      });
+
+      attributes.onedrive = new OneDrive({
+        userAgent: APP_USER_AGENT,
+        auth,
+        log,
+      });
+    }
+    return attributes.onedrive;
   }
 }
 

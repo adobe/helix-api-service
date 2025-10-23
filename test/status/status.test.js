@@ -207,5 +207,8 @@ describe('Status GET Tests', () => {
       createInfo(suffix),
     );
     assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(await result.json(), {
+
+    });
   });
 });

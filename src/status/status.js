@@ -15,6 +15,7 @@ import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import getLiveInfo from '../live/info.js';
 import getPreviewInfo from '../preview/info.js';
 import web2edit from '../lookup/web2edit.js';
+import edit2web from '../lookup/edit2web.js';
 
 /**
  * Handles GET status.
@@ -56,14 +57,7 @@ export default async function status(context, info) {
       if (editUrl === 'auto') {
         result = await web2edit(context, info);
       } else {
-        result = {
-          resourcePath: info.resourcePath,
-          webPath: info.webPath,
-        };
-        /* TODO result = await edit2web(context, {
-          editUrl,
-          ...info,
-        }); */
+        result = await edit2web(context, info, { editUrl });
       }
       /* c8 ignore start */
       if (result.error) {

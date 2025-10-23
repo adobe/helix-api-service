@@ -29,7 +29,7 @@ describe('Redirects Fetch Tests', () => {
   });
 
   function createContext(attributes = []) {
-    return new AdminContext({
+    return AdminContext.create({
       log: console,
       pathInfo: { suffix },
     }, { attributes });

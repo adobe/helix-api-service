@@ -147,14 +147,14 @@ export class RequestInfo {
   }
 
   /**
-   * Create a new path info.
+   * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
    * @param {object} param0 params
    * @param {string} param0.org org
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
-   * @returns {PathInfo}
+   * @returns {RequestInfo}
    */
   static create(request, {
     org, site, path, route,

@@ -32,7 +32,7 @@ describe('ContentBus Tests', () => {
   });
 
   function createContext(suffix, attributes = []) {
-    return new AdminContext({
+    return AdminContext.create({
       log: console,
       pathInfo: { suffix },
     }, { attributes });

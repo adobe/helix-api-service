@@ -60,6 +60,10 @@ export class AdminContext {
     }
   }
 
+  static create(context, opts) {
+    return Object.freeze(new AdminContext(context, opts));
+  }
+
   async getConfig(info) {
     if (this.attributes.config === undefined) {
       const { org, site } = info;
@@ -242,7 +246,7 @@ export class AdminContext {
 }
 
 export function adminContext(func) {
-  return async (request, context) => func(request, new AdminContext(context, {
+  return async (request, context) => func(request, AdminContext.create(context, {
     headers: request.headers,
   }));
 }

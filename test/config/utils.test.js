@@ -31,7 +31,7 @@ describe('Config Utils Tests', () => {
     nock.siteConfig()
       .reply(500);
 
-    const cfg = await loadSiteConfig(new AdminContext({
+    const cfg = await loadSiteConfig(AdminContext.create({
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',
@@ -47,7 +47,7 @@ describe('Config Utils Tests', () => {
     nock.siteConfig()
       .replyWithError(new Error('boom!'));
 
-    const task = loadSiteConfig(new AdminContext({
+    const task = loadSiteConfig(AdminContext.create({
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',

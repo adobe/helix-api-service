@@ -32,7 +32,7 @@ describe('Status GET Tests', () => {
   });
 
   function createContext(suffix, editUrl, attributes = {}) {
-    return new AdminContext({
+    return AdminContext.create({
       log: console,
       pathInfo: { suffix },
       data: { editUrl },

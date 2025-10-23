@@ -291,8 +291,8 @@ export function Nock() {
           });
         return onedrive;
       },
-      getDocument: (path, {
-        id = 'document-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+      getFile: (path, {
+        id, lastModifiedDateTime, mimeType,
       } = {}) => {
         const scope = nocker('https://graph.microsoft.com/v1.0')
           .get(`/drives/drive-id/items/share-id:${path}`);
@@ -301,7 +301,7 @@ export function Nock() {
         } else {
           scope.reply(200, {
             file: {
-              mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              mimeType,
             },
             lastModifiedDateTime,
             name: path.split('/').at(-1),
@@ -315,26 +315,20 @@ export function Nock() {
         }
         return onedrive;
       },
+      getDocument: (path, {
+        id = 'document-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+      } = {}) => onedrive.getFile(path, {
+        id,
+        lastModifiedDateTime,
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
       getWorkbook: (path, {
         id = 'workbook-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
-      } = {}) => {
-        nocker('https://graph.microsoft.com/v1.0')
-          .get(`/drives/drive-id/items/share-id:${path}`)
-          .reply(200, {
-            file: {
-              mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
-            lastModifiedDateTime,
-            name: path.split('/').at(-1),
-            id,
-            webUrl: `${url}${path}`,
-            parentReference: {
-              id: 'folder-id',
-              driveId: 'drive-id',
-            },
-          });
-        return onedrive;
-      },
+      } = {}) => onedrive.getFile(path, {
+        id,
+        lastModifiedDateTime,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
       getFolder: (path, {
         id = 'folder-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
       } = {}) => {

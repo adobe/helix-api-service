@@ -25,12 +25,12 @@ const HANDLERS = {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {ReverseLookupOptions} opts options
+ * @param {string} editUrl edit URL
  * @returns {Promise<LookupResponse|ErrorResponse>} the response
  */
-export default async function edit2web(ctx, info, opts) {
-  const { log, attributes: { config } } = ctx;
-  const { editUrl } = opts;
+export default async function edit2web(context, info, editUrl) {
+  const { log, attributes: { config } } = context;
+  const { contentBusId, source } = config.content;
 
   // validate edit url
   try {
@@ -43,7 +43,7 @@ export default async function edit2web(ctx, info, opts) {
     };
   }
 
-  const handler = Object.values(HANDLERS).find(({ test }) => test(config.content.source));
+  const handler = Object.values(HANDLERS).find(({ test }) => test(source));
   if (!handler) {
     return {
       status: 404,
@@ -52,7 +52,9 @@ export default async function edit2web(ctx, info, opts) {
   }
 
   try {
-    const result = await handler.lookup(ctx, info, opts);
+    const result = await handler.lookup(context, info, {
+      editUrl, contentBusId, source,
+    });
     if (result.resourcePath.indexOf('..') >= 0) {
       log.warn(`Illegal characters in document path: ${result.resourcePath}`);
       return {
@@ -95,13 +97,13 @@ export default async function edit2web(ctx, info, opts) {
       return {
         status: 503,
         severity: 'warn',
-        error: `Handler ${handler.name} could not lookup ${opts.editUrl}: (429) ${e.message}`,
+        error: `Handler ${handler.name} could not lookup ${editUrl}: (429) ${e.message}`,
       };
     }
   }
 
   return {
     status: 404,
-    error: `Handler ${handler.name} could not lookup ${opts.editUrl}.`,
+    error: `Handler ${handler.name} could not lookup ${editUrl}.`,
   };
 }

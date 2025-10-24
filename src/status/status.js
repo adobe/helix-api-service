@@ -57,7 +57,7 @@ export default async function status(context, info) {
       if (editUrl === 'auto') {
         result = await web2edit(context, info);
       } else {
-        result = await edit2web(context, info, { editUrl });
+        result = await edit2web(context, info, editUrl);
       }
       /* c8 ignore start */
       if (result.error) {

@@ -35,6 +35,7 @@ const notImplemented = () => new Response('', { status: 405 });
  * Routing table.
  */
 export const router = new Router()
+  .add('/auth/*', notImplemented)
   .add('/login', login)
   .add('/logout', notImplemented)
   .add('/profile', notImplemented)

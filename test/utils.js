@@ -204,6 +204,19 @@ export function Nock() {
         .reply(200, { files });
       return nocker.google;
     },
+    file: (id, file) => {
+      const scope = nocker('https://www.googleapis.com')
+        .get(`/drive/v3/files/${id}`)
+        .query({
+          fields: 'name,parents,mimeType,modifiedTime',
+          supportsAllDrives: 'true',
+        });
+      if (file) {
+        scope.reply(200, file);
+        return nocker.google;
+      }
+      return scope;
+    },
   };
 
   nocker.onedrive = (content) => {

@@ -76,24 +76,25 @@ function getExtension(mimeType) {
 /**
  * Performs a reverse lookup from an edit url to a web resource path
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {DetailedReverseLookupOptions} opts the options.
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object} opts options
+ * @param {string} opts.editUrl edit URL
+ * @param {string} opts.contentBusId content bus id
+ * @param {object} opts.source contentSource
  * @returns {Promise<LookupResponse>} lookup response
  */
-async function lookup(context, opts) {
+async function lookup(context, info, opts) {
   const { log } = context;
-  const {
-    contentSource,
-    editUrl,
-  } = opts;
+  const { editUrl, contentBusId, source } = opts;
 
   const gurl = new GoogleURL(editUrl);
   log.debug(`type: ${gurl.type}, id: ${gurl.id}`);
 
   // get all the google mountpoints and their root ids
   const roots = {
-    [contentSource.id]: '/',
+    [source.id]: '/',
   };
-  const client = await context.getGoogleClient(context, opts);
+  const client = await context.getGoogleClient(contentBusId);
 
   const hierarchy = await client.getItemsFromId(gurl.id, roots);
   if (hierarchy.length === 0 || hierarchy[0].path.startsWith('/root:/')) {

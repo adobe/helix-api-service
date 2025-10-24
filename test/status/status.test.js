@@ -190,6 +190,22 @@ describe('Status GET Tests', () => {
 
   it('calls `web2edit` when `editUrl` is not `auto`', async () => {
     const suffix = '/owner/sites/repo/status/';
+    const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
+
+    nock.google
+      .user()
+      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
+        mimeType: 'application/vnd.google-apps.document',
+        name: 'index',
+        parents: [SITE_CONFIG.content.source.id],
+        modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
+      })
+      .file(SITE_CONFIG.content.source.id, {
+        mimeType: 'application/vnd.google-apps.folder',
+        name: 'root',
+        parents: [],
+        modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
+      });
 
     // getContentBusInfo (preview/live)
     nock.content()
@@ -199,7 +215,7 @@ describe('Status GET Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await status(
-      createContext(suffix, 'other', {
+      createContext(suffix, editUrl, {
         authInfo: AuthInfo.Admin(),
         config: SITE_CONFIG,
         redirects: { preview: [], live: [] },
@@ -208,7 +224,56 @@ describe('Status GET Tests', () => {
     );
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
-
+      edit: {
+        contentType: 'application/vnd.google-apps.document',
+        folders: [
+          {
+            name: '',
+            path: '/',
+            url: 'https://drive.google.com/drive/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          },
+        ],
+        lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
+        name: 'index',
+        sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
+        status: 200,
+        url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
+      },
+      live: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/index.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'delete',
+          'delete-forced',
+          'list',
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.live/',
+      },
+      preview: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'delete',
+          'delete-forced',
+          'list',
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.page/',
+      },
+      profile: {
+        userId: 'admin',
+      },
+      resourcePath: '/index.md',
+      webPath: '/',
     });
   });
 });

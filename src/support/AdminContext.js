@@ -174,6 +174,12 @@ export class AdminContext {
     return fetchopts;
   }
 
+  /**
+   * Returns Google Client.
+   *
+   * @param {string} contentBusId content bus id
+   * @returns {Promise<GoogleClient>} google client
+   */
   async getGoogleClient(contentBusId) {
     const { attributes, env, log } = this;
     if (!attributes.google) {
@@ -206,7 +212,7 @@ export class AdminContext {
    * @param {string} contentBusId content bus id
    * @param {string} tenant tenant id
    * @param {object} logFields log fields
-   * @returns {Promise<OneDrive>} client
+   * @returns {Promise<OneDrive>} onedrive client
    */
   async getOneDriveClient(owner, contentBusId, tenant, logFields = {}) {
     const { attributes, env, log } = this;

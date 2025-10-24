@@ -70,7 +70,6 @@ export async function lookup(context, info, { contentBusId, source }) {
  */
 export default async function web2edit(context, info) {
   const { attributes: { config } } = context;
-
   const { contentBusId, source: base, overlay } = config.content;
 
   const sources = [base];

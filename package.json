@@ -51,7 +51,7 @@
   "dependencies": {
     "@adobe/fetch": "4.2.3",
     "@adobe/helix-admin-support": "5.0.2",
-    "@adobe/helix-config": "5.6.8",
+    "@adobe/helix-config": "5.6.9",
     "@adobe/helix-google-support": "4.0.0",
     "@adobe/helix-shared-body-data": "2.2.1",
     "@adobe/helix-shared-config": "11.1.12",

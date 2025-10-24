@@ -12,9 +12,9 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Nock } from '../utils.js';
 import { getSheetData } from '../../src/contentproxy/utils.js';
 import { getSanitizedPath, isIllegalPath } from '../../src/support/utils.js';
+import { Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
   let nock;

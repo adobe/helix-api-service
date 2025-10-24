@@ -67,7 +67,8 @@
     "aws4": "1.13.2",
     "cookie": "1.0.2",
     "fast-xml-parser": "5.2.5",
-    "jose": "6.1.0"
+    "jose": "6.1.0",
+    "private-ip": "3.0.2"
   },
   "devDependencies": {
     "@adobe/eslint-config-helix": "3.0.11",

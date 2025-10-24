@@ -9,7 +9,35 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import dns from 'node:dns';
+import { promisify } from 'util';
+import isIpPrivate from 'private-ip';
 import { sanitizeName } from '@adobe/helix-shared-string';
+
+/**
+ * DNS lookup method.
+ * @function
+ * @return {Promise<void>}
+ */
+export const dnsLookup = promisify(dns.lookup);
+
+/**
+ * Check if resolved IP for a hostname is private.
+ *
+ * @param {string} hostname hostname to test
+ * @param {import('@adobe/helix-universal').Logger} log logger
+ * @returns true if the resolved IP is private, otherwise false
+ */
+export async function isInternal(hostname, log) {
+  try {
+    const { address } = await dnsLookup(hostname);
+    return isIpPrivate(address);
+    /* c8 ignore next 4 */
+  } catch (e) {
+    log.warn(`Unable to resolve hostname: ${hostname}: ${e.message}`);
+    return true;
+  }
+}
 
 /**
  * Sanitizes the given string by :

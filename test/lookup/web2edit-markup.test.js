@@ -13,13 +13,10 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
 import handler from '../../src/lookup/web2edit-markup.js';
+import {
+  Nock, createContext, createInfo,
+} from '../utils.js';
 
 describe('web2edit Markup Tests', () => {
   let nock;
@@ -37,18 +34,6 @@ describe('web2edit Markup Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, editUrl, attributes = {}) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-      data: { editUrl },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('succeeds to lookup page', async () => {
     const suffix = '/owner/sites/repo/status/page';
     const source = {
@@ -61,11 +46,7 @@ describe('web2edit Markup Tests', () => {
       .reply(200);
 
     const result = await handler.lookup(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
       { source },
     );
@@ -91,11 +72,7 @@ describe('web2edit Markup Tests', () => {
       .reply(200);
 
     const result = await handler.lookup(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
       { source },
     );
@@ -112,11 +89,7 @@ describe('web2edit Markup Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
 
     const result = await handler.lookup(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
       {
         source: { url: 'https://www.example.com/' },

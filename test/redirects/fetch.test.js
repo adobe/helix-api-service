@@ -12,9 +12,8 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
 import fetchRedirects from '../../src/redirects/fetch.js';
+import { Nock, createContext } from '../utils.js';
 
 describe('Redirects Fetch Tests', () => {
   const suffix = '/owner/sites/repo/status/index.md';
@@ -28,20 +27,13 @@ describe('Redirects Fetch Tests', () => {
     nock.done();
   });
 
-  function createContext(attributes = []) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-    }, { attributes });
-  }
-
   it('returns empty result when sheet is malformed', async () => {
     nock.content()
       .getObject('/preview/redirects.json')
       .reply(200, {});
 
     const ret = await fetchRedirects(
-      createContext({ config: SITE_CONFIG }),
+      createContext(suffix),
       'preview',
     );
     assert.deepStrictEqual(ret, {});
@@ -63,7 +55,7 @@ describe('Redirects Fetch Tests', () => {
       });
 
     const ret = await fetchRedirects(
-      createContext({ config: SITE_CONFIG }),
+      createContext(suffix),
       'preview',
     );
     assert.deepStrictEqual(ret, {
@@ -78,7 +70,7 @@ describe('Redirects Fetch Tests', () => {
       .reply(500);
 
     const ret = fetchRedirects(
-      createContext({ config: SITE_CONFIG }),
+      createContext(suffix),
       'preview',
     );
     await assert.rejects(

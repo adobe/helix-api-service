@@ -13,13 +13,10 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
 import { lookup } from '../../src/lookup/web2edit.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 
 describe('web2edit Tests', () => {
   let nock;
@@ -37,27 +34,11 @@ describe('web2edit Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, editUrl, attributes = {}) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-      data: { editUrl },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('returns error when no handler is matching', async () => {
     const suffix = '/owner/sites/repo/status/page';
 
     const result = await lookup(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
       {
         contentBusId: SITE_CONFIG.content.contentBusId,

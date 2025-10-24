@@ -13,12 +13,9 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 import edit2web from '../../src/lookup/edit2web.js';
 
 describe('edit2web Google Tests', () => {
@@ -37,22 +34,6 @@ describe('edit2web Google Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, attributes = {}) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-    }, {
-      attributes: {
-        googleApiOpts: { retry: false },
-        ...attributes,
-      },
-    });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('returns error when document does not exist', async () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/documents/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
@@ -62,11 +43,7 @@ describe('edit2web Google Tests', () => {
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(404);
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       editUrl,
     );
@@ -96,11 +73,7 @@ describe('edit2web Google Tests', () => {
       });
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       editUrl,
     );
@@ -136,11 +109,7 @@ describe('edit2web Google Tests', () => {
       });
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       editUrl,
     );
@@ -189,11 +158,7 @@ describe('edit2web Google Tests', () => {
       });
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       editUrl,
     );
@@ -226,11 +191,7 @@ describe('edit2web Google Tests', () => {
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(500);
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       editUrl,
     );
@@ -249,11 +210,7 @@ describe('edit2web Google Tests', () => {
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(429);
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       editUrl,
     );

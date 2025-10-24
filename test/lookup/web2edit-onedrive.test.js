@@ -13,14 +13,11 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { Request } from '@adobe/fetch';
 import { AcquireMethod } from '@adobe/helix-onedrive-support';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
 import web2edit from '../../src/lookup/web2edit.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 
 const SITE_1D_CONFIG = {
   ...SITE_CONFIG,
@@ -31,6 +28,12 @@ const SITE_1D_CONFIG = {
       url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
     },
   },
+};
+
+const ENV = {
+  AZURE_HELIX_SERVICE_CLIENT_ID: 'dummy',
+  AZURE_HELIX_SERVICE_CLIENT_SECRET: 'dummy',
+  AZURE_HELIX_SERVICE_ACQUIRE_METHOD: AcquireMethod.BY_CLIENT_CREDENTIAL,
 };
 
 describe('web2edit OneDrive Tests', () => {
@@ -49,23 +52,6 @@ describe('web2edit OneDrive Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, editUrl, attributes = {}) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-      data: { editUrl },
-      env: {
-        AZURE_HELIX_SERVICE_CLIENT_ID: 'dummy',
-        AZURE_HELIX_SERVICE_CLIENT_SECRET: 'dummy',
-        AZURE_HELIX_SERVICE_ACQUIRE_METHOD: AcquireMethod.BY_CLIENT_CREDENTIAL,
-      },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('looks up a Word document', async () => {
     const suffix = '/owner/sites/repo/status/page';
 
@@ -77,10 +63,10 @@ describe('web2edit OneDrive Tests', () => {
       .getFolder('');
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_1D_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { config: SITE_1D_CONFIG },
+        data: { editUrl: 'auto' },
+        env: ENV,
       }),
       createInfo(suffix),
     );
@@ -112,10 +98,10 @@ describe('web2edit OneDrive Tests', () => {
       .getFolder('');
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_1D_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { config: SITE_1D_CONFIG },
+        data: { editUrl: 'auto' },
+        env: ENV,
       }),
       createInfo(suffix),
     );
@@ -151,10 +137,10 @@ describe('web2edit OneDrive Tests', () => {
       .getFolder(null);
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_1D_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { config: SITE_1D_CONFIG },
+        data: { editUrl: 'auto' },
+        env: ENV,
       }),
       createInfo(suffix),
     );
@@ -186,10 +172,10 @@ describe('web2edit OneDrive Tests', () => {
       .getFolder(null);
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_1D_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { config: SITE_1D_CONFIG },
+        data: { editUrl: 'auto' },
+        env: ENV,
       }),
       createInfo(suffix),
     );

@@ -12,13 +12,11 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
 import status from '../../src/status/status.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 
 describe('Status GET Tests', () => {
   let nock;
@@ -31,23 +29,11 @@ describe('Status GET Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, editUrl, attributes = {}) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-      data: { editUrl },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
     const suffix = '/owner/sites/repo/status/document';
 
     const result = await status(
-      createContext(suffix, 'other'),
+      createContext(suffix, { data: { editUrl: 'other' } }),
       createInfo(suffix),
     );
 
@@ -58,7 +44,10 @@ describe('Status GET Tests', () => {
     const suffix = '/owner/sites/repo/status/';
 
     const result = () => status(
-      createContext(suffix, 'other', { authInfo: AuthInfo.Default() }),
+      createContext(suffix, {
+        attributes: { authInfo: AuthInfo.Default() },
+        data: { editUrl: 'other' },
+      }),
       createInfo(suffix),
     );
 
@@ -72,7 +61,10 @@ describe('Status GET Tests', () => {
     const suffix = '/owner/sites/repo/status/';
 
     const result = await status(
-      createContext(suffix, 'auto', { authInfo: AuthInfo.Default() }),
+      createContext(suffix, {
+        attributes: { authInfo: AuthInfo.Default() },
+        data: { editUrl: 'auto' },
+      }),
       createInfo(suffix),
     );
 
@@ -121,10 +113,9 @@ describe('Status GET Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await status(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { redirects: { preview: [], live: [] } },
+        data: { editUrl: 'auto' },
       }),
       createInfo(suffix),
     );
@@ -215,10 +206,9 @@ describe('Status GET Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await status(
-      createContext(suffix, editUrl, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { redirects: { preview: [], live: [] } },
+        data: { editUrl },
       }),
       createInfo(suffix),
     );

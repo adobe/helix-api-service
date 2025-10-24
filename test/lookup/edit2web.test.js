@@ -13,12 +13,9 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 import edit2web from '../../src/lookup/edit2web.js';
 
 describe('edit2web Tests', () => {
@@ -37,26 +34,11 @@ describe('edit2web Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, attributes = {}) {
-    return AdminContext.create({
-      log: console,
-      pathInfo: { suffix },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('returns error when `editUrl` is malformed', async () => {
     const suffix = '/owner/sites/repo/status/page';
 
     const result = await edit2web(
-      createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix),
       createInfo(suffix),
       'other',
     );
@@ -68,21 +50,22 @@ describe('edit2web Tests', () => {
 
   it('returns error when no handler is matching', async () => {
     const suffix = '/owner/sites/repo/status/page';
+    const config = {
+      ...SITE_CONFIG,
+      content: {
+        ...SITE_CONFIG.content,
+        source: {
+          type: 'unknown',
+          url: 'https://www.example.com/',
+        },
+      },
+    };
 
     const result = await edit2web(
       createContext(suffix, {
-        authInfo: AuthInfo.Admin(),
-        config: {
-          ...SITE_CONFIG,
-          content: {
-            ...SITE_CONFIG.content,
-            source: {
-              type: 'unknown',
-              url: 'https://www.example.com/',
-            },
-          },
+        attributes: {
+          config,
         },
-        redirects: { preview: [], live: [] },
       }),
       createInfo(suffix),
       'https://www.example.com/',

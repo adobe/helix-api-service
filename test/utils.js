@@ -9,10 +9,17 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { S3CachePlugin } from '@adobe/helix-shared-tokencache';
-import { OneDrive } from '@adobe/helix-onedrive-support';
 import assert from 'assert';
 import nock from 'nock';
+
+import { Request } from '@adobe/fetch';
+import { S3CachePlugin } from '@adobe/helix-shared-tokencache';
+import { OneDrive } from '@adobe/helix-onedrive-support';
+
+import { AuthInfo } from '../src/auth/AuthInfo.js';
+import { router } from '../src/index.js';
+import { AdminContext } from '../src/support/AdminContext.js';
+import { RequestInfo } from '../src/support/RequestInfo.js';
 
 export const SITE_CONFIG = {
   version: 1,
@@ -385,4 +392,26 @@ export function Nock() {
 
   nock.disableNetConnect();
   return nocker;
+}
+
+export function createContext(suffix, {
+  attributes = {}, data, env,
+} = {}) {
+  return AdminContext.create({
+    log: console,
+    pathInfo: { suffix },
+    data,
+    env,
+  }, {
+    attributes: {
+      authInfo: AuthInfo.Admin(),
+      config: SITE_CONFIG,
+      googleApiOpts: { retry: false },
+      ...attributes,
+    },
+  });
+}
+
+export function createInfo(suffix) {
+  return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
 }

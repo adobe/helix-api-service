@@ -35,11 +35,11 @@ const TYPES = {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} param
+ * @param {object} param object
  * @param {string} param.contentBusId contentBusId
- * @param {object} param.source mount point
+ * @param {object} param.source content source
  * @param {string} param.type type
- * @returns {Promise<DriveItemInfo>}
+ * @returns {Promise<object>} resource info
  */
 export async function resolveResource(context, info, { contentBusId, source, type }) {
   const { log } = context;
@@ -51,19 +51,19 @@ export async function resolveResource(context, info, { contentBusId, source, typ
   }
   /* c8 ignore end */
 
-  let { relPath } = source;
+  let itemPath = info.resourcePath;
+  const { id } = source;
   const { ext, item2edit } = TYPES[type] ?? TYPES.file;
-  if (ext && relPath.endsWith(ext)) {
-    relPath = relPath.substring(0, relPath.length - ext.length);
+  if (ext && itemPath.endsWith(ext)) {
+    itemPath = itemPath.substring(0, itemPath.length - ext.length);
   }
 
-  log.info(`fetch ${type} from gdrive: ${relPath}`);
+  log.info(`fetch ${type} from gdrive: ${itemPath}`);
   const client = await context.getGoogleClient(contentBusId);
-
-  let hierarchy = await client.getItemsFromPath(source.id, relPath, type);
+  let hierarchy = await client.getItemsFromPath(id, itemPath, type);
   if (!hierarchy.length && type === GoogleClient.TYPE_DOCUMENT) {
     // for documents, also try reading the markdown file
-    hierarchy = await client.getItemsFromPath(source.id, `${relPath}.md`);
+    hierarchy = await client.getItemsFromPath(id, `${itemPath}.md`);
   }
   if (!hierarchy.length) {
     return {};

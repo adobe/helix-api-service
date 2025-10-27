@@ -9,6 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { parse } from 'cookie';
 import { sanitizeName } from '@adobe/helix-shared-string';
 import { StatusCodeError } from './StatusCodeError.js';
 
@@ -143,22 +144,25 @@ export class RequestInfo {
   constructor(request) {
     this.method = request.method.toUpperCase();
     this.headers = request.headers.plain();
-    this.cookies = this.headers.cookies;
+
+    const { cookie } = this.headers;
+    this.cookies = cookie ? structuredClone(parse(cookie)) : {};
   }
 
   /**
-   * Create a new path info.
+   * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
    * @param {object} param0 params
-   * @param {string} param0.org org
+   * @param {string} [param0.org] org
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
-   * @returns {PathInfo}
+   * @param {string} [param0.route] route
+   * @returns {RequestInfo}
    */
   static create(request, {
     org, site, path, route,
-  }) {
+  } = {}) {
     const info = new RequestInfo(request);
 
     info.route = route;

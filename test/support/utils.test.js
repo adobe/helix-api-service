@@ -12,8 +12,9 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Nock } from '../utils.js';
 import { getSheetData } from '../../src/contentproxy/utils.js';
+import { getSanitizedPath, isIllegalPath } from '../../src/support/utils.js';
+import { Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
   let nock;
@@ -32,5 +33,18 @@ describe('ContentProxy Utils Tests', () => {
         data: [],
       },
     }, ['custom']), []);
+  });
+
+  it('tests `getSanitizedPath`', () => {
+    assert.deepStrictEqual(getSanitizedPath('/page', false), {
+      illegalPath: false,
+      path: '/page',
+    });
+  });
+
+  it('tests `isIllegalPath`', () => {
+    assert.strictEqual(isIllegalPath(undefined), true);
+    assert.strictEqual(isIllegalPath('/*'), true);
+    assert.strictEqual(isIllegalPath('/*', true), false);
   });
 });

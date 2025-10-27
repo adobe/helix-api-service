@@ -12,8 +12,8 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Nock } from '../utils.js';
 import { computeSourceUrl, getSheetData } from '../../src/contentproxy/utils.js';
+import { Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
   let nock;
@@ -42,7 +42,7 @@ describe('ContentProxy Utils Tests', () => {
       /Bad mountpoint URL in fstab/,
     );
 
-    const mp = {
+    let contentSource = {
       type: 'markup',
       url: 'https://content.da.live/org/site/',
       suffix: '/?a=1&b=2',
@@ -50,7 +50,19 @@ describe('ContentProxy Utils Tests', () => {
     const { href } = await computeSourceUrl(null, {
       resourcePath: '/index.md',
       ext: '.md',
-    }, mp);
+    }, contentSource);
     assert.strictEqual(href, 'https://content.da.live/org/site/index/?a=1&b=2');
+
+    contentSource = {
+      type: 'markup',
+      url: 'http://localhost:3000/',
+    };
+    await assert.rejects(
+      () => computeSourceUrl(null, {
+        resourcePath: '/index.md',
+        ext: '.md',
+      }, contentSource),
+      /markup host is internal or unknown: localhost/,
+    );
   });
 });

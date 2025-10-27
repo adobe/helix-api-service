@@ -15,6 +15,9 @@ import { fileURLToPath } from 'url';
 // eslint-disable-next-line no-console
 console.log('Forcing HTTP/1.1 for @adobe/fetch');
 process.env.HELIX_FETCH_FORCE_HTTP1 = 'true';
+process.env.HELIX_ONEDRIVE_LOCAL_AUTH_CACHE = 'true';
+process.env.HELIX_ONEDRIVE_NO_SHARE_LINK_CACHE = 'true';
+process.env.HELIX_ONEDRIVE_NO_TENANT_CACHE = 'true';
 
 // eslint-disable-next-line no-underscore-dangle
 global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..');

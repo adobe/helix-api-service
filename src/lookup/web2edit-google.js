@@ -13,8 +13,8 @@ import { GoogleClient } from '@adobe/helix-google-support';
 import { resolveResource } from '../support/google.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
-function test(mp) {
-  return mp && mp.type === 'google';
+function test(contentSource) {
+  return contentSource?.type === 'google';
 }
 
 const TYPES = {

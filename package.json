@@ -53,8 +53,8 @@
     "@adobe/helix-admin-support": "5.0.2",
     "@adobe/helix-config": "5.6.9",
     "@adobe/helix-google-support": "4.0.0",
+    "@adobe/helix-onedrive-support": "12.1.1",
     "@adobe/helix-shared-body-data": "2.2.1",
-    "@adobe/helix-shared-config": "11.1.12",
     "@adobe/helix-shared-secrets": "2.2.10",
     "@adobe/helix-shared-server-timing": "1.0.0",
     "@adobe/helix-shared-storage": "1.6.0",
@@ -64,7 +64,10 @@
     "@adobe/helix-shared-wrap": "2.0.2",
     "@adobe/helix-status": "10.1.5",
     "aws4": "1.13.2",
-    "fast-xml-parser": "5.2.5"
+    "cookie": "1.0.2",
+    "fast-xml-parser": "5.2.5",
+    "jose": "6.1.0",
+    "private-ip": "3.0.2"
   },
   "devDependencies": {
     "@adobe/eslint-config-helix": "3.0.12",

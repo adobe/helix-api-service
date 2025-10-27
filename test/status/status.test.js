@@ -12,13 +12,11 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
 import status from '../../src/status/status.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 
 describe('Status GET Tests', () => {
   let nock;
@@ -31,23 +29,11 @@ describe('Status GET Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, editUrl, attributes = {}) {
-    return new AdminContext({
-      log: console,
-      pathInfo: { suffix },
-      data: { editUrl },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
     const suffix = '/owner/sites/repo/status/document';
 
     const result = await status(
-      createContext(suffix, 'other'),
+      createContext(suffix, { data: { editUrl: 'other' } }),
       createInfo(suffix),
     );
 
@@ -58,7 +44,10 @@ describe('Status GET Tests', () => {
     const suffix = '/owner/sites/repo/status/';
 
     const result = () => status(
-      createContext(suffix, 'other', { authInfo: AuthInfo.Default() }),
+      createContext(suffix, {
+        attributes: { authInfo: AuthInfo.Default() },
+        data: { editUrl: 'other' },
+      }),
       createInfo(suffix),
     );
 
@@ -72,7 +61,10 @@ describe('Status GET Tests', () => {
     const suffix = '/owner/sites/repo/status/';
 
     const result = await status(
-      createContext(suffix, 'auto', { authInfo: AuthInfo.Default() }),
+      createContext(suffix, {
+        attributes: { authInfo: AuthInfo.Default() },
+        data: { editUrl: 'auto' },
+      }),
       createInfo(suffix),
     );
 
@@ -99,7 +91,7 @@ describe('Status GET Tests', () => {
   it('calls `web2edit` when `editUrl` is `auto`', async () => {
     const suffix = '/owner/sites/repo/status/folder/page';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .folders([{
         mimeType: 'application/vnd.google-apps.folder',
@@ -121,10 +113,9 @@ describe('Status GET Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await status(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { redirects: { preview: [], live: [] } },
+        data: { editUrl: 'auto' },
       }),
       createInfo(suffix),
     );
@@ -190,6 +181,22 @@ describe('Status GET Tests', () => {
 
   it('calls `web2edit` when `editUrl` is not `auto`', async () => {
     const suffix = '/owner/sites/repo/status/';
+    const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
+
+    nock.google(SITE_CONFIG.content)
+      .user()
+      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
+        mimeType: 'application/vnd.google-apps.document',
+        name: 'index',
+        parents: [SITE_CONFIG.content.source.id],
+        modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
+      })
+      .file(SITE_CONFIG.content.source.id, {
+        mimeType: 'application/vnd.google-apps.folder',
+        name: 'root',
+        parents: [],
+        modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
+      });
 
     // getContentBusInfo (preview/live)
     nock.content()
@@ -199,13 +206,64 @@ describe('Status GET Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await status(
-      createContext(suffix, 'other', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { redirects: { preview: [], live: [] } },
+        data: { editUrl },
       }),
       createInfo(suffix),
     );
     assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(await result.json(), {
+      edit: {
+        contentType: 'application/vnd.google-apps.document',
+        folders: [
+          {
+            name: '',
+            path: '/',
+            url: 'https://drive.google.com/drive/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          },
+        ],
+        lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
+        name: 'index',
+        sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
+        status: 200,
+        url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
+      },
+      live: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/index.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'delete',
+          'delete-forced',
+          'list',
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.live/',
+      },
+      preview: {
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'delete',
+          'delete-forced',
+          'list',
+          'read',
+          'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--repo--owner.aem.page/',
+      },
+      profile: {
+        userId: 'admin',
+      },
+      resourcePath: '/index.md',
+      webPath: '/',
+    });
   });
 });

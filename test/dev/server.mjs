@@ -20,7 +20,7 @@ global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
 
 async function run() {
   const devServer = await new DevelopmentServer(main)
-    .withPort(3001)
+    .withPort(3000)
     .init();
   await devServer.start();
 }

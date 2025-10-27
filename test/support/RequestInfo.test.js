@@ -100,4 +100,16 @@ describe('RequestInfo Tests', () => {
       new StatusCodeError('', 404),
     );
   });
+
+  it('check cookies', () => {
+    const info = RequestInfo.create(new Request('http:/localhost', {
+      headers: {
+        cookie: 'key1=value1; key2=value2',
+      },
+    }));
+    assert.deepStrictEqual(info.cookies, {
+      key1: 'value1',
+      key2: 'value2',
+    });
+  });
 });

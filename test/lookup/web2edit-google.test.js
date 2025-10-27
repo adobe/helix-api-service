@@ -13,15 +13,12 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { Request } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
 import web2edit from '../../src/lookup/web2edit.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 
 describe('web2edit Google Tests', () => {
   let nock;
@@ -39,32 +36,16 @@ describe('web2edit Google Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, editUrl, attributes = {}) {
-    return new AdminContext({
-      log: console,
-      pathInfo: { suffix },
-      data: { editUrl },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('returns error when google lookup returns no results', async () => {
     const suffix = '/owner/sites/repo/status/page';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .documents([])
       .files([]);
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
     );
     assert.deepStrictEqual(result, {
@@ -77,15 +58,11 @@ describe('web2edit Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
 
     sandbox.stub(GoogleClient.prototype, 'getItemsFromPath').rejects(new StatusCodeError('boom!', 500));
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user();
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
     );
     assert.deepStrictEqual(result, {
@@ -102,15 +79,11 @@ describe('web2edit Google Tests', () => {
     error.rateLimit = 1000;
 
     sandbox.stub(GoogleClient.prototype, 'getItemsFromPath').rejects(error);
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user();
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: SITE_CONFIG,
-        redirects: { preview: [], live: [] },
-      }),
+      createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
     );
     assert.deepStrictEqual(result, {
@@ -138,16 +111,15 @@ describe('web2edit Google Tests', () => {
       .get('/org/site/page')
       .reply(404);
 
-    nock.google
+    nock.google(OVERLAY_CONFIG.content)
       .user()
       .documents([])
       .files([]);
 
     const result = await web2edit(
-      createContext(suffix, 'auto', {
-        authInfo: AuthInfo.Admin(),
-        config: OVERLAY_CONFIG,
-        redirects: { preview: [], live: [] },
+      createContext(suffix, {
+        attributes: { config: OVERLAY_CONFIG },
+        data: { editUrl: 'auto' },
       }),
       createInfo(suffix),
     );

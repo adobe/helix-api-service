@@ -13,12 +13,12 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { lookup } from '../../src/lookup/web2edit.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';
+import edit2web from '../../src/lookup/edit2web.js';
 
-describe('web2edit Tests', () => {
+describe('edit2web Tests', () => {
   let nock;
 
   /** @type {import('sinon').SinonSandbox} */
@@ -34,21 +34,44 @@ describe('web2edit Tests', () => {
     nock.done();
   });
 
-  it('returns error when no handler is matching', async () => {
+  it('returns error when `editUrl` is malformed', async () => {
     const suffix = '/owner/sites/repo/status/page';
 
-    const result = await lookup(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
+    const result = await edit2web(
+      createContext(suffix),
       createInfo(suffix),
-      {
-        contentBusId: SITE_CONFIG.content.contentBusId,
-        source: {
-          type: 'other',
-        },
-      },
+      'other',
     );
     assert.deepStrictEqual(result, {
-      error: 'No handler found for document hlx:/owner/repo/page.',
+      error: 'Unable to parse edit url: Invalid URL',
+      status: 400,
+    });
+  });
+
+  it('returns error when no handler is matching', async () => {
+    const suffix = '/owner/sites/repo/status/page';
+    const config = {
+      ...SITE_CONFIG,
+      content: {
+        ...SITE_CONFIG.content,
+        source: {
+          type: 'unknown',
+          url: 'https://www.example.com/',
+        },
+      },
+    };
+
+    const result = await edit2web(
+      createContext(suffix, {
+        attributes: {
+          config,
+        },
+      }),
+      createInfo(suffix),
+      'https://www.example.com/',
+    );
+    assert.deepStrictEqual(result, {
+      error: 'No handler found for document https://www.example.com/.',
       status: 404,
     });
   });

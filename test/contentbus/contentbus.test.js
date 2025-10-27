@@ -12,13 +12,10 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Request } from '@adobe/fetch';
-import { router } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
-import { RequestInfo } from '../../src/support/RequestInfo.js';
+import {
+  Nock, SITE_CONFIG, createContext, createInfo,
+} from '../utils.js';
 import { getContentBusInfo } from '../../src/contentbus/contentbus.js';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
 
 describe('ContentBus Tests', () => {
   let nock;
@@ -31,17 +28,6 @@ describe('ContentBus Tests', () => {
     nock.done();
   });
 
-  function createContext(suffix, attributes = []) {
-    return new AdminContext({
-      log: console,
-      pathInfo: { suffix },
-    }, { attributes });
-  }
-
-  function createInfo(suffix) {
-    return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
-  }
-
   it('adds `last-previewed` and `last-published` in snapshots', async () => {
     const suffix = '/owner/sites/repo/status/.snapshots/document';
 
@@ -50,7 +36,7 @@ describe('ContentBus Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const result = await getContentBusInfo(
-      createContext(suffix, { config: SITE_CONFIG, authInfo: AuthInfo.Admin() }),
+      createContext(suffix),
       createInfo(suffix),
       'preview',
     );
@@ -78,7 +64,7 @@ describe('ContentBus Tests', () => {
       .reply(403);
 
     const result = await getContentBusInfo(
-      createContext(suffix, { config: SITE_CONFIG, authInfo: AuthInfo.Admin() }),
+      createContext(suffix),
       createInfo(suffix),
       'live',
     );

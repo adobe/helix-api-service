@@ -19,6 +19,7 @@ import {
 } from '../utils.js';
 
 describe('Status GET Tests', () => {
+  /** @type {import('./utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

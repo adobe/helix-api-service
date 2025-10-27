@@ -17,6 +17,8 @@ import { Nock, createContext } from '../utils.js';
 
 describe('Redirects Fetch Tests', () => {
   const suffix = '/owner/sites/repo/status/index.md';
+
+  /** @type {import('./utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

@@ -17,6 +17,7 @@ import { Nock } from '../utils.js';
 import { AdminContext } from '../../src/support/AdminContext.js';
 
 describe('Config Utils Tests', () => {
+  /** @type {import('./utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

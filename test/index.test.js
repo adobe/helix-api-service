@@ -17,6 +17,7 @@ import { main } from '../src/index.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
 
 describe('Index Tests', () => {
+  /** @type {import('./utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

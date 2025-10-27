@@ -151,7 +151,7 @@ export class OneDriveNock {
     }
   }
 
-  getFile(path, {
+  #getFile(path, {
     id, lastModifiedDateTime, mimeType,
   } = {}) {
     const { nocker, sourceUrl } = this;
@@ -208,7 +208,7 @@ export class OneDriveNock {
   getDocument(path, {
     id = 'document-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
   } = {}) {
-    return this.getFile(path, {
+    return this.#getFile(path, {
       id,
       lastModifiedDateTime,
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -218,7 +218,7 @@ export class OneDriveNock {
   getWorkbook(path, {
     id = 'workbook-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
   } = {}) {
-    return this.getFile(path, {
+    return this.#getFile(path, {
       id,
       lastModifiedDateTime,
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

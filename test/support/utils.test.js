@@ -17,6 +17,7 @@ import { getSanitizedPath, isIllegalPath } from '../../src/support/utils.js';
 import { Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
+  /** @type {import('./utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

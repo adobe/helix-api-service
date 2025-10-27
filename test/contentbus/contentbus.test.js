@@ -13,11 +13,12 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import {
-  Nock, SITE_CONFIG, createContext, createInfo,
+  Nock, createContext, createInfo,
 } from '../utils.js';
 import { getContentBusInfo } from '../../src/contentbus/contentbus.js';
 
 describe('ContentBus Tests', () => {
+  /** @type {import('./utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

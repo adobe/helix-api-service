@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/adobe/helix-api-service/compare/v1.3.2...v1.4.0) (2025-10-27)
+
+
+### Features
+
+* Implement status (onedrive) ([#9](https://github.com/adobe/helix-api-service/issues/9)) ([2661b34](https://github.com/adobe/helix-api-service/commit/2661b3453a7e29ad86f67762feca187b0388bcb2))
+
 ## [1.3.2](https://github.com/adobe/helix-api-service/compare/v1.3.1...v1.3.2) (2025-10-24)
 
 

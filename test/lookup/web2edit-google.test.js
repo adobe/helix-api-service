@@ -39,7 +39,7 @@ describe('web2edit Google Tests', () => {
   it('returns error when google lookup returns no results', async () => {
     const suffix = '/owner/sites/repo/status/page';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .documents([])
       .files([]);
@@ -58,7 +58,7 @@ describe('web2edit Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
 
     sandbox.stub(GoogleClient.prototype, 'getItemsFromPath').rejects(new StatusCodeError('boom!', 500));
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user();
 
     const result = await web2edit(
@@ -79,7 +79,7 @@ describe('web2edit Google Tests', () => {
     error.rateLimit = 1000;
 
     sandbox.stub(GoogleClient.prototype, 'getItemsFromPath').rejects(error);
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user();
 
     const result = await web2edit(
@@ -111,7 +111,7 @@ describe('web2edit Google Tests', () => {
       .get('/org/site/page')
       .reply(404);
 
-    nock.google
+    nock.google(OVERLAY_CONFIG.content)
       .user()
       .documents([])
       .files([]);

@@ -10,14 +10,12 @@
  * governing permissions and limitations under the License.
  */
 import google from './edit2web-google.js';
-// import onedrive from './edit2web-onedrive.js';
-// import github from './edit2web-github.js';
+import onedrive from './edit2web-onedrive.js';
 import { getSanitizedPath } from '../support/utils.js';
 
 const HANDLERS = {
   google,
-  // onedrive,
-  // github,
+  onedrive,
 };
 
 /**

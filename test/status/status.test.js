@@ -91,7 +91,7 @@ describe('Status GET Tests', () => {
   it('calls `web2edit` when `editUrl` is `auto`', async () => {
     const suffix = '/owner/sites/repo/status/folder/page';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .folders([{
         mimeType: 'application/vnd.google-apps.folder',
@@ -183,7 +183,7 @@ describe('Status GET Tests', () => {
     const suffix = '/owner/sites/repo/status/';
     const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.document',

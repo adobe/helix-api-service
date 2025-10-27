@@ -58,7 +58,7 @@ describe('web2edit OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .resolve()
+      .resolve(SITE_1D_CONFIG.content.source.url)
       .getDocument('/page.docx')
       .getFolder('');
 
@@ -93,7 +93,7 @@ describe('web2edit OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .resolve()
+      .resolve(SITE_1D_CONFIG.content.source.url)
       .getWorkbook('/page.xlsx')
       .getFolder('');
 
@@ -128,7 +128,7 @@ describe('web2edit OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .resolve()
+      .resolve(SITE_1D_CONFIG.content.source.url)
       .getDocument('/page.docx', { id: null })
       .getChildren([{
         id: 'item-id',
@@ -162,7 +162,7 @@ describe('web2edit OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .resolve()
+      .resolve(SITE_1D_CONFIG.content.source.url)
       .getDocument('/page.docx', { id: null })
       .getChildren([{
         id: 'item-id',

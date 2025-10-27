@@ -75,6 +75,7 @@ function getExtension(mimeType) {
 
 /**
  * Performs a reverse lookup from an edit url to a web resource path
+ *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {object} opts options

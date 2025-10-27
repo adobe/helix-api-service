@@ -38,7 +38,7 @@ describe('edit2web Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/documents/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(404);
 
@@ -57,7 +57,7 @@ describe('edit2web Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.spreadsheet',
@@ -87,7 +87,7 @@ describe('edit2web Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/u/2/folders/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.document',
@@ -142,7 +142,7 @@ describe('edit2web Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/u/2/folders/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.folder',
@@ -186,7 +186,7 @@ describe('edit2web Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(500);
 
@@ -205,7 +205,7 @@ describe('edit2web Google Tests', () => {
     const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
-    nock.google
+    nock.google(SITE_CONFIG.content)
       .user()
       .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(429);
 

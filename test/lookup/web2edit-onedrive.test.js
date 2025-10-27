@@ -37,7 +37,7 @@ const ENV = {
 };
 
 describe('web2edit OneDrive Tests', () => {
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   /** @type {import('sinon').SinonSandbox} */

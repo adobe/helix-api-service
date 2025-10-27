@@ -19,7 +19,7 @@ import {
 import edit2web from '../../src/lookup/edit2web.js';
 
 describe('edit2web Google Tests', () => {
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   /** @type {import('sinon').SinonSandbox} */

@@ -43,7 +43,7 @@ function createURL(url, query) {
 describe('edit2web OneDrive Tests', () => {
   const suffix = '/owner/sites/repo/status/page';
 
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

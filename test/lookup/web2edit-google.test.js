@@ -21,7 +21,7 @@ import {
 } from '../utils.js';
 
 describe('web2edit Google Tests', () => {
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   /** @type {import('sinon').SinonSandbox} */

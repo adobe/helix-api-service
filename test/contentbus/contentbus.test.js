@@ -18,7 +18,7 @@ import {
 import { getContentBusInfo } from '../../src/contentbus/contentbus.js';
 
 describe('ContentBus Tests', () => {
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

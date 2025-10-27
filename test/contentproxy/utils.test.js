@@ -16,7 +16,7 @@ import { computeSourceUrl, getSheetData } from '../../src/contentproxy/utils.js'
 import { Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {

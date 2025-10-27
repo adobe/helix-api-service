@@ -19,7 +19,7 @@ import {
 } from '../utils.js';
 
 describe('web2edit Markup Tests', () => {
-  /** @type {import('./utils.js').NockEnv} */
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   /** @type {import('sinon').SinonSandbox} */

@@ -21,7 +21,7 @@ export default class Router {
   #root;
 
   constructor() {
-    this.#root = new Node('/');
+    this.#root = new Node('');
   }
 
   /**

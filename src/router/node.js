@@ -20,9 +20,19 @@ export class Node {
   #label;
 
   /**
-   * Children of this node.
+   * Literal hildren of this node.
    */
   #children;
+
+  /**
+   * Star node (e.g. `/*`)
+   */
+  #star;
+
+  /**
+   * Variable node (e.g. `/:org`)
+   */
+  #variable;
 
   /**
    * Handler, null for intermediate leafs.
@@ -35,10 +45,22 @@ export class Node {
     this.#handler = handler;
   }
 
-  #getOrCreateChild(seg, handler) {
+  #getOrCreateChild(seg) {
+    if (seg === '*') {
+      if (!this.#star) {
+        this.#star = new Node(seg);
+      }
+      return this.#star;
+    }
+    if (seg.startsWith(':')) {
+      if (!this.#variable) {
+        this.#variable = new Node(seg.substring(1));
+      }
+      return this.#variable;
+    }
     let ret = this.#children.find((child) => child.#label === seg);
     if (!ret) {
-      ret = new Node(seg, handler);
+      ret = new Node(seg);
       this.#children.push(ret);
     }
     return ret;
@@ -49,11 +71,7 @@ export class Node {
       this.#handler = handler;
     } else {
       const seg = segs.shift();
-      if (seg !== '*') {
-        this.#getOrCreateChild(seg).add(segs, handler);
-      } else {
-        this.#getOrCreateChild(seg, handler);
-      }
+      this.#getOrCreateChild(seg).add(segs, handler);
     }
   }
 
@@ -80,26 +98,24 @@ export class Node {
     const seg = segs.shift();
 
     // find exact match
-    let next = this.#children.find((child) => child.#label === seg);
+    const next = this.#children.find((child) => child.#label === seg);
     if (next) {
       return next.match(segs, variables);
     }
 
-    // find first variable extracting match (e.g. ':org')
-    next = this.#children.find((child) => child.#label.startsWith(':'));
-    if (next) {
-      const key = next.#label.substring(1);
+    // use variable extracting match (e.g. ':org')
+    if (this.#variable) {
+      const key = this.#variable.#label;
       variables.set(key, seg);
-      return next.match(segs, variables);
+      return this.#variable.match(segs, variables);
     }
 
-    // find trailing '*' match
-    next = this.#children.find((child) => child.#label === '*');
-    if (next) {
+    // use trailing '*' match
+    if (this.#star) {
       segs.unshift(seg);
       variables.set('path', `/${segs.join('/')}`);
       variables.set('route', this.label);
-      return next;
+      return this.#star;
     }
     return null;
   }

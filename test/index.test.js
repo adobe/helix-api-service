@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { main } from '../src/index.js';
+import { main, router } from '../src/index.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
 
 describe('Index Tests', () => {
@@ -204,7 +204,8 @@ describe('Index Tests', () => {
   });
 
   it('fails calling profiles handler with missing org', async () => {
-    nock.orgConfig().reply(404);
+    nock.orgConfig()
+      .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       log: console,
@@ -214,5 +215,42 @@ describe('Index Tests', () => {
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
+  });
+
+  it('verifies extraction of variables', () => {
+    const entries = [{
+      suffix: '/auth/discovery/keys',
+      variables: {
+        route: 'auth', path: '/discovery/keys',
+      },
+    }, {
+      suffix: '/login',
+      variables: {
+        route: 'login',
+      },
+    }, {
+      suffix: '/login/no/suffix',
+      variables: undefined,
+    }, {
+      suffix: '/owner',
+      variables: {
+        route: 'org', org: 'owner',
+      },
+    }, {
+      suffix: '/owner/sites',
+      variables: {
+        route: 'sites', org: 'owner',
+      },
+    }, {
+      suffix: '/owner/sites/repo/status/document',
+      variables: {
+        route: 'status', org: 'owner', site: 'repo', path: '/document',
+      },
+    }];
+
+    entries.forEach((entry) => {
+      const { variables } = router.match(entry.suffix) ?? {};
+      assert.deepStrictEqual(variables, entry.variables);
+    });
   });
 });

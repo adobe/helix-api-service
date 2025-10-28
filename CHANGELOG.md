@@ -1,3 +1,11 @@
+## [1.4.1](https://github.com/adobe/helix-api-service/compare/v1.4.0...v1.4.1) (2025-10-28)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#10](https://github.com/adobe/helix-api-service/issues/10)) ([6ccabe8](https://github.com/adobe/helix-api-service/commit/6ccabe88850c4ef9c2c097f294a058c14701481f))
+* make exact/variable/star matching more explicit [skip ci] ([8fe6f2d](https://github.com/adobe/helix-api-service/commit/8fe6f2d7036964a79722f967705409945a491880))
+
 # [1.4.0](https://github.com/adobe/helix-api-service/compare/v1.3.2...v1.4.0) (2025-10-27)
 
 

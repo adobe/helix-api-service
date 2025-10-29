@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/adobe/helix-api-service/compare/v1.4.1...v1.5.0) (2025-10-29)
+
+
+### Features
+
+* implement auth ([#12](https://github.com/adobe/helix-api-service/issues/12)) ([fe09418](https://github.com/adobe/helix-api-service/commit/fe09418c5d547a4a21d38628a0f7e77b93ff8e81))
+
 ## [1.4.1](https://github.com/adobe/helix-api-service/compare/v1.4.0...v1.4.1) (2025-10-28)
 
 

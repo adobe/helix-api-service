@@ -147,6 +147,10 @@ export class RequestInfo {
 
     const { cookie } = this.headers;
     this.cookies = cookie ? structuredClone(parse(cookie)) : {};
+
+    this.query = {};
+    this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.service';
+    this.scheme = process.env.HLX_DEV_SERVER_SCHEME ?? 'https';
   }
 
   /**
@@ -179,7 +183,8 @@ export class RequestInfo {
         rawPath: path, webPath, resourcePath, ext,
       });
     }
-    return Object.freeze(info);
+    // return Object.freeze(info);
+    return info;
   }
 
   getPreviewUrl() {

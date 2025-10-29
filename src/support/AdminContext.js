@@ -14,10 +14,11 @@ import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { GoogleClient } from '@adobe/helix-google-support';
 import { OneDrive, OneDriveAuth } from '@adobe/helix-onedrive-support';
-import { AuthInfo } from '../auth/AuthInfo.js';
+import { getAuthInfo } from '../auth/support.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
 import { StatusCodeError } from './StatusCodeError.js';
 import fetchRedirects from '../redirects/fetch.js';
+import { authorize } from '../auth/authzn.js';
 
 const APP_USER_AGENT = 'NONISV|Adobe|AEMContentSync/1.0';
 
@@ -119,10 +120,8 @@ export class AdminContext {
     const config = await this.getConfig(info);
 
     if (attributes.authInfo === undefined) {
-      // TODO: ctx.attributes.authInfo = await getAuthInfo(context, info);
-      attributes.authInfo = AuthInfo.Basic();
+      attributes.authInfo = await getAuthInfo(this, info);
     }
-    /* c8 ignore next */
     return attributes.authInfo;
   }
 
@@ -136,7 +135,7 @@ export class AdminContext {
     // eslint-disable-next-line no-unused-vars
     const orgConfig = await this.getOrgConfig(info);
 
-    // TODO: evaluate roles
+    return authorize(this, info);
   }
 
   getFetch() {
@@ -253,6 +252,6 @@ export class AdminContext {
 
 export function adminContext(func) {
   return async (request, context) => func(request, AdminContext.create(context, {
-    headers: request.headers,
+    headers: request.headers, attributes: context.attributes,
   }));
 }

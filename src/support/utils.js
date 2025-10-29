@@ -111,3 +111,41 @@ export function isIllegalPath(path, allowBulk = false) {
   const { illegalPath } = getSanitizedPath(path);
   return illegalPath;
 }
+
+/**
+ * Returns the external url for the given path
+ * @param {PathInfo} info the info
+ * @param {string} path path
+ * @param {object} [query] optional query
+ * @returns {string} the url
+ */
+export function getLinkUrl(info, path, query) {
+  const url = new URL(`${info.scheme ?? 'https'}://${info.host}${info.functionPath ?? ''}${path}`);
+  Object.entries(info.query).forEach(([name, value]) => {
+    url.searchParams.append(name, value);
+  });
+  if (query) {
+    Object.entries(query).forEach(([name, value]) => {
+      url.searchParams.append(name, value);
+    });
+  }
+  return url.href;
+}
+
+/**
+ * Coerces the given value to an array. if the value is null or undefined, an empty array is
+ * returned.
+ * @param {*} value
+ * @param {boolean} [unique = false] if true, the resulting array will contain only unique values
+ * @return {[]}
+ */
+export function coerceArray(value, unique = false) {
+  if (value === null || value === undefined) {
+    return [];
+  }
+  const array = Array.isArray(value) ? value : [value];
+  if (unique) {
+    return Array.from(new Set(array));
+  }
+  return array;
+}

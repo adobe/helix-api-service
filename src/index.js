@@ -17,8 +17,9 @@ import timing from '@adobe/helix-shared-server-timing';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { helixStatus } from '@adobe/helix-status';
 
-import login from './login/handler.js';
+import { auth, login, logout } from './login/handler.js';
 import status from './status/handler.js';
+import profile from './profile/handler.js';
 import Router from './router/router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
@@ -35,10 +36,10 @@ const notImplemented = () => new Response('', { status: 405 });
  * Routing table.
  */
 export const router = new Router()
-  .add('/auth/*', notImplemented)
+  .add('/auth/*', auth)
   .add('/login', login)
-  .add('/logout', notImplemented)
-  .add('/profile', notImplemented)
+  .add('/logout', logout)
+  .add('/profile', profile)
   .add('/:org', notImplemented)
   .add('/:org/config', notImplemented)
   .add('/:org/config/access', notImplemented)
@@ -78,6 +79,11 @@ async function run(request, context) {
   const info = RequestInfo.create(request, variables);
   await context.authenticate(info);
   await context.authorize(info);
+
+  const { attributes: { authInfo } } = context;
+  if (info.org && !authInfo.authenticated) {
+    return new Response('', { status: 403 });
+  }
   return handler(context, info);
 }
 

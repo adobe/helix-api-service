@@ -15,6 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main, router } from '../src/index.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
+import { AuthInfo } from '../src/auth/auth-info.js';
 
 describe('Index Tests', () => {
   /** @type {import('./utils.js').NockEnv} */
@@ -35,8 +36,7 @@ describe('Index Tests', () => {
         suffix: '/login',
       },
     });
-    assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), '');
+    assert.strictEqual(result.status, 200);
   });
 
   it('fails calling login handler with suffix', async () => {
@@ -59,6 +59,9 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/',
       },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -78,6 +81,9 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
       },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -89,6 +95,9 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/code',
       },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
     });
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
@@ -99,6 +108,9 @@ describe('Index Tests', () => {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status',
+      },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
     assert.strictEqual(result.status, 404);
@@ -123,6 +135,9 @@ describe('Index Tests', () => {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
+      },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
@@ -169,6 +184,9 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');
@@ -181,6 +199,9 @@ describe('Index Tests', () => {
       log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
+      },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
@@ -198,6 +219,9 @@ describe('Index Tests', () => {
       pathInfo: {
         suffix: '/owner/profiles',
       },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
@@ -211,6 +235,9 @@ describe('Index Tests', () => {
       log: console,
       pathInfo: {
         suffix: '/owner/profiles',
+      },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
     assert.strictEqual(result.status, 404);

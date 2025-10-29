@@ -149,7 +149,7 @@ export class RequestInfo {
     this.cookies = cookie ? structuredClone(parse(cookie)) : {};
 
     this.query = {};
-    this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.service';
+    this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.live';
     this.scheme = process.env.HLX_DEV_SERVER_SCHEME ?? 'https';
   }
 

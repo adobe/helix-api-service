@@ -19,7 +19,11 @@ import { main } from '../../src/index.js';
 global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
 
 async function run() {
+  process.env.HLX_DEV_SERVER_HOST = 'localhost:3000';
+  process.env.HLX_DEV_SERVER_SCHEME = 'http';
+
   const devServer = await new DevelopmentServer(main)
+    .withHeader('x-forwarded-host', '')
     .withPort(3000)
     .init();
   await devServer.start();

@@ -147,6 +147,10 @@ export class RequestInfo {
 
     const { cookie } = this.headers;
     this.cookies = cookie ? structuredClone(parse(cookie)) : {};
+
+    this.scheme = process.env.HLX_DEV_SERVER_SCHEME ?? 'https';
+    this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.live';
+    this.query = {};
   }
 
   /**
@@ -179,7 +183,8 @@ export class RequestInfo {
         rawPath: path, webPath, resourcePath, ext,
       });
     }
-    return Object.freeze(info);
+    // return Object.freeze(info);
+    return info;
   }
 
   getPreviewUrl() {
@@ -188,5 +193,18 @@ export class RequestInfo {
 
   getLiveUrl() {
     return `https://main--${this.site}--${this.org}.aem.live${this.webPath}`;
+  }
+
+  getLinkUrl(path, query) {
+    const url = new URL(`${this.scheme ?? 'https'}://${this.host}${path}`);
+    Object.entries(this.query).forEach(([name, value]) => {
+      url.searchParams.append(name, value);
+    });
+    if (query) {
+      Object.entries(query).forEach(([name, value]) => {
+        url.searchParams.append(name, value);
+      });
+    }
+    return url.href;
   }
 }

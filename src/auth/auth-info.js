@@ -9,16 +9,10 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { PERMISSIONS } from './Permissions.js';
 import { AccessDeniedError } from './AccessDeniedError.js';
+import { ADMIN_CLIENT_ID, SITE_CLIENT_ID } from './clients.js';
+import { PERMISSIONS } from './permissions.js';
 
-// the 'aud' claim in a bearer token needs to match our client id (exported for testing)
-export const ADMIN_CLIENT_ID = '452733d4-6ae5-4590-8d0f-27404a03aca8';
-
-// the 'aud' claim in a api key token needs to match our client id (exported for testing)
-export const SITE_CLIENT_ID = '83a36355-ad17-4ed0-8701-e99a3020f86a';
-
-/* c8 ignore start */
 export class AuthInfo {
   static Admin() {
     return new AuthInfo()
@@ -185,4 +179,3 @@ export class AuthInfo {
     };
   }
 }
-/* c8 ignore end */

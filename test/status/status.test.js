@@ -12,7 +12,7 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { AuthInfo } from '../../src/auth/AuthInfo.js';
+import { AuthInfo } from '../../src/auth/auth-info.js';
 import status from '../../src/status/status.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,

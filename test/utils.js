@@ -14,7 +14,7 @@ import nock from 'nock';
 
 import { Request } from '@adobe/fetch';
 
-import { AuthInfo } from '../src/auth/AuthInfo.js';
+import { AuthInfo } from '../src/auth/auth-info.js';
 import { router } from '../src/index.js';
 import { AdminContext } from '../src/support/AdminContext.js';
 import { RequestInfo } from '../src/support/RequestInfo.js';

@@ -17,8 +17,9 @@ import timing from '@adobe/helix-shared-server-timing';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { helixStatus } from '@adobe/helix-status';
 
-import login from './login/handler.js';
+import { auth, login, logout } from './login/handler.js';
 import status from './status/handler.js';
+import profile from './profile/handler.js';
 import Router from './router/router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
@@ -35,10 +36,10 @@ const notImplemented = () => new Response('', { status: 405 });
  * Routing table.
  */
 export const router = new Router()
-  .add('/auth/*', notImplemented)
+  .add('/auth/*', auth)
   .add('/login', login)
-  .add('/logout', notImplemented)
-  .add('/profile', notImplemented)
+  .add('/logout', logout)
+  .add('/profile', profile)
   .add('/:org', notImplemented)
   .add('/:org/config', notImplemented)
   .add('/:org/config/access', notImplemented)
@@ -78,7 +79,28 @@ async function run(request, context) {
   const info = RequestInfo.create(request, variables);
   await context.authenticate(info);
   await context.authorize(info);
-  return handler(context, info);
+
+  const { attributes: { authInfo } } = context;
+  if (info.org && !authInfo.authenticated) {
+    return new Response('', { status: 403 });
+  }
+
+  const { suffix, log } = context;
+  const response = await handler(context, info);
+  const admin = {
+    method: info.method,
+    route: info.route,
+    path: info.path,
+    suffix,
+    status: response.status,
+  };
+  ['org', 'site'].forEach((key) => {
+    if (info[key]) {
+      admin[key] = info[key];
+    }
+  });
+  log.info('%j', { admin });
+  return response;
 }
 
 /**
@@ -112,6 +134,9 @@ function catchAll(func) {
             'x-error': 'not authenticated',
           },
         });
+      }
+      if (e instanceof TypeError) {
+        log.warn(e);
       }
       return new Response('', {
         status: e.status || e.statusCode || e.$metadata?.httpStatusCode || 500,

@@ -9,11 +9,11 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { parse, serialize } from 'cookie';
+import { serialize } from 'cookie';
 
-export function clearAuthCookie(info) {
+export function clearAuthCookie() {
   return serialize('auth_token', '', {
-    path: info.functionPath || '/',
+    path: '/',
     httpOnly: true,
     secure: true,
     expires: new Date(0),
@@ -21,9 +21,9 @@ export function clearAuthCookie(info) {
   });
 }
 
-export function setAuthCookie(info, token) {
+export function setAuthCookie(token) {
   return serialize('auth_token', token, {
-    path: info.functionPath || '/',
+    path: '/',
     httpOnly: true,
     secure: true,
     sameSite: 'Strict',
@@ -31,11 +31,5 @@ export function setAuthCookie(info, token) {
 }
 
 export function getAuthCookie(info) {
-  // add cookies if not already present
-  if (!info.cookies) {
-    const hdr = info.headers.cookie;
-    // eslint-disable-next-line no-param-reassign
-    info.cookies = hdr ? parse(hdr) : {};
-  }
   return info.cookies.auth_token;
 }

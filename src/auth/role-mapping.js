@@ -10,10 +10,8 @@
  * governing permissions and limitations under the License.
  */
 /* eslint-disable max-len */
-import { resolve } from 'path';
-import { fetchConfigAll, getContentBusId } from '@adobe/helix-admin-support';
+import { fetchConfigAll } from '@adobe/helix-admin-support';
 // import { ModifiersConfig } from '@adobe/helix-shared-config';
-import { HelixStorage } from '@adobe/helix-shared-storage';
 import { coerceArray } from '../support/utils.js';
 
 /**
@@ -23,42 +21,6 @@ import { coerceArray } from '../support/utils.js';
  * @type {string}
  */
 const DEFAULT_ROLE_LEGACY = 'basic_publish';
-
-/**
- * Loads a user sheet relative to the _current_ .helix/config.json.
- *
- * @param {AdminContext} ctx
- * @param {PathInfo} info
- * @param {string} relPath
- * @returns {Promise<[]>} array of users / user globs
- */
-// async function loadUserSheet(ctx, info, relPath) {
-//   // ignore group markers from helix5
-//   if (relPath.startsWith('/groups/') || relPath.startsWith('groups/')) {
-//     return [];
-//   }
-
-//   // make absolute to config location
-//   const path = resolve('/.helix', relPath);
-
-//   // load data from content-bus
-//   const storage = HelixStorage.fromContext(ctx).contentBus();
-//   const contentBusId = await getContentBusId(ctx, info);
-//   let sheet = await storage.get(`${contentBusId}/preview${path}`);
-//   if (!sheet) {
-//     ctx.log.warn(`the user sheet referenced in the config does not exist: ${contentBusId}/preview${path}`);
-//     return [];
-//   }
-//   ctx.log.info(`loaded user sheet from ${contentBusId}${path}`);
-
-//   // return users
-//   sheet = JSON.parse(sheet);
-//   if (!sheet.default?.data?.length) {
-//     ctx.log.warn(`the user sheet referenced in the config is empty: ${contentBusId}/preview${path}`);
-//     return [];
-//   }
-//   return sheet.default.data.map((row) => ModifiersConfig.toLowerKeys(row).user);
-// }
 
 /**
  * Encapsulates the role mapping configuration.
@@ -190,12 +152,13 @@ export class RoleMapping {
     const users = [];
     for (const user of coerceArray(userEntry)) {
       if (user?.endsWith('.json')) {
-        let sheetUsers = this.sheets.get(user);
-        if (!sheetUsers) {
-          // eslint-disable-next-line no-await-in-loop
-          sheetUsers = await loadUserSheet(ctx, info, user);
-          this.sheets.set(user, sheetUsers);
-        }
+        const sheetUsers = this.sheets.get(user);
+        // TODO: will be moved to config service
+        // if (!sheetUsers) {
+        // eslint-disable-next-line no-await-in-loop
+        // sheetUsers = await loadUserSheet(ctx, info, user);
+        // this.sheets.set(user, sheetUsers);
+        // }
         users.push(...sheetUsers);
       } else {
         users.push(user);

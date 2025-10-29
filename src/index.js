@@ -84,7 +84,23 @@ async function run(request, context) {
   if (info.org && !authInfo.authenticated) {
     return new Response('', { status: 403 });
   }
-  return handler(context, info);
+
+  const { suffix, log } = context;
+  const response = await handler(context, info);
+  const admin = {
+    method: info.method,
+    route: info.route,
+    path: info.path,
+    suffix,
+    status: response.status,
+  };
+  ['org', 'site'].forEach((key) => {
+    if (info[key]) {
+      admin[key] = info[key];
+    }
+  });
+  log.info('%j', { admin });
+  return response;
 }
 
 /**
@@ -119,6 +135,7 @@ function catchAll(func) {
           },
         });
       }
+      log.warn(e);
       return new Response('', {
         status: e.status || e.statusCode || e.$metadata?.httpStatusCode || 500,
         headers: {

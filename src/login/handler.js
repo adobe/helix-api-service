@@ -25,7 +25,6 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { isDAMountpoint } from '../support/adobe-source.js';
 import idpAdobe from '../idp-configs/adobe.js';
 import localJWKS from '../idp-configs/jwks-json.js';
-import { getLinkUrl } from '../support/utils.js';
 
 /**
  * Clears the authentication cookie (todo: and redirects to the logout page of the IDP)
@@ -44,7 +43,7 @@ export async function logout(ctx, info) {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store, private, must-revalidate',
-        'set-cookie': clearAuthCookie(info),
+        'set-cookie': clearAuthCookie(),
       },
     });
   }
@@ -76,7 +75,7 @@ export async function logout(ctx, info) {
     status: 302,
     headers: {
       'cache-control': 'no-store, private, must-revalidate',
-      'set-cookie': clearAuthCookie(info),
+      'set-cookie': clearAuthCookie(),
       location,
     },
   });
@@ -166,8 +165,8 @@ export async function login(ctx, info) {
     body.links.logout = getProjectLinkUrl(ctx, info, LOGOUT_PATH);
   } else {
     for (const idp of IDPS) {
-      body.links[`login_${idp.name}`] = getLinkUrl(info, idp.routes.login);
-      body.links[`login_${idp.name}_sa`] = getLinkUrl(info, idp.routes.login, { selectAccount: true });
+      body.links[`login_${idp.name}`] = info.getLinkUrl(idp.routes.login);
+      body.links[`login_${idp.name}_sa`] = info.getLinkUrl(idp.routes.login, { selectAccount: true });
     }
   }
 

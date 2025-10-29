@@ -113,26 +113,6 @@ export function isIllegalPath(path, allowBulk = false) {
 }
 
 /**
- * Returns the external url for the given path
- * @param {PathInfo} info the info
- * @param {string} path path
- * @param {object} [query] optional query
- * @returns {string} the url
- */
-export function getLinkUrl(info, path, query) {
-  const url = new URL(`${info.scheme ?? 'https'}://${info.host}${info.functionPath ?? ''}${path}`);
-  Object.entries(info.query).forEach(([name, value]) => {
-    url.searchParams.append(name, value);
-  });
-  if (query) {
-    Object.entries(query).forEach(([name, value]) => {
-      url.searchParams.append(name, value);
-    });
-  }
-  return url.href;
-}
-
-/**
  * Coerces the given value to an array. if the value is null or undefined, an empty array is
  * returned.
  * @param {*} value

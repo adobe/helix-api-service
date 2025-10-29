@@ -28,7 +28,7 @@ import idpAdobeStage from '../idp-configs/adobe-stg.js';
 import idpIms from '../idp-configs/ims.js';
 import idpImsStage from '../idp-configs/ims-stg.js';
 import localJWKS from '../idp-configs/jwks-json.js';
-import { coerceArray, getLinkUrl } from '../support/utils.js';
+import { coerceArray } from '../support/utils.js';
 import { AuthInfo } from './auth-info.js';
 import { ADMIN_CLIENT_ID } from './clients.js';
 import { getAuthCookie } from './cookie.js';
@@ -70,7 +70,7 @@ export function getProjectLinkUrl(ctx, info, route, path = '', query = {}) {
   const site = ctx.data?.site ?? info.site;
   const ref = ctx.data?.ref ?? info.ref ?? 'main';
   const projectPath = org && site ? `${route}/${org}/${site}/${ref}${path}` : `${route}${path}`;
-  return getLinkUrl(info, projectPath, query);
+  return info.getLinkUrl(projectPath, query);
 }
 
 /**

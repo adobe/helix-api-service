@@ -22,7 +22,6 @@ import {
 } from './support.js';
 import { setAuthCookie } from './cookie.js';
 import localJWKS from '../idp-configs/jwks-json.js';
-import { getLinkUrl } from '../support/utils.js';
 
 async function fetchTokens(ctx, info, idp, tenantId) {
   const { data, log } = ctx;
@@ -41,7 +40,7 @@ async function fetchTokens(ctx, info, idp, tenantId) {
     client_secret: client.clientSecret,
     code: data.code,
     grant_type: 'authorization_code',
-    redirect_uri: getLinkUrl(info, idp.routes.loginRedirect),
+    redirect_uri: info.getLinkUrl(idp.routes.loginRedirect),
   };
   log.info('exchanging token with %s via %s', idp.name, url.href);
   const res = await fetch(url.href, {
@@ -113,7 +112,7 @@ async function createExtensionResponse(ctx, info, idp, extensionId, {
   const { payload, iss, exp } = decoded;
   let { picture } = decoded;
 
-  const fetch = getFetch(ctx);
+  const fetch = ctx.getFetch();
 
   let siteTokenInfo = null;
   const email = payload.email || payload.user_id || payload.preferred_username;
@@ -271,7 +270,7 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store, private, must-revalidate',
-        'set-cookie': setAuthCookie(info, token),
+        'set-cookie': setAuthCookie(token),
       },
     });
   }
@@ -296,7 +295,7 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
     headers: {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
-      'set-cookie': setAuthCookie(info, token),
+      'set-cookie': setAuthCookie(token),
     },
   });
 }

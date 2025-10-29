@@ -12,7 +12,6 @@
 import { Response } from '@adobe/fetch';
 import { UnsecuredJWT } from 'jose';
 import { verifyClientInfo } from './clients.js';
-import { getLinkUrl } from '../support/utils.js';
 import { clearAuthCookie } from './cookie.js';
 
 /**
@@ -73,7 +72,7 @@ export function redirectToLogin(ctx, info, idp, opts) {
   url.searchParams.append('scope', idp.scope);
   url.searchParams.append('nonce', crypto.randomUUID());
   url.searchParams.append('state', state);
-  url.searchParams.append('redirect_uri', getLinkUrl(info, idp.routes.loginRedirect));
+  url.searchParams.append('redirect_uri', info.getLinkUrl(idp.routes.loginRedirect));
   if (loginHint) {
     url.searchParams.append('login_hint', loginHint);
   }
@@ -87,7 +86,7 @@ export function redirectToLogin(ctx, info, idp, opts) {
     headers: {
       'cache-control': 'no-store, private, must-revalidate',
       location: url.href,
-      'set-cookie': clearAuthCookie(info),
+      'set-cookie': clearAuthCookie(),
     },
   });
 }

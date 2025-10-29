@@ -135,7 +135,9 @@ function catchAll(func) {
           },
         });
       }
-      log.warn(e);
+      if (e instanceof TypeError) {
+        log.warn(e);
+      }
       return new Response('', {
         status: e.status || e.statusCode || e.$metadata?.httpStatusCode || 500,
         headers: {

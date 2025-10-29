@@ -10,7 +10,6 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { fetchFstab } from '@adobe/helix-admin-support';
 import { OneDriveAuth } from '@adobe/helix-onedrive-support';
 import { decodeJwt } from 'jose';
 
@@ -25,6 +24,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { isDAMountpoint } from '../support/adobe-source.js';
 import idpAdobe from '../idp-configs/adobe.js';
 import localJWKS from '../idp-configs/jwks-json.js';
+import { loadSiteConfig } from '../config/utils.js';
 
 /**
  * Clears the authentication cookie (todo: and redirects to the logout page of the IDP)
@@ -91,45 +91,38 @@ export async function login(ctx, info) {
   const { log, attributes: { authInfo }, data } = ctx;
 
   // for login requests with repo coordinates, perform mountpoint specific login
-  if (info.org && info.site) {
+  if (data.org && data.site) {
     const opts = {
       noPrompt: true,
       loginHint: authInfo.loginHint,
       tenantId: data.tenantId,
     };
 
-    if (isDAMountpoint(ctx.attributes.config?.content?.overlay)) {
-      return redirectToLogin(ctx, info, idpAdobe, opts);
-    }
-
-    const fstab = await fetchFstab(ctx, info, true);
-    if (!fstab) {
+    const config = await loadSiteConfig(ctx, data.org, data.site);
+    if (!config) {
       return createErrorResponse({
         log,
         status: 404,
-        msg: `no fstab.yaml for: ${info.org}/${info.site}`,
-      });
-    }
-    const mp = fstab.match(info.resourcePath);
-    if (!mp) {
-      return createErrorResponse({
-        log,
-        status: 400,
-        msg: `path specified is not mounted in fstab.yaml: ${info.resourcePath}`,
+        msg: `project not found: ${data.org}/${data.site}`,
       });
     }
 
+    if (isDAMountpoint(config.content?.overlay)) {
+      return redirectToLogin(ctx, info, idpAdobe, opts);
+    }
+
     // for sharepoint sources, try to detect the tenant
-    if (mp.type === 'onedrive' && !opts.tenantId) {
-      if (mp.tenantId) {
-        opts.tenantId = mp.tenantId;
+    const { content: { source } } = config;
+    if (source.type === 'onedrive' && !opts.tenantId) {
+      if (source.tenantId) {
+        opts.tenantId = source.tenantId;
       } else {
         const oneAuth = new OneDriveAuth({
           log,
           clientId: 'dummy',
           clientSecret: 'dummy',
         });
-        opts.tenantId = await oneAuth.initTenantFromUrl(mp.url);
+        opts.tenantId = await oneAuth.initTenantFromUrl(source.url);
       }
     }
 
@@ -140,7 +133,7 @@ export async function login(ctx, info) {
       }
     }
     for (const idp of IDPS) {
-      if (idp.mountType === mp.type) {
+      if (idp.mountType === source.type) {
         return redirectToLogin(ctx, info, idp, opts);
       }
     }

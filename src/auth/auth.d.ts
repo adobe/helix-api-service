@@ -10,8 +10,7 @@
  * governing permissions and limitations under the License.
  */
 
-
-import {AdminContext} from "../index";
+import { AdminContext } from "../support/AdminContext.js";
 
 /**
  * Path Info

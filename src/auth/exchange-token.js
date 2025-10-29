@@ -73,7 +73,7 @@ async function decodeTokens(ctx, info, idp, tokens) {
   const { payload } = ret;
 
   try {
-    const decoded = await decodeIdToken(ctx, info, idp, idToken);
+    const decoded = await decodeIdToken(ctx, idp, idToken);
     for (const prop of ['email', 'user_id', 'name', 'roles', 'oid', 'preferred_username']) {
       if (decoded[prop]) {
         payload[prop] = decoded[prop];
@@ -84,7 +84,7 @@ async function decodeTokens(ctx, info, idp, tokens) {
     if (!payload.user_id && decoded.sub?.indexOf('@') > 0) {
       payload.user_id = decoded.sub;
       payload.imsToken = accessToken;
-      const decodedAccessToken = await decodeImsToken(ctx, info, idp, accessToken);
+      const decodedAccessToken = await decodeImsToken(ctx, idp, accessToken);
       const expiresIn = Math.floor(Number.parseInt(decodedAccessToken.expires_in, 10) / 1000);
       const createdAt = Math.floor(Number.parseInt(decodedAccessToken.created_at, 10) / 1000);
 

@@ -35,11 +35,8 @@ export async function authenticate(ctx, info) {
  * @param {PathInfo} info
  * @throws AccessDeniedError if the user is not authorized
  */
-export async function authorize(ctx, info) {
+export async function authorize(ctx) {
   const { log, attributes: { authInfo } } = ctx;
-  if (!authInfo) {
-    throw new AccessDeniedError('not authenticated');
-  }
 
   // check if we have any roles or user in the invocation event itself
   if (ctx?.invocation?.event) {
@@ -56,28 +53,28 @@ export async function authorize(ctx, info) {
     }
   }
 
-  // load role mapping from config all
-  const roleMapping = await RoleMapping.load(ctx, info, authInfo.profile?.defaultRole);
+  // load role mapping from config
+  const roleMapping = await RoleMapping.load(ctx, authInfo.profile?.defaultRole);
+  if (roleMapping) {
+    const roles = roleMapping.getRolesForUser(
+      authInfo.profile?.email,
+      authInfo.profile?.user_id,
+      authInfo.profile?.preferred_username,
+    );
+    authInfo.withRoles(roles);
+    log.info(`auth: using roles ${roles} for ${authInfo.authenticated ? '' : 'un'}authenticated user`);
 
-  const roles = roleMapping.getRolesForUser(
-    authInfo.profile?.email,
-    authInfo.profile?.user_id,
-    authInfo.profile?.preferred_username,
-  );
-  authInfo.withRoles(roles);
-
-  log.info(`auth: using roles ${roles} for ${authInfo.authenticated ? '' : 'un'}authenticated user`);
-
-  // enforce authentication
-  if (!authInfo.authenticated) {
-    // if 'auto' configured and roles are defined (backward compat)
-    if (roleMapping.requireAuth === 'auto') {
-      if (roleMapping.hasConfigured) {
+    // enforce authentication
+    if (!authInfo.authenticated) {
+      // if 'auto' configured and roles are defined (backward compat)
+      if (roleMapping.requireAuth === 'auto') {
+        if (roleMapping.hasConfigured) {
+          throw new AccessDeniedError('not authenticated');
+        }
+      // or if auth is enforced
+      } else if (roleMapping.requireAuth !== 'false') {
         throw new AccessDeniedError('not authenticated');
       }
-    // or if auth is enforced
-    } else if (roleMapping.requireAuth !== 'false') {
-      throw new AccessDeniedError('not authenticated');
     }
   }
 }

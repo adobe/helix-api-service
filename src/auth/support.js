@@ -102,7 +102,7 @@ function globalFetchAdapter(adobeFetch) {
  * @param {string} idToken
  * @returns {Promise<JWTPayload>}
  */
-export async function decodeIdToken(ctx, info, idp, idToken, opts = {}) {
+export async function decodeIdToken(ctx, idp, idToken, opts = {}) {
   const { log } = ctx;
   const jwks = idp.discovery.jwks
     ? createLocalJWKSet(idp.discovery.jwks)
@@ -140,13 +140,12 @@ export async function decodeIdToken(ctx, info, idp, idToken, opts = {}) {
 /**
  * Decodes the given IMS Access token for the given idp.
  * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info the path info
  * @param {IDPConfig} idp
  * @param {string} idToken
  * @param {boolean} lenient
  * @returns {Promise<JWTPayload>}
  */
-export async function decodeImsToken(ctx, info, idp, idToken) {
+export async function decodeImsToken(ctx, idp, idToken) {
   const { log } = ctx;
   const jwks = idp.discovery.jwks
     ? createLocalJWKSet(idp.discovery.jwks)
@@ -338,7 +337,7 @@ export async function getTransientSiteTokenInfo(ctx, info, email, tokenExpiry) {
   }
 
   try { // get admin access config
-    const roleMapping = await RoleMapping.create(ctx, info, config.access.admin);
+    const roleMapping = await RoleMapping.create(config.access.admin);
     roleMapping.withDefaultRoles([]); // ensure that 'anonymous' doesn't have read rights
     roleMapping.hasConfigured = true;
     for (const user of allowPreview) {
@@ -418,7 +417,7 @@ export async function getAuthInfo(ctx, info) {
     try {
       const idp = await detectTokenIDP(ctx, token);
       if (idp.ims) {
-        const profile = await decodeImsToken(ctx, info, idp, token);
+        const profile = await decodeImsToken(ctx, idp, token);
         if (!profile.email) {
           log.warn('auth: ims token invalid: missing user id');
           return AuthInfo.Default();
@@ -430,7 +429,7 @@ export async function getAuthInfo(ctx, info) {
           .withImsToken(token)
           .withAuthenticated(true);
       }
-      const profile = await decodeIdToken(ctx, info, idp, token, {
+      const profile = await decodeIdToken(ctx, idp, token, {
         type: 'bearer token',
       });
       if (profile.aud === ADMIN_CLIENT_ID) {
@@ -449,7 +448,7 @@ export async function getAuthInfo(ctx, info) {
   if (authType.toLowerCase() === 'token') {
     try {
       const idp = BEARER_IDP.token;
-      const profile = await decodeIdToken(ctx, info, idp, token, {
+      const profile = await decodeIdToken(ctx, idp, token, {
         type: 'api token',
       });
 

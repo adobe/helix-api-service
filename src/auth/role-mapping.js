@@ -9,9 +9,6 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-/* eslint-disable max-len */
-import { fetchConfigAll } from '@adobe/helix-admin-support';
-// import { ModifiersConfig } from '@adobe/helix-shared-config';
 import { coerceArray } from '../support/utils.js';
 
 /**
@@ -27,15 +24,19 @@ const DEFAULT_ROLE_LEGACY = 'basic_publish';
  *
  * Role evaluation:
  * 1. If a request isn’t authenticated and requireAuth is true, a 401 status code is returned.
- * 2. If a request isn’t authenticated and requiredAuth is auto and role mapping is defined, a 401 status code is returned.
+ * 2. If a request isn’t authenticated and requiredAuth is auto and role mapping is defined,
+ *    a 401 status code is returned.
  * 3. If a request isn’t authenticated the defaultRole is used.
- * 4. If a request is authenticated and no role mapping is defined, or if requireAuth is false, the defaultRole is used.
- * 5. If a request is authenticated and role mapping is defined and requireAuth is not false, the roles that match the user are used.
- *   - If no mapping matches, the user will have no role; effectively always returning a 403 status code.
+ * 4. If a request is authenticated and no role mapping is defined, or if requireAuth is false,
+ *    the defaultRole is used.
+ * 5. If a request is authenticated and role mapping is defined and requireAuth is not false,
+ *    the roles that match the user are used.
+ *   - If no mapping matches, the user will have no role; effectively always returning a 403
+ *     status code.
  *   - If several mapping matches, the user will have a combined set of roles
  */
 export class RoleMapping {
-  static async create(ctx, info, accessAdmin = {}, defaultRole = DEFAULT_ROLE_LEGACY) {
+  static async create(accessAdmin = {}, defaultRole = DEFAULT_ROLE_LEGACY) {
     const roleMapping = new RoleMapping()
       .withRequireAuth(accessAdmin.requireAuth)
       .withDefaultRoles(accessAdmin.defaultRole ?? defaultRole);
@@ -44,7 +45,7 @@ export class RoleMapping {
     if (roles.length) {
       for (const [role, userEntry] of roles) {
         // eslint-disable-next-line no-await-in-loop
-        const users = await roleMapping.resolveUsers(ctx, info, userEntry);
+        const users = await roleMapping.resolveUsers(userEntry);
         for (const user of users) {
           roleMapping.add(role, user);
         }
@@ -54,9 +55,12 @@ export class RoleMapping {
     return roleMapping;
   }
 
-  static async load(ctx, info, defaultRole) {
-    const configAll = await fetchConfigAll(ctx, { ...info, route: 'preview' });
-    return RoleMapping.create(ctx, info, configAll?.config?.data?.admin, defaultRole);
+  static async load(context, defaultRole) {
+    const { attributes: { config } } = context;
+    if (!config) {
+      return null;
+    }
+    return RoleMapping.create(config.access?.admin, defaultRole);
   }
 
   constructor() {
@@ -148,7 +152,7 @@ export class RoleMapping {
     }
   }
 
-  async resolveUsers(ctx, info, userEntry) {
+  async resolveUsers(userEntry) {
     const users = [];
     for (const user of coerceArray(userEntry)) {
       if (user?.endsWith('.json')) {

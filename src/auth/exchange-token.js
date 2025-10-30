@@ -69,7 +69,13 @@ async function decodeTokens(ctx, info, idp, tokens) {
   const { log } = ctx;
   const { idToken, accessToken } = tokens;
 
-  const ret = { payload: {} };
+  const iat = Math.floor(Date.now() / 1000);
+  const ret = {
+    payload: {},
+    iat,
+    exp: iat + (24 * 60 * 60),
+  };
+
   const { payload } = ret;
 
   try {
@@ -229,11 +235,7 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
     return decoded.error;
   }
 
-  const {
-    payload = {},
-    iat = Math.floor(Date.now() / 1000),
-    exp = iat + (24 * 60 * 60), // 24 hours in seconds
-  } = decoded;
+  const { payload, iat, exp } = decoded;
 
   const { extensionId } = data.state;
   if (extensionId) {

@@ -14,11 +14,12 @@ import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { GoogleClient } from '@adobe/helix-google-support';
 import { OneDrive, OneDriveAuth } from '@adobe/helix-onedrive-support';
+import { authorize } from '../auth/authzn.js';
 import { getAuthInfo } from '../auth/support.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
-import { StatusCodeError } from './StatusCodeError.js';
 import fetchRedirects from '../redirects/fetch.js';
-import { authorize } from '../auth/authzn.js';
+import { StatusCodeError } from './StatusCodeError.js';
+import { coerceArray } from './utils.js';
 
 const APP_USER_AGENT = 'NONISV|Adobe|AEMContentSync/1.0';
 
@@ -136,6 +137,38 @@ export class AdminContext {
     const orgConfig = await this.getOrgConfig(info);
 
     return authorize(this, info);
+  }
+
+  /**
+   * Returns the normalized site access configuration for the current partition.
+   *
+   * @param {string} partition partition
+   * @returns {Promise<object>} the access configuration for this partition
+   */
+  async getSiteAccessConfig(partition) {
+    const { attributes } = this;
+    const { config } = attributes;
+
+    if (!attributes.accessConfig?.[partition]) {
+      if (!attributes.accessConfig) {
+        attributes.accessConfig = {};
+      }
+      const access = config?.data?.access;
+      if (!access) {
+        attributes.accessConfig[partition] = {
+          allow: [],
+          apiKeyId: [],
+          secretId: [],
+        };
+      } else {
+        attributes.accessConfig[partition] = {
+          allow: coerceArray(access[partition]?.allow ?? access.allow),
+          apiKeyId: coerceArray(access[partition]?.apiKeyId ?? access.apiKeyId),
+          secretId: coerceArray(access[partition]?.secretId ?? access.secretId),
+        };
+      }
+    }
+    return attributes.accessConfig[partition];
   }
 
   getFetch() {

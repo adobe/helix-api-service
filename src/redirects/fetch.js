@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { fetchS3 } from '@adobe/helix-admin-support';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { getSheetData } from '../contentproxy/utils.js';
 import { toResourcePath } from '../support/RequestInfo.js';
 
@@ -25,43 +25,49 @@ export const REDIRECTS_JSON_PATH = '/redirects.json';
  */
 export default async function fetchRedirects(context, partition) {
   const { attributes, log } = context;
-  const { config, content: bucket } = attributes;
+  const { config, bucketMap: { content: bucket } } = attributes;
   const { content: { contentBusId } } = config;
 
   const redirects = {};
+  const contentBus = HelixStorage.fromContext(context).contentBus();
 
   const key = `${contentBusId}/${partition}${REDIRECTS_JSON_PATH}`;
-  const resp = await fetchS3(context, 'content', key);
-  if (resp.ok) {
-    const data = getSheetData(await resp.json(), ['redirects', 'default']);
-    if (!data) {
-      log.error(`error while loading redirects from ${bucket}/${key}: no redirect data found.`);
-      return redirects;
-    }
-    data.forEach((mapping) => {
-      const lower = Object.entries(mapping).reduce((obj, [name, value]) => {
-        // eslint-disable-next-line no-param-reassign
-        obj[name.toLowerCase()] = value;
-        return obj;
-      }, {});
-      const src = (lower.source || '').trim();
-      const dst = (lower.destination || '').trim();
-      if (src && dst) {
-        const resourcePath = toResourcePath(src);
-        const dstPath = dst.startsWith('/') ? toResourcePath(dst) : '';
-        // avoid redirect loop
-        if (resourcePath && resourcePath !== dstPath) {
-          redirects[resourcePath] = dst;
-        }
-      }
-    });
-    return redirects;
+  let contents;
+
+  try {
+    contents = await contentBus.get(key);
+  } catch (e) {
+    // really?
+    throw new Error(`error while loading redirects from ${bucket}/${key}: ${e.$metadata.httpStatusCode}`);
   }
-  if (resp.status === 404) {
-    log.info(`unable to load redirects from ${bucket}/${key}: ${resp.status}`);
+
+  if (!contents) {
+    log.info(`unable to load redirects from ${bucket}/${key}: not found`);
     return redirects;
   }
 
-  // really?
-  throw new Error(`error while loading redirects from ${bucket}/${key}: ${resp.status}`);
+  const data = getSheetData(JSON.parse(contents), ['redirects', 'default']);
+  if (!data) {
+    log.error(`error while loading redirects from ${bucket}/${key}: no redirect data found.`);
+    return redirects;
+  }
+
+  data.forEach((mapping) => {
+    const lower = Object.entries(mapping).reduce((obj, [name, value]) => {
+      // eslint-disable-next-line no-param-reassign
+      obj[name.toLowerCase()] = value;
+      return obj;
+    }, {});
+    const src = (lower.source || '').trim();
+    const dst = (lower.destination || '').trim();
+    if (src && dst) {
+      const resourcePath = toResourcePath(src);
+      const dstPath = dst.startsWith('/') ? toResourcePath(dst) : '';
+      // avoid redirect loop
+      if (resourcePath && resourcePath !== dstPath) {
+        redirects[resourcePath] = dst;
+      }
+    }
+  });
+  return redirects;
 }

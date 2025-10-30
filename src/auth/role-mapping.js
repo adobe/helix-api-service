@@ -157,12 +157,6 @@ export class RoleMapping {
     for (const user of coerceArray(userEntry)) {
       if (user?.endsWith('.json')) {
         const sheetUsers = this.sheets.get(user);
-        // TODO: will be moved to config service
-        // if (!sheetUsers) {
-        // eslint-disable-next-line no-await-in-loop
-        // sheetUsers = await loadUserSheet(ctx, info, user);
-        // this.sheets.set(user, sheetUsers);
-        // }
         users.push(...sheetUsers);
       } else {
         users.push(user);

@@ -98,11 +98,11 @@ export function getEncoding(value) {
 /**
  * Respects the 'accept-encoding' request header and encodes the response with gzip if allowed.
  * @param {Request} request
- * @param {UniversalContext} ctx
- * @param {Response }response original response
+ * @param {import('@adobe/helix-universal').UniversalContext} context
+ * @param {Response} response original response
  * @returns {Promise<Response>} the resulting response
  */
-export async function contentEncode(request, ctx, response) {
+export async function contentEncode(request, context, response) {
   // only handle 200 responses for GET requests
   if (request.method !== 'GET' || (response.status !== 200 && response.status !== 404)) {
     return response;
@@ -136,8 +136,8 @@ export async function contentEncode(request, ctx, response) {
  * @returns {function(Request, UniversalContext): Promise<Response>}
  */
 export function contentEncodeWrapper(fn) {
-  return async (req, ctx) => {
-    const resp = await fn(req, ctx);
-    return contentEncode(req, ctx, resp);
+  return async (req, context) => {
+    const resp = await fn(req, context);
+    return contentEncode(req, context, resp);
   };
 }

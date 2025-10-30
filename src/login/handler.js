@@ -27,13 +27,13 @@ import { loadSiteConfig } from '../config/utils.js';
 /**
  * Clears the authentication cookie.
  *
- * @param {AdminContext} ctx the context of the universal serverless function
- * @param {PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>}
  */
-export async function logout(ctx, info) {
-  const extensionId = ctx.data?.extensionId;
-  const { log } = ctx;
+export async function logout(context, info) {
+  const extensionId = context.data?.extensionId;
+  const { log } = context;
   const { org, site } = info;
   if (extensionId === 'cookie') {
     log.debug('logout: creating html for cookie logout');
@@ -81,13 +81,14 @@ export async function logout(ctx, info) {
 }
 
 /**
- * Handles the login route
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info path info
+ * Handles the login route.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export async function login(ctx, info) {
-  const { log, attributes: { authInfo }, data } = ctx;
+export async function login(context, info) {
+  const { log, attributes: { authInfo }, data } = context;
 
   // for login requests with repo coordinates, perform mountpoint specific login
   if (data.org && data.site) {
@@ -97,7 +98,7 @@ export async function login(ctx, info) {
       tenantId: data.tenantId,
     };
 
-    const config = await loadSiteConfig(ctx, data.org, data.site);
+    const config = await loadSiteConfig(context, data.org, data.site);
     if (!config) {
       return createErrorResponse({
         log,
@@ -107,7 +108,7 @@ export async function login(ctx, info) {
     }
 
     if (isDAMountpoint(config.content?.overlay)) {
-      return redirectToLogin(ctx, info, idpAdobe, opts);
+      return redirectToLogin(context, info, idpAdobe, opts);
     }
 
     // for sharepoint sources, try to detect the tenant
@@ -128,12 +129,12 @@ export async function login(ctx, info) {
     if (data?.idp) {
       const idp = IDPS.find(({ name }) => name === data.idp);
       if (idp) {
-        return redirectToLogin(ctx, info, idp, opts);
+        return redirectToLogin(context, info, idp, opts);
       }
     }
     for (const idp of IDPS) {
       if (idp.mountType === source.type) {
-        return redirectToLogin(ctx, info, idp, opts);
+        return redirectToLogin(context, info, idp, opts);
       }
     }
     return createErrorResponse({
@@ -144,7 +145,7 @@ export async function login(ctx, info) {
   }
 
   if (authInfo.expired && authInfo.idp) {
-    return redirectToLogin(ctx, info, authInfo.idp, {
+    return redirectToLogin(context, info, authInfo.idp, {
       noPrompt: true,
       loginHint: authInfo.loginHint,
     });
@@ -172,15 +173,16 @@ export async function login(ctx, info) {
 }
 
 /**
- * Handles the auth route
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info path info
+ * Handles the auth route.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @return {Promise<Response>} response
  */
-export async function auth(ctx, info) {
+export async function auth(context, info) {
   const {
     log, data, attributes: { authInfo }, suffix,
-  } = ctx;
+  } = context;
 
   if (suffix === '/auth/discovery/keys') {
     // deliver JWKS
@@ -196,7 +198,7 @@ export async function auth(ctx, info) {
   // check if the route belongs to an idp
   for (const idp of IDPS) {
     if (suffix === idp.routes.login) {
-      return redirectToLogin(ctx, info, idp, {
+      return redirectToLogin(context, info, idp, {
         noPrompt: true,
         loginHint: authInfo.loginHint,
       });
@@ -226,7 +228,7 @@ export async function auth(ctx, info) {
       if (!data.code) {
         if (data.state.prompt === 'none') {
           // login failed, but try again with prompt
-          return redirectToLogin(ctx, info, idp, {
+          return redirectToLogin(context, info, idp, {
             noPrompt: false,
             loginHint: authInfo.loginHint,
             tenantId: data.state.tenantId,
@@ -237,7 +239,7 @@ export async function auth(ctx, info) {
           status: 401,
         });
       }
-      return exchangeToken(ctx, info, idp, data.state.tenantId);
+      return exchangeToken(context, info, idp, data.state.tenantId);
     }
   }
   return new Response('', {

@@ -11,36 +11,20 @@
  */
 import { AccessDeniedError } from './AccessDeniedError.js';
 import { RoleMapping } from './role-mapping.js';
-import { getAuthInfo } from './support.js';
-
-/**
- * Authenticates current user. It checks if the request contains authentication information and
- * sets user data.
- **
- * @param {UniversalContext} ctx
- * @param {PathInfo} info
- * @returns {Promise<AuthInfo>} the authentication info
- */
-export async function authenticate(ctx, info) {
-  if (ctx.attributes.authInfo === undefined) {
-    ctx.attributes.authInfo = await getAuthInfo(ctx, info);
-  }
-  return ctx.attributes.authInfo;
-}
 
 /**
  * Authorizes the current user by loading the project config and assigning the roles.
  *
- * @param {UniversalContext} ctx
- * @param {PathInfo} info
- * @throws AccessDeniedError if the user is not authorized
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @throws {AccessDeniedError} if the user is not authorized
  */
-export async function authorize(ctx) {
-  const { log, attributes: { authInfo } } = ctx;
+export async function authorize(context) {
+  const { log, attributes: { authInfo } } = context;
 
   // check if we have any roles or user in the invocation event itself
-  if (ctx?.invocation?.event) {
-    const { invocation: { event: { roles = [], user } } } = ctx;
+  if (context?.invocation?.event) {
+    const { invocation: { event: { roles = [], user } } } = context;
     if (roles.length) {
       authInfo.withRoles(roles);
       if (user) {
@@ -54,7 +38,7 @@ export async function authorize(ctx) {
   }
 
   // load role mapping from config
-  const roleMapping = await RoleMapping.load(ctx, authInfo.profile?.defaultRole);
+  const roleMapping = await RoleMapping.load(context, authInfo.profile?.defaultRole);
   if (roleMapping) {
     const roles = roleMapping.getRolesForUser(
       authInfo.profile?.email,

@@ -17,7 +17,7 @@ import {
   createCloseHtml, createSendMessageHtml, sendAEMCLILoginInfoResponse, createClientSideRedirectHtml,
 } from './responses.js';
 import {
-  decodeIdToken, decodeImsToken, getProjectLinkUrl,
+  decodeIdToken, decodeImsToken,
   getTransientSiteTokenInfo, PROFILE_PATH,
 } from './support.js';
 import { setAuthCookie } from './cookie.js';
@@ -65,7 +65,7 @@ async function fetchTokens(ctx, info, idp, tenantId) {
   return { idToken, accessToken };
 }
 
-async function decodeTokens(ctx, info, idp, tokens) {
+async function decodeTokens(ctx, idp, tokens) {
   const { log } = ctx;
   const { idToken, accessToken } = tokens;
 
@@ -230,7 +230,7 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
     return tokens.error;
   }
 
-  const decoded = await decodeTokens(ctx, info, idp, tokens);
+  const decoded = await decodeTokens(ctx, idp, tokens);
   if (decoded.error) {
     return decoded.error;
   }
@@ -290,7 +290,7 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
     });
   }
 
-  const location = getProjectLinkUrl(ctx, info, PROFILE_PATH, '');
+  const location = info.getLinkUrl(PROFILE_PATH);
   log.debug('login: redirecting to profile page with id_token cookie', location);
   return new Response(createClientSideRedirectHtml(location), {
     status: 200,

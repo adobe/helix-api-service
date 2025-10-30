@@ -17,9 +17,7 @@ import { clearAuthCookie } from '../auth/cookie.js';
 import { exchangeToken } from '../auth/exchange-token.js';
 import { redirectToLogin } from '../auth/redirect-login.js';
 import { createCloseHtml, createSendMessageHtml } from '../auth/responses.js';
-import {
-  getProjectLinkUrl, IDPS, LOGOUT_PATH, PROFILE_PATH,
-} from '../auth/support.js';
+import { IDPS, LOGOUT_PATH, PROFILE_PATH } from '../auth/support.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { isDAMountpoint } from '../support/adobe-source.js';
 import idpAdobe from '../idp-configs/adobe.js';
@@ -27,7 +25,8 @@ import localJWKS from '../idp-configs/jwks-json.js';
 import { loadSiteConfig } from '../config/utils.js';
 
 /**
- * Clears the authentication cookie (todo: and redirects to the logout page of the IDP)
+ * Clears the authentication cookie.
+ *
  * @param {AdminContext} ctx the context of the universal serverless function
  * @param {PathInfo} info path info
  * @returns {Promise<Response>}
@@ -69,7 +68,7 @@ export async function logout(ctx, info) {
     });
   }
 
-  const location = getProjectLinkUrl(ctx, info, PROFILE_PATH);
+  const location = info.getLinkUrl(PROFILE_PATH);
   log.debug('logout: redirecting to profile page with id_token cookie', location);
   return new Response('', {
     status: 302,
@@ -155,7 +154,7 @@ export async function login(ctx, info) {
     links: {},
   };
   if (authInfo.profile) {
-    body.links.logout = getProjectLinkUrl(ctx, info, LOGOUT_PATH);
+    body.links.logout = info.getLinkUrl(LOGOUT_PATH);
   } else {
     for (const idp of IDPS) {
       body.links[`login_${idp.name}`] = info.getLinkUrl(idp.routes.login);

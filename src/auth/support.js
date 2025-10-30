@@ -58,22 +58,6 @@ export const BEARER_IDP = {
 const EXPIRE_TIMESPAN_SECS = 30 * 24 * 60 * 60;
 
 /**
- * Returns the external url for the given path but respects the project path
- * @param {PathInfo} info the info
- * @param {string} route route
- * @param {string} path path
- * @param {object} [query] optional query
- * @returns {string} the url
- */
-export function getProjectLinkUrl(ctx, info, route, path = '', query = {}) {
-  const org = ctx.data?.org ?? info.org;
-  const site = ctx.data?.site ?? info.site;
-  const ref = ctx.data?.ref ?? info.ref ?? 'main';
-  const projectPath = org && site ? `${route}/${org}/${site}/${ref}${path}` : `${route}${path}`;
-  return info.getLinkUrl(projectPath, query);
-}
-
-/**
  * Workaround to define our own AbortSignal
  * @param adobeFetch
  * @returns {function(*, {}=): *}

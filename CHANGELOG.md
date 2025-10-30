@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/adobe/helix-api-service/compare/v1.5.1...v1.6.0) (2025-10-30)
+
+
+### Features
+
+* login to `org` and `site` ([#13](https://github.com/adobe/helix-api-service/issues/13)) ([24edcc7](https://github.com/adobe/helix-api-service/commit/24edcc7878b6277d82de2f5930d17dc5ab2e8ce6))
+
 ## [1.5.1](https://github.com/adobe/helix-api-service/compare/v1.5.0...v1.5.1) (2025-10-30)
 
 

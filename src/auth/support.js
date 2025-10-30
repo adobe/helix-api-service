@@ -17,7 +17,6 @@ import {
 } from 'jose';
 
 import { AbortController } from '@adobe/fetch';
-import { fetchConfigAll } from '@adobe/helix-admin-support';
 
 import { loadSiteConfig } from '../config/utils.js';
 import idpMicrosoft from '../idp-configs/microsoft.js';
@@ -27,8 +26,6 @@ import idpAdobe from '../idp-configs/adobe.js';
 import idpAdobeStage from '../idp-configs/adobe-stg.js';
 import idpIms from '../idp-configs/ims.js';
 import idpImsStage from '../idp-configs/ims-stg.js';
-import localJWKS from '../idp-configs/jwks-json.js';
-import { coerceArray } from '../support/utils.js';
 import { AuthInfo } from './auth-info.js';
 import { ADMIN_CLIENT_ID } from './clients.js';
 import { getAuthCookie } from './cookie.js';
@@ -51,27 +48,11 @@ export const IDPS = [
 ];
 
 export const BEARER_IDP = {
-  default: /** @type IDPConfig */ idpMicrosoft,
-  token: /** @type IDPConfig */ idpAdmin,
+  default: /** @type {import('./auth.d.ts').IDPConfig} */ idpMicrosoft,
+  token: /** @type {import('./auth.d.ts').IDPConfig} */ idpAdmin,
 };
 
 const EXPIRE_TIMESPAN_SECS = 30 * 24 * 60 * 60;
-
-/**
- * Returns the external url for the given path but respects the project path
- * @param {PathInfo} info the info
- * @param {string} route route
- * @param {string} path path
- * @param {object} [query] optional query
- * @returns {string} the url
- */
-export function getProjectLinkUrl(ctx, info, route, path = '', query = {}) {
-  const org = ctx.data?.org ?? info.org;
-  const site = ctx.data?.site ?? info.site;
-  const ref = ctx.data?.ref ?? info.ref ?? 'main';
-  const projectPath = org && site ? `${route}/${org}/${site}/${ref}${path}` : `${route}${path}`;
-  return info.getLinkUrl(projectPath, query);
-}
 
 /**
  * Workaround to define our own AbortSignal
@@ -96,24 +77,25 @@ function globalFetchAdapter(adobeFetch) {
 /**
  * Decodes the given id_token for the given idp. if `lenient` is `true`, the clock tolerance
  * is set to 1 week. this allows to extract some profile information that can be used as login_hint.
- * @param {import('../support/AdminContext.js').AdminContext} ctx the universal context
- * @param {PathInfo} info the path info
- * @param {IDPConfig} idp
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('./auth.d.ts').IDPConfig} idp
  * @param {string} idToken
- * @returns {Promise<JWTPayload>}
+ * @returns {Promise<import('jose').JWTPayload>}}
  */
-export async function decodeIdToken(ctx, info, idp, idToken, opts = {}) {
-  const { log } = ctx;
+export async function decodeIdToken(context, idp, idToken, opts = {}) {
+  const { log } = context;
   const jwks = idp.discovery.jwks
     ? createLocalJWKSet(idp.discovery.jwks)
     : createRemoteJWKSet(new URL(idp.discovery.jwks_uri), {
       agent: new Agent({}),
-      [customFetch]: globalFetchAdapter(ctx.getFetch()),
+      [customFetch]: globalFetchAdapter(context.getFetch()),
     });
 
   const { type = 'token' } = opts;
   const { payload } = await jwtVerify(idToken, jwks, {
-    audience: idp.client(ctx).clientId,
+    audience: idp.client(context).clientId,
   });
 
   const validate = idp.validateIssuer ?? ((iss) => (iss) === idp.discovery.issuer);
@@ -137,17 +119,17 @@ export async function decodeIdToken(ctx, info, idp, idToken, opts = {}) {
   log.info(`decoded id_token from ${payload.iss} and validated payload.`);
   return payload;
 }
+
 /**
  * Decodes the given IMS Access token for the given idp.
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info the path info
- * @param {IDPConfig} idp
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('./auth.d.ts').IDPConfig} idp
  * @param {string} idToken
- * @param {boolean} lenient
- * @returns {Promise<JWTPayload>}
+ * @returns {Promise<import('jose').JWTPayload>}}
  */
-export async function decodeImsToken(ctx, info, idp, idToken) {
-  const { log } = ctx;
+export async function decodeImsToken(context, idp, idToken) {
+  const { log } = context;
   const jwks = idp.discovery.jwks
     ? createLocalJWKSet(idp.discovery.jwks)
     /* c8 ignore next */
@@ -214,89 +196,24 @@ export async function decodeImsToken(ctx, info, idp, idToken) {
 /**
  * find the idp that issued the token. currently only supports IMS tokens that have the idp
  * name in the `as` claim. defaults to the 'microsoft' idp.
- * @param ctx
- * @param token
- * @returns {Promise<IDPConfig>}
+ *
+ * @param {string} token token
+ * @returns {Promise<import('./auth.d.ts').IDPConfig>}
  */
-export async function detectTokenIDP(ctx, token) {
+export async function detectTokenIDP(token) {
   const payload = decodeJwt(token);
   return IMS_IDPS.find(({ name }) => name === payload.as) || BEARER_IDP.default;
 }
 
 /**
- * Returns the normalized site access configuration for the current partition.
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
- * @returns {Promise<object>} the access configuration for this partition
- */
-export async function getSiteAccessConfig(ctx, info) {
-  const { partition } = info;
-  if (!ctx.attributes.accessConfig?.[partition]) {
-    if (!ctx.attributes.accessConfig) {
-      ctx.attributes.accessConfig = {};
-    }
-    const access = (await fetchConfigAll(ctx, info))?.config?.data?.access;
-    if (!access) {
-      ctx.attributes.accessConfig[partition] = {
-        allow: [],
-        apiKeyId: [],
-        secretId: [],
-      };
-    } else {
-      ctx.attributes.accessConfig[partition] = {
-        allow: coerceArray(access[partition]?.allow ?? access.allow),
-        apiKeyId: coerceArray(access[partition]?.apiKeyId ?? access.apiKeyId),
-        secretId: coerceArray(access[partition]?.secretId ?? access.secretId),
-      };
-    }
-  }
-  return ctx.attributes.accessConfig[partition];
-}
-
-/**
- * Returns the helix 4 site auth token if the project is configured as such.
- *
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
- * @returns {Promise<string|null>} the auth token
- */
-export async function getHelix4SiteAuthToken(ctx, info) {
-  const accessConfig = await getSiteAccessConfig(ctx, info);
-
-  if (!accessConfig.allow.length && !accessConfig.apiKeyId.length) {
-    return null;
-  }
-
-  if (!accessConfig.token) {
-    const privateKey = await importJWK(JSON.parse(ctx.env.HLX_ADMIN_IDP_PRIVATE_KEY), 'RS256');
-    const publicKey = localJWKS.keys[0];
-    accessConfig.token = await new SignJWT({
-      email: 'helix@adobe.com',
-      name: 'Helix Admin',
-    })
-      .setProtectedHeader({
-        alg: 'RS256',
-        kid: publicKey.kid,
-      })
-      .setIssuedAt()
-      .setIssuer(publicKey.issuer)
-      .setAudience(ctx.env.HLX_SITE_APP_AZURE_CLIENT_ID)
-      .setExpirationTime('1h')
-      .sign(privateKey);
-  }
-
-  return accessConfig.token;
-}
-
-/**
  * Returns the site auth token if the project is configured as such.
  *
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<string|null>} the auth token
  */
-export async function getSiteAuthToken(ctx, info) {
-  const accessConfig = await getSiteAccessConfig(ctx, info);
+export async function getSiteAuthToken(context, info) {
+  const accessConfig = await context.getSiteAccessConfig(info.partition);
 
   if (!accessConfig.allow.length
     && !accessConfig.apiKeyId.length
@@ -305,25 +222,24 @@ export async function getSiteAuthToken(ctx, info) {
   }
   if (!accessConfig.token) {
     // for helix5, use the global token
-    if (ctx.attributes.config) {
-      accessConfig.token = ctx.env.HLX_GLOBAL_DELIVERY_TOKEN;
-    } else {
-      accessConfig.token = await getHelix4SiteAuthToken(ctx, info);
+    if (context.attributes.config) {
+      accessConfig.token = context.env.HLX_GLOBAL_DELIVERY_TOKEN;
     }
   }
   return accessConfig.token;
 }
 
 /**
- * Returns the transient site auth token information for helix5 project with enabled auth
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
+ * Returns the transient site auth token information for helix5 project with enabled auth.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {string} email email for which the token is generated
  * @param {number} tokenExpiry token expiry duration in millis
  * @returns {Promise<object|null>}
  */
-export async function getTransientSiteTokenInfo(ctx, info, email, tokenExpiry) {
-  const config = await loadSiteConfig(ctx, info.org, info.site);
+export async function getTransientSiteTokenInfo(context, info, email, tokenExpiry) {
+  const config = await loadSiteConfig(context, info.org, info.site);
 
   // get access config
   const allowPreview = config.access?.preview?.allow ?? [];
@@ -338,7 +254,7 @@ export async function getTransientSiteTokenInfo(ctx, info, email, tokenExpiry) {
   }
 
   try { // get admin access config
-    const roleMapping = await RoleMapping.create(ctx, info, config.access.admin);
+    const roleMapping = await RoleMapping.create(config.access.admin);
     roleMapping.withDefaultRoles([]); // ensure that 'anonymous' doesn't have read rights
     roleMapping.hasConfigured = true;
     for (const user of allowPreview) {
@@ -363,11 +279,11 @@ export async function getTransientSiteTokenInfo(ctx, info, email, tokenExpiry) {
       domain = 'aem.live';
     } else {
       // indicate that the user is not allowed to access the site.
-      ctx.log.info('unable to create transient site token: user not allowed to access the site.');
+      context.log.info('unable to create transient site token: user not allowed to access the site.');
       return null;
     }
 
-    const privateKeyJson = JSON.parse(ctx.env.HLX_ADMIN_TST_PRIVATE_KEY);
+    const privateKeyJson = JSON.parse(context.env.HLX_ADMIN_TST_PRIVATE_KEY);
     const privateKey = await importJWK(privateKeyJson, 'RS256');
     const ONE_DAY = 24 * 60 * 60 * 1000;
     const siteTokenExpiry = Date.now() + (tokenExpiry || ONE_DAY);
@@ -386,7 +302,7 @@ export async function getTransientSiteTokenInfo(ctx, info, email, tokenExpiry) {
       siteTokenExpiry,
     };
   } catch (e) {
-    ctx.log.warn(`failed to generate transient site tokens: ${e.message}`);
+    context.log.warn(`failed to generate transient site tokens: ${e.message}`);
     return null;
   }
 }
@@ -394,15 +310,16 @@ export async function getTransientSiteTokenInfo(ctx, info, email, tokenExpiry) {
 /**
  * Computes the authentication info.
  *
- * @param {UniversalContext} ctx
- * @param {PathInfo} info
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<AuthInfo>} the authentication info or null if the request is not authenticated
  */
-export async function getAuthInfo(ctx, info) {
-  const { log } = ctx;
+export async function getAuthInfo(context, info) {
+  const { log } = context;
 
   let authType;
   let token;
+
   const cookie = getAuthCookie(info);
   if (cookie) {
     authType = 'token';
@@ -416,9 +333,9 @@ export async function getAuthInfo(ctx, info) {
 
   if (authType.toLowerCase() === 'bearer') {
     try {
-      const idp = await detectTokenIDP(ctx, token);
+      const idp = await detectTokenIDP(token);
       if (idp.ims) {
-        const profile = await decodeImsToken(ctx, info, idp, token);
+        const profile = await decodeImsToken(context, idp, token);
         if (!profile.email) {
           log.warn('auth: ims token invalid: missing user id');
           return AuthInfo.Default();
@@ -430,7 +347,7 @@ export async function getAuthInfo(ctx, info) {
           .withImsToken(token)
           .withAuthenticated(true);
       }
-      const profile = await decodeIdToken(ctx, info, idp, token, {
+      const profile = await decodeIdToken(context, idp, token, {
         type: 'bearer token',
       });
       if (profile.aud === ADMIN_CLIENT_ID) {
@@ -449,7 +366,7 @@ export async function getAuthInfo(ctx, info) {
   if (authType.toLowerCase() === 'token') {
     try {
       const idp = BEARER_IDP.token;
-      const profile = await decodeIdToken(ctx, info, idp, token, {
+      const profile = await decodeIdToken(context, idp, token, {
         type: 'api token',
       });
 
@@ -467,18 +384,23 @@ export async function getAuthInfo(ctx, info) {
         log.warn(`auth: api token invalid: subject ${profile.sub} does not match ${info.org}/${info.site}`);
         return AuthInfo.Default();
       }
-      // eslint-disable-next-line max-len
-      // validate that apiKeyId is configured for the project or org (but not for wildcard org tokens)
+
+      // validate that apiKeyId is configured for the project
+      // or org (but not for wildcard org tokens)
       if (profile.jti && info.org && subOrg !== '*') {
-        let { configAll } = ctx.attributes;
-        if (!configAll && info.site) {
-          configAll = await fetchConfigAll(ctx, { ...info, route: 'preview' });
-        }
-        if (!configAll) {
-          log.warn(`auth: api token invalid: jti ${profile.jti} could not be validated. no config for ${info.org}/${info.site || '*'}.`);
-          return AuthInfo.Default();
-        }
-        let apiKeyId = configAll?.config?.data?.admin?.apiKeyId || [];
+        // TODO: seems helix4 specific, REMOVE?
+        // let { configAll } = context.attributes;
+        // if (!configAll && info.site) {
+        //   configAll = await loadConfigSite(context, { ...info, route: 'preview' });
+        // }
+        // if (!configAll) {
+        // eslint-disable-next-line max-len
+        //   log.warn(`auth: api token invalid: jti ${profile.jti} could not be validated. no config for ${info.org}/${info.site || '*'}.`);
+        //   return AuthInfo.Default();
+        // }
+
+        const { attributes: { config } } = context;
+        let apiKeyId = config?.data?.admin?.apiKeyId || [];
         if (!Array.isArray(apiKeyId)) {
           apiKeyId = [apiKeyId];
         }
@@ -490,7 +412,7 @@ export async function getAuthInfo(ctx, info) {
 
       // for api keys with wildcard org (*), check JTI against allow list in ctx.env
       if (profile.jti && subOrg === '*' && info.org) {
-        const allowList = ctx.env.HLX_GLOBAL_API_KEY_ALLOWLIST;
+        const allowList = context.env.HLX_GLOBAL_API_KEY_ALLOWLIST;
         const allowedJtis = allowList ? allowList.split(',').map((jti) => jti.trim()) : [];
 
         if (!allowedJtis.includes(profile.jti)) {

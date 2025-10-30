@@ -10,7 +10,6 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { fetchFstab } from '@adobe/helix-admin-support';
 import { OneDriveAuth } from '@adobe/helix-onedrive-support';
 import { decodeJwt } from 'jose';
 
@@ -18,23 +17,23 @@ import { clearAuthCookie } from '../auth/cookie.js';
 import { exchangeToken } from '../auth/exchange-token.js';
 import { redirectToLogin } from '../auth/redirect-login.js';
 import { createCloseHtml, createSendMessageHtml } from '../auth/responses.js';
-import {
-  getProjectLinkUrl, IDPS, LOGOUT_PATH, PROFILE_PATH,
-} from '../auth/support.js';
+import { IDPS, LOGOUT_PATH, PROFILE_PATH } from '../auth/support.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { isDAMountpoint } from '../support/adobe-source.js';
 import idpAdobe from '../idp-configs/adobe.js';
 import localJWKS from '../idp-configs/jwks-json.js';
+import { loadSiteConfig } from '../config/utils.js';
 
 /**
- * Clears the authentication cookie (todo: and redirects to the logout page of the IDP)
- * @param {AdminContext} ctx the context of the universal serverless function
- * @param {PathInfo} info path info
+ * Clears the authentication cookie.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>}
  */
-export async function logout(ctx, info) {
-  const extensionId = ctx.data?.extensionId;
-  const { log } = ctx;
+export async function logout(context, info) {
+  const extensionId = context.data?.extensionId;
+  const { log } = context;
   const { org, site } = info;
   if (extensionId === 'cookie') {
     log.debug('logout: creating html for cookie logout');
@@ -69,7 +68,7 @@ export async function logout(ctx, info) {
     });
   }
 
-  const location = getProjectLinkUrl(ctx, info, PROFILE_PATH);
+  const location = info.getLinkUrl(PROFILE_PATH);
   log.debug('logout: redirecting to profile page with id_token cookie', location);
   return new Response('', {
     status: 302,
@@ -82,66 +81,60 @@ export async function logout(ctx, info) {
 }
 
 /**
- * Handles the login route
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info path info
+ * Handles the login route.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export async function login(ctx, info) {
-  const { log, attributes: { authInfo }, data } = ctx;
+export async function login(context, info) {
+  const { log, attributes: { authInfo }, data } = context;
 
   // for login requests with repo coordinates, perform mountpoint specific login
-  if (info.org && info.site) {
+  if (data.org && data.site) {
     const opts = {
       noPrompt: true,
       loginHint: authInfo.loginHint,
       tenantId: data.tenantId,
     };
 
-    if (isDAMountpoint(ctx.attributes.config?.content?.overlay)) {
-      return redirectToLogin(ctx, info, idpAdobe, opts);
-    }
-
-    const fstab = await fetchFstab(ctx, info, true);
-    if (!fstab) {
+    const config = await loadSiteConfig(context, data.org, data.site);
+    if (!config) {
       return createErrorResponse({
         log,
         status: 404,
-        msg: `no fstab.yaml for: ${info.org}/${info.site}`,
-      });
-    }
-    const mp = fstab.match(info.resourcePath);
-    if (!mp) {
-      return createErrorResponse({
-        log,
-        status: 400,
-        msg: `path specified is not mounted in fstab.yaml: ${info.resourcePath}`,
+        msg: `project not found: ${data.org}/${data.site}`,
       });
     }
 
+    if (isDAMountpoint(config.content?.overlay)) {
+      return redirectToLogin(context, info, idpAdobe, opts);
+    }
+
     // for sharepoint sources, try to detect the tenant
-    if (mp.type === 'onedrive' && !opts.tenantId) {
-      if (mp.tenantId) {
-        opts.tenantId = mp.tenantId;
+    const { content: { source } } = config;
+    if (source.type === 'onedrive' && !opts.tenantId) {
+      if (source.tenantId) {
+        opts.tenantId = source.tenantId;
       } else {
         const oneAuth = new OneDriveAuth({
           log,
           clientId: 'dummy',
           clientSecret: 'dummy',
         });
-        opts.tenantId = await oneAuth.initTenantFromUrl(mp.url);
+        opts.tenantId = await oneAuth.initTenantFromUrl(source.url);
       }
     }
 
     if (data?.idp) {
       const idp = IDPS.find(({ name }) => name === data.idp);
       if (idp) {
-        return redirectToLogin(ctx, info, idp, opts);
+        return redirectToLogin(context, info, idp, opts);
       }
     }
     for (const idp of IDPS) {
-      if (idp.mountType === mp.type) {
-        return redirectToLogin(ctx, info, idp, opts);
+      if (idp.mountType === source.type) {
+        return redirectToLogin(context, info, idp, opts);
       }
     }
     return createErrorResponse({
@@ -152,7 +145,7 @@ export async function login(ctx, info) {
   }
 
   if (authInfo.expired && authInfo.idp) {
-    return redirectToLogin(ctx, info, authInfo.idp, {
+    return redirectToLogin(context, info, authInfo.idp, {
       noPrompt: true,
       loginHint: authInfo.loginHint,
     });
@@ -162,7 +155,7 @@ export async function login(ctx, info) {
     links: {},
   };
   if (authInfo.profile) {
-    body.links.logout = getProjectLinkUrl(ctx, info, LOGOUT_PATH);
+    body.links.logout = info.getLinkUrl(LOGOUT_PATH);
   } else {
     for (const idp of IDPS) {
       body.links[`login_${idp.name}`] = info.getLinkUrl(idp.routes.login);
@@ -180,15 +173,16 @@ export async function login(ctx, info) {
 }
 
 /**
- * Handles the auth route
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info path info
+ * Handles the auth route.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @return {Promise<Response>} response
  */
-export async function auth(ctx, info) {
+export async function auth(context, info) {
   const {
     log, data, attributes: { authInfo }, suffix,
-  } = ctx;
+  } = context;
 
   if (suffix === '/auth/discovery/keys') {
     // deliver JWKS
@@ -204,7 +198,7 @@ export async function auth(ctx, info) {
   // check if the route belongs to an idp
   for (const idp of IDPS) {
     if (suffix === idp.routes.login) {
-      return redirectToLogin(ctx, info, idp, {
+      return redirectToLogin(context, info, idp, {
         noPrompt: true,
         loginHint: authInfo.loginHint,
       });
@@ -234,7 +228,7 @@ export async function auth(ctx, info) {
       if (!data.code) {
         if (data.state.prompt === 'none') {
           // login failed, but try again with prompt
-          return redirectToLogin(ctx, info, idp, {
+          return redirectToLogin(context, info, idp, {
             noPrompt: false,
             loginHint: authInfo.loginHint,
             tenantId: data.state.tenantId,
@@ -245,7 +239,7 @@ export async function auth(ctx, info) {
           status: 401,
         });
       }
-      return exchangeToken(ctx, info, idp, data.state.tenantId);
+      return exchangeToken(context, info, idp, data.state.tenantId);
     }
   }
   return new Response('', {

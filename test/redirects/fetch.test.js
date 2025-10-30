@@ -77,7 +77,7 @@ describe('Redirects Fetch Tests', () => {
     );
     await assert.rejects(
       ret,
-      /error while loading redirects from [^:]+: 502/,
+      /error while loading redirects from [^:]+: 500/,
     );
   });
 });

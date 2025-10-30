@@ -17,16 +17,16 @@ import { clearAuthCookie } from './cookie.js';
 /**
  * Returns a redirect (302) response to the IDPs login endpoint
  *
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info path info
- * @param {IDPConfig} idp IDP config
+ * @param {import('../support/AdminContext').AdminContext} context the universal context
+ * @param {import('./support/RequestInfo.js').RequestInfo} info request info
+ * @param {import('./auth').IDPConfig} idp IDP config
  * @param {object} opts
  * @param {boolean} opts.noPrompt if {@code true}, force no prompt
  * @param {string} opts.loginHint login hint, i.e. email
  * @return {Promise<Response>} response
  */
-export function redirectToLogin(ctx, info, idp, opts) {
-  const { log, data } = ctx;
+export function redirectToLogin(context, info, idp, opts) {
+  const { log, data } = context;
 
   let forwardedInfo;
   if (data.client_id) {
@@ -67,7 +67,8 @@ export function redirectToLogin(ctx, info, idp, opts) {
     // this is the client id, redirect uri and state of the client which initiated the login
     forwardedInfo,
   }).encode();
-  url.searchParams.append('client_id', idp.client(ctx).clientId);
+
+  url.searchParams.append('client_id', idp.client(context).clientId);
   url.searchParams.append('response_type', 'code');
   url.searchParams.append('scope', idp.scope);
   url.searchParams.append('nonce', crypto.randomUUID());

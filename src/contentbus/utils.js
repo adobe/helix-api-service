@@ -12,18 +12,16 @@
 
 'use strict';
 
-/* eslint-disable no-param-reassign */
-import { cleanupHeaderValue, logLevelForStatusCode } from '@adobe/helix-shared-utils';
 import { Response } from '@adobe/fetch';
+import { cleanupHeaderValue, logLevelForStatusCode } from '@adobe/helix-shared-utils';
 
 /**
  * Create an error response.
  * @return {Response} a universal response
  */
 export function createErrorResponse(opts) {
-  const {
-    e, msg, log,
-  } = opts;
+  const { e, msg, log } = opts;
+
   const status = e?.status || e?.statusCode || opts.status || 500;
   const message = e?.message || msg;
   const args = [message];

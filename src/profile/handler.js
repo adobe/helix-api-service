@@ -10,14 +10,15 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { getProjectLinkUrl, LOGIN_PATH, LOGOUT_PATH } from '../auth/support.js';
+import { LOGIN_PATH, LOGOUT_PATH } from '../auth/support.js';
 
 const ALLOWED_METHODS = ['GET', 'POST'];
 
 /**
- * Handles the /me route
- * @param {AdminContext} context the universal context
- * @param {PathInfo} info path info
+ * Handles the profile route.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
 export default async function profileHandler(context, info) {
@@ -35,7 +36,7 @@ export default async function profileHandler(context, info) {
       status: 401,
       error: 'unauthorized',
       links: {
-        login: getProjectLinkUrl(context, info, LOGIN_PATH),
+        login: info.getLinkUrl(LOGIN_PATH),
       },
     };
     return new Response(JSON.stringify(data, null, 2), {
@@ -51,7 +52,7 @@ export default async function profileHandler(context, info) {
     status: 200,
     profile,
     links: {
-      logout: getProjectLinkUrl(context, info, LOGOUT_PATH),
+      logout: info.getLinkUrl(LOGOUT_PATH),
     },
   };
 

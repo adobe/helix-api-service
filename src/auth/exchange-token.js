@@ -17,16 +17,16 @@ import {
   createCloseHtml, createSendMessageHtml, sendAEMCLILoginInfoResponse, createClientSideRedirectHtml,
 } from './responses.js';
 import {
-  decodeIdToken, decodeImsToken, getProjectLinkUrl,
+  decodeIdToken, decodeImsToken,
   getTransientSiteTokenInfo, PROFILE_PATH,
 } from './support.js';
 import { setAuthCookie } from './cookie.js';
 import localJWKS from '../idp-configs/jwks-json.js';
 
-async function fetchTokens(ctx, info, idp, tenantId) {
-  const { data, log } = ctx;
+async function fetchTokens(context, info, idp, tenantId) {
+  const { data, log } = context;
 
-  const fetch = ctx.getFetch();
+  const fetch = context.getFetch();
 
   let te = idp.discovery.token_endpoint;
   if (te.includes('{tenantid}')) {
@@ -34,7 +34,7 @@ async function fetchTokens(ctx, info, idp, tenantId) {
   }
 
   const url = new URL(te);
-  const client = idp.client(ctx);
+  const client = idp.client(context);
   const body = {
     client_id: client.clientId,
     client_secret: client.clientSecret,
@@ -65,8 +65,8 @@ async function fetchTokens(ctx, info, idp, tenantId) {
   return { idToken, accessToken };
 }
 
-async function decodeTokens(ctx, info, idp, tokens) {
-  const { log } = ctx;
+async function decodeTokens(context, idp, tokens) {
+  const { log } = context;
   const { idToken, accessToken } = tokens;
 
   const iat = Math.floor(Date.now() / 1000);
@@ -79,7 +79,7 @@ async function decodeTokens(ctx, info, idp, tokens) {
   const { payload } = ret;
 
   try {
-    const decoded = await decodeIdToken(ctx, info, idp, idToken);
+    const decoded = await decodeIdToken(context, idp, idToken);
     for (const prop of ['email', 'user_id', 'name', 'roles', 'oid', 'preferred_username']) {
       if (decoded[prop]) {
         payload[prop] = decoded[prop];
@@ -90,7 +90,7 @@ async function decodeTokens(ctx, info, idp, tokens) {
     if (!payload.user_id && decoded.sub?.indexOf('@') > 0) {
       payload.user_id = decoded.sub;
       payload.imsToken = accessToken;
-      const decodedAccessToken = await decodeImsToken(ctx, info, idp, accessToken);
+      const decodedAccessToken = await decodeImsToken(context, idp, accessToken);
       const expiresIn = Math.floor(Number.parseInt(decodedAccessToken.expires_in, 10) / 1000);
       const createdAt = Math.floor(Number.parseInt(decodedAccessToken.created_at, 10) / 1000);
 
@@ -111,21 +111,21 @@ async function decodeTokens(ctx, info, idp, tokens) {
   }
 }
 
-async function createExtensionResponse(ctx, info, idp, extensionId, {
+async function createExtensionResponse(context, info, idp, extensionId, {
   token, accessToken, decoded, state,
 }) {
-  const { log } = ctx;
+  const { log } = context;
   const { payload, iss, exp } = decoded;
   let { picture } = decoded;
 
-  const fetch = ctx.getFetch();
+  const fetch = context.getFetch();
 
   let siteTokenInfo = null;
   const email = payload.email || payload.user_id || payload.preferred_username;
   if (!email) {
     log.warn(`Decoded id token from ${iss} does not contain email: ${JSON.stringify(payload, 0, 2)}`);
   } else {
-    siteTokenInfo = await getTransientSiteTokenInfo(ctx, info, email);
+    siteTokenInfo = await getTransientSiteTokenInfo(context, info, email);
   }
 
   // fetch profile picture for microsoft
@@ -177,10 +177,10 @@ async function createExtensionResponse(ctx, info, idp, extensionId, {
   });
 }
 
-async function createAEMCLILoginInfoResponse(ctx, info, {
+async function createAEMCLILoginInfoResponse(context, info, {
   forwardedInfo, decoded,
 }) {
-  const { log } = ctx;
+  const { log } = context;
   const { payload, iss } = decoded;
 
   // we are evaluating more secure ways to do this
@@ -201,7 +201,7 @@ async function createAEMCLILoginInfoResponse(ctx, info, {
     log.warn(`${clientId}: Decoded id token from ${iss} does not contain email: ${JSON.stringify(payload, 0, 2)}`);
     return new Response('', { status: 401 });
   } else {
-    siteTokenInfo = await getTransientSiteTokenInfo(ctx, info, payload.email);
+    siteTokenInfo = await getTransientSiteTokenInfo(context, info, payload.email);
   }
 
   return sendAEMCLILoginInfoResponse(
@@ -216,21 +216,21 @@ async function createAEMCLILoginInfoResponse(ctx, info, {
 /**
  * Performs a token exchange from the code flow and redirects to the root page
  *
- * @param {AdminContext} ctx the universal context
- * @param {PathInfo} info path info
- * @param {IDPConfig} idp IDP config
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('./auth.d.ts').IDPConfig} idp IDP config
  * @param {string} [tenantId] optional tenant id for the IDP
  * @return {Promise<Response>} response
  */
-export async function exchangeToken(ctx, info, idp, tenantId) {
-  const { log, data } = ctx;
+export async function exchangeToken(context, info, idp, tenantId) {
+  const { log, data } = context;
 
-  const tokens = await fetchTokens(ctx, info, idp, tenantId);
+  const tokens = await fetchTokens(context, info, idp, tenantId);
   if (tokens.error) {
     return tokens.error;
   }
 
-  const decoded = await decodeTokens(ctx, info, idp, tokens);
+  const decoded = await decodeTokens(context, idp, tokens);
   if (decoded.error) {
     return decoded.error;
   }
@@ -247,7 +247,7 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
   }
 
   // create an admin JWT for that user
-  const privateKey = await importJWK(JSON.parse(ctx.env.HLX_ADMIN_IDP_PRIVATE_KEY), 'RS256');
+  const privateKey = await importJWK(JSON.parse(context.env.HLX_ADMIN_IDP_PRIVATE_KEY), 'RS256');
   const publicKey = localJWKS.keys[0];
   const token = await new SignJWT(payload)
     .setProtectedHeader({
@@ -257,12 +257,12 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
     .setIssuedAt(iat)
     .setIssuer(publicKey.issuer)
     .setSubject('*/*')
-    .setAudience(ctx.env.HLX_SITE_APP_AZURE_CLIENT_ID)
+    .setAudience(context.env.HLX_SITE_APP_AZURE_CLIENT_ID)
     .setExpirationTime(exp)
     .sign(privateKey);
 
   // ensure that auth cookie is not cleared again in `index.js`
-  ctx.attributes.authInfo?.withCookieInvalid(false);
+  context.attributes.authInfo?.withCookieInvalid(false);
 
   // if a extensionId is provided, we send the token via sendmessage
   if (extensionId === 'cookie') {
@@ -278,19 +278,19 @@ export async function exchangeToken(ctx, info, idp, tenantId) {
   }
 
   if (extensionId) {
-    return createExtensionResponse(ctx, info, idp, extensionId, {
+    return createExtensionResponse(context, info, idp, extensionId, {
       token, accessToken: tokens.accessToken, decoded, state: data.state,
     });
   }
 
   const { forwardedInfo } = data.state;
   if (forwardedInfo?.clientId === 'aem-cli') {
-    return createAEMCLILoginInfoResponse(ctx, info, {
+    return createAEMCLILoginInfoResponse(context, info, {
       forwardedInfo, decoded,
     });
   }
 
-  const location = getProjectLinkUrl(ctx, info, PROFILE_PATH, '');
+  const location = info.getLinkUrl(PROFILE_PATH);
   log.debug('login: redirecting to profile page with id_token cookie', location);
   return new Response(createClientSideRedirectHtml(location), {
     status: 200,

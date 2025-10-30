@@ -11,39 +11,20 @@
  */
 import { AccessDeniedError } from './AccessDeniedError.js';
 import { RoleMapping } from './role-mapping.js';
-import { getAuthInfo } from './support.js';
-
-/**
- * Authenticates current user. It checks if the request contains authentication information and
- * sets user data.
- **
- * @param {UniversalContext} ctx
- * @param {PathInfo} info
- * @returns {Promise<AuthInfo>} the authentication info
- */
-export async function authenticate(ctx, info) {
-  if (ctx.attributes.authInfo === undefined) {
-    ctx.attributes.authInfo = await getAuthInfo(ctx, info);
-  }
-  return ctx.attributes.authInfo;
-}
 
 /**
  * Authorizes the current user by loading the project config and assigning the roles.
  *
- * @param {UniversalContext} ctx
- * @param {PathInfo} info
- * @throws AccessDeniedError if the user is not authorized
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @throws {AccessDeniedError} if the user is not authorized
  */
-export async function authorize(ctx, info) {
-  const { log, attributes: { authInfo } } = ctx;
-  if (!authInfo) {
-    throw new AccessDeniedError('not authenticated');
-  }
+export async function authorize(context) {
+  const { log, attributes: { authInfo } } = context;
 
   // check if we have any roles or user in the invocation event itself
-  if (ctx?.invocation?.event) {
-    const { invocation: { event: { roles = [], user } } } = ctx;
+  if (context?.invocation?.event) {
+    const { invocation: { event: { roles = [], user } } } = context;
     if (roles.length) {
       authInfo.withRoles(roles);
       if (user) {
@@ -56,28 +37,28 @@ export async function authorize(ctx, info) {
     }
   }
 
-  // load role mapping from config all
-  const roleMapping = await RoleMapping.load(ctx, info, authInfo.profile?.defaultRole);
+  // load role mapping from config
+  const roleMapping = await RoleMapping.load(context, authInfo.profile?.defaultRole);
+  if (roleMapping) {
+    const roles = roleMapping.getRolesForUser(
+      authInfo.profile?.email,
+      authInfo.profile?.user_id,
+      authInfo.profile?.preferred_username,
+    );
+    authInfo.withRoles(roles);
+    log.info(`auth: using roles ${roles} for ${authInfo.authenticated ? '' : 'un'}authenticated user`);
 
-  const roles = roleMapping.getRolesForUser(
-    authInfo.profile?.email,
-    authInfo.profile?.user_id,
-    authInfo.profile?.preferred_username,
-  );
-  authInfo.withRoles(roles);
-
-  log.info(`auth: using roles ${roles} for ${authInfo.authenticated ? '' : 'un'}authenticated user`);
-
-  // enforce authentication
-  if (!authInfo.authenticated) {
-    // if 'auto' configured and roles are defined (backward compat)
-    if (roleMapping.requireAuth === 'auto') {
-      if (roleMapping.hasConfigured) {
+    // enforce authentication
+    if (!authInfo.authenticated) {
+      // if 'auto' configured and roles are defined (backward compat)
+      if (roleMapping.requireAuth === 'auto') {
+        if (roleMapping.hasConfigured) {
+          throw new AccessDeniedError('not authenticated');
+        }
+      // or if auth is enforced
+      } else if (roleMapping.requireAuth !== 'false') {
         throw new AccessDeniedError('not authenticated');
       }
-    // or if auth is enforced
-    } else if (roleMapping.requireAuth !== 'false') {
-      throw new AccessDeniedError('not authenticated');
     }
   }
 }

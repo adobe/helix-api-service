@@ -167,7 +167,10 @@ export function createContext(suffix, {
     log: console,
     pathInfo: { suffix },
     data,
-    env,
+    env: {
+      HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      ...env,
+    },
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),

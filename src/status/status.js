@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
+import { LOGOUT_PATH } from '../auth/support.js';
 import getLiveInfo from '../live/info.js';
 import getPreviewInfo from '../preview/info.js';
 import web2edit from '../lookup/web2edit.js';
@@ -118,7 +119,7 @@ export default async function status(context, info) {
     resp.profile = authInfo.profile;
   }
   if (authInfo.authenticated) {
-    // TODO resp.links.logout = getProjectLinkUrl(context, info, LOGOUT_PATH);
+    info.getLinkUrl(LOGOUT_PATH);
   }
 
   return new Response(JSON.stringify(resp, null, 2), {

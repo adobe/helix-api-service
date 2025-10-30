@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/adobe/helix-api-service/compare/v1.5.0...v1.5.1) (2025-10-30)
+
+
+### Bug Fixes
+
+* **auth:** apply fix for `exchangeToken` ([060d7c7](https://github.com/adobe/helix-api-service/commit/060d7c754b87e2f446a24085c872fede09c126a5))
+
 # [1.5.0](https://github.com/adobe/helix-api-service/compare/v1.4.1...v1.5.0) (2025-10-29)
 
 

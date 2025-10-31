@@ -9,16 +9,50 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { getSource } from './get.js';
+import { putSource } from './put.js';
 import { Response } from '@adobe/fetch';
 
-const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'];
+async function handle(context, info) {
+  try {
+    switch (info.method) {
+      case 'GET':
+        return getSource(context, info);
+      case 'PUT':
+        return putSource(context, info);
+      // case 'DELETE':
+      //   return deleteSource(context, info);
+      case 'HEAD':
+        return getSource(context, info, true);
+      default:
+        return {
+          body: 'method not allowed',
+          status: 405,
+        };
+    }
+  } catch (e) {
+    return {
+      body: e.message,
+      status: e.$metadata?.httpStatusCode || 500,
+    };
+  }
+}
+
+function addHeaderIfSet(headers, header, value) {
+  if (value) {
+    // eslint-disable-next-line no-param-reassign
+    headers[header] = value;
+  }
+}
 
 export default async function sourceHandler(context, info) {
-  if (ALLOWED_METHODS.indexOf(info.method) < 0) {
-    return new Response('method not allowed', {
-      status: 405,
-    });
-  }
+  const resp = await handle(context, info);
 
-  return new Response('OK', { status: 200 });
+  const headers = {};
+  addHeaderIfSet(headers, 'Content-Type', resp.contentType);
+  addHeaderIfSet(headers, 'Content-Length', resp.contentLength);
+  addHeaderIfSet(headers, 'Last-Modified', resp.metadata?.LastModified);
+  addHeaderIfSet(headers, 'ETag', resp.etag);
+
+  return new Response(resp.body, { status: resp.status, headers });
 }

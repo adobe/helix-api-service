@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/adobe/helix-api-service/compare/v1.6.0...v1.7.0) (2025-10-31)
+
+
+### Bug Fixes
+
+* **deps:** npm i @aws-sdk/lib-storage ([658ff01](https://github.com/adobe/helix-api-service/commit/658ff01dd539f3928369d6e723fae63739fc724f))
+
+
+### Features
+
+* implement media route ([ce8ee56](https://github.com/adobe/helix-api-service/commit/ce8ee5645c250f2329e87bc33e1c581f66d52769))
+
 # [1.6.0](https://github.com/adobe/helix-api-service/compare/v1.5.1...v1.6.0) (2025-10-30)
 
 

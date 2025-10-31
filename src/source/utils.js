@@ -19,4 +19,3 @@ export function getS3Config(context) {
     },
   };
 }
-

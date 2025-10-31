@@ -9,9 +9,9 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
 import { getSource } from './get.js';
 import { putSource } from './put.js';
-import { Response } from '@adobe/fetch';
 
 async function handle(context, info) {
   try {
@@ -48,11 +48,17 @@ function addHeaderIfSet(headers, header, value) {
 export default async function sourceHandler(context, info) {
   const resp = await handle(context, info);
 
-  const headers = {};
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Methods': 'HEAD, GET, PUT, DELETE',
+    'Access-Control-Expose-Headers': 'X-da-id',
+  };
   addHeaderIfSet(headers, 'Content-Type', resp.contentType);
   addHeaderIfSet(headers, 'Content-Length', resp.contentLength);
   addHeaderIfSet(headers, 'Last-Modified', resp.metadata?.LastModified);
   addHeaderIfSet(headers, 'ETag', resp.etag);
+  addHeaderIfSet(headers, 'X-da-id', resp.metadata?.id);
 
   return new Response(resp.body, { status: resp.status, headers });
 }

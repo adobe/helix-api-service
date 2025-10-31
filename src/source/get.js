@@ -9,8 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { S3Client, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getS3Config } from './utils.js';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 
 export function buildGetInput(bucket, org, key) {
   return { Bucket: bucket, Key: `${org}${key}` };
@@ -24,26 +24,28 @@ export async function getSource(context, info, head = false) {
 
   const { org, resourcePath: key } = info;
   const input = buildGetInput(bucket, org, key);
-  if (!head) {
-    try {
-      const resp = await client.send(new GetObjectCommand(input));
 
-      return {
-        body: resp.Body,
-        status: resp.$metadata.httpStatusCode,
-        contentType: resp.ContentType,
-        contentLength: resp.ContentLength,
-        metadata: {
-          ...resp.Metadata,
-          LastModified: resp.LastModified,
-        },
-        // etag: resp.ETag,
-      };
-    } catch (e) {
-      return { body: '', status: e.$metadata?.httpStatusCode || 404, contentLength: 0 };
+  try {
+    const command = head ? new HeadObjectCommand(input) : new GetObjectCommand(input);
+    const resp = await client.send(command);
+
+    const result = {
+      status: resp.$metadata.httpStatusCode,
+      contentType: resp.ContentType,
+      contentLength: resp.ContentLength,
+      metadata: {
+        ...resp.Metadata,
+        LastModified: resp.LastModified,
+      },
+      etag: resp.ETag,
+    };
+
+    if (!head) {
+      result.body = resp.Body;
     }
-  }
 
-  // TODO HEAD support
-  return { status: 500 };
+    return result;
+  } catch (e) {
+    return { body: '', status: e.$metadata?.httpStatusCode || 404, contentLength: 0 };
+  }
 }

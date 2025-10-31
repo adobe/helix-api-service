@@ -9,9 +9,9 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { buildGetInput } from './get.js';
 import { getS3Config } from './utils.js';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
@@ -30,6 +30,8 @@ function buildPutInput({
 }
 
 export async function putSource(context, info) {
+  // Get object first
+
   const config = getS3Config(context);
   const client = new S3Client(config);
 
@@ -49,7 +51,7 @@ export async function putSource(context, info) {
     const command = new PutObjectCommand({
       ...input,
       Metadata: {
-        ID, /* Users, ?? */ Timestamp: `${Date.now()}`, Path: input.key,
+        ID, /* Users, ?? */ Path: input.Key,
       },
     });
     try {
@@ -57,7 +59,6 @@ export async function putSource(context, info) {
       return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
     } catch (e) {
       const status = e.$metadata?.httpStatusCode || 500;
-      // TODO handle 412
 
       // eslint-disable-next-line no-console
       if (status >= 500) console.error('Object store failed', e);

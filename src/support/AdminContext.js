@@ -284,6 +284,17 @@ export class AdminContext {
     }
     return attributes.onedrive;
   }
+
+  /**
+   * Returns the next id used for logging the purge requests
+   * @returns {number}
+   */
+  nextRequestId() {
+    const { attributes } = this;
+
+    attributes.subRequestId = (attributes.subRequestId || 0) + 1;
+    return attributes.subRequestId;
+  }
 }
 
 export function adminContext(func) {

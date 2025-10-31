@@ -154,6 +154,11 @@ export class RequestInfo {
     this.query = {};
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  get path() {
+    throw new Error();
+  }
+
   /**
    * Create a new request info.
    *
@@ -173,6 +178,7 @@ export class RequestInfo {
     info.route = route;
     info.org = org;
     info.site = site;
+    info.ref = 'main';
 
     if (path) {
       const { webPath, resourcePath, ext } = computePaths(path);

@@ -168,20 +168,19 @@ describe('Index Tests', () => {
     });
   });
 
-  it('fails calling status handler with forbidden method', async () => {
+  it('fails calling status handler when not authenticated', async () => {
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
 
-    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+    const result = await main(new Request('https://localhost/'), {
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
       attributes: {
-        authInfo: AuthInfo.Default().withAuthenticated(true),
+        authInfo: AuthInfo.Default().withAuthenticated(false),
       },
     });
-    assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), 'method not allowed');
+    assert.strictEqual(result.status, 403);
   });
 
   it('fails calling status handler with missing site config', async () => {

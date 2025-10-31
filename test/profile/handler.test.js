@@ -15,8 +15,8 @@ import { generateKeyPair, exportJWK, SignJWT } from 'jose';
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import idpAdmin from '../../src/idp-configs/admin.js';
-import { main } from '../../src/index.js';
 import idpFakeTestIDP from '../idp-configs/test-idp.js';
+import { main } from '../../src/index.js';
 import { Nock } from '../utils.js';
 
 describe('Profile Handler Tests', async () => {

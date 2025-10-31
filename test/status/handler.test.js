@@ -12,62 +12,90 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import status from '../../src/status/status.js';
+import { main } from '../../src/index.js';
 import {
-  Nock, SITE_CONFIG, createContext, createInfo,
+  Nock, SITE_CONFIG, ORG_CONFIG,
 } from '../utils.js';
 
-describe('Status GET Tests', () => {
+describe('Status Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {
     nock = new Nock().env();
+
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
     nock.done();
   });
 
+  it('return 405 with method not allowed', async () => {
+    const suffix = '/owner/sites/repo/status/document';
+
+    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+    assert.strictEqual(result.status, 405);
+    assert.strictEqual(await result.text(), 'method not allowed');
+  });
+
   it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
     const suffix = '/owner/sites/repo/status/document';
 
-    const result = await status(
-      createContext(suffix, { data: { editUrl: 'other' } }),
-      createInfo(suffix),
-    );
-
+    const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
     assert.strictEqual(result.status, 400);
   });
 
-  it('throws if `editUrl` is not auto and user lacks permissions', async () => {
+  it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
+    const suffix = '/owner/sites/repo/status/document';
+
+    const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+    assert.strictEqual(result.status, 400);
+  });
+
+  it('return 403 if `editUrl` is not auto and user lacks permissions', async () => {
     const suffix = '/owner/sites/repo/status/';
 
-    const result = () => status(
-      createContext(suffix, {
-        attributes: { authInfo: AuthInfo.Default() },
-        data: { editUrl: 'other' },
-      }),
-      createInfo(suffix),
-    );
-
-    assert.rejects(
-      result(),
-      /forbidden/,
-    );
+    const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
+    assert.strictEqual(result.status, 403);
   });
 
   it('sets status to `403` if `editUrl` is `auto` and user lacks permissions', async () => {
     const suffix = '/owner/sites/repo/status/';
 
-    const result = await status(
-      createContext(suffix, {
-        attributes: { authInfo: AuthInfo.Default() },
-        data: { editUrl: 'auto' },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request('https://api.aem.live/?editUrl=auto'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
 
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
@@ -83,6 +111,9 @@ describe('Status GET Tests', () => {
         error: 'forbidden',
         status: 403,
         url: 'https://main--repo--owner.aem.page/',
+      },
+      profile: {
+        defaultRole: 'media_author',
       },
       resourcePath: '/index.md',
       webPath: '/',
@@ -113,13 +144,14 @@ describe('Status GET Tests', () => {
       .head('/live/folder/page.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
-    const result = await status(
-      createContext(suffix, {
-        attributes: { redirects: { preview: [], live: [] } },
-        data: { editUrl: 'auto' },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request('https://api.aem.live/?editUrl=auto'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
+
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       webPath: '/folder/page',
@@ -132,9 +164,6 @@ describe('Status GET Tests', () => {
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         sourceLocation: 'google:*',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
@@ -147,9 +176,6 @@ describe('Status GET Tests', () => {
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         sourceLocation: 'google:*',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
@@ -173,9 +199,6 @@ describe('Status GET Tests', () => {
         lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
         sourceLocation: 'gdrive:1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
         status: 200,
-      },
-      profile: {
-        userId: 'admin',
       },
     });
   });
@@ -206,13 +229,13 @@ describe('Status GET Tests', () => {
       .head('/live/index.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
-    const result = await status(
-      createContext(suffix, {
-        attributes: { redirects: { preview: [], live: [] } },
-        data: { editUrl },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request(`https://api.aem.live/?editUrl=${editUrl}`), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       edit: {
@@ -235,9 +258,6 @@ describe('Status GET Tests', () => {
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
@@ -250,18 +270,12 @@ describe('Status GET Tests', () => {
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
         sourceLocation: 'google:*',
         status: 200,
         url: 'https://main--repo--owner.aem.page/',
-      },
-      profile: {
-        userId: 'admin',
       },
       resourcePath: '/index.md',
       webPath: '/',

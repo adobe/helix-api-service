@@ -134,6 +134,21 @@ export function coerceArray(value, unique = false) {
 }
 
 /**
+ * Checks if the given properties are truthy in the given object.
+ * Throws error including the message if not.
+ * @param {object} obj
+ * @param {string} msg Error message
+ * @param {string[]} names
+ */
+export function assertRequiredProperties(obj, msg, ...names) {
+  for (const name of names) {
+    if (!obj[name]) {
+      throw new Error(`${msg}: "${name}" is required`);
+    }
+  }
+}
+
+/**
  * Logs and creates an error response.
  * @param {Logger} [log] Logger.
  * @param {number} status The HTTP status. if negative, the status will be turned into a
@@ -232,4 +247,24 @@ export function formatDuration(duration) {
       rem: Math.floor(unit ? rem / unit : 0),
     };
   }, { display: '', rem: duration }).display.trim();
+}
+
+export function* cartesian(...arrays) {
+  const len = arrays.length;
+  const idx = new Array(len).fill(0);
+  let done = false;
+  do {
+    yield arrays.map((a, i) => a[idx[i]]);
+    for (let i = 0; i < len; i += 1) {
+      if (idx[i] < arrays[i].length - 1) {
+        idx[i] += 1;
+        break;
+      } else {
+        idx[i] = 0;
+        if (i === len - 1) {
+          done = true;
+        }
+      }
+    }
+  } while (!done);
 }

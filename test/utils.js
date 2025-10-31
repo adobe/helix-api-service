@@ -166,7 +166,6 @@ export function createContext(suffix, {
   attributes = {}, data, env,
 } = {}) {
   return AdminContext.create({
-    log: console,
     pathInfo: { suffix },
     data,
     env: {

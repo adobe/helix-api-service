@@ -31,7 +31,6 @@ describe('Index Tests', () => {
 
   it('succeeds calling login handler', async () => {
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/login',
       },
@@ -41,7 +40,6 @@ describe('Index Tests', () => {
 
   it('fails calling login handler with suffix', async () => {
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/login/path',
       },
@@ -55,7 +53,6 @@ describe('Index Tests', () => {
     nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/',
       },
@@ -77,7 +74,6 @@ describe('Index Tests', () => {
         'x-github-base': 'https://my.github.com',
       },
     }), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/src/scripts.js',
       },
@@ -91,7 +87,6 @@ describe('Index Tests', () => {
 
   it('fails calling code handler with incomplete match', async () => {
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/code',
       },
@@ -105,7 +100,6 @@ describe('Index Tests', () => {
 
   it('fails calling status handler without trailing path', async () => {
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status',
       },
@@ -132,7 +126,6 @@ describe('Index Tests', () => {
       .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
@@ -180,7 +173,6 @@ describe('Index Tests', () => {
     nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
@@ -196,7 +188,6 @@ describe('Index Tests', () => {
     nock.siteConfig().reply(404);
 
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/document',
       },
@@ -215,7 +206,6 @@ describe('Index Tests', () => {
     nock.orgConfig(ORG_CONFIG);
 
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/profiles',
       },
@@ -232,7 +222,6 @@ describe('Index Tests', () => {
       .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
-      log: console,
       pathInfo: {
         suffix: '/owner/profiles',
       },

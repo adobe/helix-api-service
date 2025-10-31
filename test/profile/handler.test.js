@@ -53,11 +53,9 @@ describe('Profile Handler Tests', async () => {
     const result = await main(new Request('https://api.aem.live/', {
       method: 'PUT',
     }), {
-      log: console,
       pathInfo: {
         suffix: '/profile',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');
@@ -71,7 +69,6 @@ describe('Profile Handler Tests', async () => {
     const result = await main(new Request('https://api.aem.live/', {
       method: 'GET',
     }), {
-      log: console,
       func: {
         package: 'pkg',
         func: 'admin',
@@ -80,7 +77,6 @@ describe('Profile Handler Tests', async () => {
       pathInfo: {
         suffix: '/profile',
       },
-      env: {},
     });
     assert.strictEqual(result.status, 401);
     assert.deepStrictEqual(await result.json(), {
@@ -119,8 +115,6 @@ describe('Profile Handler Tests', async () => {
         cookie: `auth_token=${authToken}`,
       },
     }), {
-      env: {},
-      log: console,
       pathInfo: {
         suffix: '/profile',
       },
@@ -173,8 +167,6 @@ describe('Profile Handler Tests', async () => {
         cookie: `auth_token=${authToken}`,
       },
     }), {
-      env: {},
-      log: console,
       pathInfo: {
         suffix: '/profile',
       },

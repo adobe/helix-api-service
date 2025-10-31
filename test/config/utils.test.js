@@ -33,7 +33,6 @@ describe('Config Utils Tests', () => {
       .reply(500);
 
     const cfg = await loadSiteConfig(AdminContext.create({
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',
       },
@@ -49,7 +48,6 @@ describe('Config Utils Tests', () => {
       .replyWithError(new Error('boom!'));
 
     const task = loadSiteConfig(AdminContext.create({
-      log: console,
       pathInfo: {
         suffix: '/owner/sites/repo/status/index.md',
       },

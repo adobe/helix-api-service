@@ -44,36 +44,3 @@ export async function putSource(context, info) {
     return { status: e.$metadata?.httpStatusCode || 500, metadata: { id: ID } };
   }
 }
-
-//   const obj = {
-//     // TODO change, get from the context request body
-//     data: context.data.data,
-//   };
-//   if (obj.data) {
-//     const inputConfig = {
-//       bucket, org, key, body: obj.data, ext,
-//     };
-//     const input = buildPutInput(inputConfig);
-
-//     const command = new PutObjectCommand({
-//       ...input,
-//       Metadata: {
-//         ID, /* Users, ?? */
-//         Timestamp: `${Date.now()}`,
-//       },
-//     });
-//     try {
-//       const resp = await client.send(command);
-//       return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
-//     } catch (e) {
-//       const status = e.$metadata?.httpStatusCode || 500;
-
-//       // TODO handle 412
-
-//       // eslint-disable-next-line no-console
-//       if (status >= 500) console.error('Object store failed', e);
-//       return { status, metadata: { id: ID } };
-//     }
-//   }
-//   return { status: 500 };
-// }

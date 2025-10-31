@@ -137,6 +137,12 @@ export function computePaths(path) {
 }
 
 export class RequestInfo {
+  #owner;
+
+  #repo;
+
+  #ref;
+
   /**
    * @constructs RequestInfo
    * @param {import('@adobe/fetch').Request} request request
@@ -159,6 +165,31 @@ export class RequestInfo {
     throw new Error();
   }
 
+  withProject({ owner, repo, ref }) {
+    if (owner) {
+      this.#owner = owner;
+    }
+    if (repo) {
+      this.#repo = repo;
+    }
+    if (ref) {
+      this.#ref = ref;
+    }
+    return this;
+  }
+
+  get owner() {
+    return this.#owner;
+  }
+
+  get repo() {
+    return this.#repo;
+  }
+
+  get ref() {
+    return this.#ref;
+  }
+
   /**
    * Create a new request info.
    *
@@ -178,7 +209,6 @@ export class RequestInfo {
     info.route = route;
     info.org = org;
     info.site = site;
-    info.ref = 'main';
 
     if (path) {
       const { webPath, resourcePath, ext } = computePaths(path);

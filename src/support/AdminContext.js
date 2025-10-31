@@ -67,6 +67,12 @@ export class AdminContext {
     return Object.freeze(new AdminContext(context, opts));
   }
 
+  /**
+   * Loads the site configuration.
+   *
+   * @param {import('./RequestInfo.js').RequestInfo} info info
+   * @returns {Promise<object>} configuration
+   */
   async getConfig(info) {
     if (this.attributes.config === undefined) {
       const { org, site } = info;
@@ -75,6 +81,8 @@ export class AdminContext {
         if (config === null) {
           throw new StatusCodeError('', 404);
         }
+        const { code: { owner, repo } } = config;
+        info.withProject({ owner, repo, ref: 'main' });
         this.attributes.config = config;
       }
     }
@@ -118,8 +126,7 @@ export class AdminContext {
   async authenticate(info) {
     const { attributes } = this;
 
-    // eslint-disable-next-line no-unused-vars
-    const config = await this.getConfig(info);
+    await this.getConfig(info);
 
     if (attributes.authInfo === undefined) {
       attributes.authInfo = await getAuthInfo(this, info);

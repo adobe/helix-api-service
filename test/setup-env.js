@@ -19,7 +19,14 @@ process.env.HELIX_ONEDRIVE_LOCAL_AUTH_CACHE = 'true';
 process.env.HELIX_ONEDRIVE_NO_SHARE_LINK_CACHE = 'true';
 process.env.HELIX_ONEDRIVE_NO_TENANT_CACHE = 'true';
 
+// ensure that aws profile defined in the environment doesn't affect the tests
+delete process.env.AWS_PROFILE;
+
 // eslint-disable-next-line no-underscore-dangle
 global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..');
 // eslint-disable-next-line no-underscore-dangle
 global.__testdir = resolve(fileURLToPath(import.meta.url), '..');
+
+// provide verbose for test logger
+// eslint-disable-next-line no-console
+console.verbose = console.debug;

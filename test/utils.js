@@ -182,6 +182,12 @@ export function createContext(suffix, {
   });
 }
 
+/**
+ * Create a request info based on a suffix.
+ *
+ * @param {string} suffix
+ * @returns {RequestInfo} info
+ */
 export function createInfo(suffix) {
   return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
 }

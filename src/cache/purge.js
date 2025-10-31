@@ -229,7 +229,7 @@ async function purgeProductionCDN(context, cdnConfig, { keys, paths }) {
  * @param {PurgeInfo[]} prodPurgeInfo production purge information
  */
 async function purgeProductionCDNConfig(context, info, ref, contentBusId, errResponses, cdnConfig, prodPurgeInfo) {
-  const { log } = context;
+  const { log, suffix, attributes } = context;
   const { owner, repo } = info;
 
   let optimizedPurgeInfo = prodPurgeInfo;
@@ -258,7 +258,7 @@ async function purgeProductionCDNConfig(context, info, ref, contentBusId, errRes
     }
     if (client && (optimizedPurgeInfo.keys?.length || optimizedPurgeInfo.paths?.length)) {
       // 0.5s grace period for purges to be propagated
-      await sleep(/* c8 ignore next */ context.attributes.gracePeriod ?? 500);
+      await sleep(/* c8 ignore next */ attributes.gracePeriod ?? 500);
     }
     // BYO CDN purge
     try {
@@ -266,7 +266,7 @@ async function purgeProductionCDNConfig(context, info, ref, contentBusId, errRes
     } catch (err) {
       /* c8 ignore next */
       const msg = `${suffix} failed to purge production cdn ${cdnConfig.host}: ${err}`;
-      context.attributes.errors.push(msg);
+      attributes.errors.push(msg);
       log.error(msg);
       errResponses.push(new Response('error from helix-purge', {
         status: 502,
@@ -625,8 +625,8 @@ const purge = {
    * @returns {Promise<Response>} response
    */
   perform: async (context, info, infos, scope, ref = 'main', sites = []) => {
-    const { attributes, log, suffix } = context;
-    const { content: { contentBusId } } = attributes.config;
+    const { attributes: { config }, log, suffix } = context;
+    const { content: { contentBusId } } = config;
 
     // split the infos into surrogate and path purges (make sure to remove duplicates)
     const ka = [...new Set(infos.filter((i) => !!i.key).map(({ key }) => key))];

@@ -56,7 +56,9 @@ export default async function sourceHandler(context, info) {
   };
   addHeaderIfSet(headers, 'Content-Type', resp.contentType);
   addHeaderIfSet(headers, 'Content-Length', resp.contentLength);
-  addHeaderIfSet(headers, 'Last-Modified', resp.metadata?.LastModified);
+  if (resp.lastModified) {
+    headers['Last-Modified'] = new Date(Number(resp.lastModified)).toUTCString();
+  }
   addHeaderIfSet(headers, 'ETag', resp.etag);
   addHeaderIfSet(headers, 'X-da-id', resp.metadata?.id);
 

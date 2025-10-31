@@ -9,13 +9,16 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-export function getS3Config(context) {
+import { HelixStorage } from '@adobe/helix-shared-storage';
+
+export function getS3Storage(context) {
   // TODO get this from the context
-  return {
+  // return HelixStorage.fromContext(context);
+
+  return new HelixStorage({
+    disableR2: true,
     region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-  };
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  });
 }

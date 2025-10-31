@@ -9,24 +9,16 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { buildGetInput, getSource } from './get.js';
-import { getS3Config } from './utils.js';
+import { getS3Storage } from './utils.js';
+import { getSource } from './get.js';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
   '.html': 'text/html',
 };
 
-function buildPutInput({
-  bucket, org, key, body, ext, type,
-}) {
-  const bgi = buildGetInput(bucket, org, key);
-
-  const ct = type || CONTENT_TYPES[ext] || 'application/octet-stream';
-  bgi.Body = body;
-  bgi.ContentType = ct;
-  return bgi;
+function contentTypeFromExtension(ext) {
+  return CONTENT_TYPES[ext] || 'application/octet-stream';
 }
 
 export async function putSource(context, info) {
@@ -34,40 +26,54 @@ export async function putSource(context, info) {
   const getResp = await getSource(context, info, true);
   const ID = getResp.metadata?.id || crypto.randomUUID();
 
-  const config = getS3Config(context);
-  const client = new S3Client(config);
+  const storage = getS3Storage(context);
 
-  const bucket = 'helix-source-bus-db';
+  // const bucket = storage.sourceBus();
+  const bucket = storage.bucket('helix-source-bus-db'); // TODO
 
+  const body = context.data.data; // TODO change
   const { org, resourcePath: key, ext } = info;
-  const obj = {
-    // TODO change, get from the context request body
-    data: context.data.data,
-  };
-  if (obj.data) {
-    const inputConfig = {
-      bucket, org, key, body: obj.data, ext,
-    };
-    const input = buildPutInput(inputConfig);
-
-    const command = new PutObjectCommand({
-      ...input,
-      Metadata: {
-        ID, /* Users, ?? */ Path: input.Key,
-      },
+  const path = `${org}${key}`;
+  try {
+    const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
+      id: ID,
+      timestamp: `${Date.now()}`,
     });
-    try {
-      const resp = await client.send(command);
-      return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
-    } catch (e) {
-      const status = e.$metadata?.httpStatusCode || 500;
-
-      // TODO handle 412
-
-      // eslint-disable-next-line no-console
-      if (status >= 500) console.error('Object store failed', e);
-      return { status, metadata: { id: ID } };
-    }
+    return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
+  } catch (e) {
+    return { status: e.$metadata?.httpStatusCode || 500, metadata: { id: ID } };
   }
-  return { status: 500 };
 }
+
+//   const obj = {
+//     // TODO change, get from the context request body
+//     data: context.data.data,
+//   };
+//   if (obj.data) {
+//     const inputConfig = {
+//       bucket, org, key, body: obj.data, ext,
+//     };
+//     const input = buildPutInput(inputConfig);
+
+//     const command = new PutObjectCommand({
+//       ...input,
+//       Metadata: {
+//         ID, /* Users, ?? */
+//         Timestamp: `${Date.now()}`,
+//       },
+//     });
+//     try {
+//       const resp = await client.send(command);
+//       return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
+//     } catch (e) {
+//       const status = e.$metadata?.httpStatusCode || 500;
+
+//       // TODO handle 412
+
+//       // eslint-disable-next-line no-console
+//       if (status >= 500) console.error('Object store failed', e);
+//       return { status, metadata: { id: ID } };
+//     }
+//   }
+//   return { status: 500 };
+// }

@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { buildGetInput } from './get.js';
+import { buildGetInput, getSource } from './get.js';
 import { getS3Config } from './utils.js';
 
 const CONTENT_TYPES = {
@@ -31,6 +31,8 @@ function buildPutInput({
 
 export async function putSource(context, info) {
   // Get object first
+  const getResp = await getSource(context, info, true);
+  const ID = getResp.metadata?.id || crypto.randomUUID();
 
   const config = getS3Config(context);
   const client = new S3Client(config);
@@ -39,6 +41,7 @@ export async function putSource(context, info) {
 
   const { org, resourcePath: key, ext } = info;
   const obj = {
+    // TODO change, get from the context request body
     data: context.data.data,
   };
   if (obj.data) {
@@ -47,7 +50,6 @@ export async function putSource(context, info) {
     };
     const input = buildPutInput(inputConfig);
 
-    const ID = crypto.randomUUID();
     const command = new PutObjectCommand({
       ...input,
       Metadata: {
@@ -59,6 +61,8 @@ export async function putSource(context, info) {
       return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
     } catch (e) {
       const status = e.$metadata?.httpStatusCode || 500;
+
+      // TODO handle 412
 
       // eslint-disable-next-line no-console
       if (status >= 500) console.error('Object store failed', e);

@@ -61,8 +61,8 @@ export class ValidationError extends Error {
   }
 }
 
-function getLimit(ctx, property, def) {
-  const limit = Number.parseInt(ctx.attributes.config?.limits?.preview?.[property], 10);
+function getLimit(config, property, def) {
+  const limit = Number.parseInt(config.limits?.preview?.[property], 10);
   return Number.isNaN(limit) ? def : limit;
 }
 
@@ -94,16 +94,16 @@ function prependProlog(buf) {
 /**
  * Validate SVG. Checks whether neither script tags nor on attributes are contained.
  *
- * @param {AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {StatusCodeError} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
-async function validateSVG(ctx, resourcePath, buf) {
-  const { log } = ctx;
+async function validateSVG(context, resourcePath, buf) {
+  const { log, attributes: { config } } = context;
   const $1 = resourcePath;
 
-  const limit = getLimit(ctx, 'maxSVGSize', SVG_SIZE_LIMIT);
+  const limit = getLimit(config, 'maxSVGSize', SVG_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $2 = toSISize(limit, 0);
     const $3 = toSISize(buf.byteLength, 1);
@@ -155,15 +155,15 @@ async function validateSVG(ctx, resourcePath, buf) {
 /**
  * Validate MP4. Checks limits.
  *
- * @param {AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {StatusCodeError} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
-async function validateMP4(ctx, resourcePath, buf) {
+async function validateMP4(context, resourcePath, buf) {
   const $1 = resourcePath;
 
-  const info = new MP4Parser(buf, ctx.log).parse(buf);
+  const info = new MP4Parser(buf, context.log).parse(buf);
   if (info === null) {
     throw new ValidationError(
       error('Unable to preview \'$1\': Unable to parse MP4', $1),
@@ -194,13 +194,13 @@ async function validateMP4(ctx, resourcePath, buf) {
 /**
  * Validate ICO. Checks limits.
  *
- * @param {AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {StatusCodeError} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
-async function validateICO(ctx, resourcePath, buf) {
-  const limit = getLimit(ctx, 'maxICOSize', ICO_SIZE_LIMIT);
+async function validateICO(context, resourcePath, buf) {
+  const limit = getLimit(context, 'maxICOSize', ICO_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $1 = resourcePath;
     const $2 = toSISize(limit, 0);
@@ -216,13 +216,13 @@ async function validateICO(ctx, resourcePath, buf) {
 /**
  * Validate PDF. Checks limits.
  *
- * @param {AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {StatusCodeError} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
-async function validatePDF(ctx, resourcePath, buf) {
-  const limit = getLimit(ctx, 'maxPDFSize', PDF_SIZE_LIMIT);
+async function validatePDF(context, resourcePath, buf) {
+  const limit = getLimit(context, 'maxPDFSize', PDF_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $1 = resourcePath;
     const $2 = toSISize(limit, 0);
@@ -238,13 +238,13 @@ async function validatePDF(ctx, resourcePath, buf) {
 /**
  * Validate default image. Checks limits.
  *
- * @param {AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
  * @throws {StatusCodeError} if an error occurs
  */
-async function validateImage(ctx, resourcePath, buf) {
-  const limit = getLimit(ctx, 'maxImageSize', IMAGE_SIZE_LIMIT);
+async function validateImage(context, resourcePath, buf) {
+  const limit = getLimit(context, 'maxImageSize', IMAGE_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $1 = resourcePath;
     const $2 = toSISize(limit, 0);

@@ -19,6 +19,7 @@ import { getAuthInfo } from '../auth/support.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
 import fetchRedirects from '../redirects/fetch.js';
 import { StatusCodeError } from './StatusCodeError.js';
+import sourceLock from './source-lock.js';
 import { coerceArray } from './utils.js';
 
 const APP_USER_AGENT = 'NONISV|Adobe|AEMContentSync/1.0';
@@ -240,23 +241,25 @@ export class AdminContext {
   /**
    * Get or create a OneDrive client.
    *
-   * @param {string} owner owner
+   * @param {string} org org
+   * @param {string} site site
    * @param {string} contentBusId content bus id
    * @param {string} tenant tenant id
    * @param {object} logFields log fields
    * @returns {Promise<OneDrive>} onedrive client
    */
-  async getOneDriveClient(owner, contentBusId, tenant, logFields = {}) {
+  async getOneDriveClient(org, site, {
+    contentBusId, tenant, logFields = {}, checkSourceLock = true,
+  } = {}) {
     const { attributes, env, log } = this;
     if (!attributes.onedrive) {
-      // TODO: check source lock
-      // if (!(route === 'discover' && method === 'GET')) {
-      //   await assertSourceLock(context, info);
-      // }
+      if (checkSourceLock) {
+        await sourceLock.assert(this, org, site);
+      }
 
       const { code: codeBucket, content: contentBucket } = attributes.bucketMap;
       const cachePlugin = await getCachePlugin({
-        owner,
+        owner: org,
         contentBusId,
         log,
         codeBucket,

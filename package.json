@@ -63,6 +63,7 @@
     "@adobe/helix-shared-utils": "3.0.2",
     "@adobe/helix-shared-wrap": "2.0.2",
     "@adobe/helix-status": "10.1.5",
+    "@aws-sdk/lib-storage": "3.921.0",
     "aws4": "1.13.2",
     "cookie": "1.0.2",
     "fast-xml-parser": "5.3.0",

@@ -31,9 +31,13 @@ async function lookup(context, info, { contentBusId, source }) {
     org, site, resourcePath, route, webPath,
   } = info;
 
-  const drive = await context.getOneDriveClient(org, contentBusId, source.tenantId, {
-    project: `${org}/${site}`,
-    operation: `${route} ${resourcePath}`,
+  const drive = await context.getOneDriveClient(org, site, {
+    contentBusId,
+    tenant: source.tenantId,
+    logFields: {
+      project: `${org}/${site}`,
+      operation: `${route} ${resourcePath}`,
+    },
   });
   const {
     location,

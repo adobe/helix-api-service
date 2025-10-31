@@ -55,7 +55,9 @@ async function lookup(context, info, opts) {
   const { editUrl, contentBusId, source } = opts;
   let uri = new URL(editUrl);
 
-  const drive = await context.getOneDriveClient(info.org, contentBusId);
+  const drive = await context.getOneDriveClient(info.org, info.site, {
+    contentBusId,
+  });
   drive.auth.tenant = source.tenantId;
 
   // if uri is sharelink, resolve it first

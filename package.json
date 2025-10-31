@@ -53,6 +53,7 @@
     "@adobe/helix-admin-support": "5.0.2",
     "@adobe/helix-config": "5.6.9",
     "@adobe/helix-google-support": "4.0.0",
+    "@adobe/helix-mediahandler": "2.9.5",
     "@adobe/helix-onedrive-support": "12.1.1",
     "@adobe/helix-shared-body-data": "2.2.1",
     "@adobe/helix-shared-secrets": "2.2.10",
@@ -66,7 +67,8 @@
     "cookie": "1.0.2",
     "fast-xml-parser": "5.3.0",
     "jose": "6.1.0",
-    "private-ip": "3.0.2"
+    "private-ip": "3.0.2",
+    "xml2js": "0.6.2"
   },
   "devDependencies": {
     "@adobe/eslint-config-helix": "3.0.12",

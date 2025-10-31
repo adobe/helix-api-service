@@ -144,6 +144,7 @@ export class RequestInfo {
   constructor(request) {
     this.method = request.method.toUpperCase();
     this.headers = request.headers.plain();
+    this.buffer = () => request.buffer();
 
     const { cookie } = this.headers;
     this.cookies = cookie ? structuredClone(parse(cookie)) : {};

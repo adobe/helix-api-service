@@ -12,7 +12,10 @@
 import dns from 'node:dns';
 import { promisify } from 'util';
 import isIpPrivate from 'private-ip';
+
+import { Response } from '@adobe/fetch';
 import { sanitizeName } from '@adobe/helix-shared-string';
+import { cleanupHeaderValue, logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
 
 /**
  * DNS lookup method.
@@ -128,4 +131,105 @@ export function coerceArray(value, unique = false) {
     return Array.from(new Set(array));
   }
   return array;
+}
+
+/**
+ * Logs and creates an error response.
+ * @param {Logger} [log] Logger.
+ * @param {number} status The HTTP status. if negative, the status will be turned into a
+ *                        gateway status response.
+ * @param {string|ErrorInfo} message Error message. if empty, body is used.
+ * @param {string} [body = '']
+ * @param {object} [headers = {}] optional headers
+ * @returns {Response}
+ */
+export function errorResponse(log, status, message, opts = {}) {
+  const { body = '', headers = {} } = opts;
+  let codeheader = {};
+
+  if (message?.message) {
+    if (message.code) {
+      codeheader = { 'x-error-code': message.code };
+    }
+    // eslint-disable-next-line no-param-reassign
+    message = message.message;
+  }
+  if (!message) {
+    // eslint-disable-next-line no-param-reassign
+    message = body;
+  }
+  log[logLevelForStatusCode(Math.abs(status))](message);
+  if (status < 0) {
+    // eslint-disable-next-line no-param-reassign
+    status = propagateStatusCode(-status);
+  }
+  return new Response(body, {
+    status,
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+      'x-error': cleanupHeaderValue(message),
+      ...headers,
+      ...codeheader,
+    },
+  });
+}
+
+export function toSISize(bytes, precision = 2) {
+  if (bytes === 0) {
+    return '0B';
+  }
+  const mags = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'];
+  const LOG_1024 = Math.log(1024);
+
+  const magnitude = Math.floor(Math.log(Math.abs(bytes)) / LOG_1024);
+  const result = bytes / (1024 ** magnitude);
+  return `${result.toFixed(magnitude === 0 ? 0 : precision)}${mags[magnitude]}`;
+}
+
+export function FileSizeFormatter(lang, options) {
+  return {
+    format: (bytes) => {
+      const myoptions = {
+        unit: 'byte',
+        notation: 'standard',
+        unitDisplay: 'long',
+        style: 'unit',
+        maximumSignificantDigits: 3,
+        ...options,
+      };
+      if (bytes === 0) {
+        return new Intl.NumberFormat(lang, myoptions).format(0);
+      }
+      const mags = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte', 'petabyte', 'exabyte'];
+      const LOG_1024 = Math.log(1024);
+
+      const magnitude = Math.floor(Math.log(Math.abs(bytes)) / LOG_1024);
+      const result = bytes / (1024 ** magnitude);
+
+      myoptions.unit = mags[magnitude];
+      return new Intl.NumberFormat(lang, myoptions).format(result);
+    },
+  };
+}
+
+export function formatDuration(duration) {
+  const units = [{
+    unit: 60, name: 's',
+  }, {
+    unit: 60, name: 'm',
+  }, {
+    name: 'h',
+  }];
+
+  return units.reduce(({ display, rem }, { unit, name }, i) => {
+    if (rem === 0 && i !== 0) {
+      return { display, rem };
+    }
+    const num = unit ? rem % unit : rem;
+    return {
+      display: `${num}${name} ${display}`,
+      rem: Math.floor(unit ? rem / unit : 0),
+    };
+  }, { display: '', rem: duration }).display.trim();
 }

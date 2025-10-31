@@ -34,7 +34,7 @@ export class AdminContext {
   constructor(context, { headers = null, attributes = {} } = {}) {
     this.suffix = context.pathInfo.suffix;
     this.data = context.data;
-    this.log = context.log;
+    this.log = context.log || console;
     this.env = { ...context.env };
 
     this.attributes = {

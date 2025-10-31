@@ -17,12 +17,14 @@ import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { helixStatus } from '@adobe/helix-status';
 
 import { auth, login, logout } from './login/handler.js';
-import status from './status/handler.js';
+import media from './media/handler.js';
 import profile from './profile/handler.js';
+import status from './status/handler.js';
+
+import { AccessDeniedError } from './auth/AccessDeniedError.js';
 import Router from './router/router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
-import { AccessDeniedError } from './auth/AccessDeniedError.js';
 import { StatusCodeError } from './support/StatusCodeError.js';
 import { contentEncodeWrapper } from './support/content-encode.js';
 
@@ -55,7 +57,7 @@ export const router = new Router()
   .add('/:org/sites/:site/preview/*', notImplemented)
   .add('/:org/sites/:site/live/*', notImplemented)
   .add('/:org/sites/:site/login', login)
-  .add('/:org/sites/:site/media/*', notImplemented)
+  .add('/:org/sites/:site/media/*', media)
   .add('/:org/sites/:site/code/:branch/*', notImplemented)
   .add('/:org/sites/:site/cache/*', notImplemented)
   .add('/:org/sites/:site/index/*', notImplemented)

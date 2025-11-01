@@ -94,7 +94,7 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
       });
 
     const context = createContext(suffix, { env: ENV });
-    const info = createInfo(suffix).withProject({ ref: 'ref' });
+    const info = createInfo(suffix).withRef('ref');
 
     const result = await purge.hlxPage(context, info, ['/helix-config.json']);
     assert.strictEqual(result.status, 200);
@@ -147,7 +147,7 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
       });
 
     const context = createContext(suffix, { env: ENV });
-    const info = createInfo(suffix).withProject({ ref: 'ref' });
+    const info = createInfo(suffix).withRef('ref');
 
     const result = await purge.hlxPage(context, info, ['/helix-config.json']);
     assert.strictEqual(result.status, 502);
@@ -188,7 +188,9 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
       });
 
     const context = createContext(suffix, { env: ENV });
-    const info = createInfo(suffix).withProject({ owner: 'owner', repo: 'repo', ref: 'ref' });
+    const info = createInfo(suffix)
+      .withCode('owner', 'repo')
+      .withRef('ref');
 
     const result = await purge.resource(context, info, PURGE_PREVIEW);
     assert.strictEqual(result.status, 200);

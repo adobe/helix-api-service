@@ -82,7 +82,7 @@ export class AdminContext {
           throw new StatusCodeError('', 404);
         }
         const { code: { owner, repo } } = config;
-        info.withProject({ owner, repo, ref: 'main' });
+        info.withCode(owner, repo);
         this.attributes.config = config;
       }
     }

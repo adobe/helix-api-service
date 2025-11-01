@@ -165,16 +165,16 @@ export class RequestInfo {
     throw new Error();
   }
 
-  withProject({ owner, repo, ref }) {
-    if (owner) {
-      this.#owner = owner;
-    }
-    if (repo) {
-      this.#repo = repo;
-    }
-    if (ref) {
-      this.#ref = ref;
-    }
+  withCode(owner, repo) {
+    this.#owner = owner;
+    this.#repo = repo;
+
+    return this;
+  }
+
+  withRef(ref) {
+    this.#ref = ref;
+
     return this;
   }
 
@@ -187,7 +187,7 @@ export class RequestInfo {
   }
 
   get ref() {
-    return this.#ref;
+    return this.#ref ?? 'main';
   }
 
   /**
@@ -202,9 +202,10 @@ export class RequestInfo {
    * @returns {RequestInfo}
    */
   static create(request, {
-    org, site, path, route,
+    org, site, path, ref, route,
   } = {}) {
-    const info = new RequestInfo(request);
+    const info = new RequestInfo(request)
+      .withRef(ref);
 
     info.route = route;
     info.org = org;

@@ -49,8 +49,8 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler', async () => {
-    nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    nock.orgConfig(ORG_CONFIG, { org: 'owner' });
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
@@ -61,14 +61,15 @@ describe('Index Tests', () => {
       },
     });
     assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), '');
+    assert.strictEqual(await result.text(), 'method not allowed');
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    nock.orgConfig(ORG_CONFIG, { org: 'owner' });
 
     const result = await main(new Request('https://localhost/', {
+      method: 'POST',
       headers: {
         'x-github-token': 'token',
         'x-github-base': 'https://my.github.com',
@@ -82,7 +83,7 @@ describe('Index Tests', () => {
       },
     });
     assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), '');
+    assert.strictEqual(await result.text(), 'NYI');
   });
 
   it('fails calling code handler with incomplete match', async () => {
@@ -127,7 +128,7 @@ describe('Index Tests', () => {
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
-        suffix: '/owner/sites/repo/status/document',
+        suffix: '/org/sites/site/status/document',
       },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
@@ -149,7 +150,7 @@ describe('Index Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--repo--owner.aem.live/document',
+        url: 'https://main--site--org.aem.live/document',
       },
       preview: {
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/document.md',
@@ -161,7 +162,7 @@ describe('Index Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--repo--owner.aem.page/document',
+        url: 'https://main--site--org.aem.page/document',
       },
       resourcePath: '/document.md',
       webPath: '/document',
@@ -174,7 +175,7 @@ describe('Index Tests', () => {
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
-        suffix: '/owner/sites/repo/status/document',
+        suffix: '/org/sites/site/status/document',
       },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(false),
@@ -188,7 +189,7 @@ describe('Index Tests', () => {
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
-        suffix: '/owner/sites/repo/status/document',
+        suffix: '/org/sites/site/status/document',
       },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
@@ -206,7 +207,7 @@ describe('Index Tests', () => {
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
-        suffix: '/owner/profiles',
+        suffix: '/org/profiles',
       },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
@@ -222,7 +223,7 @@ describe('Index Tests', () => {
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
-        suffix: '/owner/profiles',
+        suffix: '/org/profiles',
       },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),

@@ -35,7 +35,7 @@ describe('Status Tests', () => {
   });
 
   it('return 405 with method not allowed', async () => {
-    const suffix = '/owner/sites/repo/status/document';
+    const suffix = '/org/sites/site/status/document';
 
     const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
       pathInfo: { suffix },
@@ -48,7 +48,7 @@ describe('Status Tests', () => {
   });
 
   it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
-    const suffix = '/owner/sites/repo/status/document';
+    const suffix = '/org/sites/site/status/document';
 
     const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
       pathInfo: { suffix },
@@ -60,7 +60,7 @@ describe('Status Tests', () => {
   });
 
   it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
-    const suffix = '/owner/sites/repo/status/document';
+    const suffix = '/org/sites/site/status/document';
 
     const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
       pathInfo: { suffix },
@@ -72,7 +72,7 @@ describe('Status Tests', () => {
   });
 
   it('return 403 if `editUrl` is not auto and user lacks permissions', async () => {
-    const suffix = '/owner/sites/repo/status/';
+    const suffix = '/org/sites/site/status/';
 
     const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
       pathInfo: { suffix },
@@ -86,7 +86,7 @@ describe('Status Tests', () => {
   });
 
   it('sets status to `403` if `editUrl` is `auto` and user lacks permissions', async () => {
-    const suffix = '/owner/sites/repo/status/';
+    const suffix = '/org/sites/site/status/';
 
     const result = await main(new Request('https://api.aem.live/?editUrl=auto'), {
       pathInfo: { suffix },
@@ -105,12 +105,12 @@ describe('Status Tests', () => {
       live: {
         error: 'forbidden',
         status: 403,
-        url: 'https://main--repo--owner.aem.live/',
+        url: 'https://main--site--org.aem.live/',
       },
       preview: {
         error: 'forbidden',
         status: 403,
-        url: 'https://main--repo--owner.aem.page/',
+        url: 'https://main--site--org.aem.page/',
       },
       profile: {
         defaultRole: 'media_author',
@@ -121,7 +121,7 @@ describe('Status Tests', () => {
   });
 
   it('calls `web2edit` when `editUrl` is `auto`', async () => {
-    const suffix = '/owner/sites/repo/status/folder/page';
+    const suffix = '/org/sites/site/status/folder/page';
 
     nock.google(SITE_CONFIG.content)
       .user()
@@ -157,7 +157,7 @@ describe('Status Tests', () => {
       webPath: '/folder/page',
       resourcePath: '/folder/page.md',
       live: {
-        url: 'https://main--repo--owner.aem.live/folder/page',
+        url: 'https://main--site--org.aem.live/folder/page',
         status: 200,
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/folder/page.md',
         contentType: 'text/plain; charset=utf-8',
@@ -169,7 +169,7 @@ describe('Status Tests', () => {
         ],
       },
       preview: {
-        url: 'https://main--repo--owner.aem.page/folder/page',
+        url: 'https://main--site--org.aem.page/folder/page',
         status: 200,
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/folder/page.md',
         contentType: 'text/plain; charset=utf-8',
@@ -204,7 +204,7 @@ describe('Status Tests', () => {
   });
 
   it('calls `web2edit` when `editUrl` is not `auto`', async () => {
-    const suffix = '/owner/sites/repo/status/';
+    const suffix = '/org/sites/site/status/';
     const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
 
     nock.google(SITE_CONFIG.content)
@@ -263,7 +263,7 @@ describe('Status Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--repo--owner.aem.live/',
+        url: 'https://main--site--org.aem.live/',
       },
       preview: {
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
@@ -275,7 +275,7 @@ describe('Status Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--repo--owner.aem.page/',
+        url: 'https://main--site--org.aem.page/',
       },
       resourcePath: '/index.md',
       webPath: '/',

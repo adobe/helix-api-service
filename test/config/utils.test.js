@@ -34,12 +34,12 @@ describe('Config Utils Tests', () => {
 
     const cfg = await loadSiteConfig(AdminContext.create({
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
+        suffix: '/org/sites/site/status/index.md',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
-    }), 'owner', 'repo');
+    }), 'org', 'site');
     assert.strictEqual(cfg, null);
   });
 
@@ -49,15 +49,15 @@ describe('Config Utils Tests', () => {
 
     const task = loadSiteConfig(AdminContext.create({
       pathInfo: {
-        suffix: '/owner/sites/repo/status/index.md',
+        suffix: '/org/sites/owner/status/index.md',
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
-    }), 'owner', 'repo');
+    }), 'org', 'site');
     await assert.rejects(
       task,
-      /Fetching site config from https:\/\/config.aem.page\/main--repo--owner\/config.json\?scope=admin failed: boom!/,
+      /Fetching site config from https:\/\/config.aem.page\/main--site--org\/config.json\?scope=admin failed: boom!/,
     );
   });
 });

@@ -10,7 +10,6 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import purge, { PURGE_PREVIEW_AND_LIVE } from './purge.js';
 
 /**
  * Allowed methods for that handler.
@@ -18,17 +17,19 @@ import purge, { PURGE_PREVIEW_AND_LIVE } from './purge.js';
 const ALLOWED_METHODS = ['POST'];
 
 /**
- * Handles the cache route
+ * Handles the code route
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns {Promise<Response>} response
+ * @return {Promise<Response>} response
  */
-export default async function cacheHandler(context, info) {
+export default async function codeHandler(context, info) {
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
       status: 405,
     });
   }
-  return purge.resource(context, info, PURGE_PREVIEW_AND_LIVE);
+  return new Response('NYI', {
+    status: 405,
+  });
 }

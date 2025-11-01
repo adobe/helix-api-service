@@ -302,6 +302,16 @@ export class AdminContext {
     attributes.subRequestId = (attributes.subRequestId || 0) + 1;
     return attributes.subRequestId;
   }
+
+  /**
+   * Return the content bus id of the config associated with this request.
+   *
+   * @returns {string} contentBusId
+   */
+  get contentBusId() {
+    const { attributes: { config: { content: { contentBusId } } } } = this;
+    return contentBusId;
+  }
 }
 
 export function adminContext(func) {

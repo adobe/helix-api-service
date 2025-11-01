@@ -13,7 +13,6 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
-import { computeSurrogateKey } from '@adobe/helix-shared-utils';
 import purge, { PURGE_LIVE } from '../../src/cache/purge.js';
 import resolve from '../../src/cache/resolve.js';
 import { createContext, createInfo, Nock } from '../utils.js';
@@ -37,25 +36,6 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
     nock.done();
   });
 
-  /**
-   * Compute surrogate keys.
-   *
-   * @param {import('../support/AdminContext').AdminContext} context context
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
-   * @returns {Promise<string[]} surrogate keys
-   */
-  async function computeSurrogateKeys(context, info) {
-    const { attributes: { config: { content: { contentBusId } } } } = context;
-
-    const contentPathKey = await computeSurrogateKey(`${contentBusId}${info.webPath}`);
-    const codePathKey = await computeSurrogateKey(`${info.ref}--${info.repo}--${info.owner}${info.webPath}`);
-
-    return [
-      contentPathKey,
-      codePathKey,
-    ];
-  }
-
   const ENV = {
     HLX_FASTLY_PURGE_TOKEN: '1234',
     CLOUDFLARE_PURGE_TOKEN: 'token',
@@ -70,8 +50,6 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
     const context = createContext(suffix, { env: ENV });
     const info = createInfo(suffix).withCode('owner', 'repo').withRef('ref');
 
-    const tags = await computeSurrogateKeys(context, info);
-
     // live
     nock('https://api.fastly.com')
       .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
@@ -84,7 +62,10 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .times(4)
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
-          tags,
+          tags: [
+            'DiyvKbkf2MaZORJJ',
+            'fVmOUzFkRxTl6DpU',
+          ],
         });
         assert.strictEqual(this.req.headers.authorization, 'Bearer token');
         return {
@@ -132,14 +113,15 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
     const context = createContext(suffix, { env: ENV });
     const info = createInfo(suffix).withCode('owner', 'repo').withRef('ref');
 
-    const tags = await computeSurrogateKeys(context, info);
-
     // live
     nock('https://api.fastly.com')
       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
-          surrogate_keys: tags,
+          surrogate_keys: [
+            'ymBV5ftMfiPjMqpI',
+            'gkhFlQmxUslocIjx',
+          ],
         });
         assert.strictEqual(this.req.headers['fastly-key'], '1234');
         return [200];
@@ -147,7 +129,10 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
-          surrogate_keys: tags,
+          surrogate_keys: [
+            'ymBV5ftMfiPjMqpI',
+            'gkhFlQmxUslocIjx',
+          ],
         });
         assert.strictEqual(this.req.headers['fastly-key'], '1234');
         return [200];
@@ -158,7 +143,10 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .times(4)
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
-          tags,
+          tags: [
+            'ymBV5ftMfiPjMqpI',
+            'gkhFlQmxUslocIjx',
+          ],
         });
         assert.strictEqual(this.req.headers.authorization, 'Bearer token');
         return {
@@ -178,14 +166,15 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
     const context = createContext(suffix, { env: ENV });
     const info = createInfo(suffix).withCode('owner', 'repo').withRef('ref');
 
-    const tags = await computeSurrogateKeys(context, info);
-
     // live
     nock('https://api.fastly.com')
       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
-          surrogate_keys: tags,
+          surrogate_keys: [
+            'ymBV5ftMfiPjMqpI',
+            'gkhFlQmxUslocIjx',
+          ],
         });
         assert.strictEqual(this.req.headers['fastly-key'], '1234');
         return [200];
@@ -193,7 +182,10 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
-          surrogate_keys: tags,
+          surrogate_keys: [
+            'ymBV5ftMfiPjMqpI',
+            'gkhFlQmxUslocIjx',
+          ],
         });
         assert.strictEqual(this.req.headers['fastly-key'], '1234');
         return [200];

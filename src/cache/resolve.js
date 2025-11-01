@@ -44,7 +44,7 @@ const resolve = {
    * @returns {Promise<boolean>} true if the hostname resolves to a cloudflare zone
    */
   isCloudflareZone: async (context, hostname) => {
-    const hostnames = await resolve.resolveCName(context, hostname);
+    const hostnames = await resolve.CName(context, hostname);
     return hostnames.some((address) => address.endsWith('.cloudflare.net'));
   },
 };

@@ -625,8 +625,7 @@ const purge = {
    * @returns {Promise<Response>} response
    */
   perform: async (context, info, infos, scope, ref = 'main', sites = []) => {
-    const { attributes: { config }, log, suffix } = context;
-    const { content: { contentBusId } } = config;
+    const { log, suffix, contentBusId } = context;
 
     // split the infos into surrogate and path purges (make sure to remove duplicates)
     const ka = [...new Set(infos.filter((i) => !!i.key).map(({ key }) => key))];
@@ -641,6 +640,8 @@ const purge = {
     // create new path info with the ref given. this allows code-purges to force a purge of the branch
     const forcedInfo = {
       ...info,
+      owner: info.owner,
+      repo: info.repo,
       ref,
     };
 
@@ -760,7 +761,7 @@ const purge = {
    * @returns {Promise<Response>} response
    */
   resource: async (context, info, scope = PURGE_LIVE) => {
-    const { attributes: { config: { content: { contentBusId } } } } = context;
+    const { contentBusId } = context;
 
     const contentPathKey = await computeSurrogateKey(`${contentBusId}${info.webPath}`);
     const codePathKey = await computeSurrogateKey(`${info.ref}--${info.repo}--${info.owner}${info.webPath}`);
@@ -902,7 +903,7 @@ const purge = {
    * @returns {Promise<Response>} response
    */
   content: async (context, info, paths, scope = PURGE_LIVE) => {
-    const { attributes: { content: { contentBusId } } } = context;
+    const { contentBusId } = context;
     const contentKeyPrefixes = [];
     if (scope & PURGE_LIVE) {
       contentKeyPrefixes.push('');
@@ -935,7 +936,7 @@ const purge = {
    * @returns {Promise<Response>} response
    */
   redirects: async (context, info, paths, scope = PURGE_LIVE) => {
-    const { attributes: { content: { contentBusId } } } = context;
+    const { contentBusId } = context;
     const contentKeyPrefixes = [];
     if (scope & PURGE_LIVE) {
       contentKeyPrefixes.push('');

@@ -10,6 +10,35 @@
  * governing permissions and limitations under the License.
  */
 import { fetchS3 } from '@adobe/helix-admin-support';
+import { coerceArray } from '../support/utils.js';
+
+export const REDIRECTS_JSON_PATH = '/redirects.json';
+
+export const CONFIG_JSON_PATH = '/.helix/config.json';
+
+export const HEADERS_JSON_PATH = '/.helix/headers.json';
+
+export const METADATA_JSON_PATH = '/metadata.json';
+
+// the threshold for purging all content in case of a bulk preview/publish operation
+// i.e. if more than 100 resources are touched, we purge all content
+export const PURGE_ALL_CONTENT_THRESHOLD = 100;
+
+/**
+ * Returns the list of metadata paths that are configured. Falls back to the
+ * `/metadata.json` if non configured.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @return {Promise<string[]>}
+ */
+export async function getMetadataPaths(context) {
+  const { attributes: { config } } = context;
+  return coerceArray(
+    config?.metadata?.source
+    || config?.data?.metadata
+    || [METADATA_JSON_PATH],
+  );
+}
 
 /**
  * Returns the content bus info for the given resource. If the resource is missing, it will not

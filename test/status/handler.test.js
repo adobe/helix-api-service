@@ -12,62 +12,90 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import status from '../../src/status/status.js';
+import { main } from '../../src/index.js';
 import {
-  Nock, SITE_CONFIG, createContext, createInfo,
+  Nock, SITE_CONFIG, ORG_CONFIG,
 } from '../utils.js';
 
-describe('Status GET Tests', () => {
+describe('Status Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
   beforeEach(() => {
     nock = new Nock().env();
+
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
     nock.done();
   });
 
+  it('return 405 with method not allowed', async () => {
+    const suffix = '/org/sites/site/status/document';
+
+    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+    assert.strictEqual(result.status, 405);
+    assert.strictEqual(await result.text(), 'method not allowed');
+  });
+
   it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
-    const suffix = '/owner/sites/repo/status/document';
+    const suffix = '/org/sites/site/status/document';
 
-    const result = await status(
-      createContext(suffix, { data: { editUrl: 'other' } }),
-      createInfo(suffix),
-    );
-
+    const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
     assert.strictEqual(result.status, 400);
   });
 
-  it('throws if `editUrl` is not auto and user lacks permissions', async () => {
-    const suffix = '/owner/sites/repo/status/';
+  it('return 400 if `editUrl` is not auto and `webPath` is not `/`', async () => {
+    const suffix = '/org/sites/site/status/document';
 
-    const result = () => status(
-      createContext(suffix, {
-        attributes: { authInfo: AuthInfo.Default() },
-        data: { editUrl: 'other' },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+    assert.strictEqual(result.status, 400);
+  });
 
-    assert.rejects(
-      result(),
-      /forbidden/,
-    );
+  it('return 403 if `editUrl` is not auto and user lacks permissions', async () => {
+    const suffix = '/org/sites/site/status/';
+
+    const result = await main(new Request('https://api.aem.live/?editUrl=other'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
+    assert.strictEqual(result.status, 403);
   });
 
   it('sets status to `403` if `editUrl` is `auto` and user lacks permissions', async () => {
-    const suffix = '/owner/sites/repo/status/';
+    const suffix = '/org/sites/site/status/';
 
-    const result = await status(
-      createContext(suffix, {
-        attributes: { authInfo: AuthInfo.Default() },
-        data: { editUrl: 'auto' },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request('https://api.aem.live/?editUrl=auto'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
 
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
@@ -77,12 +105,15 @@ describe('Status GET Tests', () => {
       live: {
         error: 'forbidden',
         status: 403,
-        url: 'https://main--repo--owner.aem.live/',
+        url: 'https://main--site--org.aem.live/',
       },
       preview: {
         error: 'forbidden',
         status: 403,
-        url: 'https://main--repo--owner.aem.page/',
+        url: 'https://main--site--org.aem.page/',
+      },
+      profile: {
+        defaultRole: 'media_author',
       },
       resourcePath: '/index.md',
       webPath: '/',
@@ -90,7 +121,7 @@ describe('Status GET Tests', () => {
   });
 
   it('calls `web2edit` when `editUrl` is `auto`', async () => {
-    const suffix = '/owner/sites/repo/status/folder/page';
+    const suffix = '/org/sites/site/status/folder/page';
 
     nock.google(SITE_CONFIG.content)
       .user()
@@ -113,43 +144,38 @@ describe('Status GET Tests', () => {
       .head('/live/folder/page.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
-    const result = await status(
-      createContext(suffix, {
-        attributes: { redirects: { preview: [], live: [] } },
-        data: { editUrl: 'auto' },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request('https://api.aem.live/?editUrl=auto'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
+
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       webPath: '/folder/page',
       resourcePath: '/folder/page.md',
       live: {
-        url: 'https://main--repo--owner.aem.live/folder/page',
+        url: 'https://main--site--org.aem.live/folder/page',
         status: 200,
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/folder/page.md',
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         sourceLocation: 'google:*',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
       },
       preview: {
-        url: 'https://main--repo--owner.aem.page/folder/page',
+        url: 'https://main--site--org.aem.page/folder/page',
         status: 200,
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/folder/page.md',
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         sourceLocation: 'google:*',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
@@ -174,14 +200,11 @@ describe('Status GET Tests', () => {
         sourceLocation: 'gdrive:1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
         status: 200,
       },
-      profile: {
-        userId: 'admin',
-      },
     });
   });
 
   it('calls `web2edit` when `editUrl` is not `auto`', async () => {
-    const suffix = '/owner/sites/repo/status/';
+    const suffix = '/org/sites/site/status/';
     const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
 
     nock.google(SITE_CONFIG.content)
@@ -206,13 +229,13 @@ describe('Status GET Tests', () => {
       .head('/live/index.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
-    const result = await status(
-      createContext(suffix, {
-        attributes: { redirects: { preview: [], live: [] } },
-        data: { editUrl },
-      }),
-      createInfo(suffix),
-    );
+    const result = await main(new Request(`https://api.aem.live/?editUrl=${editUrl}`), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       edit: {
@@ -235,33 +258,24 @@ describe('Status GET Tests', () => {
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--repo--owner.aem.live/',
+        url: 'https://main--site--org.aem.live/',
       },
       preview: {
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
-          'delete',
-          'delete-forced',
-          'list',
           'read',
           'write',
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--repo--owner.aem.page/',
-      },
-      profile: {
-        userId: 'admin',
+        url: 'https://main--site--org.aem.page/',
       },
       resourcePath: '/index.md',
       webPath: '/',

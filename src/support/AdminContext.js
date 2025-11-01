@@ -67,6 +67,12 @@ export class AdminContext {
     return Object.freeze(new AdminContext(context, opts));
   }
 
+  /**
+   * Loads the site configuration.
+   *
+   * @param {import('./RequestInfo.js').RequestInfo} info info
+   * @returns {Promise<object>} configuration
+   */
   async getConfig(info) {
     if (this.attributes.config === undefined) {
       const { org, site } = info;
@@ -75,6 +81,8 @@ export class AdminContext {
         if (config === null) {
           throw new StatusCodeError('', 404);
         }
+        const { code: { owner, repo } } = config;
+        info.withCode(owner, repo);
         this.attributes.config = config;
       }
     }
@@ -118,8 +126,7 @@ export class AdminContext {
   async authenticate(info) {
     const { attributes } = this;
 
-    // eslint-disable-next-line no-unused-vars
-    const config = await this.getConfig(info);
+    await this.getConfig(info);
 
     if (attributes.authInfo === undefined) {
       attributes.authInfo = await getAuthInfo(this, info);
@@ -283,6 +290,27 @@ export class AdminContext {
       });
     }
     return attributes.onedrive;
+  }
+
+  /**
+   * Returns the next id used for logging the purge requests
+   * @returns {number}
+   */
+  nextRequestId() {
+    const { attributes } = this;
+
+    attributes.subRequestId = (attributes.subRequestId || 0) + 1;
+    return attributes.subRequestId;
+  }
+
+  /**
+   * Return the content bus id of the config associated with this request.
+   *
+   * @returns {string} contentBusId
+   */
+  get contentBusId() {
+    const { attributes: { config: { content: { contentBusId } } } } = this;
+    return contentBusId;
   }
 }
 

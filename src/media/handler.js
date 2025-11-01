@@ -69,7 +69,7 @@ async function fetchMedia(context, url) {
  * @return {Promise<Response>} response
  */
 async function upload(context, info) {
-  const { log, attributes: { config } } = context;
+  const { log, contentBusId } = context;
 
   const { headers, org, site } = info;
   const {
@@ -78,7 +78,6 @@ async function upload(context, info) {
     CLOUDFLARE_R2_SECRET_ACCESS_KEY: r2SecretAccessKey,
   } = context.env;
 
-  const { content: { contentBusId } } = config;
   const mh = new MediaHandler({
     r2AccountId,
     r2AccessKeyId,

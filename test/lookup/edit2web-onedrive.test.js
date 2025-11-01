@@ -11,7 +11,6 @@
  */
 
 /* eslint-env mocha */
-/* eslint-disable global-require, class-methods-use-this, no-console */
 import assert from 'assert';
 import { AcquireMethod } from '@adobe/helix-onedrive-support';
 import edit2web from '../../src/lookup/edit2web.js';

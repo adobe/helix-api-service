@@ -16,6 +16,8 @@ import secrets from '@adobe/helix-shared-secrets';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { helixStatus } from '@adobe/helix-status';
 
+import cache from './cache/handler.js';
+import code from './code/handler.js';
 import { auth, login, logout } from './login/handler.js';
 import media from './media/handler.js';
 import profile from './profile/handler.js';
@@ -58,8 +60,8 @@ export const router = new Router()
   .add('/:org/sites/:site/live/*', notImplemented)
   .add('/:org/sites/:site/login', login)
   .add('/:org/sites/:site/media/*', media)
-  .add('/:org/sites/:site/code/:branch/*', notImplemented)
-  .add('/:org/sites/:site/cache/*', notImplemented)
+  .add('/:org/sites/:site/code/:ref/*', code)
+  .add('/:org/sites/:site/cache/*', cache)
   .add('/:org/sites/:site/index/*', notImplemented)
   .add('/:org/sites/:site/sitemap/*', notImplemented)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
@@ -93,7 +95,7 @@ async function run(request, context) {
   const admin = {
     method: info.method,
     route: info.route,
-    path: info.path,
+    path: info.webPath,
     suffix,
     status: response.status,
   };

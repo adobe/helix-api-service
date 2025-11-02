@@ -13,10 +13,11 @@ import { Response } from '@adobe/fetch';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import { LOGOUT_PATH } from '../auth/support.js';
+import { getCodeBusInfo } from '../code/info.js';
 import getLiveInfo from '../live/info.js';
-import getPreviewInfo from '../preview/info.js';
 import web2edit from '../lookup/web2edit.js';
 import edit2web from '../lookup/edit2web.js';
+import getPreviewInfo from '../preview/info.js';
 
 /**
  * Handles GET status.
@@ -112,6 +113,7 @@ export default async function status(context, info) {
     live: await getLiveInfo(context, info),
     preview: await getPreviewInfo(context, info),
     edit,
+    code: await getCodeBusInfo(context, info),
     // TODO links: getAPIUrls(context, info, 'status', 'preview', 'live', 'code'),
   };
 

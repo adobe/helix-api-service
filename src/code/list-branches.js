@@ -10,34 +10,32 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import listBranches from './list-branches.js';
-import status from './status.js';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 
 /**
- * Allowed methods for that handler.
- */
-const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
-
-/**
- * Handles the code route
+ * Lists the branches of the repository present in code bus (not github)
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @return {Promise<Response>} response
+ * @returns {Promise<Response>} response
  */
-export default async function codeHandler(context, info) {
-  if (ALLOWED_METHODS.indexOf(info.method) < 0) {
-    return new Response('method not allowed', {
-      status: 405,
-    });
-  }
-  if (info.method === 'GET') {
-    if (info.ref === '*') {
-      return listBranches(context, info);
-    }
-    return status(context, info);
-  }
-  return new Response('NYI', {
-    status: 405,
+export default async function listBranches(context, info) {
+  context.attributes.authInfo.assertPermissions('code:read');
+
+  const { owner, repo, path } = info;
+  const codeBus = HelixStorage.fromContext(context).codeBus();
+  const branches = await codeBus.listFolders(`${owner}/${repo}/`);
+  const resp = {
+    owner,
+    repo,
+    branches: branches
+      .filter((branch) => !branch.endsWith('.helix/'))
+      .map((branch) => `/code/${branch.substring(0, branch.length - 1)}${path}`),
+  };
+
+  return new Response(JSON.stringify(resp, null, 2), {
+    headers: {
+      'content-type': 'application/json',
+    },
   });
 }

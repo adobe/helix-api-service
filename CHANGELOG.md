@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/adobe/helix-api-service/compare/v1.8.0...v1.9.0) (2025-11-02)
+
+
+### Features
+
+* implement cache route ([#16](https://github.com/adobe/helix-api-service/issues/16)) ([51e34b8](https://github.com/adobe/helix-api-service/commit/51e34b87b9af6b9972ed62fd012b4bf47aa846bf))
+
 # [1.8.0](https://github.com/adobe/helix-api-service/compare/v1.7.0...v1.8.0) (2025-10-31)
 
 

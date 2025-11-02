@@ -91,22 +91,14 @@ describe('Purge Tests', () => {
     HLX_FASTLY_PURGE_TOKEN: '1234',
   };
 
-  function setupTest(path = '/', { env = ENV, metadata = {} } = {}) {
-    const suffix = `/org/sites/site/cache${path}`;
-    const context = createContext(suffix, {
-      env,
-      attributes: {
-        config: {
-          ...SITE_CONFIG,
-          metadata,
-        },
-      },
-    });
-    const info = createInfo(suffix).withCode('owner', 'repo');
-    return { context, info };
-  }
-
   describe('(url)', () => {
+    function setupTest(path = '/') {
+      const suffix = `/org/sites/site/cache${path}`;
+      const context = createContext(suffix, { env: ENV });
+      const info = createInfo(suffix).withCode('owner', 'repo');
+      return { context, info };
+    }
+
     it('purges live url', async () => {
       nock('https://api.fastly.com')
         .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
@@ -316,6 +308,21 @@ describe('Purge Tests', () => {
   });
 
   describe('(surrogate)', () => {
+    function setupTest(path = '/en/query-index.json', { env = ENV, metadata = {} } = {}) {
+      const suffix = `/org/sites/site/cache${path}`;
+      const context = createContext(suffix, {
+        env,
+        attributes: {
+          config: {
+            ...SITE_CONFIG,
+            metadata,
+          },
+        },
+      });
+      const info = createInfo(suffix).withCode('owner', 'repo');
+      return { context, info };
+    }
+
     it('surrogate purge needs token', async () => {
       const { context, info } = setupTest('/head', { env: {} });
       const result = await purge.resource(context, info, PURGE_LIVE);
@@ -351,7 +358,7 @@ describe('Purge Tests', () => {
           return [200];
         });
 
-      const { context, info } = setupTest('/en/query-index.json');
+      const { context, info } = setupTest();
       const result = await purge.resource(context, info, PURGE_LIVE);
       assert.strictEqual(result.status, 200);
     });
@@ -395,7 +402,7 @@ describe('Purge Tests', () => {
         keys[i] = `key${i}`;
       }
 
-      const { context, info } = setupTest('/en/query-index.json');
+      const { context, info } = setupTest();
       const result = await purge.surrogate(context, info, keys, PURGE_LIVE);
       assert.strictEqual(result.status, 200);
     });
@@ -407,7 +414,7 @@ describe('Purge Tests', () => {
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(200);
 
-      const { context, info } = setupTest('/en/query-index.json');
+      const { context, info } = setupTest();
       const result = await purge.resource(context, info, PURGE_LIVE);
       assert.strictEqual(result.status, 502);
     });
@@ -594,442 +601,465 @@ describe('Purge Tests', () => {
       assert.strictEqual(result.status, 200);
     });
   });
+
+  describe('(code)', () => {
+    function toCDNConfig(sheet) {
+      const config = {};
+      sheet.data.forEach(({ key, value }) => {
+        const segs = key.split('.');
+        const child = segs.slice(0, -1).reduce((parent, seg) => {
+          if (!parent[seg]) {
+            // eslint-disable-next-line no-param-reassign
+            parent[seg] = Object.create(null);
+          }
+          return parent[seg];
+        }, config);
+        child[segs.at(-1)] = value;
+      });
+      return config.cdn;
+    }
+
+    const CONFIG_FASTLY = (serviceId = '123456abc') => toCDNConfig({
+      data: [{
+        key: 'cdn.prod.host',
+        value: 'demo.helix3.page',
+      },
+      {
+        key: 'cdn.prod.type',
+        value: 'fastly',
+      },
+      {
+        key: 'cdn.prod.serviceId',
+        value: serviceId,
+      },
+      {
+        key: 'cdn.prod.authToken',
+        value: 'abcdefgh',
+      }],
+    });
+
+    function setupTest(cdn = CONFIG_FASTLY()) {
+      const suffix = '/org/sites/site/code/main/';
+      const context = createContext(suffix, {
+        env: ENV,
+        attributes: {
+          config: {
+            ...SITE_CONFIG,
+            cdn,
+          },
+        },
+      });
+      const info = createInfo(suffix)
+        .withCode('owner', 'repo').withRef('main');
+      return { context, info };
+    }
+
+    it('purges resources and head', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/123456abc/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        });
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info, [
+        '/styles.js',
+        '/head.html',
+      ]);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('purges resources and head (helix 5)', async () => {
+      nock.inventory([{
+        org: 'org', site: 'site', codeBusId: 'owner/repo', cdnId: 'fastly:1234',
+      }, {
+        org: 'org', site: 'other', codeBusId: 'owner/repo', cdnId: 'fastly:5678',
+      }]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/1234/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        })
+        .post('/service/5678/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'APp_02UP-uX20z4B',
+              'B6aQUMMo1SOKwKDk',
+              'main--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        });
+
+      nock.siteConfig({
+        ...SITE_CONFIG,
+        cdn: CONFIG_FASTLY('5678'),
+      }, { site: 'other' });
+
+      const { context, info } = setupTest(CONFIG_FASTLY('1234'));
+      const result = await purge.code(context, info, [
+        '/styles.js',
+        '/head.html',
+      ]);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('purges all code if more than 10 paths', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'main--repo--owner_code',
+              'main--repo--owner_head',
+              'main--repo--owner_404',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'main--repo--owner_code',
+              'main--repo--owner_head',
+              'main--repo--owner_404',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/123456abc/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'main--repo--owner_code',
+              'main--repo--owner_head',
+              'main--repo--owner_404',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info, [
+        '/fstab.yaml',
+        '/head.html',
+        '/code1.js',
+        '/code2.js',
+        '/code3.js',
+        '/code4.js',
+        '/code5.js',
+        '/code6.js',
+        '/code7.js',
+        '/code8.js',
+        '/code9.js',
+        '/code10.js',
+      ]);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('purges 404 and head for fstab.yaml', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'rIZtZQmdBVsFiL76',
+              'main--repo--owner_head',
+              'main--repo--owner_404',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'rIZtZQmdBVsFiL76',
+              'main--repo--owner_head',
+              'main--repo--owner_404',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/123456abc/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'rIZtZQmdBVsFiL76',
+              'main--repo--owner_head',
+              'main--repo--owner_404',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info, [
+        '/fstab.yaml',
+      ]);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('purges json', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              '_pmFJSnfG-oXpmb6',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              '_pmFJSnfG-oXpmb6',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/123456abc/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              '_pmFJSnfG-oXpmb6',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info, [
+        '/test.json',
+      ]);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('purges sitemap', async () => {
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'sby9rtkIBtNieA0T',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'sby9rtkIBtNieA0T',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/123456abc/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'sby9rtkIBtNieA0T',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
+          return [200];
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.content(context, info, [
+        '/sitemap.xml',
+      ], PURGE_LIVE);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('does not purge BYO on non-main branch', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'wj_bTKTmN15y7Ytr',
+              'efbFuvT8UH_4lweb',
+              'ref--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        })
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'wj_bTKTmN15y7Ytr',
+              'efbFuvT8UH_4lweb',
+              'ref--repo--owner_head',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        });
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info.withRef('ref'), [
+        '/styles.js',
+        '/head.html',
+      ]);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('does not purge BYO on scope that does not include live', async () => {
+      nock('https://api.fastly.com')
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(function f(uri, body) {
+          assert.deepStrictEqual(body, {
+            surrogate_keys: [
+              'p_sby9rtkIBtNieA0T',
+            ],
+          });
+          assert.strictEqual(this.req.headers['fastly-key'], '1234');
+          return [200];
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.content(context, info, [
+        '/sitemap.xml',
+      ], PURGE_PREVIEW);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('handles error from surrogate purge', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(500)
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(200)
+        .post('/service/123456abc/purge')
+        .reply(200);
+
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info, [
+        '/styles.js',
+        '/head.html',
+      ]);
+      assert.strictEqual(result.status, 502);
+    });
+
+    it('handles error from url purge', async () => {
+      nock.inventory([]);
+      nock('https://api.fastly.com')
+        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
+        .reply(200)
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(500)
+        .post('/service/123456abc/purge')
+        .reply(200);
+
+      const { context, info } = setupTest();
+      const result = await purge.code(context, info, [
+        '/styles.js',
+        '/head.html',
+      ]);
+      assert.strictEqual(result.status, 502);
+    });
+
+    it('handles error from url purge (coverage)', async () => {
+      nock('https://api.fastly.com')
+        .post('/purge/main--repo--owner.hlx.live/styles.js')
+        .reply(500)
+        .post(/^\/purge\/main--(site--org|repo--owner).(?:aem|hlx)(?:-fastly)?\.(?:live|page)\/styles\.js$/)
+        .times(3)
+        .reply(200);
+      nock('https://demo.helix3.page')
+        .intercept('/styles.js', 'PURGE')
+        .reply(200);
+      const { context, info } = setupTest();
+      const result = await purge.perform(context, info, [{ path: '/styles.js' }], PURGE_LIVE);
+      assert.strictEqual(result.status, 502);
+    });
+  });
 });
-
-// describe('Purge Tests (code)', () => {
-//   const DEFAULT_INFO = createPathInfo('/code/owner/repo/main', 'POST');
-//   const CONFIG_FASTLY = {
-//     data: [{
-//       key: 'cdn.prod.host',
-//       value: 'demo.helix3.page',
-//     },
-//     {
-//       key: 'cdn.prod.type',
-//       value: 'fastly',
-//     },
-//     {
-//       key: 'cdn.prod.serviceId',
-//       value: '123456abc',
-//     },
-//     {
-//       key: 'cdn.prod.authToken',
-//       value: 'abcdefgh',
-//     }],
-//   };
-
-//   let nock;
-//   beforeEach(() => {
-//     nock = new Nock().env();
-//   });
-
-//   afterEach(() => {
-//     nock.done();
-//   });
-
-//   it('purges resources and head', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/123456abc/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       });
-//     const result = await purgeCode(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/styles.js',
-//       '/head.html',
-//     ]);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('purges resources and head (helix 5)', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/default/inventory-v2.json?x-id=GetObject')
-//       .reply(200, [{
-//         org: 'owner',
-//         site: 'repo',
-//         codeBusId: 'owner/repo',
-//         cdnId: 'fastly:1234',
-//       }, {
-//         org: 'owner',
-//         site: 'other',
-//         codeBusId: 'owner/repo',
-//         cdnId: 'fastly:5678',
-//       }]);
-//     nock.config(SITE_CONFIG('5678'), 'owner', 'other', 'main');
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/1234/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       })
-//       .post('/service/5678/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'APp_02UP-uX20z4B',
-//             'B6aQUMMo1SOKwKDk',
-//             'main--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       });
-//     const context = DEFAULT_CONTEXT({
-//       env: { HLX_FASTLY_PURGE_TOKEN: '1234' },
-//     });
-//     const info = DEFAULT_INFO;
-//     await applyConfig(context, info, SITE_CONFIG('1234'));
-//     const result = await purgeCode(context, info, [
-//       '/styles.js',
-//       '/head.html',
-//     ]);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('purges all code if more than 10 paths', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'main--repo--owner_code',
-//             'main--repo--owner_head',
-//             'main--repo--owner_404',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'main--repo--owner_code',
-//             'main--repo--owner_head',
-//             'main--repo--owner_404',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/123456abc/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'main--repo--owner_code',
-//             'main--repo--owner_head',
-//             'main--repo--owner_404',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       });
-//     const result = await purgeCode(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/fstab.yaml',
-//       '/head.html',
-//       '/code1.js',
-//       '/code2.js',
-//       '/code3.js',
-//       '/code4.js',
-//       '/code5.js',
-//       '/code6.js',
-//       '/code7.js',
-//       '/code8.js',
-//       '/code9.js',
-//       '/code10.js',
-//     ]);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('purges 404 and head for fstab.yaml', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'rIZtZQmdBVsFiL76',
-//             'main--repo--owner_head',
-//             'main--repo--owner_404',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'rIZtZQmdBVsFiL76',
-//             'main--repo--owner_head',
-//             'main--repo--owner_404',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/123456abc/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'rIZtZQmdBVsFiL76',
-//             'main--repo--owner_head',
-//             'main--repo--owner_404',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       });
-//     const result = await purgeCode(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/fstab.yaml',
-//     ]);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('purges json', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             '_pmFJSnfG-oXpmb6',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             '_pmFJSnfG-oXpmb6',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/123456abc/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             '_pmFJSnfG-oXpmb6',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       });
-//     const result = await purgeCode(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/test.json',
-//     ]);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('purges sitemap', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'lkDPpF5moMrrCXQM',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'lkDPpF5moMrrCXQM',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/123456abc/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'lkDPpF5moMrrCXQM',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
-//         return [200];
-//       });
-//     const result = await purgeContent(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/sitemap.xml',
-//     ], PURGE_LIVE);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('does not purge BYO on non-main branch', async () => {
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'wj_bTKTmN15y7Ytr',
-//             'efbFuvT8UH_4lweb',
-//             'ref--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       })
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'wj_bTKTmN15y7Ytr',
-//             'efbFuvT8UH_4lweb',
-//             'ref--repo--owner_head',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       });
-//     const result = await purgeCode(TEST_CONTEXT(), {
-//       ...DEFAULT_INFO,
-//       ref: 'ref',
-//     }, [
-//       '/styles.js',
-//       '/head.html',
-//     ]);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('does not purge BYO on scope that doesn\'t include live', async () => {
-//     nock('https://api.fastly.com')
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(function f(uri, body) {
-//         assert.deepStrictEqual(body, {
-//           surrogate_keys: [
-//             'p_lkDPpF5moMrrCXQM',
-//           ],
-//         });
-//         assert.strictEqual(this.req.headers['fastly-key'], '1234');
-//         return [200];
-//       });
-
-//     const result = await purgeContent(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/sitemap.xml',
-//     ], PURGE_PREVIEW);
-//     assert.strictEqual(result.status, 200);
-//   });
-
-//   it('handles error from surrogate purge', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(500)
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(200)
-//       .post('/service/123456abc/purge')
-//       .reply(200);
-
-//     const result = await purgeCode(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/styles.js',
-//       '/head.html',
-//     ]);
-//     assert.strictEqual(result.status, 502);
-//   });
-
-//   it('handles error from url purge', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-//       .reply(200)
-//       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-//       .reply(500)
-//       .post('/service/123456abc/purge')
-//       .reply(200);
-
-//     const result = await purgeCode(TEST_CONTEXT(), DEFAULT_INFO, [
-//       '/styles.js',
-//       '/head.html',
-//     ]);
-//     assert.strictEqual(result.status, 502);
-//   });
-
-//   it('handles error from url purge (coverage)', async () => {
-//     nock.projectConfig('foo-id', CONFIG_FASTLY);
-//     nock('https://api.fastly.com')
-//       .post('/purge/main--repo--owner.hlx.live/styles.js')
-//       .reply(500)
-//       .post(/^\/purge\/main--repo--owner.(?:aem|hlx)(?:-fastly)?\.(?:live|page)\/styles\.js$/)
-//       .times(3)
-//       .reply(200);
-//     nock('https://demo.helix3.page')
-//       .intercept('/styles.js', 'PURGE')
-//       .reply(200);
-
-// eslint-disable-next-line max-len
-//     const result = await performPurge(TEST_CONTEXT(), DEFAULT_INFO, [{ path: '/styles.js' }], PURGE_LIVE);
-//     assert.strictEqual(result.status, 502);
-//   });
-// });

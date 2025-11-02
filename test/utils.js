@@ -155,6 +155,14 @@ export function Nock() {
     return scope;
   };
 
+  nocker.inventory = (inventory) => {
+    const scope = nocker.content('default').getObject('/inventory-v2.json');
+    if (inventory) {
+      scope.reply(200, inventory);
+    }
+    return scope;
+  };
+
   nocker.google = (content) => new GoogleNock(nocker, content);
   nocker.onedrive = (content) => new OneDriveNock(nocker, content);
 

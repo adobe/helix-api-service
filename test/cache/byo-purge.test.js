@@ -10,9 +10,6 @@
  * governing permissions and limitations under the License.
  */
 
-// TODO: remove
-/* eslint-disable no-unused-vars, max-len */
-
 /* eslint-env mocha */
 import assert from 'assert';
 import { randomUUID } from 'crypto';

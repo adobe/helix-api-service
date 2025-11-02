@@ -186,9 +186,9 @@ describe('BYO CDN Purge Tests', () => {
     nock.done();
   });
 
-  function withCdnConfig(config) {
-    const cdnConfig = {};
-    config.data.forEach(({ key, value }) => {
+  function toCDNConfig(sheet) {
+    const config = {};
+    sheet.data.forEach(({ key, value }) => {
       const segs = key.split('.');
       const child = segs.slice(0, -1).reduce((parent, seg) => {
         if (!parent[seg]) {
@@ -196,19 +196,23 @@ describe('BYO CDN Purge Tests', () => {
           parent[seg] = Object.create(null);
         }
         return parent[seg];
-      }, cdnConfig);
+      }, config);
       child[segs.at(-1)] = value;
     });
-    return {
-      ...SITE_CONFIG,
-      ...cdnConfig,
-    };
+    return config.cdn;
   }
 
-  function setupTest(cdnConfig, path = '/') {
+  function setupTest(config, path = '/') {
     const suffix = `/org/sites/site/cache${path}`;
-    const config = withCdnConfig(cdnConfig);
-    const context = createContext(suffix, { env: ENV, attributes: { config } });
+    const context = createContext(suffix, {
+      env: ENV,
+      attributes: {
+        config: {
+          ...SITE_CONFIG,
+          cdn: toCDNConfig(config),
+        },
+      },
+    });
     const info = createInfo(suffix).withCode('owner', 'repo');
     return { context, info };
   }

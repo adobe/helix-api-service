@@ -19,42 +19,6 @@ import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
 
-// const SITE_CONFIG = (serviceId) => ({
-//   version: 1,
-//   title: 'Sample site',
-//   content: {
-//     name: 'sample-site',
-//     contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-//     source: {
-//       type: 'google',
-//       url: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-//       id: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-//     },
-//   },
-//   code: {
-//     owner: 'owner',
-//     repo: 'repo',
-//     source: {
-//       type: 'github',
-//       url: 'https://github.com/owner/repo',
-//     },
-//   },
-//   headers: {
-//     '/tools/sidekick/**:': [{
-//       key: 'access-control-allow-origin',
-//       value: '/.*/',
-//     }],
-//   },
-//   cdn: {
-//     prod: {
-//       type: 'fastly',
-//       serviceId,
-//       host: 'demo.helix3.page',
-//       authToken: 'abcdefgh',
-//     },
-//   },
-// });
-
 describe('Purge Variants', () => {
   it('calculates variants correctly for no extension', () => {
     assert.deepStrictEqual(getPurgePathVariants('/foo'), [

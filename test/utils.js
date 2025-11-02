@@ -139,7 +139,7 @@ export function Nock() {
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
-  nocker.siteConfig = (config, { org = 'owner', site = 'repo' } = {}) => {
+  nocker.siteConfig = (config, { org = 'org', site = 'site' } = {}) => {
     const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);
     if (config) {
       scope.reply(200, config);
@@ -147,10 +147,18 @@ export function Nock() {
     return scope;
   };
 
-  nocker.orgConfig = (config, { org = 'owner' } = {}) => {
+  nocker.orgConfig = (config, { org = 'org' } = {}) => {
     const scope = nock('https://config.aem.page').get(`/${org}/config.json?scope=admin`);
     if (config) {
       scope.reply(200, config);
+    }
+    return scope;
+  };
+
+  nocker.inventory = (inventory) => {
+    const scope = nocker.content('default').getObject('/inventory-v2.json');
+    if (inventory) {
+      scope.reply(200, inventory);
     }
     return scope;
   };
@@ -177,11 +185,19 @@ export function createContext(suffix, {
       authInfo: AuthInfo.Admin(),
       config: SITE_CONFIG,
       googleApiOpts: { retry: false },
+      gracePeriod: 1,
+      retryDelay: 1,
       ...attributes,
     },
   });
 }
 
+/**
+ * Create a request info based on a suffix.
+ *
+ * @param {string} suffix
+ * @returns {RequestInfo} info
+ */
 export function createInfo(suffix) {
   return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
 }

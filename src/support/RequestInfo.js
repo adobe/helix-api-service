@@ -137,6 +137,12 @@ export function computePaths(path) {
 }
 
 export class RequestInfo {
+  #owner;
+
+  #repo;
+
+  #ref;
+
   /**
    * @constructs RequestInfo
    * @param {import('@adobe/fetch').Request} request request
@@ -154,6 +160,36 @@ export class RequestInfo {
     this.query = {};
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  get path() {
+    throw new Error();
+  }
+
+  withCode(owner, repo) {
+    this.#owner = owner;
+    this.#repo = repo;
+
+    return this;
+  }
+
+  withRef(ref) {
+    this.#ref = ref;
+
+    return this;
+  }
+
+  get owner() {
+    return this.#owner;
+  }
+
+  get repo() {
+    return this.#repo;
+  }
+
+  get ref() {
+    return this.#ref ?? 'main';
+  }
+
   /**
    * Create a new request info.
    *
@@ -166,9 +202,10 @@ export class RequestInfo {
    * @returns {RequestInfo}
    */
   static create(request, {
-    org, site, path, route,
+    org, site, path, ref, route,
   } = {}) {
-    const info = new RequestInfo(request);
+    const info = new RequestInfo(request)
+      .withRef(ref);
 
     info.route = route;
     info.org = org;
@@ -189,11 +226,11 @@ export class RequestInfo {
   }
 
   getPreviewUrl() {
-    return `https://main--${this.site}--${this.org}.aem.page${this.webPath}`;
+    return `https://${this.ref}--${this.site}--${this.org}.aem.page${this.webPath}`;
   }
 
   getLiveUrl() {
-    return `https://main--${this.site}--${this.org}.aem.live${this.webPath}`;
+    return `https://${this.ref}--${this.site}--${this.org}.aem.live${this.webPath}`;
   }
 
   getLinkUrl(path, query) {

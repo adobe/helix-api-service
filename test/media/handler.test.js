@@ -35,7 +35,7 @@ describe('Media Handler Tests', () => {
     nock.done();
   });
 
-  const suffix = '/owner/sites/repo/media/';
+  const suffix = '/org/sites/site/media/';
 
   it('sends method not allowed for unsupported method', async () => {
     const result = await main(new Request('https://api.aem.live/'), {
@@ -75,7 +75,7 @@ describe('Media Handler Tests', () => {
         width: '56',
         type: 'image/svg+xml',
       },
-      uri: `https://main--repo--owner.aem.page/media_${imageHash}.svg#width=56&height=54`,
+      uri: `https://main--site--org.aem.page/media_${imageHash}.svg#width=56&height=54`,
     });
   });
 
@@ -113,7 +113,7 @@ describe('Media Handler Tests', () => {
         width: '58',
         type: 'image/png',
       },
-      uri: `https://main--repo--owner.aem.page/media_${imageHash}.png#width=58&height=74`,
+      uri: `https://main--site--org.aem.page/media_${imageHash}.png#width=58&height=74`,
     });
   });
 

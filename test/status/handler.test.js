@@ -99,6 +99,9 @@ describe('Status Tests', () => {
 
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
+      code: {
+        status: 403,
+      },
       edit: {
         status: 403,
       },
@@ -136,6 +139,11 @@ describe('Status Tests', () => {
         id: '1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       }], '1BHM3lyqi0bEeaBZho8UD328oFsmsisyJ');
+
+    // getCodeBusInfo
+    nock.code()
+      .head('/folder/page')
+      .reply(404);
 
     // getContentBusInfo (preview/live)
     nock.content()
@@ -200,6 +208,14 @@ describe('Status Tests', () => {
         sourceLocation: 'gdrive:1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
         status: 200,
       },
+      code: {
+        codeBusId: 'helix-code-bus/owner/repo/main/folder/page',
+        permissions: [
+          'read',
+          'write',
+        ],
+        status: 404,
+      },
     });
   });
 
@@ -222,6 +238,11 @@ describe('Status Tests', () => {
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       });
 
+    // getCodeBusInfo
+    nock.code()
+      .head('/')
+      .reply(404);
+
     // getContentBusInfo (preview/live)
     nock.content()
       .head('/preview/index.md')
@@ -238,6 +259,14 @@ describe('Status Tests', () => {
     });
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
+      code: {
+        codeBusId: 'helix-code-bus/owner/repo/main/',
+        permissions: [
+          'read',
+          'write',
+        ],
+        status: 404,
+      },
       edit: {
         contentType: 'application/vnd.google-apps.document',
         folders: [

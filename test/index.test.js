@@ -52,7 +52,9 @@ describe('Index Tests', () => {
     nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
     nock.orgConfig(ORG_CONFIG, { org: 'owner' });
 
-    const result = await main(new Request('https://localhost/'), {
+    const result = await main(new Request('https://localhost/', {
+      method: 'PUT',
+    }), {
       pathInfo: {
         suffix: '/owner/sites/repo/code/main/',
       },
@@ -125,6 +127,9 @@ describe('Index Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' })
       .getObject('/preview/redirects.json')
       .reply(404);
+    nock.code()
+      .head('/document')
+      .reply(404);
 
     const result = await main(new Request('https://localhost/'), {
       pathInfo: {
@@ -139,6 +144,14 @@ describe('Index Tests', () => {
     });
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
+      code: {
+        codeBusId: 'helix-code-bus/owner/repo/main/document',
+        permissions: [
+          'read',
+          'write',
+        ],
+        status: 404,
+      },
       edit: {},
       live: {
         contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/document.md',

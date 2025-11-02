@@ -20,10 +20,12 @@ import { StatusCodeError } from '../support/StatusCodeError.js';
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function status(ctx, info) {
-  ctx.attributes.authInfo.assertPermissions('code:read');
+export default async function status(context, info) {
+  const {
+    owner, repo, ref, resourcePath,
+  } = info;
 
-  const codeInfo = await getCodeBusInfo(ctx, info);
+  const codeInfo = await getCodeBusInfo(context, info);
   if (codeInfo.status === 404) {
     return new Response('', {
       status: 404,
@@ -44,7 +46,7 @@ export default async function status(ctx, info) {
       url: info.getPreviewUrl(),
     },
     edit: {
-      url: `https://github.com/${info.owner}/${info.repo}/edit/${info.branch}${info.resourcePath}`,
+      url: `https://github.com/${owner}/${repo}/edit/${ref}${resourcePath}`,
     },
     // TODO: should be derived from route
     // links: getAPIUrls(ctx, info, 'status', 'preview', 'live', 'code'),

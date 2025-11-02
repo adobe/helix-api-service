@@ -20,8 +20,13 @@ import { fetchS3 } from '@adobe/helix-admin-support';
  *
  * @returns {Promise<CodeBusResource>} a resource
  */
-export async function getCodeBusInfo(ctx, info) {
-  if (!ctx.attributes.authInfo.hasPermissions('code:read')) {
+export async function getCodeBusInfo(context, info) {
+  const { attributes: { authInfo, bucketMap: { code } } } = context;
+  const {
+    owner, repo, ref, rawPath,
+  } = info;
+
+  if (!authInfo.hasPermissions('code:read')) {
     return {
       status: 403,
     };
@@ -29,24 +34,24 @@ export async function getCodeBusInfo(ctx, info) {
   if (!info.rawPath) {
     return {
       status: 400,
-      permissions: ctx.attributes.authInfo.getPermissions('code:'),
+      permissions: authInfo.getPermissions('code:'),
     };
   }
 
-  const key = `${info.owner}/${info.repo}/${info.ref}${info.rawPath}`;
-  const resp = await fetchS3(ctx, 'code', key, true);
+  const key = `${owner}/${repo}/${ref}${info.rawPath}`;
+  const resp = await fetchS3(context, 'code', key, true);
   const ret = {
     status: resp.status,
-    codeBusId: `${ctx.attributes.bucketMap.code}/${key}`,
-    permissions: ctx.attributes.authInfo.getPermissions('code:'),
+    codeBusId: `${code}/${key}`,
+    permissions: authInfo.getPermissions('code:'),
   };
-  const { GH_RAW_URL = 'https://raw.githubusercontent.com' } = ctx.env;
+  const { GH_RAW_URL = 'https://raw.githubusercontent.com' } = context.env;
   if (resp.ok) {
     ret.contentType = resp.headers.get('content-type');
     ret.lastModified = resp.headers.get('last-modified');
     ret.contentLength = resp.headers.get('x-source-content-length') || undefined;
     ret.sourceLastModified = resp.headers.get('x-source-last-modified') || undefined;
-    ret.sourceLocation = `${GH_RAW_URL}/${info.owner}/${info.repo}/${info.branch}${info.rawPath}`;
+    ret.sourceLocation = `${GH_RAW_URL}/${owner}/${repo}/${ref}${rawPath}`;
   } else if (resp.status !== 404) {
     ret.error = resp.headers.get('x-error');
   }

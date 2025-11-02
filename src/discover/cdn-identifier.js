@@ -54,12 +54,12 @@ export function generate(config) {
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<ProductionSite[]>} list of org/site that match
  */
-export async function querySiblingSites(ctx, info) {
-  const { log } = ctx;
+export async function querySiblingSites(context, info) {
+  const { log } = context;
   const { owner, repo } = info;
   const codeBusId = `${owner}/${repo}`;
 
-  const inventory = new Inventory(log, HelixStorage.fromContext(ctx).contentBus());
+  const inventory = new Inventory(log, HelixStorage.fromContext(context).contentBus());
   if (!await inventory.load()) {
     log.warn('Inventory not available');
     return [];

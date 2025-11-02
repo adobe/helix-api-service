@@ -29,4 +29,4 @@ global.__testdir = resolve(fileURLToPath(import.meta.url), '..');
 
 // provide verbose for test logger
 // eslint-disable-next-line no-console
-console.verbose = console.debug;
+console.verbose = (opts) => console.debug(opts);

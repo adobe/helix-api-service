@@ -25,10 +25,15 @@ const ALLOWED_METHODS = ['POST'];
  * @returns {Promise<Response>} response
  */
 export default async function cacheHandler(context, info) {
+  const { data: { branch } } = context;
+
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
       status: 405,
     });
+  }
+  if (branch) {
+    info.withRef(branch);
   }
   return purge.resource(context, info, PURGE_PREVIEW_AND_LIVE);
 }

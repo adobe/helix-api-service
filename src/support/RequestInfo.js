@@ -226,11 +226,11 @@ export class RequestInfo {
   }
 
   getPreviewUrl() {
-    return `https://main--${this.site}--${this.org}.aem.page${this.webPath}`;
+    return `https://${this.ref}--${this.site}--${this.org}.aem.page${this.webPath}`;
   }
 
   getLiveUrl() {
-    return `https://main--${this.site}--${this.org}.aem.live${this.webPath}`;
+    return `https://${this.ref}--${this.site}--${this.org}.aem.live${this.webPath}`;
   }
 
   getLinkUrl(path, query) {

@@ -41,7 +41,7 @@ describe('Cache Handler Tests', () => {
   const suffix = '/org/sites/site/cache/foo';
 
   it('sends method not allowed for unsupported method', async () => {
-    const result = await main(new Request('https://api.aem.live/'), {
+    const result = await main(new Request(`https://api.aem.live${suffix}`), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
@@ -65,7 +65,7 @@ describe('Cache Handler Tests', () => {
       });
     });
 
-    const result = await main(new Request('https://api.aem.live/', {
+    const result = await main(new Request(`https://api.aem.live${suffix}`, {
       method: 'POST',
     }), {
       pathInfo: { suffix },
@@ -81,6 +81,34 @@ describe('Cache Handler Tests', () => {
     });
     assert.deepStrictEqual(purges, [
       'https://main--site--org.aem.live/foo',
+    ]);
+  });
+
+  it('allows selecting a different branch', async () => {
+    const purges = [];
+    sandbox.stub(purge, 'resource').callsFake((context, info) => {
+      purges.push(info.getLiveUrl());
+      return new Response('', {
+        status: 200,
+      });
+    });
+
+    const result = await main(new Request(`https://api.aem.live${suffix}?branch=stage`, {
+      method: 'POST',
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+    });
+    assert.deepStrictEqual(purges, [
+      'https://stage--site--org.aem.live/foo',
     ]);
   });
 });

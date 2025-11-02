@@ -740,7 +740,7 @@ const purge = {
       // include head surrogate key
       purgeKeys.push(`${opts.ref}--${opts.repo}--${opts.owner}_head`);
     }
-    await purge.sorregate(context, info, purgeKeys, PURGE_CONFIG);
+    await purge.surrogate(context, info, purgeKeys, PURGE_CONFIG);
 
     // purge cloudflare zones for config
     await purgeCloudflareZones(context, info, { keys: purgeKeys }, PURGE_CONFIG);

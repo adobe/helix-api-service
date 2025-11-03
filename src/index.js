@@ -20,6 +20,7 @@ import cache from './cache/handler.js';
 import code from './code/handler.js';
 import { auth, login, logout } from './login/handler.js';
 import media from './media/handler.js';
+import preview from './preview/handler.js';
 import profile from './profile/handler.js';
 import sitemap from './sitemap/handler.js';
 import status from './status/handler.js';
@@ -57,7 +58,7 @@ export const router = new Router()
   .add('/:org/sites/:site/config/sidekick', notImplemented)
   .add('/:org/sites/:site/config/access', notImplemented)
   .add('/:org/sites/:site/config/versions', notImplemented)
-  .add('/:org/sites/:site/preview/*', notImplemented)
+  .add('/:org/sites/:site/preview/*', preview)
   .add('/:org/sites/:site/live/*', notImplemented)
   .add('/:org/sites/:site/login', login)
   .add('/:org/sites/:site/media/*', media)

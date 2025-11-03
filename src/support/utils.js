@@ -94,8 +94,8 @@ export function getSanitizedPath(path, isFolder) {
 
 /**
  * Checks if the given path is illegal
- * @param path
- * @param allowBulk
+ * @param {string} path path
+ * @param {boolean} allowBulk whether to allow trailing asterisk
  * @returns {boolean}
  */
 export function isIllegalPath(path, allowBulk = false) {

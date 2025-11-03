@@ -19,7 +19,7 @@ import {
   Nock, SITE_CONFIG, ORG_CONFIG,
 } from '../utils.js';
 
-describe('Status Tests', () => {
+describe('Status Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 

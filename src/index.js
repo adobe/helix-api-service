@@ -21,6 +21,7 @@ import code from './code/handler.js';
 import { auth, login, logout } from './login/handler.js';
 import media from './media/handler.js';
 import profile from './profile/handler.js';
+import sitemap from './sitemap/handler.js';
 import status from './status/handler.js';
 
 import { AccessDeniedError } from './auth/AccessDeniedError.js';
@@ -63,7 +64,7 @@ export const router = new Router()
   .add('/:org/sites/:site/code/:ref/*', code)
   .add('/:org/sites/:site/cache/*', cache)
   .add('/:org/sites/:site/index/*', notImplemented)
-  .add('/:org/sites/:site/sitemap/*', notImplemented)
+  .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', notImplemented)
   .add('/:org/sites/:site/jobs', notImplemented)

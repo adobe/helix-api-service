@@ -1,0 +1,8 @@
+version: 1
+auto-generated: true
+sitemaps:
+  default:
+    origin: https://www.example.com
+    source: /query-index.json
+    destination: /sitemap.xml
+    lastmod: YYYY-MM-DD

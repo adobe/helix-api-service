@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/adobe/helix-api-service/compare/v1.10.0...v1.10.1) (2025-11-03)
+
+
+### Bug Fixes
+
+* start implementing preview route ([f2be2be](https://github.com/adobe/helix-api-service/commit/f2be2beccdaea1284e0dec211d411520dba483ea))
+
 # [1.10.0](https://github.com/adobe/helix-api-service/compare/v1.9.0...v1.10.0) (2025-11-03)
 
 

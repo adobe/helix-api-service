@@ -11,8 +11,10 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
+import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
+import purge from '../../src/cache/purge.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 
@@ -20,14 +22,19 @@ describe('Cache Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
+    sandbox = sinon.createSandbox();
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
+    sandbox.restore();
     nock.done();
   });
 
@@ -50,6 +57,14 @@ describe('Cache Handler Tests', () => {
   });
 
   it('rebuild sitemap purges the cache', async () => {
+    const purges = [];
+    sandbox.stub(purge, 'content').callsFake((context, info, paths) => {
+      purges.push(...paths);
+      return new Response('', {
+        status: 200,
+      });
+    });
+
     nock.sitemapConfig(null);
     nock.content()
       .head('/live/sitemap.json')
@@ -78,5 +93,6 @@ describe('Cache Handler Tests', () => {
     assert.deepStrictEqual(await result.json(), {
       paths: ['/sitemap.xml'],
     });
+    assert.deepStrictEqual(purges, ['/sitemap.xml']);
   });
 });

@@ -10,6 +10,8 @@
  * governing permissions and limitations under the License.
  */
 import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
+import { fetchS3 } from '@adobe/helix-admin-support';
+import { SitemapConfig } from '@adobe/helix-shared-config';
 import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { GoogleClient } from '@adobe/helix-google-support';
@@ -311,6 +313,32 @@ export class AdminContext {
   get contentBusId() {
     const { attributes: { config: { content: { contentBusId } } } } = this;
     return contentBusId;
+  }
+
+  /**
+   * Retrieves the sitemap from the underlying storage and stores it in the
+   * context as `sitemapConfig`.
+   *
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @returns {Promise<SitemapConfig>} the sitemap configuration
+   */
+  async fetchSitemap(info) {
+    const { attributes, contentBusId } = this;
+    const { org, site } = info;
+
+    if (attributes.sitemapConfig === undefined) {
+      const key = `${contentBusId}/preview/.helix/sitemap.yaml`;
+      const response = await fetchS3(this, 'content', key);
+      if (response.ok) {
+        const text = await response.text();
+        attributes.sitemapConfig = await new SitemapConfig().withSource(text).init();
+      } else if (response.status === 404) {
+        attributes.sitemapConfig = null;
+      } else {
+        throw new StatusCodeError(`unable to load sitemap configuration for ${org}/${site}`, response.status);
+      }
+    }
+    return attributes.sitemapConfig;
   }
 }
 

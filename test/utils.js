@@ -11,6 +11,7 @@
  */
 import assert from 'assert';
 import nock from 'nock';
+import xml2js from 'xml2js';
 
 import { Request } from '@adobe/fetch';
 
@@ -49,7 +50,7 @@ export const SITE_CONFIG = {
   },
   cdn: {
     prod: {
-      host: 'host.live',
+      host: 'www.example.com',
     },
   },
 };
@@ -153,6 +154,23 @@ export function Nock() {
       scope.reply(200, config);
     }
     return scope;
+  };
+
+  nocker.sitemapConfig = (config) => {
+    const scope = nocker.content()
+      .getObject('/preview/.helix/sitemap.yaml');
+
+    if (config) {
+      scope.reply(200, config);
+    } else {
+      const notFound = new xml2js.Builder().buildObject({
+        Error: {
+          Code: 'NoSuchKey',
+          Message: 'The specified key does not exist.',
+        },
+      });
+      scope.reply(404, notFound);
+    }
   };
 
   nocker.inventory = (inventory) => {

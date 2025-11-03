@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/adobe/helix-api-service/compare/v1.9.0...v1.10.0) (2025-11-03)
+
+
+### Features
+
+* implement sitemap route ([#18](https://github.com/adobe/helix-api-service/issues/18)) ([4af05a5](https://github.com/adobe/helix-api-service/commit/4af05a52ac51f963fab93538d20504f2f1331ac7))
+
 # [1.9.0](https://github.com/adobe/helix-api-service/compare/v1.8.0...v1.9.0) (2025-11-02)
 
 

@@ -731,7 +731,6 @@ sitemaps:
           },
         }))
         .getObject('/live/de/query-index.json')
-        .times(3)
         .reply(500)
         .getObject('/live/en/sitemap.xml')
         .reply(404);

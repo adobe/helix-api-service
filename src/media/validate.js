@@ -258,8 +258,30 @@ async function validateImage(context, resourcePath, buf) {
 }
 
 /**
+ * @callback Preprocess
+ * @param {Buffer} buffer
+ * @returns {Promise<Buffer>} preprocessed buffer
+ *
+ * @callback Validate
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {string} resourcePath resource path
+ * @param {Buffer} buffer buffer
+ * @returns {Promise<void>} if validation passed
+ * @throws {ValidationError} if validation failed
+ *
+ * @typedef MediaType
+ * @property {string} name
+ * @property {string{}} extensions
+ * @property {string} mime
+ * @property {Preprocess} preprocess
+ * @property {Validate} validate
+ * @property {boolean} redirect
+ */
+
+/**
  * Media types we upload to the media bus and their description.
  */
+/** @type {MediaType[]} */
 export const MEDIA_TYPES = [
   {
     name: 'SVG',

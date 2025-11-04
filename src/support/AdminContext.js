@@ -36,9 +36,12 @@ export class AdminContext {
    */
   constructor(context, { headers = null, attributes = {} } = {}) {
     this.suffix = context.pathInfo.suffix;
-    this.data = context.data;
     this.log = context.log || console;
     this.env = { ...context.env };
+
+    ['data', 'runtime', 'func', 'invocation'].forEach((k) => {
+      this[k] = context[k];
+    });
 
     this.attributes = {
       errors: [],
@@ -303,6 +306,13 @@ export class AdminContext {
 
     attributes.subRequestId = (attributes.subRequestId || 0) + 1;
     return attributes.subRequestId;
+  }
+
+  /**
+   * Returns the config associated with this request.
+   */
+  get config() {
+    return this.attributes.config;
   }
 
   /**

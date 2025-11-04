@@ -16,6 +16,7 @@ import isIpPrivate from 'private-ip';
 import { Response } from '@adobe/fetch';
 import { sanitizeName } from '@adobe/helix-shared-string';
 import { cleanupHeaderValue, logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
+import { ModifiersConfig } from '@adobe/helix-shared-config';
 
 /**
  * DNS lookup method.
@@ -40,6 +41,43 @@ export async function isInternal(hostname, log) {
     log.warn(`Unable to resolve hostname: ${hostname}: ${e.message}`);
     return true;
   }
+}
+
+/**
+ * list of headers not allowed in the headers.json file.
+ */
+const IGNORED_META_OVERRIDES = [
+  'x-commit-id',
+  'x-source-last-modified',
+  'content-security-policy',
+  'content-security-policy-report-only',
+  'connection',
+  'keep-alive',
+  'public',
+  'proxy-authenticate',
+  'content-encoding',
+  'transfer-encoding',
+  'upgrade',
+];
+
+// eslint-disable-next-line max-len
+export const ALLOWED_HEADERS_FILTER = (name) => !IGNORED_META_OVERRIDES.includes(name.toLowerCase());
+
+/**
+ * Applies the custom headers to the response.
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {Response} response
+ * @returns {Promise<void>}
+ */
+export async function applyCustomHeaders(context, info, response) {
+  const { config } = context;
+  const headers = new ModifiersConfig(config.headers, ALLOWED_HEADERS_FILTER);
+  const obj = headers.getModifiers(info.webPath);
+  Object.entries(obj).forEach(([name, value]) => {
+    response.headers.set(name, value);
+  });
+  return response;
 }
 
 /**
@@ -116,6 +154,54 @@ export function isIllegalPath(path, allowBulk = false) {
 }
 
 /**
+ * Sleep method.
+ * @function
+ * @param {number} time
+ * @return {Promise<void>}
+ */
+export const sleep = promisify(setTimeout);
+
+/**
+ * @typedef PrefixOrPath
+ * @property {string} prefix if the input had a trailing '/*', with '*' removed
+ * @property {string} path if the input was a verbatim path
+ */
+
+/**
+ * Process paths passed and simplify where possible.
+ *
+ * @param {Array<string>} paths path prefixes (with trailing '*') or single paths
+ * @returns {Array<PrefixOrPath>} input paths, where children of already mentioned
+ * prefix paths are removed
+ */
+export function processPrefixedPaths(paths) {
+  const prefixes = paths
+    .map((p) => String(p))
+    .filter((p) => p.endsWith('/*'))
+    .map((p) => p.substring(0, p.length - 1))
+    .sort((p1, p2) => p1.localeCompare(p2))
+    .reduce((unique, p) => {
+      if (!unique.some((prefix) => p.startsWith(prefix))) {
+        unique.push(p);
+      }
+      return unique;
+    }, []);
+  const singles = paths
+    .map((p) => String(p))
+    .filter((p) => !p.endsWith('/*'))
+    .reduce((array, p) => {
+      if (!prefixes.some((prefix) => p.startsWith(prefix))) {
+        array.push(p);
+      }
+      return array;
+    }, []);
+  return [
+    ...prefixes.map((prefix) => ({ prefix })),
+    ...singles.map((single) => ({ path: single })),
+  ];
+}
+
+/**
  * Coerces the given value to an array. if the value is null or undefined, an empty array is
  * returned.
  * @param {*} value
@@ -131,6 +217,15 @@ export function coerceArray(value, unique = false) {
     return Array.from(new Set(array));
   }
   return array;
+}
+
+/**
+ * Log stack of exception if it is "unexpected", e.g. a `TypeError`
+ */
+export function logStack(log, e) {
+  if (e instanceof TypeError) {
+    log.debug(e);
+  }
 }
 
 /**

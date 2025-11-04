@@ -20,6 +20,7 @@ declare interface GoogleNock {
   user(cacheData?: any): GoogleNock
   folders(files: string[], id?: string): GoogleNock
   documents(files: string[], id?: string): GoogleNock
+  sheets(files: string[], id?: string): GoogleNock
   files(files: string[], id?: string): GoogleNock
   file(id: string, file: any): GoogleNock
 }

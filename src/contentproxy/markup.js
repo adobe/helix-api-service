@@ -21,9 +21,12 @@ import { computeSourceUrl, getContentSourceHeaders, updateMarkupSourceInfo } fro
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object} opts options
+ * @param {string} opts.lastModified last modified
+ * @param {number} opts.fetchTimeout fetch timeout
  * @returns {Promise<Response>} response
  */
-async function handle(context, info) {
+async function handle(context, info, opts) {
   const { config, config: { content: { source } }, log } = context;
 
   const sourceUrl = await computeSourceUrl(log, info, source);
@@ -42,6 +45,7 @@ async function handle(context, info) {
   }
 
   const res = await fetchContent(context, info, {
+    ...opts,
     usePost: true,
     provider: {
       package: 'helix3',

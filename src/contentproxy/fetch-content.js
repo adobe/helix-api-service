@@ -171,11 +171,12 @@ export default async function fetchContent(context, info, opts) {
 
   try {
     log.info(`fetching content for ${org}/${site}${resourcePath} from ${FunctionName}...`);
+    const payload = await requestPayload(context, info, opts);
     const output = await client.send(
       new InvokeCommand({
         FunctionName,
         InvocationType: InvocationType.RequestResponse,
-        Payload: JSON.stringify(await requestPayload(context, info, opts)),
+        Payload: JSON.stringify(payload),
       }),
     );
     const result = new TextDecoder('utf8').decode(output.Payload);

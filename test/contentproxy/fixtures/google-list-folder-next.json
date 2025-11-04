@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "mimeType": "application/pdf",
+      "size": "3232437",
+      "id": "1_EKUoWcF9znjp1ZIkHePIzIiUuqM07bj",
+      "name": "helix-learnings-2022.pdf",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    },
+    {
+      "mimeType": "image/png",
+      "size": "3873",
+      "id": "1-BljmlemrIiENu2p5hYlPj1i_AlXQxsX",
+      "name": "sample.png",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    },
+    {
+      "mimeType": "image/svg+xml",
+      "size": "1595",
+      "id": "1LwH2LFWRqI6cRRSS-Tl5Nb5imTSjESDl",
+      "name": "sample.svg",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    }
+  ]
+}

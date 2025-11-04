@@ -1,0 +1,71 @@
+{
+  "files": [
+    {
+      "mimeType": "application/vnd.google-apps.document",
+      "size": "1024",
+      "id": "1FREVtyDzwkxCD0l_PFAM5yg5AoJWnyeMY6T1Nm8KTwg",
+      "name": "test",
+      "modifiedTime": "2023-10-31T13:06:27.061Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.document",
+      "size": "1024",
+      "id": "1HfH4hk3VuCH9PF1BAaL4118Qw1biyEnPcSDXmwcLpzU",
+      "name": "document",
+      "modifiedTime": "2023-10-31T13:05:54.968Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.document",
+      "size": "1024",
+      "id": "5HfH4hk3VuCH9PF1BAaL4118Qw1biyEnPcSDXmwcLpzU",
+      "name": "index",
+      "modifiedTime": "2023-10-31T13:05:54.968Z"
+    },
+    {
+      "mimeType": "text/markdown",
+      "size": "1024",
+      "id": "1HfH4hk3VuCH9PF1BAaL4118Qw1biyEnPcSDXmwcLpzU",
+      "name": "bla.md",
+      "modifiedTime": "2023-10-31T13:05:54.968Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.folder",
+      "id": "folder-id",
+      "name": "folder",
+      "modifiedTime": "2023-10-31T13:04:45.192Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.folder",
+      "id": "config-id",
+      "name": ".helix",
+      "modifiedTime": "2023-10-31T13:04:45.192Z"
+    },
+    {
+      "mimeType": "image/svg+xml",
+      "size": "1632",
+      "id": "1YvrkuFYscNdR87hTvt1V6X-gh4loCJPB",
+      "name": "unsafe.svg",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    },
+    {
+      "size": "3873",
+      "id": "1vFvxScNLJDrleRZy-z25pYefRlcNKvFR",
+      "name": "sample.png",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    },
+    {
+      "mimeType": "image/svg+xml",
+      "size": "1595",
+      "id": "1JmSbTnOXM1t2zJiuokp3EBUtXMVreVOM",
+      "name": "sample.svg",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    },
+    {
+      "mimeType": "application/pdf",
+      "size": "3232437",
+      "id": "1xkum0nDsiWe1yx-szogxOy6gnePwkf_z",
+      "name": "helix-learnings-2022.pdf",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    }
+  ]
+}

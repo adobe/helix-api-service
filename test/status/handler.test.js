@@ -209,13 +209,13 @@ describe('Status Handler Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.document',
         name: 'index',
         parents: [SITE_CONFIG.content.source.id],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
-      .file(SITE_CONFIG.content.source.id, {
+      .item(SITE_CONFIG.content.source.id, {
         mimeType: 'application/vnd.google-apps.folder',
         name: 'root',
         parents: [],

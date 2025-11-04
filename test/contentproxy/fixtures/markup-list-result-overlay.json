@@ -1,0 +1,68 @@
+[
+  {
+    "path": "/",
+    "resourcePath": "/index.md",
+    "source": {
+      "name": "index.md",
+      "contentType": "text/markdown; charset=utf-8",
+      "lastModified": 1704067200000,
+      "location": "https://byom-overlay.example.com/",
+      "type": "markup"
+    }
+  },
+  {
+    "path": "/contact/",
+    "resourcePath": "/contact/index.md",
+    "source": {
+      "name": "index.md",
+      "contentType": "text/markdown; charset=utf-8",
+      "location": "https://byom-overlay.example.com/contact/",
+      "lastModified": 1704067200000,
+      "type": "markup"
+    }
+  },
+  {
+    "path": "/products/product-1",
+    "resourcePath": "/products/product-1.md",
+    "source": {
+      "name": "product-1.md",
+      "contentType": "text/markdown; charset=utf-8",
+      "location": "https://byom-overlay.example.com/products/product-1",
+      "lastModified": 1704067200000,
+      "type": "markup"
+    }
+  },
+  {
+    "path": "/foo.pdf",
+    "resourcePath": "/foo.pdf",
+    "source": {
+      "name": "foo.pdf",
+      "contentType": "application/pdf",
+      "location": "https://byom-overlay.example.com/foo.pdf",
+      "lastModified": 1704067200000,
+      "type": "markup"
+    }
+  },
+  {
+    "path": "/foo.svg",
+    "resourcePath": "/foo.svg",
+    "source": {
+      "name": "foo.svg",
+      "contentType": "application/xml",
+      "location": "https://byom-overlay.example.com/foo.svg",
+      "lastModified": 1704067200000,
+      "type": "markup"
+    }
+  },
+  {
+    "path": "/foo/bar/baz.json",
+    "resourcePath": "/foo/bar/baz.json",
+    "source": {
+      "name": "baz.json",
+      "contentType": "application/json",
+      "location": "https://byom-overlay.example.com/foo/bar/baz.json",
+      "lastModified": 1704067200000,
+      "type": "markup"
+    }
+  }
+]

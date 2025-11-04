@@ -22,9 +22,12 @@ import { error } from './errors.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object} opts options
+ * @param {string} opts.lastModified last modified
+ * @param {number} opts.fetchTimeout fetch timeout
  * @returns {Promise<Response>} response
  */
-async function handle(context, info) {
+async function handle(context, info, opts) {
   const { config: { content: { contentBusId, source } }, log } = context;
   const { org, site, resourcePath } = info;
   const {
@@ -78,6 +81,7 @@ async function handle(context, info) {
     providerParams.maxImageSize = context.attributes.config.limits.preview.maxImageSize;
   }
   const resp = await fetchContent(context, info, {
+    ...opts,
     provider: {
       package: 'helix3',
       name: 'word2md',

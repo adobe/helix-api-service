@@ -23,9 +23,12 @@ import { list } from './google-list.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object} opts options
+ * @param {string} opts.lastModified last modified
+ * @param {number} opts.fetchTimeout fetch timeout
  * @returns {Promise<Response>} response
  */
-async function handle(context, info) {
+async function handle(context, info, opts) {
   const { config: { content: { contentBusId, source } } } = context;
   const { org, site, resourcePath } = info;
 
@@ -50,6 +53,7 @@ async function handle(context, info) {
   const { token } = await client.auth.getAccessToken();
 
   return fetchContent(context, info, {
+    ...opts,
     provider: {
       package: 'helix3',
       name: 'gdocs2md',

@@ -41,7 +41,7 @@ describe('edit2web Google Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(404);
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(404);
 
     const result = await edit2web(
       createContext(suffix),
@@ -60,13 +60,13 @@ describe('edit2web Google Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.spreadsheet',
         name: '../page',
         parents: [SITE_CONFIG.content.source.id],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
-      .file(SITE_CONFIG.content.source.id, {
+      .item(SITE_CONFIG.content.source.id, {
         mimeType: 'application/vnd.google-apps.folder',
         name: 'root',
         parents: [],
@@ -90,19 +90,19 @@ describe('edit2web Google Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.document',
         name: 'page',
         parents: ['1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Yt'],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Yt', {
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Yt', {
         mimeType: 'application/vnd.google-apps.folder',
         name: 'folder-',
         parents: [SITE_CONFIG.content.source.id],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
-      .file(SITE_CONFIG.content.source.id, {
+      .item(SITE_CONFIG.content.source.id, {
         mimeType: 'application/vnd.google-apps.folder',
         name: 'root',
         parents: [],
@@ -145,13 +145,13 @@ describe('edit2web Google Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.folder',
         name: 'folder-',
         parents: [SITE_CONFIG.content.source.id],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
-      .file(SITE_CONFIG.content.source.id, {
+      .item(SITE_CONFIG.content.source.id, {
         mimeType: 'application/vnd.google-apps.folder',
         name: 'root',
         parents: [],
@@ -189,7 +189,7 @@ describe('edit2web Google Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(500);
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(500);
 
     const result = await edit2web(
       createContext(suffix),
@@ -208,7 +208,7 @@ describe('edit2web Google Tests', () => {
 
     nock.google(SITE_CONFIG.content)
       .user()
-      .file('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(429);
+      .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(429);
 
     const result = await edit2web(
       createContext(suffix),

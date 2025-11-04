@@ -1,0 +1,39 @@
+{
+  "nextPageToken": "1234",
+  "files": [
+    {
+      "mimeType": "application/vnd.google-apps.folder",
+      "id": "sub-id",
+      "name": "sub",
+      "modifiedTime": "2023-11-01T09:43:24.319Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.document",
+      "size": "1024",
+      "id": "19H1H3v8MQz5FA_vkTmMgTiKwop0e8Jh1l_vflfPgy9U",
+      "name": "document öne",
+      "modifiedTime": "2023-10-31T13:09:09.998Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.document",
+      "size": "1024",
+      "id": "14WWbTHbCbbjlNxinNW-4CXyagpZWsKVAnSC5oyDAhoI",
+      "name": "document-one",
+      "modifiedTime": "2023-10-31T13:08:48.537Z"
+    },
+    {
+      "mimeType": "application/vnd.google-apps.spreadsheet",
+      "size": "1024",
+      "id": "1yBOCRhnmw3WKTwW50A5ohk3V18tZ6MdPBcP0CGzSha4",
+      "name": "simple phases",
+      "modifiedTime": "2023-10-31T13:08:16.990Z"
+    },
+    {
+      "mimeType": "application/pdf",
+      "size": "3232437",
+      "id": "1CrsvMdio9WXRS1XzkSUxJi2HZ-tPqCP9",
+      "name": "Copy of helix-learnings-2022.pdf",
+      "modifiedTime": "2023-10-31T12:07:00.000Z"
+    }
+  ]
+}

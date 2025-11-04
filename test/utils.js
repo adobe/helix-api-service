@@ -13,7 +13,7 @@ import assert from 'assert';
 import nock from 'nock';
 import xml2js from 'xml2js';
 
-import { Request } from '@adobe/fetch';
+import { Headers, Request } from '@adobe/fetch';
 
 import { AuthInfo } from '../src/auth/auth-info.js';
 import { router } from '../src/index.js';
@@ -198,6 +198,7 @@ export function createContext(suffix, {
       HELIX_STORAGE_MAX_ATTEMPTS: '1',
       ...env,
     },
+    runtime: { region: 'us-east-1' },
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),
@@ -207,6 +208,9 @@ export function createContext(suffix, {
       retryDelay: 1,
       ...attributes,
     },
+    headers: new Headers({
+      'x-request-id': 'rid',
+    }),
   });
 }
 

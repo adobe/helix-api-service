@@ -42,9 +42,13 @@ export function getContentSourceHandler(source) {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object} opts options
+ * @param {string} opts.lastModified last modified
+ * @param {number} opts.fetchTimeout fetch timeout
+ *
  * @returns {Promise<Response>} the content response
  */
-export async function contentProxy(context, info) {
+export async function contentProxy(context, info, opts) {
   const { config: { content: { source } }, log } = context;
   const { resourcePath, ext } = info;
 
@@ -58,11 +62,11 @@ export async function contentProxy(context, info) {
 
   try {
     if (ext === '.json') {
-      return await handler.handleJSON(context, info);
+      return await handler.handleJSON(context, info, opts);
     }
     const mediaType = MEDIA_TYPES.find((type) => type.extensions.includes(ext));
     if (mediaType) {
-      const resp = await handler.handleFile(context, info);
+      const resp = await handler.handleFile(context, info, opts);
       if (resp.status !== 200) {
         return resp;
       }
@@ -101,7 +105,7 @@ export async function contentProxy(context, info) {
       return new Response(buf, resp);
     }
     if (!ext || ext === '.md') {
-      return await handler.handle(context, info);
+      return await handler.handle(context, info, opts);
     }
     return errorResponse(log, 415, error(
       'Unable to preview \'$1\': \'$2\' backend does not support file type.',

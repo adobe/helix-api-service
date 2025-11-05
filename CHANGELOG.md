@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/adobe/helix-api-service/compare/v1.10.3...v1.11.0) (2025-11-05)
+
+
+### Features
+
+* implement `contentproxy` route ([#23](https://github.com/adobe/helix-api-service/issues/23)) ([564db9e](https://github.com/adobe/helix-api-service/commit/564db9ed1742db5aca03a0097a3fe0e7fb5a2fb6))
+
 ## [1.10.3](https://github.com/adobe/helix-api-service/compare/v1.10.2...v1.10.3) (2025-11-05)
 
 

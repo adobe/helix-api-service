@@ -45,7 +45,7 @@ const DEFAULT_BODY = {
   sourceUrl: 'https://www.example.com/index.semantic.html',
 };
 
-describe('html2md Integration Tests', () => {
+describe('Markup Integration Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
@@ -60,8 +60,7 @@ describe('html2md Integration Tests', () => {
   });
 
   function setupTest(path = '/', {
-    config = SITE_MUP_CONFIG(),
-    data,
+    config = SITE_MUP_CONFIG(), data,
     headers = { 'x-content-source-authorization': 'Bearer dummy-access-token' },
     authInfo = AuthInfo.Default().withAuthenticated(true),
   } = {}) {

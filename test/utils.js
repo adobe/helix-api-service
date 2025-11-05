@@ -136,6 +136,12 @@ export function Nock() {
     return scope;
   };
 
+  nocker.code = (ref = 'main') => {
+    const { owner, repo } = SITE_CONFIG.code;
+    const prefix = `${owner}/${repo}/${ref}`;
+    return nocker.s3('helix-code-bus', prefix);
+  };
+
   nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);

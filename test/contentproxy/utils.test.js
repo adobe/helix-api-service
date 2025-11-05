@@ -9,44 +9,13 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
 import assert from 'assert';
 
 import {
   rewriteCellUrl, assertValidSheetJSON, computeSourceUrl, addLastModified,
 } from '../../src/contentproxy/utils.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
-
-export const validSheet = (overrides = {}) => ({
-  ':type': 'sheet',
-  limit: 2,
-  total: 2,
-  offset: 0,
-  data: [{
-    index: 0,
-    value: 'foo',
-  }, {
-    index: 1,
-    value: 'bar',
-  }],
-  ...overrides,
-});
-
-export const validMultiSheet = ({
-  names = ['foo', 'bar'],
-  version = 3,
-  ...overrides
-} = {}) => ({
-  ':type': 'multi-sheet',
-  ':names': names,
-  ':version': version,
-  ...(Object.fromEntries(names.map((name) => {
-    const sheet = validSheet();
-    delete sheet[':type'];
-    return [name, sheet];
-  }))),
-  ...overrides,
-});
+import { validSheet, validMultiSheet } from './utils.js';
 
 describe('Rewrite URLs test', () => {
   it('returns input for falsy', () => {

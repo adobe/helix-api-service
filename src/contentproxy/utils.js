@@ -134,7 +134,7 @@ export function getContentSourceHeaders(context, info, source) {
   const providerHeaders = {};
 
   let sourceAuthorization = headers['x-content-source-authorization'];
-  if (!sourceAuthorization && isAdobeMountpoint(source.mp) && authInfo.imsToken) {
+  if (!sourceAuthorization && isAdobeMountpoint(source) && authInfo.imsToken) {
     // don't share IMS token with 3rd party content sources
     sourceAuthorization = `Bearer ${authInfo.imsToken}`;
   }

@@ -228,7 +228,7 @@ describe('OneDrive Integration Tests (docx)', () => {
         })];
       });
 
-    const { request, context } = setupTest('/index.md', {
+    const { request, context } = setupTest('/', {
       config: {
         ...SITE_1D_CONFIG,
         content: {

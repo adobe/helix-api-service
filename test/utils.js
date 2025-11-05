@@ -13,7 +13,7 @@ import assert from 'assert';
 import nock from 'nock';
 import xml2js from 'xml2js';
 
-import { Request } from '@adobe/fetch';
+import { Headers, Request } from '@adobe/fetch';
 
 import { AuthInfo } from '../src/auth/auth-info.js';
 import { router } from '../src/index.js';
@@ -136,6 +136,12 @@ export function Nock() {
     return scope;
   };
 
+  nocker.code = (ref = 'main') => {
+    const { owner, repo } = SITE_CONFIG.code;
+    const prefix = `${owner}/${repo}/${ref}`;
+    return nocker.s3('helix-code-bus', prefix);
+  };
+
   nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
@@ -198,6 +204,7 @@ export function createContext(suffix, {
       HELIX_STORAGE_MAX_ATTEMPTS: '1',
       ...env,
     },
+    runtime: { region: 'us-east-1' },
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),
@@ -207,6 +214,9 @@ export function createContext(suffix, {
       retryDelay: 1,
       ...attributes,
     },
+    headers: new Headers({
+      'x-request-id': 'rid',
+    }),
   });
 }
 
@@ -216,6 +226,8 @@ export function createContext(suffix, {
  * @param {string} suffix
  * @returns {RequestInfo} info
  */
-export function createInfo(suffix) {
-  return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
+export function createInfo(suffix, headers = {}) {
+  return RequestInfo.create(new Request('http://localhost/', {
+    headers,
+  }), router.match(suffix).variables);
 }

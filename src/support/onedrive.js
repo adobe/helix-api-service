@@ -128,8 +128,9 @@ export function getSourceLocationAndDate(item, location, lastModified) {
  * @returns {Promise<object>} resource info
  */
 export async function resolveResource(context, info, { source }) {
-  const { log } = context;
-  const { sourceInfo } = info;
+  const { contentBusId, log } = context;
+  const { org, site, sourceInfo } = info;
+
   /* c8 ignore start */
   if (sourceInfo) {
     log.debug(`resource ${info.resourcePath} already resolved to ${sourceInfo.location}`);
@@ -144,7 +145,14 @@ export async function resolveResource(context, info, { source }) {
     itemPath = `${itemPath.substring(0, itemPath.length - 5)}.xlsx`;
   }
 
-  const drive = await context.getOneDriveClient(context, info);
+  const drive = await context.getOneDriveClient(org, site, {
+    contentBusId,
+    tenant: source.tenantId,
+    logFields: {
+      project: `${org}/${site}`,
+      operation: `${info.route} ${info.resourcePath}`,
+    },
+  });
   log.debug(`resolving sharelink to ${source.url}`);
   const rootItem = await drive.getDriveItemFromShareLink(source.url);
   log.info(`fetch from onedrive: ${itemPath}`);

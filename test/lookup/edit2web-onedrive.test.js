@@ -24,7 +24,7 @@ const SITE_1D_CONFIG = {
     ...SITE_CONFIG.content,
     source: {
       type: 'onedrive',
-      url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+      url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
     },
   },
 };
@@ -54,7 +54,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive document', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'page.docx',
       action: 'default',
@@ -64,7 +64,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/page.docx',
       })
       .resolve('/page.docx', {
@@ -93,16 +93,16 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('resolves web resource path for onedrive document but fails for folders', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'page.docx',
       action: 'default',
@@ -112,7 +112,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/page.docx',
       })
       .resolve('/page.docx', {
@@ -144,7 +144,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive index document', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'index.docx',
       action: 'default',
@@ -154,7 +154,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/index.docx',
       })
       .resolve('/index.docx', {
@@ -183,16 +183,16 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('resolves web resource path for onedrive document with & in name.', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'CMO & DX Content to Migrate.xlsx',
       action: 'default',
@@ -202,7 +202,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'workbook-id', path: '/CMO%20%26%20DX%20Content%20to%20Migrate.xlsx',
       })
       .resolve('/CMO%20%26%20DX%20Content%20to%20Migrate.xlsx', {
@@ -225,9 +225,9 @@ describe('edit2web OneDrive Tests', () => {
       editContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
       editUrl,
@@ -239,7 +239,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive document via sharelink', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/TheBlog/_layouts/15/guestaccess.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_layouts/15/guestaccess.aspx', {
       e: '4:xSM7pa',
       at: '9',
       wdLOR: 'c64EF58AE-CEBB-0540-B444-044062648A17',
@@ -250,7 +250,7 @@ describe('edit2web OneDrive Tests', () => {
       .user()
       .login()
       .resolve(editUrl.href, { id: '09BFA93A-78BC-49F6-B93D-990A0ED4D55C' })
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/page.docx',
       })
       .resolve('/page.docx', {
@@ -279,16 +279,16 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('returns not found for onedrive document via invalid sharelink', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/TheBlog/_layouts/15/guestaccess.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_layouts/15/guestaccess.aspx', {
       e: '4:xSM7pa',
       at: '9',
       wdLOR: 'c64EF58AE-CEBB-0540-B444-044062648A17',
@@ -316,7 +316,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive document with no edit mode markers', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'page.docx',
       action: 'default',
@@ -326,7 +326,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/page.docx',
       })
       .resolve('/page.docx', {
@@ -355,16 +355,16 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('resolves web resource path for onedrive document with email sharelink', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/s/TheBlog/EfaZv8TXBKtNkDb8MH1HoOsBnwRunv3BxXZ_-XgcEwiqe', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/s/Site/EfaZv8TXBKtNkDb8MH1HoOsBnwRunv3BxXZ_-XgcEwiqe', {
       e: 'RLSD8R',
     });
 
@@ -372,7 +372,7 @@ describe('edit2web OneDrive Tests', () => {
       .user()
       .login()
       .resolve(editUrl.href, { id: '09BFA93A-78BC-49F6-B93D-990A0ED4D55C' })
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/page.docx',
       })
       .resolve('/page.docx', {
@@ -401,16 +401,16 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('resolves web resource path for onedrive taxonomy spreadsheet', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: '_taxonomy.xlsx',
       action: 'default',
@@ -420,7 +420,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'workbook-id', path: '/_taxonomy.xlsx',
       })
       .resolve('/_taxonomy.xlsx', {
@@ -443,9 +443,9 @@ describe('edit2web OneDrive Tests', () => {
       editContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
       editUrl,
@@ -457,7 +457,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive document w/o extension', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'some-data-test.xlsx',
       action: 'default',
@@ -467,7 +467,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'item-id', path: '/some-data-test',
       })
       .resolve('/some-data-test', {
@@ -490,9 +490,9 @@ describe('edit2web OneDrive Tests', () => {
       editContentType: null,
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
       editUrl,
@@ -504,7 +504,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive document with author friendly name but illegal folder', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/Site/_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'My 1. Döcument!.docx',
       action: 'default',
@@ -514,7 +514,7 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('sites/TheBlog', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+      .getSiteItem('sites/Site', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
         id: 'document-id', path: '/My%20Drafts/My%201.%20D%C3%B6cument!.docx',
       })
       .resolve('/My%20Drafts/My%201.%20D%C3%B6cument!.docx', {
@@ -546,22 +546,22 @@ describe('edit2web OneDrive Tests', () => {
         {
           name: 'My Drafts',
           path: '/My%20Drafts',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog/My%20Drafts',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site/My%20Drafts',
         },
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('resolves web resource path for onedrive file', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/TheBlog/_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:x:/r/sites/Site/_layouts/15/Doc.aspx', {
       FolderCTID: '0x012000291CC2F215041D41ADE01F0A04AB94F2',
-      id: '/sites/TheBlog/Shared Documents/theblog/document.md',
-      parent: '/sites/TheBlog/Shared Documents/theblog/',
+      id: '/sites/Site/Shared Documents/site/document.md',
+      parent: '/sites/Site/Shared Documents/site/',
     });
 
     nock.onedrive(SITE_1D_CONFIG.content)
@@ -593,21 +593,21 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('resolves edit url of a folder with RootFolder query param', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/Forms/AllItems.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/sites/Site/Shared%20Documents/Forms/AllItems.aspx', {
       csf: '1',
       web: '1',
       e: '7tg6sK',
       cid: 'f8c5716b-a9b7-4dd0-a039-ed4f087d3248',
-      RootFolder: '/sites/TheBlog/Shared Documents/theblog/folder',
+      RootFolder: '/sites/Site/Shared Documents/site/folder',
       FolderCTID: '0x012000291CC2F215041D41ADE01F0A04AB94F2',
     });
     nock.onedrive(SITE_1D_CONFIG.content)
@@ -632,9 +632,9 @@ describe('edit2web OneDrive Tests', () => {
       editContentType: 'application/folder',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
       editName: 'folder',
@@ -648,7 +648,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('returns error on for invalid edit url', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/TheBlog/_not_layouts/15/Doc.aspx', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_not_layouts/15/Doc.aspx', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'index.docx',
       action: 'default',
@@ -674,7 +674,7 @@ describe('edit2web OneDrive Tests', () => {
   });
 
   it('resolves web resource path for onedrive pdf (open-url)', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog/document.pdf', {
+    const editUrl = createURL('https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site/document.pdf', {
       CT: '1657805890022',
       OR: 'ItemsView',
     });
@@ -708,16 +708,16 @@ describe('edit2web OneDrive Tests', () => {
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
       editFolders: [
         {
-          name: 'theblog',
+          name: 'site',
           path: '/',
-          url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+          url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
         },
       ],
     });
   });
 
   it('returns error for a document on different sharepoint host', async () => {
-    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/personal/tripod_adobe_com/_layouts/15/Doc.asp', {
+    const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/personal/user_adobe_com/_layouts/15/Doc.asp', {
       sourcedoc: '{09BFA93A-78BC-49F6-B93D-990A0ED4D55C}',
       file: 'page.docx',
       action: 'default',
@@ -727,11 +727,11 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
-      .getSiteItem('personal/tripod_adobe_com', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
-        webUrl: 'https://adobe-my.sharepoint.com/personal/tripod_adobe_com/page.docx',
+      .getSiteItem('personal/user_adobe_com', '09BFA93A-78BC-49F6-B93D-990A0ED4D55C', {
+        webUrl: 'https://adobe-my.sharepoint.com/personal/user_adobe_com/page.docx',
       })
-      .resolve('https://adobe-my.sharepoint.com/personal/tripod_adobe_com/page.docx', {
-        webUrl: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+      .resolve('https://adobe-my.sharepoint.com/personal/user_adobe_com/page.docx', {
+        webUrl: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
       })
       .resolve('');
 

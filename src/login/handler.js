@@ -221,9 +221,9 @@ export async function auth(context, info) {
       data.site = data.state.site;
 
       // eslint-disable-next-line no-param-reassign
-      info.org = data.org;
+      // TODO: info.org = data.org;
       // eslint-disable-next-line no-param-reassign
-      info.site = data.site;
+      // TODO: info.site = data.site;
 
       if (!data.code) {
         if (data.state.prompt === 'none') {

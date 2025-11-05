@@ -1,0 +1,462 @@
+{
+  "sheets": [
+    {
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "Text (formatted)"
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "This is bold and this is italic and this is inline code."
+                  },
+                  "textFormatRuns": [
+                    {
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 8,
+                      "format": {
+                        "bold": true
+                      }
+                    },
+                    {
+                      "startIndex": 12,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 25,
+                      "format": {
+                        "italic": true
+                      }
+                    },
+                    {
+                      "startIndex": 31,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 44,
+                      "format": {
+                        "fontFamily": "Courier New"
+                      }
+                    },
+                    {
+                      "startIndex": 55,
+                      "format": {}
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "more code. bold and italic and underline and strike. adobe.com. end."
+                  },
+                  "textFormatRuns": [
+                    {
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 5,
+                      "format": {
+                        "fontFamily": "Roboto Mono"
+                      }
+                    },
+                    {
+                      "startIndex": 9,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 11,
+                      "format": {
+                        "bold": true
+                      }
+                    },
+                    {
+                      "startIndex": 20,
+                      "format": {
+                        "bold": true,
+                        "italic": true
+                      }
+                    },
+                    {
+                      "startIndex": 26,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 27,
+                      "format": {
+                        "fontFamily": "Impact"
+                      }
+                    },
+                    {
+                      "startIndex": 30,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 31,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 1,
+                          "green": 0.6
+                        },
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 1,
+                            "green": 0.6
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 45,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 1,
+                          "green": 0.6
+                        },
+                        "strikethrough": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 1,
+                            "green": 0.6
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 51,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 53,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 62,
+                      "format": {}
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "no formats\nbut linebreaks"
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "Adobe Link\nHelix Link\nAdobe Link"
+                  },
+                  "textFormatRuns": [
+                    {
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 10,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 11,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://main--pages--adobe.hlx.page/blog/article"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 21,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 22,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "Adobe Link\nHelix Link\nAdobe Link\nNo Link"
+                  },
+                  "textFormatRuns": [
+                    {
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 10,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 11,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://main--pages--adobe.hlx.page/blog/article"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 21,
+                      "format": {}
+                    },
+                    {
+                      "startIndex": 22,
+                      "format": {
+                        "foregroundColor": {
+                          "red": 0.06666667,
+                          "green": 0.33333334,
+                          "blue": 0.8
+                        },
+                        "underline": true,
+                        "foregroundColorStyle": {
+                          "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                          }
+                        },
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 32,
+                      "format": {}
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "link"
+                  },
+                  "userEnteredFormat": {
+                    "verticalAlignment": "BOTTOM",
+                    "textFormat": {
+                      "fontFamily": "Arial",
+                      "link": {
+                        "uri": "https://www.adobe.com/"
+                      }
+                    },
+                    "hyperlinkDisplayType": "LINKED"
+                  }
+                }
+              ]
+            },
+            {},
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "Italic and Bold"
+                  },
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "bold": true,
+                      "italic": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredValue": {
+                    "stringValue": "Test link and underline offsets wrong."
+                  },
+                  "textFormatRuns": [
+                    {
+                      "startIndex": 4,
+                      "format": {
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 5,
+                      "format": {
+                        "underline": true,
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 9,
+                      "format": {}
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "underline": true
+                    }
+                  },
+                  "userEnteredValue": {
+                    "stringValue": "link1link2"
+                  },
+                  "textFormatRuns": [
+                    {
+                      "format": {
+                        "link": {
+                          "uri": "https://www.adobe.com/"
+                        }
+                      }
+                    },
+                    {
+                      "startIndex": 5,
+                      "format": {
+                        "link": {
+                          "uri": "https://www.hlx.live/"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "link": {
+                        "uri": "Do not delete this test, it validates: https://github.com/adobe/helix-admin/issues/1029."
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

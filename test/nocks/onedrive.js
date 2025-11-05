@@ -151,8 +151,8 @@ export class OneDriveNock {
     }
   }
 
-  #getFile(path, {
-    id, lastModifiedDateTime, mimeType,
+  #getItem(path, {
+    id, lastModifiedDateTime, mimeType, name, size,
   } = {}) {
     const { nocker, sourceUrl } = this;
 
@@ -161,19 +161,25 @@ export class OneDriveNock {
     if (id === null) {
       scope.reply(404);
     } else {
-      scope.reply(200, {
-        file: {
-          mimeType,
-        },
+      const ret = {
         lastModifiedDateTime,
-        name: path.split('/').at(-1),
+        name: name ?? path.split('/').at(-1),
         id,
         webUrl: `${sourceUrl}${path}`,
         parentReference: {
           id: 'folder-id',
           driveId: 'drive-id',
         },
-      });
+      };
+      if (mimeType !== undefined) {
+        ret.file = {
+          mimeType,
+        };
+      }
+      if (size !== undefined) {
+        ret.size = size;
+      }
+      scope.reply(200, ret);
     }
     return this;
   }
@@ -205,22 +211,40 @@ export class OneDriveNock {
     return this;
   }
 
-  getDocument(path, {
-    id = 'document-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
-  } = {}) {
-    return this.#getFile(path, {
+  getFile(path, {
+    id = 'file-id',
+    lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+    mimeType,
+    name,
+    size,
+  }) {
+    return this.#getItem(path, {
       id,
       lastModifiedDateTime,
+      mimeType,
+      name,
+      size,
+    });
+  }
+
+  getDocument(path, {
+    id = 'document-id',
+    name,
+    size,
+  } = {}) {
+    return this.getFile(path, {
+      id,
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      name,
+      size,
     });
   }
 
   getWorkbook(path, {
-    id = 'workbook-id', lastModifiedDateTime = 'Thu, 08 Jul 2021 10:04:16 GMT',
+    id = 'workbook-id',
   } = {}) {
-    return this.#getFile(path, {
+    return this.getFile(path, {
       id,
-      lastModifiedDateTime,
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
   }
@@ -253,18 +277,37 @@ export class OneDriveNock {
         $select: 'name,parentReference,file,id,size,webUrl,lastModifiedDateTime',
       })
       .reply(200, {
-        value: items.map(({ path, id, lastModifiedDateTime }) => ({
-          lastModifiedDateTime,
-          file: true,
-          name: path.split('/').at(-1),
-          id,
-          webUrl: `${sourceUrl}${path}`,
-          parentReference: {
-            id: 'folder-id',
-            driveId: 'drive-id',
-          },
-        })),
+        value: items.map(({
+          id, lastModifiedDateTime, mimeType, name, size,
+        }) => {
+          const ret = {
+            lastModifiedDateTime,
+            name,
+            id,
+            webUrl: `${sourceUrl}/${name}`,
+            parentReference: {
+              id: 'folder-id',
+              driveId: 'drive-id',
+            },
+          };
+          if (mimeType !== undefined) {
+            ret.file = {
+              mimeType,
+            };
+          }
+          if (size !== undefined) {
+            ret.size = size;
+          }
+          return ret;
+        }),
       });
     return this;
+  }
+
+  getContent(id = 'document-id') {
+    const { nocker } = this;
+
+    return nocker('https://graph.microsoft.com/v1.0')
+      .get(`/drives/drive-id/items/${id}/content`);
   }
 }

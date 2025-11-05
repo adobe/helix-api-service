@@ -100,7 +100,7 @@ function prependProlog(buf) {
  * @throws {ValidationError} if an error occurs
  */
 async function validateSVG(context, resourcePath, buf) {
-  const { log, attributes: { config } } = context;
+  const { log, config } = context;
   const $1 = resourcePath;
 
   const limit = getLimit(config, 'maxSVGSize', SVG_SIZE_LIMIT);
@@ -200,7 +200,9 @@ async function validateMP4(context, resourcePath, buf) {
  * @throws {ValidationError} if an error occurs
  */
 async function validateICO(context, resourcePath, buf) {
-  const limit = getLimit(context, 'maxICOSize', ICO_SIZE_LIMIT);
+  const { config } = context;
+
+  const limit = getLimit(config, 'maxICOSize', ICO_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $1 = resourcePath;
     const $2 = toSISize(limit, 0);
@@ -222,7 +224,9 @@ async function validateICO(context, resourcePath, buf) {
  * @throws {ValidationError} if an error occurs
  */
 async function validatePDF(context, resourcePath, buf) {
-  const limit = getLimit(context, 'maxPDFSize', PDF_SIZE_LIMIT);
+  const { config } = context;
+
+  const limit = getLimit(config, 'maxPDFSize', PDF_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $1 = resourcePath;
     const $2 = toSISize(limit, 0);
@@ -244,7 +248,9 @@ async function validatePDF(context, resourcePath, buf) {
  * @throws {StatusCodeError} if an error occurs
  */
 async function validateImage(context, resourcePath, buf) {
-  const limit = getLimit(context, 'maxImageSize', IMAGE_SIZE_LIMIT);
+  const { config } = context;
+
+  const limit = getLimit(config, 'maxImageSize', IMAGE_SIZE_LIMIT);
   if (buf.byteLength > limit) {
     const $1 = resourcePath;
     const $2 = toSISize(limit, 0);
@@ -258,8 +264,30 @@ async function validateImage(context, resourcePath, buf) {
 }
 
 /**
+ * @callback Preprocess
+ * @param {Buffer} buffer
+ * @returns {Promise<Buffer>} preprocessed buffer
+ *
+ * @callback Validate
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {string} resourcePath resource path
+ * @param {Buffer} buffer buffer
+ * @returns {Promise<void>} if validation passed
+ * @throws {ValidationError} if validation failed
+ *
+ * @typedef MediaType
+ * @property {string} name
+ * @property {string{}} extensions
+ * @property {string} mime
+ * @property {Preprocess} preprocess
+ * @property {Validate} validate
+ * @property {boolean} redirect
+ */
+
+/**
  * Media types we upload to the media bus and their description.
  */
+/** @type {MediaType[]} */
 export const MEDIA_TYPES = [
   {
     name: 'SVG',

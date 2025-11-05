@@ -113,8 +113,8 @@ export async function hasSimpleSitemap(context, info) {
  * - a simple sitemap when prerequisites are met
  * - null
  *
- * @param {import('@adobe/helix-universal').UniversalContext} context context
- * @param {import('../support/PathInfo').PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {import('@adobe/helix-shared-config').SitemapConfig} config or null
  */
 export async function fetchExtendedSitemap(context, info) {

@@ -1,0 +1,118 @@
+{
+  "value": [
+    {
+      "@odata.etag": "\"{0E438236-A9DD-49AC-9042-5CADCA22AEFC},1\"",
+      "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+      "lastModifiedDateTime": "2022-12-02T10:26:43Z",
+      "name": "sub",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/sub",
+      "size": 6524842,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERI44MG3YM6WJYRG3247OYAQW7Q2G",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      }
+    },
+    {
+      "@odata.etag": "\"{0E438236-A9DD-49AC-9042-5CADCA22AEFC},1\"",
+      "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+      "lastModifiedDateTime": "2022-12-02T10:26:43Z",
+      "name": "folder",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/folder",
+      "size": 6524842,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERI44MG3YM6WJYRG3247OYAQW7Q2G",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      }
+    },
+    {
+      "@odata.etag": "\"{E34A927B-8B13-4A03-9546-E2D6195FD15E},3\"",
+      "id": "012VWERI33SJFOGE4LANFJKRXC2YMV7UK6",
+      "lastModifiedDateTime": "2022-12-02T10:27:20Z",
+      "name": "document.docx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/_layouts/15/Doc.aspx?sourcedoc=%7BE34A927B-8B13-4A03-9546-E2D6195FD15E%7D&file=document.docx&action=default&mobileredirect=true",
+      "size": 2935241,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERI44MG3YM6WJYRG3247OYAQW7Q2G",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "hashes": {
+          "quickXorHash": "CBtanSiitJBMG9v+uKJQGbOp/KE="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{E34A927B-8B13-4A03-9546-E2D6195FD15E},3\"",
+      "id": "012VWERI33SJFOGE4LANFJKRXC2YMV7UK1",
+      "lastModifiedDateTime": "2022-12-02T10:27:20Z",
+      "name": "folder.docx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/_layouts/15/Doc.aspx?sourcedoc=%7BE34A927B-8B13-4A03-9546-E2D6195FD15E%7D&file=document.docx&action=default&mobileredirect=true",
+      "size": 2935241,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERI44MG3YM6WJYRG3247OYAQW7Q2G",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "hashes": {
+          "quickXorHash": "CBtanSiitJBMG9v+uKJQGbOp/KE="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{E0EFBDA8-D706-49CA-A346-F769F1492DE1},1\"",
+      "id": "012VWERI5IXXX6ABWXZJE2GRXXNHYUSLPB",
+      "lastModifiedDateTime": "2022-12-02T10:27:20Z",
+      "name": "sample.pdf",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/sample.pdf",
+      "size": 3232437,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERI44MG3YM6WJYRG3247OYAQW7Q2G",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/pdf",
+        "hashes": {
+          "quickXorHash": "ymCk+wFvXNy7RNoO7mgRu4vIhBw="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{133B010C-97BA-493C-AB5C-23A15CB47535},2\"",
+      "id": "012VWERIYMAE5RHOUXHRE2WXBDUFOLI5JV",
+      "lastModifiedDateTime": "2022-12-22T18:00:05Z",
+      "name": "index.docx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/_layouts/15/Doc.aspx?sourcedoc=%7B133B010C-97BA-493C-AB5C-23A15CB47535%7D&file=test.docx&action=default&mobileredirect=true",
+      "size": 2935241,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERI44MG3YM6WJYRG3247OYAQW7Q2G",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "hashes": {
+          "quickXorHash": "/Ajxi5vq81bDRYZYkQANCN65sEM="
+        }
+      }
+    }
+  ]
+}

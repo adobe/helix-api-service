@@ -1,0 +1,23 @@
+{
+  "value": [
+    {
+      "@odata.etag": "\"{1320CB26-C859-42BE-805A-7FE8E1A0DBC8},3\"",
+      "id": "012VWERIZGZMQBGWOIXZBIAWT75DQ2BW6Y",
+      "lastModifiedDateTime": "2022-12-22T20:21:01Z",
+      "name": "index.docx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/documents/folder/index.docx",
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "hashes": {
+          "quickXorHash": "ymCk+wFvXNy7RNoO7mgRu4vIhBw="
+        }
+      }
+    }
+  ]
+}

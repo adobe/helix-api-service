@@ -1,0 +1,170 @@
+[
+  {
+    "path": "/documents/document",
+    "resourcePath": "/documents/document.md",
+    "source": {
+      "name": "document.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "lastModified": 1669976840000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI33SJFOGE4LANFJKRXC2YMV7UK6",
+      "size": 2935241,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder",
+    "resourcePath": "/documents/folder.md",
+    "source": {
+      "name": "folder.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "lastModified": 1669976840000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI33SJFOGE4LANFJKRXC2YMV7UK1",
+      "size": 2935241,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/",
+    "resourcePath": "/documents/folder/index.md",
+    "source": {
+      "name": "index.docx",
+      "contentType": "application/octet-stream",
+      "lastModified": 1671740461000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERIZGZMQBGWOIXZBIAWT75DQ2BW6Y",
+      "size": 0,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/copy-of-helix-learnings-2022.pdf",
+    "resourcePath": "/documents/folder/copy-of-helix-learnings-2022.pdf",
+    "source": {
+      "name": "Copy of helix-learnings-2022.pdf",
+      "contentType": "application/pdf",
+      "lastModified": 1671740461000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERIZGZMQBGWOIXZBIAWT75DQ2BW6I",
+      "size": 3232437,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/document-one",
+    "resourcePath": "/documents/folder/document-one.md",
+    "source": {
+      "name": "document-one.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "lastModified": 1694789773000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI5GDR7RWSL4F5DKEY2T4CJOICYE",
+      "size": 19658,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/helix-learnings-2022.pdf",
+    "resourcePath": "/documents/folder/helix-learnings-2022.pdf",
+    "source": {
+      "name": "helix-learnings-2022.pdf",
+      "contentType": "application/pdf",
+      "lastModified": 1671738773000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI2OVKNSZMHA7BC23GJ5GPQQNJSO",
+      "size": 3232437,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/sample.png",
+    "resourcePath": "/documents/folder/sample.png",
+    "source": {
+      "name": "sample.png",
+      "contentType": "image/png",
+      "lastModified": 1670786438000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI6S4BG2IRWBZ5CLMJZFKYJC2MGX",
+      "size": 3873,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/sample.svg",
+    "resourcePath": "/documents/folder/sample.svg",
+    "source": {
+      "name": "sample.svg",
+      "contentType": "image/svg+xml",
+      "lastModified": 1670786440000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI7R726OW2G4VBHIYSK3V4B56M6Q",
+      "size": 1595,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/folder/simple-phases.json",
+    "resourcePath": "/documents/folder/simple-phases.json",
+    "source": {
+      "name": "simple phases.xlsx",
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "lastModified": 1694863087000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI76ECCDJSOJHJH2LMZ6OIWVUQ6T",
+      "size": 15651,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/helix-learnings-2022.pdf",
+    "resourcePath": "/documents/helix-learnings-2022.pdf",
+    "source": {
+      "name": "helix-learnings-2022.pdf",
+      "contentType": "application/pdf",
+      "lastModified": 1669976840000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI5IXXX6ABWXZJE2GRXXNHYUSLPB",
+      "size": 3232437,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/sample.png",
+    "resourcePath": "/documents/sample.png",
+    "source": {
+      "name": "sample.png",
+      "contentType": "image/png",
+      "lastModified": 1669976839000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI7UQFDAK66BQRBLTQWEQXY7GH7A",
+      "size": 3873,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/sample.svg",
+    "resourcePath": "/documents/sample.svg",
+    "source": {
+      "name": "sample.svg",
+      "contentType": "image/svg+xml",
+      "lastModified": 1669976695000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI7LQWCIEXRQGZEYFKDLLO5TD6DH",
+      "size": 1595,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/test",
+    "resourcePath": "/documents/test.md",
+    "source": {
+      "name": "test.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "lastModified": 1671732005000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERIYMAE5RHOUXHRE2WXBDUFOLI5JV",
+      "size": 2935241,
+      "type": "onedrive"
+    }
+  },
+  {
+    "path": "/documents/unsafe.svg",
+    "resourcePath": "/documents/unsafe.svg",
+    "source": {
+      "name": "unsafe.svg",
+      "contentType": "image/svg+xml",
+      "lastModified": 1669977622000,
+      "location": "onedrive:/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/items/012VWERI3AWPHA2ISFXZA3OJOCNEAOUMZP",
+      "size": 1632,
+      "type": "onedrive"
+    }
+  }
+]

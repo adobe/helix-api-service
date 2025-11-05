@@ -9,9 +9,141 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
+import { isAdobeMountpoint } from '../support/adobe-source.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { isInternal } from '../support/utils.js';
+
+/**
+ * Maximum file size limit to download.
+ */
+export const FILE_SIZE_LIMIT = 500 * 1024 * 1024; // 500MB
+
+const AZURE_BLOB_REGEXP = /^https:\/\/hlx\.blob\.core\.windows\.net\/external\//;
+
+const MEDIA_BLOB_REGEXP = /^https:\/\/.*\.hlx3?\.(live|page)\/media_.*/;
+
+const HELIX_URL_REGEXP = /^https:\/\/(?!admin\.|www\.)[^.]+\.hlx3?\.(live|page)\/?.*/;
+
+/**
+ * Rewrites the media, helix or external url. Returns the original if not rewritten.
+ * @param {string} url
+ * @returns {string|null}
+ */
+export function rewriteCellUrl(url) {
+  if (!url || !url.startsWith('https://')) {
+    return url;
+  }
+  const { pathname, search, hash } = new URL(url);
+
+  if (AZURE_BLOB_REGEXP.test(url)) {
+    const filename = pathname.split('/').pop();
+    const [name, props] = hash.split('?');
+    const extension = name.split('.').pop() || 'jpg';
+    const newHash = props ? `#${props}` : '';
+    return `./media_${filename}.${extension}${newHash}`;
+  }
+  if (MEDIA_BLOB_REGEXP.test(url)) {
+    return `.${pathname}${hash}`;
+  }
+  if (HELIX_URL_REGEXP.test(url)) {
+    return `${pathname}${search}${hash}`;
+  }
+  return url;
+}
+
+function assertValidSingleSheetJSON(obj) {
+  if (!Array.isArray(obj.data)) {
+    throw Error('invalid sheet; expecting data array');
+  }
+
+  ['limit', 'total', 'offset'].forEach((prop) => {
+    if (typeof obj[prop] !== 'number') {
+      throw Error(`invalid sheet; expecting ${prop} of type number`);
+    }
+  });
+
+  // remove extra hidden properties
+  for (const name of Object.keys(obj)) {
+    if (name.startsWith(':') && name !== ':type' && name !== ':version') {
+      // eslint-disable-next-line no-param-reassign
+      delete obj[name];
+    }
+  }
+}
+
+function assertValidMultiSheetJSON(obj) {
+  const {
+    // eslint-disable-next-line no-unused-vars
+    ':type': _type,
+    ':names': names,
+    ':version': version,
+    ...rest
+  } = obj;
+  if (!Array.isArray(names)) {
+    throw Error('invalid multisheet; expecting names array');
+  }
+  if (typeof version !== 'number') {
+    throw Error('invalid multisheet; expecting version of type number');
+  }
+  const sheetNames = Object.fromEntries(names.map((name) => ([name, true])));
+  Object.entries(rest).forEach(([name, sheet]) => {
+    if (name.startsWith(':')) {
+      // remove properties starting with ':'
+      // eslint-disable-next-line no-param-reassign
+      delete obj[name];
+    } else if (!sheetNames[name]) {
+      throw Error(`invalid multisheet; sheet '${name}' not in names array`);
+    } else {
+      delete sheetNames[name];
+      assertValidSingleSheetJSON(sheet);
+    }
+  });
+
+  const missing = Object.keys(sheetNames);
+  if (missing.length > 0) {
+    throw Error(`invalid multisheet; missing sheets from names array: ${missing}`);
+  }
+}
+
+export function assertValidSheetJSON(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    throw Error('invalid sheet; expecting object');
+  }
+
+  const sheetType = obj[':type'];
+  if (sheetType === 'multi-sheet') {
+    return assertValidMultiSheetJSON(obj);
+  } else if (sheetType === 'sheet') {
+    return assertValidSingleSheetJSON(obj);
+  }
+
+  throw Error('invalid sheet; unknown type');
+}
+
+/**
+ * Returns the headers to be passed to the content-source for markup, markup-file and markup-json.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object} source content source
+ * @returns {object} provider headers
+ */
+export function getContentSourceHeaders(context, info, source) {
+  const { attributes: { authInfo } } = context;
+  const { headers, rawPath } = info;
+  const providerHeaders = {};
+
+  let sourceAuthorization = headers['x-content-source-authorization'];
+  if (!sourceAuthorization && isAdobeMountpoint(source) && authInfo.imsToken) {
+    // don't share IMS token with 3rd party content sources
+    sourceAuthorization = `Bearer ${authInfo.imsToken}`;
+  }
+  if (sourceAuthorization) {
+    providerHeaders.authorization = sourceAuthorization;
+  }
+  providerHeaders['x-content-source-location'] = headers['x-content-source-location'] || rawPath;
+  return providerHeaders;
+}
 
 /**
  * Computes the source url for the markup handler. This is the URL that will be used to fetch the
@@ -78,4 +210,41 @@ export function getSheetData(json, names) {
     return sheet.data;
   }
   return null;
+}
+
+/**
+ * Updates the sourceInfo based on the response from byom content source.
+ * We set the size based on the Content-Length header in the response.
+ * If the response is not ok, we remove size and lastModified which were
+ * initially set in markup-list.
+ *
+ * @param {import('./contentproxy.js').SourceInfo} sourceInfo the source info
+ * @param {Response} response the response
+ */
+export function updateMarkupSourceInfo(sourceInfo, response) {
+  if (sourceInfo) {
+    const contentLength = response.headers.get('content-length');
+    // eslint-disable-next-line no-param-reassign
+    sourceInfo.size = Number.parseInt(contentLength, 10) || undefined;
+
+    if (!response.ok) {
+      // eslint-disable-next-line no-param-reassign
+      delete sourceInfo.lastModified;
+    }
+  }
+}
+
+/**
+ * Adds a last-modified header to an existing set of headers, if the value
+ * given represents a valid date.
+ */
+export function addLastModified(headers, value) {
+  if (value) {
+    const timestamp = Date.parse(value);
+    if (!Number.isNaN(timestamp)) {
+      // eslint-disable-next-line no-param-reassign
+      headers['last-modified'] = new Date(timestamp).toUTCString();
+    }
+  }
+  return headers;
 }

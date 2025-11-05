@@ -20,6 +20,7 @@ declare interface GoogleNock {
   user(cacheData?: any): GoogleNock
   folders(files: string[], id?: string): GoogleNock
   documents(files: string[], id?: string): GoogleNock
+  sheets(files: string[], id?: string): GoogleNock
   files(files: string[], id?: string): GoogleNock
   file(id: string, file: any): GoogleNock
 }
@@ -29,6 +30,7 @@ declare interface OneDriveNock {
   login(auth?: any, tenant?: string): OneDriveNock
   resolve(path: string, opts: any): OneDriveNock
   getSiteItem(site: string, itemId: string, opts?: any): OneDriveNock
+  getFile(path: string, item?: any): OneDriveNock
   getDocument(path: string, item?: any): OneDriveNock
   getWorkbook(path: string, item?: any): OneDriveNock
   getFolder(path: string, item?: any): OneDriveNock

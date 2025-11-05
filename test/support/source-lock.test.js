@@ -22,7 +22,7 @@ const SITE_1D_CONFIG = {
     ...SITE_CONFIG.content,
     source: {
       type: 'onedrive',
-      url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+      url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
     },
   },
 };

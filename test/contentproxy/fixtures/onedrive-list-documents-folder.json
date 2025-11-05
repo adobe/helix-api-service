@@ -1,0 +1,150 @@
+{
+  "@odata.nextLink": "https://dummy.com?$skiptoken=1234",
+  "value": [
+    {
+      "@odata.etag": "\"{1320CB26-C859-42BE-805A-7FE8E1A0DBC8},3\"",
+      "id": "012VWERIZGZMQBGWOIXZBIAWT75DQ2BW6I",
+      "lastModifiedDateTime": "2022-12-22T20:21:01Z",
+      "name": "Copy of helix-learnings-2022.pdf",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/documents/folder/Copy%20of%20helix-learnings-2022.pdf",
+      "size": 3232437,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/pdf",
+        "hashes": {
+          "quickXorHash": "ymCk+wFvXNy7RNoO7mgRu4vIhBw="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{DF094A20-EF13-4F99-9D13-986F00B1E175},6\"",
+      "id": "012VWERIZAJIE56E7PTFHZ2E4YN4ALDYLV",
+      "lastModifiedDateTime": "2023-09-15T14:55:26Z",
+      "name": "document öne.docx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/_layouts/15/Doc.aspx?sourcedoc=%7BDF094A20-EF13-4F99-9D13-986F00B1E175%7D&file=document%20%C3%B6ne.docx&action=default&mobileredirect=true",
+      "size": 19191,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "hashes": {}
+      }
+    },
+    {
+      "@odata.etag": "\"{1B7F1CA6-7C49-462F-A263-53E092E40B04},6\"",
+      "id": "012VWERI5GDR7RWSL4F5DKEY2T4CJOICYE",
+      "lastModifiedDateTime": "2023-09-15T14:56:13Z",
+      "name": "document-one.docx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/_layouts/15/Doc.aspx?sourcedoc=%7B1B7F1CA6-7C49-462F-A263-53E092E40B04%7D&file=document-one.docx&action=default&mobileredirect=true",
+      "size": 19658,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "hashes": {
+          "quickXorHash": "5Tg8n0ZcwcFCjUPlOdD3XmaUXEU="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{2C9BAA4E-E0B0-45F8-AD99-3D33E106A64E},1\"",
+      "id": "012VWERI2OVKNSZMHA7BC23GJ5GPQQNJSO",
+      "lastModifiedDateTime": "2022-12-22T19:52:53Z",
+      "name": "helix-learnings-2022.pdf",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/documents/folder/helix-learnings-2022.pdf",
+      "size": 3232437,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/pdf",
+        "hashes": {
+          "quickXorHash": "ymCk+wFvXNy7RNoO7mgRu4vIhBw="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{A44DE0D2-C146-44CF-B627-2556122D30D7},2\"",
+      "id": "012VWERI6S4BG2IRWBZ5CLMJZFKYJC2MGX",
+      "lastModifiedDateTime": "2022-12-11T19:20:38Z",
+      "name": "sample.png",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/documents/folder/sample.png",
+      "size": 3873,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "image/png",
+        "hashes": {
+          "quickXorHash": "AzEJIUfuazXujwpo72WbRGrZtcQ="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{EBBCFEF1-DC68-4EA8-8C49-5BAF03DF33D0},1\"",
+      "id": "012VWERI7R726OW2G4VBHIYSK3V4B56M6Q",
+      "lastModifiedDateTime": "2022-12-11T19:20:40Z",
+      "name": "sample.svg",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/Shared%20Documents/helix-test-content-onedrive/documents/folder/sample.svg",
+      "size": 1595,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "image/svg+xml",
+        "hashes": {
+          "quickXorHash": "ooqwqq1+q6CzKs2uzdOxdKLFMB4="
+        }
+      }
+    },
+    {
+      "@odata.etag": "\"{348420FE-C9C9-4F3A-A5B3-3E722D5A43D3},7\"",
+      "id": "012VWERI76ECCDJSOJHJH2LMZ6OIWVUQ6T",
+      "lastModifiedDateTime": "2023-09-16T11:18:07Z",
+      "name": "simple phases.xlsx",
+      "webUrl": "https://adobe.sharepoint.com/sites/Site/_layouts/15/Doc.aspx?sourcedoc=%7B348420FE-C9C9-4F3A-A5B3-3E722D5A43D3%7D&file=simple%20phases.xlsx&action=default&mobileredirect=true",
+      "size": 15651,
+      "parentReference": {
+        "driveType": "documentLibrary",
+        "driveId": "b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx",
+        "id": "012VWERIZWQJBQ5XNJVREZAQS4VXFCFLX4",
+        "path": "/drives/b!DyVXacYnlkm_17hZL307Me9vzRzaKwZCpVMBYbPOKaVT_gD5WmlHRbC-PCpiwGPx/root:/helix-test-content-onedrive/documents/folder",
+        "siteId": "6957250f-27c6-4996-bfd7-b8592f7d3b31"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "hashes": {
+          "quickXorHash": "5Vd0XYhJ/cVtVf52aWJHwUKXmfo="
+        }
+      }
+    }
+  ]
+}

@@ -48,7 +48,7 @@ export class GoogleNock {
   #children(files, id, cond) {
     const { nocker } = this;
 
-    nocker('https://www.googleapis.com')
+    const scope = nocker('https://www.googleapis.com')
       .get('/drive/v3/files')
       .query({
         q: `'${id}' in parents and trashed=false and mimeType ${cond}`,
@@ -56,13 +56,20 @@ export class GoogleNock {
         includeItemsFromAllDrives: 'true',
         supportsAllDrives: 'true',
         pageSize: 1000,
-      })
-      .reply(200, { files });
+      });
+    if (!files) {
+      return scope;
+    }
+    scope.reply(200, { files });
     return this;
   }
 
   folders(files, id = this.rootId) {
     return this.#children(files, id, '= \'application/vnd.google-apps.folder\'');
+  }
+
+  sheets(files, id = this.rootId) {
+    return this.#children(files, id, '= \'application/vnd.google-apps.spreadsheet\'');
   }
 
   documents(files, id = this.rootId) {
@@ -73,12 +80,27 @@ export class GoogleNock {
     return this.#children(files, id, '!= \'application/vnd.google-apps.folder\'');
   }
 
-  file(id, file) {
+  item(id, file) {
     const { nocker } = this;
     const scope = nocker('https://www.googleapis.com')
       .get(`/drive/v3/files/${id}`)
       .query({
         fields: 'name,parents,mimeType,modifiedTime',
+        supportsAllDrives: 'true',
+      });
+    if (file) {
+      scope.reply(200, file);
+      return this;
+    }
+    return scope;
+  }
+
+  file(id, file) {
+    const { nocker } = this;
+    const scope = nocker('https://www.googleapis.com')
+      .get(`/drive/v3/files/${id}`)
+      .query({
+        alt: 'media',
         supportsAllDrives: 'true',
       });
     if (file) {

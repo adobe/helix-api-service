@@ -220,6 +220,8 @@ export function createContext(suffix, {
  * @param {string} suffix
  * @returns {RequestInfo} info
  */
-export function createInfo(suffix) {
-  return RequestInfo.create(new Request('http://localhost/'), router.match(suffix).variables);
+export function createInfo(suffix, headers = {}) {
+  return RequestInfo.create(new Request('http://localhost/', {
+    headers,
+  }), router.match(suffix).variables);
 }

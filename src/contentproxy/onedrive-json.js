@@ -111,7 +111,7 @@ export async function handleJSON(context, info) {
       operation: `${info.route} ${resourcePath}`,
     },
   });
-  const workbookSessionId = info.headers?.['x-workbook-session-id'];
+  const workbookSessionId = info.headers['x-workbook-session-id'];
   const tabular = new Excel(client, OneDrive.driveItemFromURL(location), log)
     .withLog(log)
     .withResource(resourcePath)

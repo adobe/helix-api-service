@@ -25,7 +25,7 @@ const SITE_1D_CONFIG = {
     ...SITE_CONFIG.content,
     source: {
       type: 'onedrive',
-      url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+      url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
     },
   },
 };
@@ -74,12 +74,12 @@ describe('web2edit OneDrive Tests', () => {
     assert.deepStrictEqual(result, {
       editContentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       editFolders: [{
-        name: 'theblog',
+        name: 'site',
         path: '/',
-        url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+        url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
       }],
       editName: 'page.docx',
-      editUrl: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog/page.docx',
+      editUrl: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site/page.docx',
       resourcePath: '/page.md',
       sourceLastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
       sourceLocation: 'onedrive:/drives/drive-id/items/document-id',
@@ -109,12 +109,12 @@ describe('web2edit OneDrive Tests', () => {
     assert.deepStrictEqual(result, {
       editContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       editFolders: [{
-        name: 'theblog',
+        name: 'site',
         path: '/',
-        url: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog',
+        url: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site',
       }],
       editName: 'page.xlsx',
-      editUrl: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog/page.xlsx',
+      editUrl: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/site/page.xlsx',
       resourcePath: '/page.json',
       sourceLastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
       sourceLocation: 'onedrive:/drives/drive-id/items/workbook-id',
@@ -133,7 +133,8 @@ describe('web2edit OneDrive Tests', () => {
       .getDocument('/page.docx', { id: null })
       .getChildren([{
         id: 'item-id',
-        path: '/page.md',
+        name: 'page.md',
+        mimeType: 'application/octet-stream',
       }])
       .getFolder(null);
 
@@ -148,7 +149,7 @@ describe('web2edit OneDrive Tests', () => {
     assert.deepStrictEqual(result, {
       editContentType: 'application/octet-stream',
       editFolders: [],
-      editUrl: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FTheBlog%2FShared+Documents%2Ftheblog%2Fpage.md&parent=%2Fsites%2FTheBlog%2FShared+Documents%2Ftheblog&p=5',
+      editUrl: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FSite%2FShared+Documents%2Fsite%2Fpage.md&parent=%2Fsites%2FSite%2FShared+Documents%2Fsite&p=5',
       resourcePath: '/page.md',
       sourceLastModified: undefined,
       sourceLocation: 'onedrive:/drives/drive-id/items/item-id',
@@ -167,7 +168,8 @@ describe('web2edit OneDrive Tests', () => {
       .getDocument('/page.docx', { id: null })
       .getChildren([{
         id: 'item-id',
-        path: '/page.md',
+        name: 'page.md',
+        mimeType: 'application/octet-stream',
         lastModifiedDateTime: 'Thu, 08 Jul 2021 10:04:16 GMT',
       }])
       .getFolder(null);
@@ -183,7 +185,7 @@ describe('web2edit OneDrive Tests', () => {
     assert.deepStrictEqual(result, {
       editContentType: 'application/octet-stream',
       editFolders: [],
-      editUrl: 'https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FTheBlog%2FShared+Documents%2Ftheblog%2Fpage.md&parent=%2Fsites%2FTheBlog%2FShared+Documents%2Ftheblog&p=5',
+      editUrl: 'https://adobe.sharepoint.com/sites/Site/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FSite%2FShared+Documents%2Fsite%2Fpage.md&parent=%2Fsites%2FSite%2FShared+Documents%2Fsite&p=5',
       resourcePath: '/page.md',
       sourceLastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
       sourceLocation: 'onedrive:/drives/drive-id/items/item-id',

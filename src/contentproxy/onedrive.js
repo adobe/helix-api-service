@@ -94,7 +94,7 @@ async function handle(context, info, opts) {
       authorization: `Bearer ${accessToken}`,
     },
   });
-  if (lastModified !== null) {
+  if (resp.ok && lastModified !== null) {
     resp.headers.set('last-modified', new Date(lastModified).toUTCString());
   }
   return resp;

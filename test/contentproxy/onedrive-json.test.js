@@ -12,11 +12,11 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { Request } from '@adobe/fetch';
 import { AcquireMethod, OneDrive } from '@adobe/helix-onedrive-support';
-import { contentProxy } from '../../src/contentproxy/index.js';
-import {
-  Nock, SITE_CONFIG, createContext, createInfo,
-} from '../utils.js';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 
 const SITE_1D_CONFIG = {
   ...SITE_CONFIG,
@@ -41,6 +41,9 @@ describe('OneDrive Integration Tests (JSON)', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
+
+    nock.siteConfig(SITE_1D_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -50,14 +53,22 @@ describe('OneDrive Integration Tests (JSON)', () => {
   function setupTest(path = '/', env = ENV) {
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const context = createContext(suffix, {
-      attributes: { config: SITE_1D_CONFIG },
-      env,
+    const request = new Request('https://localhost/', {
+      headers: {
+        'x-workbook-session-id': 'test-session-id',
+      },
     });
-    const info = createInfo(suffix, {
-      'x-workbook-session-id': 'test-session-id',
-    }).withCode('owner', 'repo');
-    return { context, info };
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+        ...env,
+      },
+    };
+    return { request, context };
   }
 
   async function testJSONRetrievalFromExcel(defaultSharedSheetPrefix) {
@@ -110,8 +121,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         ],
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
@@ -181,6 +192,7 @@ describe('OneDrive Integration Tests (JSON)', () => {
       'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT',
       'x-source-location': 'onedrive:/drives/drive-id/items/workbook-id',
       'x-sheet-names': `${defaultSharedSheetPrefix}-default,incoming,${defaultSharedSheetPrefix}-%E6%97%A5%E6%9C%AC`,
+      vary: 'Accept-Encoding',
     });
   }
 
@@ -208,8 +220,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         value: [],
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
@@ -257,8 +269,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         ],
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
@@ -316,8 +328,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
       .getWorkbook('/redirects.xlsx', { id: null })
       .getChildren([]);
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -331,8 +343,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
       .get(`/shares/${OneDrive.encodeSharingUrl(SITE_1D_CONFIG.content.source.url)}/driveItem`)
       .replyWithError('kaputt');
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 502);
   });
@@ -341,8 +353,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user();
 
-    const { context, info } = setupTest('/redirects.json', {});
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json', {});
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 500);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/redirects.json\' from \'onedrive\': Either clientId or accessToken must not be null.');
@@ -366,8 +378,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         'Retry-After': 233,
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -395,8 +407,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         'Content-Type': 'application/json',
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -423,8 +435,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         'Retry-After': 233,
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -454,8 +466,8 @@ describe('OneDrive Integration Tests (JSON)', () => {
         'Content-Type': 'application/json',
       });
 
-    const { context, info } = setupTest('/redirects.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/redirects.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 501);
     assert.deepStrictEqual(response.headers.plain(), {

@@ -15,11 +15,11 @@ import assert from 'assert';
 import { randomBytes } from 'crypto';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
+import { Request } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
-import { contentProxy } from '../../src/contentproxy/index.js';
-import {
-  Nock, SITE_CONFIG, createContext, createInfo,
-} from '../utils.js';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 
 const TEST_BYTES = randomBytes(8192);
 
@@ -30,31 +30,40 @@ describe('Google File Tests', () => {
   beforeEach(() => {
     nock = new Nock().env();
     GoogleClient.setItemCacheOptions({ max: 1000 });
+
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
     nock.done();
   });
 
-  function setupTest(path = '/', { maxImageSize } = {}) {
+  function setupTest(path = '/', maxImageSize = undefined) {
     const suffix = `/org/sites/site/contentproxy${path}`;
-
     const config = maxImageSize
       ? {
         ...SITE_CONFIG,
         limits: { preview: { maxImageSize } },
       } : SITE_CONFIG;
 
-    const context = createContext(suffix, {
-      attributes: { config },
-    });
-    const info = createInfo(suffix).withCode('owner', 'repo');
-    return { context, info };
+    const request = new Request('https://localhost/');
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        config,
+        googleApiOpts: { retry: false },
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    };
+    return { request, context };
   }
 
   it('Rejects unsupported media type from Google Drive', async () => {
-    const { context, info } = setupTest('/video.mov');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/video.mov');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 415);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -75,8 +84,8 @@ describe('Google File Tests', () => {
         size: '600000000',
       }]);
 
-    const { context, info } = setupTest('/video.mp4');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/video.mp4');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -100,8 +109,8 @@ describe('Google File Tests', () => {
         'content-type': 'application/pdf',
       });
 
-    const { context, info } = setupTest('/foobar.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('x-source-location'), 'gdrive:1BTZv0jmGKbEJ3StwgG3VwCbPu4RFRH8s');
@@ -121,8 +130,8 @@ describe('Google File Tests', () => {
         'content-type': 'application/pdf',
       });
 
-    const { context, info } = setupTest('/foobar.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(
@@ -145,8 +154,8 @@ describe('Google File Tests', () => {
         'content-type': 'image/svg+xml',
       });
 
-    const { context, info } = setupTest('/foobar.svg');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.svg');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('x-source-location'), 'gdrive:1BTZv0jmGKbEJ3StwgG3VwCbPu4RFRH8s');
@@ -167,8 +176,8 @@ describe('Google File Tests', () => {
       .file('1BTZv0jmGKbEJ3StwgG3VwCbPu4RFRH8s')
       .reply(200, svg);
 
-    const { context, info } = setupTest('/foobar.svg');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.svg');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to preview \'/foobar.svg\': SVG is larger than 40KB: 40.6KB');
@@ -187,8 +196,8 @@ describe('Google File Tests', () => {
         'content-type': 'image/svg+xml',
       });
 
-    const { context, info } = setupTest('/foobar.svg');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.svg');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('x-source-location'), 'gdrive:1BTZv0jmGKbEJ3StwgG3VwCbPu4RFRH8s');
@@ -208,8 +217,8 @@ describe('Google File Tests', () => {
         'content-type': 'image/svg+xml',
       });
 
-    const { context, info } = setupTest('/foobar.svg');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.svg');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(
@@ -232,8 +241,8 @@ describe('Google File Tests', () => {
         'content-type': 'image/png',
       });
 
-    const { context, info } = setupTest('/large.png', { maxImageSize: 100 });
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/large.png', 100);
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(
@@ -256,8 +265,8 @@ describe('Google File Tests', () => {
         'content-type': 'image/png',
       });
 
-    const { context, info } = setupTest('/large.png');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/large.png');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('content-type'), 'image/png');
@@ -276,8 +285,8 @@ describe('Google File Tests', () => {
         'content-type': 'image/svg+xml',
       });
 
-    const { context, info } = setupTest('/foobar.svg');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.svg');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(
@@ -300,8 +309,8 @@ describe('Google File Tests', () => {
         'content-type': '',
       });
 
-    const { context, info } = setupTest('/foobar.mp4');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.mp4');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('x-source-location'), 'gdrive:1BTZv0jmGKbEJ3StwgG3VwCbPu4RFRH8s');
@@ -321,8 +330,8 @@ describe('Google File Tests', () => {
         'content-type': '',
       });
 
-    const { context, info } = setupTest('/foobar.mp4');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.mp4');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -346,8 +355,8 @@ describe('Google File Tests', () => {
         'content-type': '',
       });
 
-    const { context, info } = setupTest('/foobar.mp4');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.mp4');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -363,8 +372,8 @@ describe('Google File Tests', () => {
       .user()
       .files([]);
 
-    const { context, info } = setupTest('/sitemap-en.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -374,8 +383,8 @@ describe('Google File Tests', () => {
       .user()
       .files([]);
 
-    const { context, info } = setupTest('/sample.svg');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.svg');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -386,8 +395,8 @@ describe('Google File Tests', () => {
       .files()
       .reply(500);
 
-    const { context, info } = setupTest('/sitemap-en.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 502);
   }).timeout(10000);

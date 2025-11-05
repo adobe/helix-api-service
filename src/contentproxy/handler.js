@@ -30,5 +30,8 @@ export default async function contentProxyHandler(context, info) {
       status: 405,
     });
   }
-  return contentProxy(context, info);
+  const { lastModified, fetchTimeout } = context.data;
+  return contentProxy(context, info, {
+    lastModified, fetchTimeout: Number.parseInt(fetchTimeout, 10),
+  });
 }

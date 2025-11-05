@@ -12,11 +12,11 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { Request } from '@adobe/fetch';
 import { AcquireMethod } from '@adobe/helix-onedrive-support';
-import { contentProxy } from '../../src/contentproxy/index.js';
-import {
-  Nock, SITE_CONFIG, createContext, createInfo,
-} from '../utils.js';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 
 const SITE_1D_CONFIG = {
   ...SITE_CONFIG,
@@ -54,22 +54,36 @@ describe('OneDrive Integration Tests (docx)', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
+
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
     nock.done();
   });
 
-  function setupTest(path = '/', { data = {}, config = SITE_1D_CONFIG } = {}) {
+  function setupTest(path = '/', { config = SITE_1D_CONFIG, data } = {}) {
     const suffix = `/org/sites/site/contentproxy${path}`;
+    const query = new URLSearchParams(data);
 
-    const context = createContext(suffix, {
-      attributes: { config },
-      data,
-      env: ENV,
+    const request = new Request(`https://localhost${suffix}?${query}`, {
+      headers: {
+        'x-request-id': 'rid',
+      },
     });
-    const info = createInfo(suffix).withCode('owner', 'repo');
-    return { context, info };
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        config,
+      },
+      runtime: { region: 'us-east-1' },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+        ...ENV,
+      },
+    };
+    return { request, context };
   }
 
   it('Retrieves Document from Word', async () => {
@@ -97,8 +111,8 @@ describe('OneDrive Integration Tests (docx)', () => {
         })];
       });
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
@@ -112,8 +126,8 @@ describe('OneDrive Integration Tests (docx)', () => {
       .resolve('')
       .getFile('/test.docx', { name: 'test.md' });
 
-    const { context, info } = setupTest('/test.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/test');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 415);
     assert.strictEqual(response.headers.get('x-error'), 'File type not supported: markdown');
@@ -130,8 +144,8 @@ describe('OneDrive Integration Tests (docx)', () => {
         size: 3956,
       });
 
-    const { context, info } = setupTest('/test.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/test');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 415);
     assert.strictEqual(response.headers.get('x-error'), 'File type not supported: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -144,8 +158,8 @@ describe('OneDrive Integration Tests (docx)', () => {
       .resolve('')
       .getDocument('/test.docx', { size: 0 });
 
-    const { context, info } = setupTest('/test.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/test');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
     assert.strictEqual(response.headers.get('x-error'), 'File is empty, no markdown version available: /test.md');
@@ -158,8 +172,8 @@ describe('OneDrive Integration Tests (docx)', () => {
       .resolve('')
       .getDocument('/test.docx', { size: 100 * 1024 * 1024 + 1 });
 
-    const { context, info } = setupTest('/test.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/test');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(response.headers.get('x-error'), 'Documents larger than 100mb not supported: /test.md');
@@ -180,8 +194,10 @@ describe('OneDrive Integration Tests (docx)', () => {
         body: '# hello, world!',
       }));
 
-    const { context, info } = setupTest('/index.md', { data: { 'hlx-word2md-version': 'ci123' } });
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/', {
+      data: { 'hlx-word2md-version': 'ci123' },
+    });
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
@@ -212,7 +228,7 @@ describe('OneDrive Integration Tests (docx)', () => {
         })];
       });
 
-    const { context, info } = setupTest('/index.md', {
+    const { request, context } = setupTest('/index.md', {
       config: {
         ...SITE_1D_CONFIG,
         content: {
@@ -224,7 +240,7 @@ describe('OneDrive Integration Tests (docx)', () => {
         },
       },
     });
-    const response = await contentProxy(context, info);
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
@@ -254,10 +270,12 @@ describe('OneDrive Integration Tests (docx)', () => {
         })];
       });
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info, {
-      lastModified: 'Tue, 10 Jun 2021 20:04:53 GMT',
+    const { request, context } = setupTest('/', {
+      data: {
+        lastModified: 'Tue, 10 Jun 2021 20:04:53 GMT',
+      },
     });
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 304);
   });
@@ -287,8 +305,8 @@ describe('OneDrive Integration Tests (docx)', () => {
         body: '',
       }));
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/index.md\' from \'word2md\': (429) - The request been throttled');
@@ -307,8 +325,8 @@ describe('OneDrive Integration Tests (docx)', () => {
       .post('/2015-03-31/functions/helix3--word2md%3Av7/invocations')
       .replyWithError('kaputt');
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 502);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/index.md\' from \'word2md\': kaputt');
@@ -329,8 +347,8 @@ describe('OneDrive Integration Tests (docx)', () => {
         body: '',
       }));
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -349,8 +367,8 @@ describe('OneDrive Integration Tests (docx)', () => {
         size: 3956,
       }]);
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -371,8 +389,8 @@ describe('OneDrive Integration Tests (docx)', () => {
         'x-amz-function-error': 'Unhandled',
       });
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 502);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/index.md\' from \'word2md\': {"errorType":"Runtime.ExitError","errorMessage":"RequestId: d42a42f2-9886-4ec7-8e1d-69ee7086c66a Error: Runtime exited with error: signal: killed"}');
@@ -402,13 +420,13 @@ describe('OneDrive Integration Tests (docx)', () => {
         })];
       });
 
-    const { context, info } = setupTest('/index.md', {
+    const { request, context } = setupTest('/', {
       config: {
         ...SITE_1D_CONFIG,
         limits: { preview: { maxImageSize: 100 } },
       },
     });
-    const response = await contentProxy(context, info);
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
   });
@@ -430,13 +448,13 @@ describe('OneDrive Integration Tests (docx)', () => {
         },
       });
 
-    const { context, info } = setupTest('/index.md', {
+    const { request, context } = setupTest('/', {
       config: {
         ...SITE_1D_CONFIG,
         limits: { preview: { maxImageSize: 100 } },
       },
     });
-    const response = await contentProxy(context, info);
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.deepStrictEqual(response.headers.plain(), {

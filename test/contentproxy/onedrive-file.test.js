@@ -13,11 +13,11 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { resolve } from 'path';
+import { Request } from '@adobe/fetch';
 import { AcquireMethod, OneDrive } from '@adobe/helix-onedrive-support';
-import { contentProxy } from '../../src/contentproxy/index.js';
-import {
-  Nock, SITE_CONFIG, createContext, createInfo,
-} from '../utils.js';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 
 const SITE_1D_CONFIG = {
   ...SITE_CONFIG,
@@ -42,6 +42,9 @@ describe('OneDrive Integration Tests (file)', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
+
+    nock.siteConfig(SITE_1D_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -51,12 +54,18 @@ describe('OneDrive Integration Tests (file)', () => {
   function setupTest(path = '/', env = ENV) {
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const context = createContext(suffix, {
-      attributes: { config: SITE_1D_CONFIG },
-      env,
-    });
-    const info = createInfo(suffix).withCode('owner', 'repo');
-    return { context, info };
+    const request = new Request('https://localhost/');
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+        ...env,
+      },
+    };
+    return { request, context };
   }
 
   it('Rejects file with excessive size', async () => {
@@ -66,8 +75,8 @@ describe('OneDrive Integration Tests (file)', () => {
       .resolve('')
       .getFile('/video.mp4', { size: 600_000_000 });
 
-    const { context, info } = setupTest('/video.mp4');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/video.mp4');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -92,8 +101,8 @@ describe('OneDrive Integration Tests (file)', () => {
         'content-type': 'application/pdf',
       });
 
-    const { context, info } = setupTest('/foobar.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('content-type'), 'application/octet-stream');
@@ -108,8 +117,8 @@ describe('OneDrive Integration Tests (file)', () => {
       .getFile('/foobar.pdf', { id: null })
       .getChildren([]);
 
-    const { context, info } = setupTest('/foobar.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/foobar.pdf\' from \'onedrive\': (404) - no such document: /foobar.pdf');
@@ -123,8 +132,8 @@ describe('OneDrive Integration Tests (file)', () => {
       .get(`/shares/${OneDrive.encodeSharingUrl(SITE_1D_CONFIG.content.source.url)}/driveItem`)
       .reply(429);
 
-    const { context, info } = setupTest('/foobar.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/foobar.pdf\' from \'onedrive\': (429) - ');
@@ -140,8 +149,8 @@ describe('OneDrive Integration Tests (file)', () => {
         'retry-after': '4',
       });
 
-    const { context, info } = setupTest('/foobar.pdf');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/foobar.pdf\' from \'onedrive\': (429) - ');
@@ -152,8 +161,8 @@ describe('OneDrive Integration Tests (file)', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user();
 
-    const { context, info } = setupTest('/foobar.pdf', {});
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/foobar.pdf', {});
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 500);
     assert.strictEqual(response.headers.get('x-error'), 'Unable to fetch \'/foobar.pdf\' from \'onedrive\': Either clientId or accessToken must not be null.');

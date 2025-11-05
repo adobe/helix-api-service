@@ -12,11 +12,11 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { Request } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
-import { contentProxy } from '../../src/contentproxy/index.js';
-import {
-  Nock, SITE_CONFIG, createContext, createInfo,
-} from '../utils.js';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 
 describe('Google Integration Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -25,18 +25,36 @@ describe('Google Integration Tests', () => {
   beforeEach(() => {
     nock = new Nock().env();
     GoogleClient.setItemCacheOptions({ max: 1000 });
+
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
     nock.done();
   });
 
-  function setupTest(path = '/', { data = {} } = {}) {
+  function setupTest(path = '/', { data } = {}) {
     const suffix = `/org/sites/site/contentproxy${path}`;
+    const query = new URLSearchParams(data);
 
-    const context = createContext(suffix, { data });
-    const info = createInfo(suffix).withCode('owner', 'repo');
-    return { context, info };
+    const request = new Request(`https://localhost${suffix}?${query}`, {
+      headers: {
+        'x-request-id': 'rid',
+      },
+    });
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        googleApiOpts: { retry: false },
+      },
+      runtime: { region: 'us-east-1' },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    };
+    return { request, context };
   }
 
   it('Retrieves Document from gdocs', async () => {
@@ -73,8 +91,8 @@ describe('Google Integration Tests', () => {
         })];
       });
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
@@ -98,10 +116,10 @@ describe('Google Integration Tests', () => {
         body: '# hello, world!',
       }));
 
-    const { context, info } = setupTest('/index.md', {
+    const { request, context } = setupTest('/', {
       data: { 'hlx-gdocs2md-version': 'ci123' },
     });
-    const response = await contentProxy(context, info);
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
@@ -139,10 +157,12 @@ describe('Google Integration Tests', () => {
         })];
       });
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info, {
-      lastModified: 'Tue, 10 Jun 2021 20:04:53 GMT',
+    const { request, context } = setupTest('/', {
+      data: {
+        lastModified: 'Tue, 10 Jun 2021 20:04:53 GMT',
+      },
     });
+    const response = await main(request, context);
     assert.strictEqual(response.status, 304);
   });
 
@@ -163,8 +183,8 @@ describe('Google Integration Tests', () => {
         body: '',
       }));
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -178,8 +198,8 @@ describe('Google Integration Tests', () => {
         id: '1jXZBaOHP9x9-2NiYPbeyiWOHbmDRKobIeb11JdCVyUw',
       }]);
 
-    const { context, info } = setupTest('/test.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/test');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 415);
     assert.deepStrictEqual(response.headers.plain(), {
@@ -196,8 +216,8 @@ describe('Google Integration Tests', () => {
       .documents([])
       .files([]);
 
-    const { context, info } = setupTest('/index.md');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });

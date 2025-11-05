@@ -12,14 +12,14 @@
 
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
-import { GoogleClient } from '@adobe/helix-google-support';
 import assert from 'assert';
 import { resolve } from 'path';
+import { Request } from '@adobe/fetch';
+import { GoogleClient } from '@adobe/helix-google-support';
+import { AuthInfo } from '../../src/auth/auth-info.js';
 import { sanitizeHtml } from '../../src/contentproxy/google-json.js';
-import { contentProxy } from '../../src/contentproxy/index.js';
-import {
-  Nock, SITE_CONFIG, createContext, createInfo,
-} from '../utils.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 import { getFormattedCellsSheet } from './fixtures/formatted-cells-sheet.js';
 import { getFormattedCellsValues } from './fixtures/formatted-cells-values.js';
 import TEST_STRUCTURES_VALUES from './fixtures/structure-values.js';
@@ -32,6 +32,9 @@ describe('Google JSON Tests', () => {
   beforeEach(() => {
     nock = new Nock().env();
     GoogleClient.setItemCacheOptions({ max: 1000 });
+
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -41,9 +44,23 @@ describe('Google JSON Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const context = createContext(suffix);
-    const info = createInfo(suffix).withCode('owner', 'repo');
-    return { context, info };
+    const request = new Request(`https://localhost${suffix}`, {
+      headers: {
+        'x-request-id': 'rid',
+      },
+    });
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        googleApiOpts: { retry: false },
+      },
+      runtime: { region: 'us-east-1' },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    };
+    return { request, context };
   }
 
   it('gets sheet by id from google', async () => {
@@ -73,8 +90,8 @@ describe('Google JSON Tests', () => {
       .get('/v4/spreadsheets/1jXZBaOHP9x9-2NiYPbeyiWOHbmDRKobIeb11JdCVyUw/values/Sheet1%21A1%3AZ1000?valueRenderOption=UNFORMATTED_VALUE')
       .reply(200, TEST_STRUCTURES_VALUES);
 
-    const { context, info } = setupTest('/deeply/nested/structure.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/deeply/nested/structure.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.headers.get('x-source-location'), 'gdrive:1jXZBaOHP9x9-2NiYPbeyiWOHbmDRKobIeb11JdCVyUw');
@@ -94,8 +111,8 @@ describe('Google JSON Tests', () => {
       .user()
       .folders([]);
 
-    const { context, info } = setupTest('/deeply/nested/structure.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/deeply/nested/structure.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
   });
@@ -106,8 +123,8 @@ describe('Google JSON Tests', () => {
       .sheets()
       .reply(429, 'rate limit exceeded.');
 
-    const { context, info } = setupTest('/data.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/data.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 502);
   });
@@ -133,8 +150,8 @@ describe('Google JSON Tests', () => {
         },
       });
 
-    const { context, info } = setupTest('/data.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/data.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 503);
   });
@@ -161,8 +178,8 @@ describe('Google JSON Tests', () => {
       })
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/formatted-cells-grid.json'), { 'content-type': 'application/json' });
 
-    const { context, info } = setupTest('/formatted-cells.json');
-    const response = await contentProxy(context, info);
+    const { request, context } = setupTest('/formatted-cells.json');
+    const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual((await response.json()).default.data, [

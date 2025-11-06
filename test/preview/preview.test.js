@@ -27,9 +27,13 @@ describe('Preview Action Tests', () => {
   /** @type {import('sinon').SinonSandbox} */
   let sandbox;
 
+  /** @type {import('../../src/contentproxy/contentproxy').ContentSourceHandler} */
+  let handler;
+
   beforeEach(() => {
     nock = new Nock().env();
     sandbox = sinon.createSandbox();
+    handler = HANDLERS.find((h) => h.name === SITE_CONFIG.content.source.type);
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
@@ -67,22 +71,9 @@ describe('Preview Action Tests', () => {
   }
 
   it('preview document', async () => {
-    nock.google(SITE_CONFIG.content)
-      .user()
-      .documents([{
-        mimeType: 'application/vnd.google-apps.document',
-        name: 'index',
-        id: '1jXZBaOHP9x9-2NiYPbeyiWOHbmDRKobIeb11JdCVyUw',
-      }]);
-    nock('https://lambda.us-east-1.amazonaws.com')
-      .post('/2015-03-31/functions/helix3--gdocs2md%3Av7/invocations')
-      .reply(200, JSON.stringify({
-        statusCode: 200,
-        headers: {
-          'x-source-location': '1jXZBaOHP9x9-2NiYPbeyiWOHbmDRKobIeb11JdCVyUw',
-        },
-        body: '# hello, world!',
-      }));
+    sandbox.stub(handler, 'handle')
+      .returns(new Response(200, '# hello, world!'));
+
     nock.content()
       .head('/preview/index.md')
       .reply(404)
@@ -98,15 +89,15 @@ describe('Preview Action Tests', () => {
   });
 
   it('preview redirects', async () => {
-    const google = HANDLERS.find((h) => h.name === 'google');
-    sandbox.stub(google, 'handleJSON').callsFake(() => new Response(200, {
-      default: {
-        data: {
-          source: '/from',
-          destination: '/to',
+    sandbox.stub(handler, 'handleJSON')
+      .returns(new Response(200, {
+        default: {
+          data: {
+            source: '/from',
+            destination: '/to',
+          },
         },
-      },
-    }));
+      }));
 
     nock.content()
       .head('/preview/redirects.json')
@@ -122,5 +113,31 @@ describe('Preview Action Tests', () => {
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
+  });
+
+  it('reports an error when `contentBusUpdate` returns 500', async () => {
+    sandbox.stub(handler, 'handleJSON')
+      .rejects(new Error());
+
+    nock.content()
+      .head('/preview/redirects.json')
+      .reply(404)
+      .getObject('/preview/redirects.json')
+      .reply(404)
+      .putObject('/preview/redirects.json')
+      .reply(201)
+      .head('/preview/redirects.json')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest(REDIRECTS_JSON_PATH);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 502);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': "Unable to fetch '/redirects.json' from 'google': ",
+      'x-error-code': 'AEM_BACKEND_FETCH_FAILED',
+    });
   });
 });

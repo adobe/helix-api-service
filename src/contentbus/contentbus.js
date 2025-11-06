@@ -13,11 +13,6 @@ import { fetchS3 } from '@adobe/helix-admin-support';
 import { coerceArray } from '../support/utils.js';
 
 export const REDIRECTS_JSON_PATH = '/redirects.json';
-
-export const CONFIG_JSON_PATH = '/.helix/config.json';
-
-export const HEADERS_JSON_PATH = '/.helix/headers.json';
-
 export const METADATA_JSON_PATH = '/metadata.json';
 
 // the threshold for purging all content in case of a bulk preview/publish operation

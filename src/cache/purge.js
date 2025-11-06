@@ -15,10 +15,7 @@
 import { Response } from '@adobe/fetch';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { computeSurrogateKey, logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
-import {
-  CONFIG_JSON_PATH, getMetadataPaths,
-  HEADERS_JSON_PATH, METADATA_JSON_PATH,
-} from '../contentbus/contentbus.js';
+import { getMetadataPaths, METADATA_JSON_PATH } from '../contentbus/contentbus.js';
 import { querySiblingSites } from '../discover/cdn-identifier.js';
 import { cartesian } from '../support/utils.js';
 import { AkamaiPurgeClient } from './clients/akamai.js';
@@ -784,22 +781,6 @@ const purge = {
         ...prefixKey(contentKeyPrefixes, `${contentBusId}_metadata`),
         ...prefixKey(contentKeyPrefixes, contentPathKey),
       ], scope, info.ref);
-    }
-
-    // for the headers and config resource, purge config service and all content
-    const configResource = [HEADERS_JSON_PATH, CONFIG_JSON_PATH].includes(info.resourcePath);
-    if (configResource) {
-      const headersChanged = ({ attributes }) => {
-        const { originalConfigAll, configAll } = attributes;
-        return !originalConfigAll || JSON.stringify(originalConfigAll.headers) !== JSON.stringify(configAll.headers);
-      };
-
-      if (headersChanged(context)) {
-        return purge.config(context, {
-          ...info,
-          keys: [contentBusId, `p_${contentBusId}`],
-        });
-      }
     }
 
     // for mapped metadata json, purge with meta and json

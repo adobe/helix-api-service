@@ -10,13 +10,14 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import preview from './preview.js';
 import status from './status.js';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
 
-const ALLOWED_METHODS = ['GET'];
+const ALLOWED_METHODS = ['GET', 'POST'];
 
 /**
- * Handles the preview route
+ * Handles the preview route.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
@@ -34,5 +35,11 @@ export default async function previewHandler(context, info) {
     return errorResponse(log, 400, `illegal path: ${info.webPath}`);
   }
   authInfo.assertPermissions('preview:read');
-  return status(context, info);
+
+  if (info.method === 'GET') {
+    return status(context, info);
+  }
+
+  authInfo.assertPermissions('preview:write');
+  return preview(context, info);
 }

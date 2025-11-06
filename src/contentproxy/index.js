@@ -43,8 +43,9 @@ export function getContentSourceHandler(source) {
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {object} opts options
- * @param {string} opts.lastModified last modified
- * @param {number} opts.fetchTimeout fetch timeout
+ * @param {object} [opts.source] content source
+ * @param {string} [opts.lastModified] last modified
+ * @param {number} [opts.fetchTimeout] fetch timeout
  *
  * @returns {Promise<Response>} the content response
  */
@@ -52,7 +53,7 @@ export async function contentProxy(context, info, opts) {
   const { config: { content: { source } }, log } = context;
   const { resourcePath, ext } = info;
 
-  const handler = getContentSourceHandler(source);
+  const handler = getContentSourceHandler(opts.source ?? source);
   if (!handler) {
     return errorResponse(log, 404, error(
       'No handler found for document: $1',

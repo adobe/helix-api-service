@@ -12,6 +12,14 @@
 import { AbortError } from '@adobe/fetch';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
+/**
+ * Load configuration from the config service.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} url where to load it from
+ * @param {string} type what kind of configuration
+ * @returns {Promise<object|null>} configuration or null
+ */
 async function loadConfig(context, url, type) {
   const { log, env } = context;
   const fetch = context.getFetch();
@@ -51,4 +59,25 @@ export async function loadSiteConfig(context, org, site) {
 export async function loadOrgConfig(context, org) {
   const url = `https://config.aem.page/${org}/config.json?scope=admin`;
   return loadConfig(context, url, 'org');
+}
+
+/**
+ * Returns a list of paths with admin roles. Checks any paths that start with
+ * `/groups/`.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @returns {Promise<string[]>}
+ */
+export async function getUserListPaths(context) {
+  const { config } = context;
+  const paths = new Set();
+
+  for (const users of Object.values(config.access?.admin?.role ?? {})) {
+    for (const user of users) {
+      if (user.startsWith('/') && !user.startsWith('/groups/')) {
+        paths.add(user);
+      }
+    }
+  }
+  return Array.from(paths);
 }

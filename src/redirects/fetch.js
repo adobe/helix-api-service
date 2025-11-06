@@ -10,10 +10,9 @@
  * governing permissions and limitations under the License.
  */
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
 import { getSheetData } from '../contentproxy/utils.js';
 import { toResourcePath } from '../support/RequestInfo.js';
-
-export const REDIRECTS_JSON_PATH = '/redirects.json';
 
 /**
  * Retrieves the redirects map from the respective content-bus.

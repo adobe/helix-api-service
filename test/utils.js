@@ -195,7 +195,7 @@ export function Nock() {
 }
 
 export function createContext(suffix, {
-  attributes = {}, data, env,
+  attributes = {}, data = {}, env,
 } = {}) {
   return AdminContext.create({
     pathInfo: { suffix },

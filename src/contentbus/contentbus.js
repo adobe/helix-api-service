@@ -29,9 +29,9 @@ export const PURGE_ALL_CONTENT_THRESHOLD = 100;
  * `/metadata.json` if non configured.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @return {Promise<string[]>}
+ * @return {string[]}
  */
-export async function getMetadataPaths(context) {
+export function getMetadataPaths(context) {
   const { attributes: { config } } = context;
   return coerceArray(
     config?.metadata?.source

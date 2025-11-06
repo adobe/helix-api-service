@@ -244,4 +244,8 @@ export class RequestInfo {
     }
     return url.href;
   }
+
+  toResourcePath() {
+    return toResourcePath(this.webPath);
+  }
 }

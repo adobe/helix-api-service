@@ -39,12 +39,14 @@ describe('Google File Tests', () => {
   });
 
   function setupTest(path = '/', maxImageSize = undefined) {
-    const suffix = `/org/sites/site/contentproxy${path}`;
     const config = maxImageSize
       ? {
         ...SITE_CONFIG,
         limits: { preview: { maxImageSize } },
       } : SITE_CONFIG;
+    nock.siteConfig(config);
+
+    const suffix = `/org/sites/site/contentproxy${path}`;
 
     const request = new Request('https://localhost/');
     const context = {

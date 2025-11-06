@@ -63,6 +63,8 @@ describe('OneDrive Integration Tests (docx)', () => {
   });
 
   function setupTest(path = '/', { config = SITE_1D_CONFIG, data } = {}) {
+    nock.siteConfig(config);
+
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
@@ -75,7 +77,6 @@ describe('OneDrive Integration Tests (docx)', () => {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
-        config,
       },
       runtime: { region: 'us-east-1' },
       env: {

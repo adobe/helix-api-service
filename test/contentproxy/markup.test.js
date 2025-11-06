@@ -64,6 +64,8 @@ describe('Markup Integration Tests', () => {
     headers = { 'x-content-source-authorization': 'Bearer dummy-access-token' },
     authInfo = AuthInfo.Default().withAuthenticated(true),
   } = {}) {
+    nock.siteConfig(config);
+
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
@@ -77,7 +79,6 @@ describe('Markup Integration Tests', () => {
       pathInfo: { suffix },
       attributes: {
         authInfo,
-        config,
       },
       runtime: { region: 'us-east-1' },
       env: {

@@ -47,9 +47,12 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   function setupTest(path = '/', {
+    config = SITE_MUP_CONFIG(),
     data, headers,
     authInfo = AuthInfo.Default().withAuthenticated(true),
   } = {}) {
+    nock.siteConfig(config);
+
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
@@ -77,7 +80,6 @@ describe('Markup Integration Tests (JSON)', () => {
     const contentType = 'application/json; charset=utf-8';
     const lastModDate = new Date(0).toGMTString();
 
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(200, sheet, {
@@ -100,7 +102,6 @@ describe('Markup Integration Tests (JSON)', () => {
     const contentType = 'application/json; charset=utf-8';
     const lastModDate = new Date(0).toGMTString();
 
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(function fn() {
@@ -130,12 +131,13 @@ describe('Markup Integration Tests (JSON)', () => {
   it('Handles mountpoint urls ending with /', async () => {
     const sheet = validSheet();
 
-    nock.siteConfig(SITE_MUP_CONFIG(`${mountpointUrl}/foo/`));
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(200, sheet, { 'content-type': 'application/json' });
 
-    const { request, context } = setupTest('/test.json');
+    const { request, context } = setupTest('/test.json', {
+      config: SITE_MUP_CONFIG(`${mountpointUrl}/foo/`),
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
@@ -147,12 +149,13 @@ describe('Markup Integration Tests (JSON)', () => {
   it('Handles mountpoint urls containing consecutive /', async () => {
     const sheet = validSheet();
 
-    nock.siteConfig(SITE_MUP_CONFIG(`${mountpointUrl}//foo/`));
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(200, sheet, { 'content-type': 'application/json' });
 
-    const { request, context } = setupTest('/test.json');
+    const { request, context } = setupTest('/test.json', {
+      config: SITE_MUP_CONFIG(`${mountpointUrl}//foo/`),
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
@@ -164,7 +167,6 @@ describe('Markup Integration Tests (JSON)', () => {
   it('Handles 304 not modified responses from mountpoint url', async () => {
     const lastModDate = new Date(0).toGMTString();
 
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(304, null, { 'last-modified': lastModDate });
@@ -178,7 +180,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles invalid JSON from mountpoint url', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(200, 'foo', { 'content-type': 'application/json' });
@@ -193,7 +194,6 @@ describe('Markup Integration Tests (JSON)', () => {
   it('Handles invalid sheet format from mountpoint url', async () => {
     const sheet = validSheet({ ':type': 'foo' });
 
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(200, sheet, { 'content-type': 'application/json' });
@@ -206,7 +206,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles timeout from mountpoint url', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .delay(500)
@@ -223,7 +222,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Falls back to code-bus resources if not found (404) from mountpoint', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(404);
@@ -242,7 +240,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Falls back to code-bus resources if not found (403) from mountpoint', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(function fn() {
@@ -268,7 +265,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('handles errors from origin', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(401);
@@ -281,7 +277,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('handles 500 from origin', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(500);
@@ -300,9 +295,9 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles malformed URL in fstab', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG('markup.example.com'));
-
-    const { request, context } = setupTest('/test.json');
+    const { request, context } = setupTest('/test.json', {
+      config: SITE_MUP_CONFIG('markup.example.com'),
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 400);
@@ -310,7 +305,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles invalid mountpoint url', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .replyWithError('getaddrinfo ENOTFOUND https');
@@ -329,7 +323,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles resources missing from both mountpoint url & code-bus', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(404);
@@ -345,7 +338,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles invalid JSON from code-bus', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(404);
@@ -362,7 +354,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Handles invalid sheet format from code-bus', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG());
     nock(mountpointUrl)
       .get('/foo/test.json')
       .reply(404);
@@ -380,8 +371,6 @@ describe('Markup Integration Tests (JSON)', () => {
   });
 
   it('Passes query params from mountpoint url', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG(`${mountpointUrl}/foo?baz=true`));
-
     const sheet = validSheet();
     nock(mountpointUrl)
       .get('/foo/test.json')
@@ -391,16 +380,18 @@ describe('Markup Integration Tests (JSON)', () => {
         return [200, sheet, { 'content-type': 'application/json' }];
       });
 
-    const { request, context } = setupTest('/test.json');
+    const { request, context } = setupTest('/test.json', {
+      config: SITE_MUP_CONFIG(`${mountpointUrl}/foo?baz=true`),
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
   });
 
   it('Returns 400 for an internal host', async () => {
-    nock.siteConfig(SITE_MUP_CONFIG('https://127.0.0.1:8443/'));
-
-    const { request, context } = setupTest('/test.json');
+    const { request, context } = setupTest('/test.json', {
+      config: SITE_MUP_CONFIG('https://127.0.0.1:8443/'),
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 400);

@@ -12,23 +12,31 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Request } from '@adobe/fetch';
+import sinon from 'sinon';
+import { Request, Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
+import { HANDLERS } from '../../src/contentproxy/index.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 
 describe('Preview Action Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
+    sandbox = sinon.createSandbox();
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
+    sandbox.restore();
     nock.done();
   });
 
@@ -84,6 +92,33 @@ describe('Preview Action Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const { request, context } = setupTest('/');
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('preview redirects', async () => {
+    const google = HANDLERS.find((h) => h.name === 'google');
+    sandbox.stub(google, 'handleJSON').callsFake(() => new Response(200, {
+      default: {
+        data: {
+          source: '/from',
+          destination: '/to',
+        },
+      },
+    }));
+
+    nock.content()
+      .head('/preview/redirects.json')
+      .reply(404)
+      .getObject('/preview/redirects.json')
+      .reply(404)
+      .putObject('/preview/redirects.json')
+      .reply(201)
+      .head('/preview/redirects.json')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest(REDIRECTS_JSON_PATH);
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);

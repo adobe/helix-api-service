@@ -11,10 +11,11 @@
  */
 import { Response } from '@adobe/fetch';
 import preview from './preview.js';
+import remove from './remove.js';
 import status from './status.js';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
 
-const ALLOWED_METHODS = ['GET', 'POST'];
+const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**
  * Handles the preview route.
@@ -40,6 +41,12 @@ export default async function previewHandler(context, info) {
     return status(context, info);
   }
 
-  authInfo.assertPermissions('preview:write');
-  return preview(context, info);
+  if (info.method === 'POST') {
+    authInfo.assertPermissions('preview:write');
+    return preview(context, info);
+  }
+
+  // DELETE
+  authInfo.assertPermissions('preview:delete');
+  return remove(context, info);
 }

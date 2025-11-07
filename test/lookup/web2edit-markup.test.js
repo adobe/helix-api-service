@@ -49,7 +49,7 @@ describe('web2edit Markup Tests', () => {
     const result = await handler.lookup(
       createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
-      { source },
+      source,
     );
     assert.deepStrictEqual(result, {
       editUrl: 'https://da.live/edit#/org/site/page',
@@ -74,7 +74,7 @@ describe('web2edit Markup Tests', () => {
     const result = await handler.lookup(
       createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
-      { source },
+      source,
     );
     assert.deepStrictEqual(result, {
       editUrl: 'https://da.live/edit#/org/site/page/index',
@@ -91,9 +91,7 @@ describe('web2edit Markup Tests', () => {
     const result = await handler.lookup(
       createContext(suffix, { data: { editUrl: 'auto' } }),
       createInfo(suffix),
-      {
-        source: { url: 'https://www.example.com/' },
-      },
+      { url: 'https://www.example.com/' },
     );
     assert.deepStrictEqual(result, {
       error: 'Mountpoint not supported: https://www.example.com/.',

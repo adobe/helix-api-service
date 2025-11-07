@@ -23,13 +23,13 @@ const TYPES = {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} param
- * @param {MountPoint} param.source mount point
- * @param {string} param.contentBusId contentBusId
+ * @param {object} source content source
  * @returns {Promise<LookupResponse>} the lookup response
  */
-async function lookup(context, info, { contentBusId, source }) {
+async function lookup(context, info, source) {
+  const { contentBusId } = context;
   const { ext, webPath, resourcePath } = info;
+
   const item = await resolveResource(context, info, { contentBusId, source, type: TYPES[ext] });
   if (!item.id) {
     throw new StatusCodeError(`no such document: ${resourcePath}`, 404);

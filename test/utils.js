@@ -133,6 +133,7 @@ export function Nock() {
     const scope = nock(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
     scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
     scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
+    scope.deleteObject = (key) => scope.delete(key).query({ 'x-id': 'DeleteObject' });
     return scope;
   };
 

@@ -40,7 +40,7 @@ async function fetchFromSources(context, info) {
 
   for (const source of sources) {
     // eslint-disable-next-line no-await-in-loop
-    res = await contentProxy(context, info, source);
+    res = await contentProxy(context, info, { source });
     if (res.ok) {
       // succeeded
       return res;

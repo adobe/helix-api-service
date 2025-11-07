@@ -22,13 +22,15 @@ import { computeSourceUrl, getContentSourceHeaders, updateMarkupSourceInfo } fro
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
+ * @param {object} [opts.source] content source
  * @param {string} [opts.lastModified] last modified
  * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
 async function handle(context, info, opts) {
-  const { config, config: { content: { source } }, log } = context;
+  const { config, config: { content }, log } = context;
 
+  const source = opts?.source ?? content.source;
   const sourceUrl = await computeSourceUrl(log, info, source);
   const providerHeaders = getContentSourceHeaders(context, info, source);
 

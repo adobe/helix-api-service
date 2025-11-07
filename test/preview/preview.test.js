@@ -29,7 +29,7 @@ describe('Preview Action Tests', () => {
   let sandbox;
 
   /** @type {import('../../src/contentproxy/contentproxy').ContentSourceHandler} */
-  let handler;
+  let contentproxy;
 
   /** @type {string[]} */
   let surrogates;
@@ -40,7 +40,7 @@ describe('Preview Action Tests', () => {
   beforeEach(() => {
     nock = new Nock().env();
     sandbox = sinon.createSandbox();
-    handler = HANDLERS[SITE_CONFIG.content.source.type];
+    contentproxy = HANDLERS[SITE_CONFIG.content.source.type];
 
     sandbox.stub(purge, 'perform').callsFake((context, info, infos) => {
       purgeInfos = infos;
@@ -87,7 +87,7 @@ describe('Preview Action Tests', () => {
   }
 
   it('preview document', async () => {
-    sandbox.stub(handler, 'handle')
+    sandbox.stub(contentproxy, 'handle')
       .returns(new Response(200, '# hello, world!'));
 
     nock.content()
@@ -111,7 +111,7 @@ describe('Preview Action Tests', () => {
   });
 
   it('reports an error when `contentBusUpdate` returns 404 and no redirect matches', async () => {
-    sandbox.stub(handler, 'handle')
+    sandbox.stub(contentproxy, 'handle')
       .returns(new Response('', { status: 404 }));
 
     nock.content()
@@ -133,7 +133,7 @@ describe('Preview Action Tests', () => {
   });
 
   it('tweaks status when `contentBusUpdate` returns 404 and a redirect matches', async () => {
-    sandbox.stub(handler, 'handle')
+    sandbox.stub(contentproxy, 'handle')
       .returns(new Response('', { status: 404 }));
 
     nock.content()
@@ -174,7 +174,7 @@ describe('Preview Action Tests', () => {
   });
 
   it('preview redirects', async () => {
-    sandbox.stub(handler, 'handleJSON')
+    sandbox.stub(contentproxy, 'handleJSON')
       .returns(new Response({
         default: {
           data: {
@@ -201,7 +201,7 @@ describe('Preview Action Tests', () => {
   });
 
   it('preview redirects with forced update', async () => {
-    sandbox.stub(handler, 'handleJSON')
+    sandbox.stub(contentproxy, 'handleJSON')
       .returns(new Response(200, {
         default: {
           data: {
@@ -232,7 +232,7 @@ describe('Preview Action Tests', () => {
   });
 
   it('preview metadata', async () => {
-    sandbox.stub(handler, 'handleJSON')
+    sandbox.stub(contentproxy, 'handleJSON')
       .returns(new Response({
         default: {
           data: {
@@ -260,7 +260,7 @@ describe('Preview Action Tests', () => {
   });
 
   it('reports an error when `contentBusUpdate` returns 500', async () => {
-    sandbox.stub(handler, 'handleJSON')
+    sandbox.stub(contentproxy, 'handleJSON')
       .rejects(new Error());
 
     nock.content()

@@ -53,7 +53,7 @@ export async function contentProxy(context, info, opts) {
   const { config: { content: { source } }, log } = context;
   const { resourcePath, ext } = info;
 
-  const handler = getContentSourceHandler(opts.source ?? source);
+  const handler = getContentSourceHandler(opts?.source ?? source);
   if (!handler) {
     return errorResponse(log, 404, error(
       'No handler found for document: $1',

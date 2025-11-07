@@ -38,9 +38,9 @@ export default async function preview(context, info) {
     }
   }
 
-  const resp = await update(context, info);
-  if (resp.status !== 200) {
-    return resp;
+  const response = await update(context, info);
+  if (response.status !== 200) {
+    return response;
   }
 
   await purge.resource(context, info, PURGE_PREVIEW);
@@ -59,5 +59,5 @@ export default async function preview(context, info) {
   //   });
   // }
 
-  return resp;
+  return response;
 }

@@ -22,9 +22,9 @@ import { error } from './errors.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @param {string} opts.lastModified last modified
- * @param {number} opts.fetchTimeout fetch timeout
+ * @param {object} [opts] options
+ * @param {string} [opts.lastModified] last modified
+ * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
 async function handle(context, info, opts) {
@@ -100,16 +100,11 @@ async function handle(context, info, opts) {
   return resp;
 }
 
-function test(source) {
-  return source?.type === 'onedrive';
-}
-
 /**
  * @type {import('./contentproxy.js').ContentSourceHandler}
  */
 export default {
   name: 'onedrive',
-  test,
   handle,
   handleJSON,
   handleFile,

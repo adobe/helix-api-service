@@ -329,6 +329,8 @@ export class AdminContext {
    * Retrieves the sitemap from the underlying storage and stores it in the
    * context as `sitemapConfig`.
    *
+   * TODO: move to @adobe/helix-admin-support
+   *
    * @param {import('../support/RequestInfo').RequestInfo} info request info
    * @returns {Promise<SitemapConfig>} the sitemap configuration
    */
@@ -349,6 +351,48 @@ export class AdminContext {
       }
     }
     return attributes.sitemapConfig;
+  }
+
+  /**
+   * Ensures that the respective content-bus has the info marker that helps to identify the project.
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @param {import('@adobe/helix-shared-storage').Bucket} storage
+   * @param {string} sourceUrl
+   * @returns {Promise<void}
+   */
+  async ensureInfoMarker(info, storage, sourceUrl) {
+    const { attributes, contentBusId } = this;
+    const {
+      org, site, owner, repo,
+    } = info;
+
+    if (!attributes.infoMarkerChecked) {
+      // set container info if not present
+      const infoKey = `${contentBusId}/.hlx.json`;
+      const buf = await storage.get(infoKey);
+      const meta = buf ? JSON.parse(buf) : {};
+
+      let modified = false;
+      if (!meta['original-repository']) {
+        meta['original-repository'] = `${owner}/${repo}`;
+        modified = true;
+      }
+      if (!meta.mountpoint) {
+        meta.mountpoint = sourceUrl;
+        modified = true;
+      }
+
+      // for helix5 configs, we also store the original site
+      if (!meta['original-site']) {
+        meta['original-site'] = `${org}/${site}`;
+        modified = true;
+      }
+
+      if (modified) {
+        await storage.put(infoKey, Buffer.from(JSON.stringify(meta, null, 2)), 'application/json', meta, false);
+      }
+      attributes.infoMarkerChecked = true;
+    }
   }
 }
 

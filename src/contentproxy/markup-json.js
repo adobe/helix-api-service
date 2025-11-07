@@ -42,16 +42,18 @@ const FETCH_TIMEOUT = 10_000;
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @param {string} opts.lastModified last modified
- * @param {number} opts.fetchTimeout fetch timeout
+ * @param {object} [opts] options
+ * @param {object} [opts.source] content source
+ * @param {string} [opts.lastModified] last modified
+ * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
 export async function handleJSON(context, info, opts) {
-  const { config: { content: { source } }, log } = context;
+  const { config: { content }, log } = context;
   const { resourcePath } = info;
-
   const fetch = context.getFetch(context);
+
+  const source = opts?.source ?? content.source;
   const url = await computeSourceUrl(log, info, source);
   const fopts = context.getFetchOptions({ fetchTimeout: FETCH_TIMEOUT, ...opts });
   const contentSourceHeaders = getContentSourceHeaders(context, info, source);

@@ -12,21 +12,15 @@
 
 import { computeSourceUrl } from '../contentproxy/utils.js';
 
-function test(contentSource) {
-  return contentSource?.type === 'markup';
-}
-
 /**
  * Performs a lookup from the web resource to the source document.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} param
- * @param {MountPoint} param.source mount point
- * @param {string} param.contentBusId contentBusId
+ * @param {object} source content source
  * @returns {Promise<LookupResponse>} the lookup response
  */
-async function lookup(context, info, { source }) {
+async function lookup(context, info, source) {
   const { log } = context;
 
   const { resourcePath, webPath } = info;
@@ -54,5 +48,4 @@ async function lookup(context, info, { source }) {
 export default {
   name: 'markup',
   lookup,
-  test,
 };

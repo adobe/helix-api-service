@@ -21,11 +21,11 @@ import onedrive from './onedrive.js';
 /**
  * @type {import('./contentproxy').ContentSourceHandler[]}
  */
-export const HANDLERS = [ // exported for testing only
+export const HANDLERS = { // exported for testing only
   google,
   onedrive,
   markup,
-];
+};
 
 /**
  * Returns the content source handler for the given mountpoint
@@ -34,17 +34,18 @@ export const HANDLERS = [ // exported for testing only
  * @return {import('./contentproxy').ContentSourceHandler} handler
  */
 export function getContentSourceHandler(source) {
-  return HANDLERS.find(({ test }) => test && test(source));
+  return HANDLERS[source.type];
 }
 
 /**
- * Loads the content from the source providers.
+ * Loads the content from the source provider.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @param {string} opts.lastModified last modified
- * @param {number} opts.fetchTimeout fetch timeout
+ * @param {object} [opts] options
+ * @param {object} [opts.source] content source
+ * @param {string} [opts.lastModified] last modified
+ * @param {number} [opts.fetchTimeout] fetch timeout
  *
  * @returns {Promise<Response>} the content response
  */
@@ -52,7 +53,7 @@ export async function contentProxy(context, info, opts) {
   const { config: { content: { source } }, log } = context;
   const { resourcePath, ext } = info;
 
-  const handler = getContentSourceHandler(source);
+  const handler = getContentSourceHandler(opts?.source ?? source);
   if (!handler) {
     return errorResponse(log, 404, error(
       'No handler found for document: $1',

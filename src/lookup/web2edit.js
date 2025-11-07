@@ -13,28 +13,26 @@ import google from './web2edit-google.js';
 import onedrive from './web2edit-onedrive.js';
 import markup from './web2edit-markup.js';
 
-const HANDLERS = [
+export const HANDLERS = {
   google,
   onedrive,
   markup,
-];
+};
 
 /**
  * Performs a lookup from the web resource to the source document (e.g. word document).
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} param
- * @param {MountPoint} param.source mount point
- * @param {string} param.contentBusId contentBusId
+ * @param {object} source source
  * @returns {Promise<LookupResponse|ErrorResponse>} the lookup response
  */
-export async function lookup(context, info, { contentBusId, source }) {
+export async function lookup(context, info, source) {
   const { log } = context;
   const { org, site, webPath } = info;
 
   const uri = `hlx:/${org}/${site}${webPath}`;
-  const handler = HANDLERS.find(({ test }) => test && test(source));
+  const handler = HANDLERS[source.type];
   if (!handler) {
     return {
       status: 404,
@@ -43,7 +41,7 @@ export async function lookup(context, info, { contentBusId, source }) {
   }
 
   try {
-    return await handler.lookup(context, info, { contentBusId, source });
+    return await handler.lookup(context, info, source);
   } catch (e) {
     const result = {
       status: e.statusCode || e.status,
@@ -69,8 +67,8 @@ export async function lookup(context, info, { contentBusId, source }) {
  * @returns {Promise<LookupResponse|ErrorResponse>} the lookup response
  */
 export default async function web2edit(context, info) {
-  const { attributes: { config } } = context;
-  const { contentBusId, source: base, overlay } = config.content;
+  const { config } = context;
+  const { content: { source: base, overlay } } = config;
 
   const sources = [base];
   if (overlay) {
@@ -81,10 +79,7 @@ export default async function web2edit(context, info) {
 
   for (const source of sources) {
     // eslint-disable-next-line no-await-in-loop
-    const result = await lookup(context, info, {
-      contentBusId,
-      source,
-    });
+    const result = await lookup(context, info, source);
     if (result.status === 200) {
       return result;
     }

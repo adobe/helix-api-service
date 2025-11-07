@@ -27,8 +27,7 @@ const HANDLERS = {
  * @returns {Promise<LookupResponse|ErrorResponse>} the response
  */
 export default async function edit2web(context, info, editUrl) {
-  const { log, attributes: { config } } = context;
-  const { contentBusId, source } = config.content;
+  const { log, config: { content: { source } } } = context;
 
   // validate edit url
   try {
@@ -41,7 +40,7 @@ export default async function edit2web(context, info, editUrl) {
     };
   }
 
-  const handler = Object.values(HANDLERS).find(({ test }) => test(source));
+  const handler = HANDLERS[source.type];
   if (!handler) {
     return {
       status: 404,
@@ -50,9 +49,7 @@ export default async function edit2web(context, info, editUrl) {
   }
 
   try {
-    const result = await handler.lookup(context, info, {
-      editUrl, contentBusId, source,
-    });
+    const result = await handler.lookup(context, info, editUrl);
     if (result.resourcePath.indexOf('..') >= 0) {
       log.warn(`Illegal characters in document path: ${result.resourcePath}`);
       return {

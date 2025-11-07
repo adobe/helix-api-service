@@ -256,4 +256,26 @@ describe('Media Handler Tests', () => {
       'x-error': 'Failed to fetch media at: https://www.aem.live/sample.png: boohoo!',
     });
   });
+
+  it('reports a 415 if media type is not supported', async () => {
+    const buffer = Buffer.from('Hello world', 'utf-8');
+    const result = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      body: buffer,
+      headers: {
+        'content-type': 'text/plain',
+      },
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
+      },
+    });
+    assert.strictEqual(result.status, 415);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'File type not supported: text/plain',
+    });
+  });
 });

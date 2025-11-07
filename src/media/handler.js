@@ -9,57 +9,17 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response, timeoutSignal } from '@adobe/fetch';
-import { MediaHandler } from '@adobe/helix-mediahandler';
-import { MEDIA_TYPES } from './validate.js';
+import { Response } from '@adobe/fetch';
+import { error } from '../contentproxy/errors.js';
 import { errorResponse } from '../support/utils.js';
+import { fetchMedia } from './fetch.js';
+import { storeBlob } from './store.js';
+import { MEDIA_TYPES } from './validate.js';
 
 /**
  * Allowed methods for that handler.
  */
 const ALLOWED_METHODS = ['POST'];
-
-/**
- * Fetch timeout for media files.
- */
-const FETCH_TIMEOUT = 10_000;
-
-/**
- * Fetch media.
- */
-async function fetchMedia(context, url) {
-  const { log } = context;
-
-  const fetch = context.getFetch();
-  const opts = {
-    method: 'GET',
-    headers: {
-      'accept-encoding': 'identity',
-      accept: 'image/jpeg,image/jpg,image/png,image/gif,video/mp4,application/xml,image/x-icon,image/avif,image/webp,*/*;q=0.8',
-    },
-    cache: 'no-store',
-    signal: timeoutSignal(FETCH_TIMEOUT),
-  };
-
-  try {
-    const res = await fetch(url, opts);
-    const body = await res.buffer();
-
-    log.debug(`Fetched media at: ${url}`, {
-      statusCode: res.status,
-      headers: res.headers.plain(),
-    });
-    if (!res.ok) {
-      return { error: `Failed to fetch media at: ${url}: ${res.status}` };
-    }
-    return { body, contentType: res.headers.get('content-type') };
-  } catch (e) {
-    return { error: `Failed to fetch media at: ${url}: ${e.message}` };
-    /* c8 ignore next 3 */
-  } finally {
-    opts.signal.clear();
-  }
-}
 
 /**
  * Upload to media bus.
@@ -69,28 +29,10 @@ async function fetchMedia(context, url) {
  * @return {Promise<Response>} response
  */
 async function upload(context, info) {
-  const { log, contentBusId } = context;
+  const { log } = context;
+  const { headers } = info;
 
-  const { headers, org, site } = info;
-  const {
-    CLOUDFLARE_ACCOUNT_ID: r2AccountId,
-    CLOUDFLARE_R2_ACCESS_KEY_ID: r2AccessKeyId,
-    CLOUDFLARE_R2_SECRET_ACCESS_KEY: r2SecretAccessKey,
-  } = context.env;
-
-  const mh = new MediaHandler({
-    r2AccountId,
-    r2AccessKeyId,
-    r2SecretAccessKey,
-    bucketId: context.attributes.bucketMap.media,
-    owner: org,
-    repo: site,
-    ref: 'main',
-    contentBusId,
-    log,
-  });
-
-  let body;
+  let buffer;
 
   // fetch media body, either from URL or directly
   let contentType = headers['content-type'];
@@ -103,36 +45,38 @@ async function upload(context, info) {
     if (ret.error) {
       return errorResponse(log, 502, ret.error);
     }
-    ({ body, contentType } = ret);
+    ({ buffer, contentType } = ret);
   } else {
-    body = await info.buffer();
-    if (body.length === 0) {
+    buffer = await info.buffer();
+    if (buffer.length === 0) {
       return new Response('', { status: 400, headers: { 'x-error': 'missing media in request body' } });
     }
   }
 
   // preprocess and validate media
   const mediaType = MEDIA_TYPES.find((type) => type.mime === contentType);
-  if (mediaType) {
-    const { preprocess, validate } = mediaType;
-    if (preprocess) {
-      body = await preprocess(body, log);
-    }
-    if (validate) {
-      try {
-        await validate(context, 'unnamed', body);
-      } catch (e) {
-        return errorResponse(log, 409, e.reason);
-      }
+  if (!mediaType) {
+    return errorResponse(log, 415, error(
+      'File type not supported: $1',
+      contentType,
+    ));
+  }
+  const { preprocess, validate } = mediaType;
+  if (preprocess) {
+    buffer = await preprocess(buffer, log);
+  }
+  if (validate) {
+    try {
+      await validate(context, 'unnamed', buffer);
+    } catch (e) {
+      return errorResponse(log, 409, e.reason);
     }
   }
 
-  // upload to media bus
-  const blob = mh.createMediaResource(body, null, contentType);
-  await mh.put(blob);
+  // store in media bus
+  const blob = await storeBlob(context, info, buffer, contentType);
 
   const { meta, uri } = blob;
-
   return new Response(JSON.stringify({
     uri,
     meta: {

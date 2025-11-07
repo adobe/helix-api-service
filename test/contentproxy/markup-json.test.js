@@ -208,12 +208,12 @@ describe('Markup Integration Tests (JSON)', () => {
   it('Handles timeout from mountpoint url', async () => {
     nock(mountpointUrl)
       .get('/foo/test.json')
-      .delay(500)
+      .delay(5)
       .reply(200);
 
     const { request, context } = setupTest('/test.json', {
       data: {
-        fetchTimeout: 100,
+        fetchTimeout: 1,
       },
     });
     const response = await main(request, context);

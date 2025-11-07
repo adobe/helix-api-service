@@ -161,11 +161,15 @@ function createResponse(context, info, opts, result) {
  * @returns {Promise<Response>} response
  */
 export default async function fetchContent(context, info, opts) {
-  const { log, runtime: { region } } = context;
+  const { log, attributes, runtime: { region } } = context;
   const { org, site, resourcePath } = info;
   const { provider } = opts;
 
-  const client = new LambdaClient({ region });
+  const clientConfig = { region };
+  if (attributes.maxAttempts) {
+    clientConfig.maxAttempts = attributes.maxAttempts;
+  }
+  const client = new LambdaClient(clientConfig);
   const version = provider.version || provider.defaultVersion;
   const FunctionName = `${provider.package}--${provider.name}:${version}`;
 

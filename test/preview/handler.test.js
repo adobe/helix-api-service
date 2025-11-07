@@ -37,32 +37,32 @@ describe('Preview Handler Tests', () => {
   it('return 405 with method not allowed', async () => {
     const suffix = '/org/sites/site/preview/document';
 
-    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+    const response = await main(new Request('https://localhost/', { method: 'PUT' }), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
-    assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), 'method not allowed');
+    assert.strictEqual(response.status, 405);
+    assert.strictEqual(await response.text(), 'method not allowed');
   });
 
   it('return 400 if `webPath` is illegal', async () => {
     const suffix = '/org/sites/site/preview/folder-/document';
 
-    const result = await main(new Request('https://api.aem.live/'), {
+    const response = await main(new Request('https://api.aem.live/'), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
-    assert.strictEqual(result.status, 400);
+    assert.strictEqual(response.status, 400);
   });
 
   it('return 403 if `preview:read` permission missing', async () => {
     const suffix = '/org/sites/site/preview/document';
 
-    const result = await main(new Request('https://api.aem.live/'), {
+    const response = await main(new Request('https://api.aem.live/'), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default()
@@ -70,41 +70,47 @@ describe('Preview Handler Tests', () => {
           .withProfile({ defaultRole: 'media_author' }),
       },
     });
-    assert.strictEqual(result.status, 403);
+    assert.strictEqual(response.status, 403);
   });
 
-  it('returns preview info', async () => {
+  it('return 403 if `preview:write` permission missing', async () => {
+    const suffix = '/org/sites/site/preview/document';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
+    assert.strictEqual(response.status, 403);
+  });
+
+  it('forwards preview info status if not a 404', async () => {
     const suffix = '/org/sites/site/preview/document';
 
     nock.content()
-      .getObject('/preview/redirects.json')
-      .reply(404)
       .head('/preview/document.md')
-      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' });
+      .reply(403);
 
-    const result = await main(new Request('https://api.aem.live/'), {
+    const response = await main(new Request('https://api.aem.live/'), {
       pathInfo: { suffix },
       attributes: {
-        authInfo: AuthInfo.Default().withAuthenticated(true),
+        authInfo: AuthInfo.Basic().withAuthenticated(true),
+        redirects: { preview: [] },
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
       },
     });
-    assert.strictEqual(result.status, 200);
-    assert.deepStrictEqual(await result.json(), {
-      preview: {
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/document.md',
-        contentType: 'text/plain; charset=utf-8',
-        lastModified: 'Thu, 08 Jul 2021 09:04:16 GMT',
-        permissions: [
-          'delete',
-          'read',
-          'write',
-        ],
-        sourceLocation: 'google:*',
-        status: 200,
-        url: 'https://main--site--org.aem.page/document',
-      },
-      resourcePath: '/document.md',
-      webPath: '/document',
+    assert.strictEqual(response.status, 502);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'error while fetching: 403',
     });
   });
 });

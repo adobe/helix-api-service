@@ -11,10 +11,6 @@
  */
 import { getEditFolders, getSourceLocationAndDate, remapEditFolderPaths } from '../support/onedrive.js';
 
-function test(mp) {
-  return mp && mp.type === 'onedrive';
-}
-
 /**
  * Does a reverse lookup for a onedrive/sharepoint document.
  *
@@ -44,15 +40,11 @@ function test(mp) {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @param {string} opts.editUrl edit URL
- * @param {string} opts.contentBusId content bus id
- * @param {object} opts.source contentSource
+ * @param {string} editUrl edit URL
  * @returns {Promise<LookupResponse>} lookup response
  */
-async function lookup(context, info, opts) {
-  const { log } = context;
-  const { editUrl, contentBusId, source } = opts;
+async function lookup(context, info, editUrl) {
+  const { log, config: { content: { source } }, contentBusId } = context;
   let uri = new URL(editUrl);
 
   const drive = await context.getOneDriveClient(info.org, info.site, {
@@ -176,6 +168,5 @@ async function lookup(context, info, opts) {
 
 export default {
   name: 'onedrive',
-  test,
   lookup,
 };

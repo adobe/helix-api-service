@@ -79,6 +79,7 @@ describe('Markup Integration Tests', () => {
       pathInfo: { suffix },
       attributes: {
         authInfo,
+        maxAttempts: 1,
       },
       runtime: { region: 'us-east-1' },
       env: {
@@ -391,7 +392,6 @@ describe('Markup Integration Tests', () => {
   it('Handles generic error from Lambda', async () => {
     nock('https://lambda.us-east-1.amazonaws.com')
       .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
-      .times(3)
       .reply(500, {
         Message: 'That request was too large.',
       }, {
@@ -469,7 +469,6 @@ describe('Markup Integration Tests', () => {
   it('Handles error with default function version from Lambda', async () => {
     nock('https://lambda.us-east-1.amazonaws.com')
       .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
-      .times(3)
       .reply(500, {
         Message: 'Function not found: arn:aws:lambda:us-east-1:123456789012:function:helix3--html2md:v2.',
       }, {
@@ -486,7 +485,6 @@ describe('Markup Integration Tests', () => {
   it('Handles error with custom function version from Lambda', async () => {
     nock('https://lambda.us-east-1.amazonaws.com')
       .post('/2015-03-31/functions/helix3--html2md%3Afoo/invocations')
-      .times(3)
       .reply(500, {
         Message: 'Function not found: arn:aws:lambda:us-east-1:123456789012:function:helix3--html2md:foo.',
       }, {

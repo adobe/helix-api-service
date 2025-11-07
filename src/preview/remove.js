@@ -56,9 +56,9 @@ export default async function previewRemove(context, info) {
   const { resourcePath } = info;
 
   if (!authInfo.hasPermissions('preview:delete-forced')) {
-    const res = await assertSourceGone(context, info);
-    if (!res.ok) {
-      return res;
+    const response = await assertSourceGone(context, info);
+    if (!response.ok) {
+      return response;
     }
   }
 

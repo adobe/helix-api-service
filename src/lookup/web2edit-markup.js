@@ -30,9 +30,9 @@ async function lookup(context, info, source) {
     const editUrl = `https://da.live/edit#/${org}/${site}${webPath}${webPath.endsWith('/') ? 'index' : ''}`;
     const sourceLocation = await computeSourceUrl(log, info, source);
     const fetch = context.getFetch();
-    const res = await fetch(sourceLocation);
+    const response = await fetch(sourceLocation);
     return {
-      status: res.status,
+      status: response.status,
       webPath,
       resourcePath,
       editUrl,

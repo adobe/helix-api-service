@@ -363,3 +363,21 @@ export function* cartesian(...arrays) {
     }
   } while (!done);
 }
+
+/**
+ * Returns the name of the queue that contains single messages.
+ *
+ * @returns {string}
+ */
+export function getSingleMessageQueue(region, accountId, component, test) {
+  return `https://sqs.${region}.amazonaws.com/${accountId}/${test ? 'test' : 'helix'}-${component}`;
+}
+
+/**
+ * Returns the name of the queue that contains a collection of messages for one project.
+ *
+ * @returns {string}
+ */
+export function getPackedMessageQueue(region, accountId, component, test) {
+  return `https://sqs.${region}.amazonaws.com/${accountId}/${test ? 'test' : 'helix'}-${component}.fifo`;
+}

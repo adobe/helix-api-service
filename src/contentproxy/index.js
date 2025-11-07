@@ -67,12 +67,12 @@ export async function contentProxy(context, info, opts) {
     }
     const mediaType = MEDIA_TYPES.find((type) => type.extensions.includes(ext));
     if (mediaType) {
-      const resp = await handler.handleFile(context, info, opts);
-      if (resp.status !== 200) {
-        return resp;
+      const response = await handler.handleFile(context, info, opts);
+      if (response.status !== 200) {
+        return response;
       }
       const { preprocess, validate } = mediaType;
-      let buf = await resp.buffer();
+      let buf = await response.buffer();
       if (preprocess) {
         buf = await preprocess(buf, log);
       }
@@ -102,8 +102,8 @@ export async function contentProxy(context, info, opts) {
           }
         }
       }
-      await applyCustomHeaders(context, info, resp);
-      return new Response(buf, resp);
+      await applyCustomHeaders(context, info, response);
+      return new Response(buf, response);
     }
     if (!ext || ext === '.md') {
       return await handler.handle(context, info, opts);

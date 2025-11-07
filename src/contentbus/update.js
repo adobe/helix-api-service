@@ -36,21 +36,21 @@ async function fetchFromSources(context, info) {
     sources.unshift(overlay);
   }
 
-  let res;
+  let response;
 
   for (const source of sources) {
     // eslint-disable-next-line no-await-in-loop
-    res = await contentProxy(context, info, { source });
-    if (res.ok) {
+    response = await contentProxy(context, info, { source });
+    if (response.ok) {
       // succeeded
-      return res;
+      return response;
     }
-    if (res.status !== 404 && res.status !== 403) {
+    if (response.status !== 404 && response.status !== 403) {
       // only check base source if not found.
-      return res;
+      return response;
     }
   }
-  return res;
+  return response;
 }
 
 /**
@@ -78,30 +78,30 @@ export default async function update(context, info) {
       });
     }
 
-    let res = await fetchFromSources(context, info);
-    if (!res.ok) {
-      return res;
+    let response = await fetchFromSources(context, info);
+    if (!response.ok) {
+      return response;
     }
 
-    res = await redirectMedia(context, info, res);
-    if (!res.ok) {
-      return res;
+    response = await redirectMedia(context, info, response);
+    if (!response.ok) {
+      return response;
     }
 
     // preserve redirect location if already set on the content
-    if (!res.headers.has('redirect-location') && !resourcePath.toLowerCase().endsWith('.pdf')) {
+    if (!response.headers.has('redirect-location') && !resourcePath.toLowerCase().endsWith('.pdf')) {
       const metadata = await storage.metadata(key);
       const redirectLocation = metadata?.['redirect-location'];
       if (redirectLocation) {
-        res.headers.set('redirect-location', redirectLocation);
+        response.headers.set('redirect-location', redirectLocation);
       }
     }
-    res.headers.set('x-last-modified-by', context.attributes?.authInfo?.resolveEmail() || 'anonymous');
-    if (!res.headers.has('last-modified')) {
-      res.headers.set('last-modified', new Date().toUTCString());
+    response.headers.set('x-last-modified-by', context.attributes?.authInfo?.resolveEmail() || 'anonymous');
+    if (!response.headers.has('last-modified')) {
+      response.headers.set('last-modified', new Date().toUTCString());
     }
 
-    await storage.store(key, res);
+    await storage.store(key, response);
     await context.ensureInfoMarker(info, storage, source.url);
 
     return new Response('', { status: 200 });

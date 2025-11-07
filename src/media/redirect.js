@@ -9,6 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
 import { storeBlob } from './store.js';
 import { MEDIA_TYPES } from './validate.js';
 
@@ -19,19 +20,19 @@ import { MEDIA_TYPES } from './validate.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {Response} res response
+ * @param {Response} response response
  * @returns {Promise<Response>} response
  */
-export default async function redirectMedia(context, info, res) {
+export default async function redirectMedia(context, info, response) {
   const { ext, webPath } = info;
 
   if (!MEDIA_TYPES.find((type) => type.extensions.includes(ext))?.redirect) {
     // should not redirect
-    return res;
+    return response;
   }
 
-  const buf = await res.buffer();
-  const blob = await storeBlob(context, info, buf, res.headers.get('content-type'));
+  const buf = await response.buffer();
+  const blob = await storeBlob(context, info, buf, response.headers.get('content-type'));
 
   const { uri } = blob;
   const { pathname } = new URL(uri);

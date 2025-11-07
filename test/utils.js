@@ -163,6 +163,23 @@ export function Nock() {
     return scope;
   };
 
+  nocker.indexConfig = (config) => {
+    const scope = nocker.content()
+      .getObject('/preview/.helix/query.yaml');
+
+    if (config) {
+      scope.reply(200, config);
+    } else {
+      const notFound = new xml2js.Builder().buildObject({
+        Error: {
+          Code: 'NoSuchKey',
+          Message: 'The specified key does not exist.',
+        },
+      });
+      scope.reply(404, notFound);
+    }
+  };
+
   nocker.sitemapConfig = (config) => {
     const scope = nocker.content()
       .getObject('/preview/.helix/sitemap.yaml');

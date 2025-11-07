@@ -40,13 +40,13 @@ export default async function status(context, info) {
     return new Response('', {
       status: 404,
       headers: {
-        'x-error': `No index configuration could be loaded for document ${org}/${site}.`,
+        'x-error': `no index configuration could be loaded for document ${org}/${site}${resourcePath}`,
       },
     });
   }
 
   // optization: if resource is not contained in any definition, do not fetch HTML
-  if (webPath.startsWith('./helix/') || !containsPath(index, webPath)) {
+  if (webPath.startsWith('/.helix/') || !containsPath(index, webPath)) {
     const results = index.indices.map((config) => ({
       name: config.name,
       message: 'requested path does not match index configuration',

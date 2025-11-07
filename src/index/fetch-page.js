@@ -61,23 +61,23 @@ export async function fetchPage(context, url, headers = {}) {
     // check 302 redirect (todo: fix browser detection in *.live)
     if (response.status === 302 && !(response.headers.get('location') ?? '').startsWith('/')) {
       // assume login to redirect
-      log.warn(`Detected login redirect for ${url}. assume statusCode: 401`);
+      log.warn(`detected login redirect for ${url}. assume statusCode: 401`);
       return {
         status: 401,
-        error: `Unauthorized to fetch ${url}`,
+        error: `unauthorized to fetch ${url}`,
       };
     }
     const snippet = body.length < 100 ? body : `${body.substr(0, 100)}...`;
-    log.warn(`Fetching ${url} failed: statusCode: ${response.status}, body: '${snippet}'`);
+    log.warn(`fetching ${url} failed: statusCode: ${response.status}, body: '${snippet}'`);
     return {
       status: response.status,
-      error: `Fetching ${url} failed`,
+      error: `fetching ${url} failed`,
     };
   }
   if (isHTML) {
     const s = body.trim();
     if (s.substring(s.length - 7).toLowerCase() !== '</html>') {
-      const error = `Document returned from ${url} seems incomplete (html end tag not found)`;
+      const error = `document returned from ${url} seems incomplete (html end tag not found)`;
       log.warn(error);
       return {
         status: 500,

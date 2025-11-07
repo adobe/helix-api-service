@@ -21,7 +21,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function statusHandler(context, info) {
+export default async function indexHandler(context, info) {
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
       status: 405,

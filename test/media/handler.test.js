@@ -13,9 +13,7 @@
 import assert from 'assert';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-
 import { Request } from '@adobe/fetch';
-
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';

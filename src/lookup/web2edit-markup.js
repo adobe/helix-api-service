@@ -12,10 +12,6 @@
 
 import { computeSourceUrl } from '../contentproxy/utils.js';
 
-function test(contentSource) {
-  return contentSource?.type === 'markup';
-}
-
 /**
  * Performs a lookup from the web resource to the source document.
  *
@@ -54,5 +50,4 @@ async function lookup(context, info, { source }) {
 export default {
   name: 'markup',
   lookup,
-  test,
 };

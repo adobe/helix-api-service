@@ -17,8 +17,9 @@ import { Request, Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
 import { main } from '../../src/index.js';
+import purge from '../../src/cache/purge.js';
+import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
-import { REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 
 describe('Preview Action Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -30,10 +31,23 @@ describe('Preview Action Tests', () => {
   /** @type {import('../../src/contentproxy/contentproxy').ContentSourceHandler} */
   let handler;
 
+  /** @type {string[]} */
+  let surrogates;
+
+  /** @type {import('../../src/cache/purge.js').PurgeInfo[]} */
+  let purgeInfos;
+
   beforeEach(() => {
     nock = new Nock().env();
     sandbox = sinon.createSandbox();
-    handler = HANDLERS.find((h) => h.name === SITE_CONFIG.content.source.type);
+    handler = HANDLERS[SITE_CONFIG.content.source.type];
+
+    sandbox.stub(purge, 'perform').callsFake((context, info, infos) => {
+      purgeInfos = infos;
+    });
+    sandbox.stub(purge, 'surrogate').callsFake((context, info, keys) => {
+      surrogates = keys;
+    });
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
@@ -44,10 +58,11 @@ describe('Preview Action Tests', () => {
     nock.done();
   });
 
-  function setupTest(path = '/') {
+  function setupTest(path = '/', { data, redirects } = {}) {
     const suffix = `/org/sites/site/preview${path}`;
+    const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://localhost${suffix}?${query}`, {
       method: 'POST',
       headers: {
         'x-request-id': 'rid',
@@ -59,11 +74,12 @@ describe('Preview Action Tests', () => {
         authInfo: AuthInfo.Default().withAuthenticated(true),
         googleApiOpts: { retry: false },
         infoMarkerChecked: true,
-        redirects: { preview: [] },
+        redirects: { preview: redirects ?? [] },
       },
       runtime: { region: 'us-east-1' },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
+        HLX_FASTLY_PURGE_TOKEN: 'token',
         HELIX_STORAGE_DISABLE_R2: 'true',
       },
     };
@@ -86,11 +102,80 @@ describe('Preview Action Tests', () => {
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(purgeInfos, [
+      { path: '/' },
+      { path: '/index.plain.html' },
+      { key: 'p_DiyvKbkf2MaZORJJ' },
+      { key: '8lnjgOWBwsoqAQXB' },
+    ]);
+  });
+
+  it('reports an error when `contentBusUpdate` returns 404 and no redirect matches', async () => {
+    sandbox.stub(handler, 'handle')
+      .returns(new Response('', { status: 404 }));
+
+    nock.content()
+      .head('/preview/index.md')
+      .reply(404)
+      .putObject('/preview/index.md')
+      .reply(201)
+      .head('/preview/index.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest('/');
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 404);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+    });
+  });
+
+  it('tweaks status when `contentBusUpdate` returns 404 and a redirect matches', async () => {
+    sandbox.stub(handler, 'handle')
+      .returns(new Response('', { status: 404 }));
+
+    nock.content()
+      .head('/preview/index.md')
+      .reply(404)
+      .putObject('/preview/index.md')
+      .reply(201, function fn(uri, body) {
+        assert.strictEqual(this.req.headers['x-amz-meta-redirect-location'], '/target');
+        assert.strictEqual(body, '/target');
+      })
+      .head('/preview/index.md')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest('/', {
+      redirects: {
+        '/index.md': '/target',
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), {
+      preview: {
+        configRedirectLocation: '/target',
+        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
+        contentType: 'text/plain; charset=utf-8',
+        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        permissions: [
+          'delete', 'read', 'write',
+        ],
+        sourceLocation: 'google:*',
+        status: 200,
+        url: 'https://main--site--org.aem.page/',
+      },
+      resourcePath: '/index.md',
+      webPath: '/',
+    });
   });
 
   it('preview redirects', async () => {
     sandbox.stub(handler, 'handleJSON')
-      .returns(new Response(200, {
+      .returns(new Response({
         default: {
           data: {
             source: '/from',
@@ -113,6 +198,65 @@ describe('Preview Action Tests', () => {
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
+  });
+
+  it('preview redirects with forced update', async () => {
+    sandbox.stub(handler, 'handleJSON')
+      .returns(new Response(200, {
+        default: {
+          data: {
+            source: '/from',
+            destination: '/to',
+          },
+        },
+      }));
+
+    nock.content()
+      .head('/preview/redirects.json')
+      .reply(404)
+      .getObject('/preview/redirects.json')
+      .reply(404)
+      .putObject('/preview/redirects.json')
+      .reply(201)
+      .head('/preview/redirects.json')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest(REDIRECTS_JSON_PATH, {
+      data: {
+        forceUpdateRedirects: true,
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('preview metadata', async () => {
+    sandbox.stub(handler, 'handleJSON')
+      .returns(new Response({
+        default: {
+          data: {
+            URL: '/**',
+            Template: '/docs',
+          },
+        },
+      }));
+
+    nock.content()
+      .head('/preview/metadata.json')
+      .reply(404)
+      .getObject('/preview/metadata.json')
+      .reply(404)
+      .putObject('/preview/metadata.json')
+      .reply(201)
+      .head('/preview/metadata.json')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest(METADATA_JSON_PATH);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(surrogates, ['U_NW4adJU7Qazf-I']);
   });
 
   it('reports an error when `contentBusUpdate` returns 500', async () => {

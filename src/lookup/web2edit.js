@@ -13,11 +13,11 @@ import google from './web2edit-google.js';
 import onedrive from './web2edit-onedrive.js';
 import markup from './web2edit-markup.js';
 
-const HANDLERS = [
+const HANDLERS = {
   google,
   onedrive,
   markup,
-];
+};
 
 /**
  * Performs a lookup from the web resource to the source document (e.g. word document).
@@ -34,7 +34,7 @@ export async function lookup(context, info, { contentBusId, source }) {
   const { org, site, webPath } = info;
 
   const uri = `hlx:/${org}/${site}${webPath}`;
-  const handler = HANDLERS.find(({ test }) => test && test(source));
+  const handler = HANDLERS[source.type];
   if (!handler) {
     return {
       status: 404,

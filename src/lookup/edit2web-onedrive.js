@@ -11,10 +11,6 @@
  */
 import { getEditFolders, getSourceLocationAndDate, remapEditFolderPaths } from '../support/onedrive.js';
 
-function test(mp) {
-  return mp && mp.type === 'onedrive';
-}
-
 /**
  * Does a reverse lookup for a onedrive/sharepoint document.
  *
@@ -176,6 +172,5 @@ async function lookup(context, info, opts) {
 
 export default {
   name: 'onedrive',
-  test,
   lookup,
 };

@@ -214,12 +214,12 @@ describe('Markup File Tests', () => {
   it('Handles timeout from mountpoint url', async () => {
     nock(mountpointUrl)
       .get('/foo/bar.pdf')
-      .delay(500)
+      .delay(10)
       .reply(200);
 
     const { request, context } = setupTest('/bar.pdf', {
       data: {
-        fetchTimeout: 100,
+        fetchTimeout: 1,
       },
     });
     const response = await main(request, context);

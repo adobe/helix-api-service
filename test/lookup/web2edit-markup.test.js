@@ -58,7 +58,6 @@ describe('web2edit Markup Tests', () => {
       status: 200,
       webPath: '/page',
     });
-    assert.strictEqual(handler.test(source), true);
   });
 
   it('succeeds to lookup page ending with a `/`', async () => {

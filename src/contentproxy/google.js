@@ -70,16 +70,11 @@ async function handle(context, info, opts) {
   });
 }
 
-function test(source) {
-  return source?.type === 'google';
-}
-
 /**
  * @type {import('./contentproxy.js').ContentSourceHandler}
  */
 export default {
   name: 'google',
-  test,
   handle,
   handleJSON,
   handleFile,

@@ -9,9 +9,6 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-function test(source) {
-  return source.type === 'google';
-}
 
 /**
  * Google URL decomposer.
@@ -128,6 +125,5 @@ async function lookup(context, info, opts) {
 
 export default {
   name: 'google',
-  test,
   lookup,
 };

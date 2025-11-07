@@ -13,10 +13,6 @@ import { GoogleClient } from '@adobe/helix-google-support';
 import { resolveResource } from '../support/google.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
-function test(contentSource) {
-  return contentSource?.type === 'google';
-}
-
 const TYPES = {
   '.md': GoogleClient.TYPE_DOCUMENT,
   '.json': GoogleClient.TYPE_SPREADSHEET,
@@ -60,5 +56,4 @@ async function lookup(context, info, { contentBusId, source }) {
 export default {
   name: 'google',
   lookup,
-  test,
 };

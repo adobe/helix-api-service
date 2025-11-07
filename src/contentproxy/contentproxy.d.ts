@@ -54,7 +54,6 @@ declare type FetchList = (context: AdminContext, info: RequestInfo, paths: Array
 
 declare interface ContentSourceHandler {
   name: string;
-  test: Predicate;
   handle: FetchContent,
   handleJSON: FetchContent,
   handleFile: FetchContent,

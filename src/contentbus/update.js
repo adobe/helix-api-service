@@ -27,7 +27,7 @@ const MAX_KEY_LENGTH = 1024;
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-async function loadContent(context, info) {
+async function fetchFromSources(context, info) {
   const { config } = context;
   const { content: { source: base, overlay } } = config;
 
@@ -78,7 +78,7 @@ export default async function update(context, info) {
       });
     }
 
-    let res = await loadContent(context, info);
+    let res = await fetchFromSources(context, info);
     if (!res.ok) {
       return res;
     }

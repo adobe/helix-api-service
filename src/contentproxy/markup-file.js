@@ -27,9 +27,9 @@ const FETCH_TIMEOUT = 5_000;
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @param {string} opts.lastModified last modified
- * @param {number} opts.fetchTimeout fetch timeout
+ * @param {object} [opts] options
+ * @param {string} [opts.lastModified] last modified
+ * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
 export async function handleFile(context, info, opts) {

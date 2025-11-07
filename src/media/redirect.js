@@ -14,7 +14,7 @@ import { MEDIA_TYPES } from './validate.js';
 
 /**
  * Runs after the content proxy response is fetched but before it is stored to S3.
- * Based on the extension, stores the media in the media bus and returts a redirect
+ * Based on the extension, stores the media in the media bus and returns a redirect
  * that will be stored in the content bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context

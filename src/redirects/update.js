@@ -160,7 +160,8 @@ export async function updateRedirects(context, partition, oldRedirects, newRedir
 
 /**
  * Updates the redirect addressed in `info.webPath` in the content bus.
- * If successful, the redirect location is returned, otherwise the result undefined.
+ *
+ * If successful, the redirect location is returned, otherwise the result is undefined.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info

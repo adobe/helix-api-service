@@ -11,10 +11,6 @@
  */
 import { getEditFolders, remapEditFolderPaths, resolveResource } from '../support/onedrive.js';
 
-function test(contentSource) {
-  return contentSource?.type === 'onedrive';
-}
-
 /**
  * Performs a lookup from the web resource to the source document.
  *
@@ -87,5 +83,4 @@ async function lookup(context, info, { contentBusId, source }) {
 export default {
   name: 'onedrive',
   lookup,
-  test,
 };

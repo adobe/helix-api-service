@@ -21,9 +21,9 @@ import { computeSourceUrl, getContentSourceHeaders, updateMarkupSourceInfo } fro
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @param {string} opts.lastModified last modified
- * @param {number} opts.fetchTimeout fetch timeout
+ * @param {object} [opts] options
+ * @param {string} [opts.lastModified] last modified
+ * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
 async function handle(context, info, opts) {
@@ -63,16 +63,11 @@ async function handle(context, info, opts) {
   return res;
 }
 
-function test(source) {
-  return source?.type === 'markup';
-}
-
 /**
  * @type {import('./contentproxy.js').ContentSourceHandler}
  */
 export default {
   name: 'markup',
-  test,
   handle,
   handleJSON,
   handleFile,

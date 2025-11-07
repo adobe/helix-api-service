@@ -41,7 +41,7 @@ export default async function edit2web(context, info, editUrl) {
     };
   }
 
-  const handler = Object.values(HANDLERS).find(({ test }) => test(source));
+  const handler = HANDLERS[source.type];
   if (!handler) {
     return {
       status: 404,

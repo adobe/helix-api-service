@@ -359,6 +359,8 @@ export class AdminContext {
    *
    * TODO: move to @adobe/helix-admin-support
    *
+   * TODO: move to @adobe/helix-admin-support
+   *
    * @param {import('../support/RequestInfo').RequestInfo} info request info
    * @returns {Promise<SitemapConfig>} the sitemap configuration
    */

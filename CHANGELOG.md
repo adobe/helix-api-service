@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/adobe/helix-api-service/compare/v1.11.1...v1.12.0) (2025-11-07)
+
+
+### Features
+
+* implement `preview` route ([#25](https://github.com/adobe/helix-api-service/issues/25)) ([1f9592c](https://github.com/adobe/helix-api-service/commit/1f9592cb6f55289cf85b1691bc6810b1600cf170))
+
 ## [1.11.1](https://github.com/adobe/helix-api-service/compare/v1.11.0...v1.11.1) (2025-11-06)
 
 

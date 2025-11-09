@@ -88,6 +88,9 @@ async function decodeTokens(context, idp, tokens) {
 
     // ims only
     if (!payload.user_id && decoded.sub?.indexOf('@') > 0) {
+      if (decoded.given_name && decoded.family_name) {
+        payload.name = `${decoded.given_name} ${decoded.family_name}`;
+      }
       payload.user_id = decoded.sub;
       payload.imsToken = accessToken;
       const decodedAccessToken = await decodeImsToken(context, idp, accessToken);
@@ -197,11 +200,13 @@ async function createAEMCLILoginInfoResponse(context, info, {
   redirectUri = redirectUri || clientInfo.defaultRedirectUri;
 
   let siteTokenInfo = null;
-  if (!payload.email) {
+
+  const email = payload.email || payload.user_id || payload.preferred_username;
+  if (!email) {
     log.warn(`${clientId}: Decoded id token from ${iss} does not contain email: ${JSON.stringify(payload, 0, 2)}`);
     return new Response('', { status: 401 });
   } else {
-    siteTokenInfo = await getTransientSiteTokenInfo(context, info, payload.email);
+    siteTokenInfo = await getTransientSiteTokenInfo(context, info, email);
   }
 
   return sendAEMCLILoginInfoResponse(

@@ -231,7 +231,8 @@ export function logStack(log, e) {
 /**
  * Checks if the given properties are truthy in the given object.
  * Throws error including the message if not.
- * @param {object} obj
+ *
+ * @param {object} obj object
  * @param {string} msg Error message
  * @param {string[]} names
  */
@@ -241,6 +242,23 @@ export function assertRequiredProperties(obj, msg, ...names) {
       throw new Error(`${msg}: "${name}" is required`);
     }
   }
+}
+
+/**
+ * Gets the deep property of obj denoted by path.
+ * @param {object} obj object
+ * @param {string} path path
+ * @returns {object}
+ */
+export function getOrCreateObject(obj, path) {
+  let o = obj;
+  for (const seg of path.split('.')) {
+    if (!o[seg]) {
+      o[seg] = {};
+    }
+    o = o[seg];
+  }
+  return o;
 }
 
 /**

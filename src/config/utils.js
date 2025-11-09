@@ -11,6 +11,7 @@
  */
 import { AbortError } from '@adobe/fetch';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import { getOrCreateObject } from '../support/utils.js';
 
 /**
  * Load configuration from the config service.
@@ -51,14 +52,39 @@ async function loadConfig(context, url, type) {
   }
 }
 
+/**
+ * Add the IDs of the site or org apiKeys from the config to the ones in config all
+ */
+function addConfigApiKeys(config) {
+  const apiKeys = Object.values(config.apiKeys || {});
+  if (apiKeys.length) {
+    const access = getOrCreateObject(config, 'access.admin');
+    for (const { id } of apiKeys) {
+      if (!access.apiKeyId) {
+        access.apiKeyId = [id];
+      } else {
+        access.apiKeyId.push(id);
+      }
+    }
+  }
+}
+
 export async function loadSiteConfig(context, org, site) {
   const url = `https://config.aem.page/main--${site}--${org}/config.json?scope=admin`;
-  return loadConfig(context, url, 'site');
+  const siteConfig = await loadConfig(context, url, 'site');
+  if (siteConfig) {
+    addConfigApiKeys(siteConfig);
+  }
+  return siteConfig;
 }
 
 export async function loadOrgConfig(context, org) {
   const url = `https://config.aem.page/${org}/config.json?scope=admin`;
-  return loadConfig(context, url, 'org');
+  const orgConfig = loadConfig(context, url, 'org');
+  if (orgConfig) {
+    addConfigApiKeys(orgConfig);
+  }
+  return orgConfig;
 }
 
 /**

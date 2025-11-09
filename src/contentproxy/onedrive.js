@@ -14,7 +14,7 @@ import { handleFile } from './onedrive-file.js';
 import { list } from './onedrive-list.js';
 import { resolveResource } from '../support/onedrive.js';
 import fetchContent from './fetch-content.js';
-import { errorResponse } from '../support/utils.js';
+import { errorResponse, toSISize } from '../support/utils.js';
 import { error } from './errors.js';
 
 /**
@@ -59,8 +59,9 @@ async function handle(context, info, opts) {
   }
   if (size > 100 * 1024 * 1024) {
     return errorResponse(log, 409, error(
-      'Documents larger than 100mb not supported: $1',
-      resourcePath,
+      'Unable to preview \'$1\': Documents larger than 100mb not supported: $2',
+      info.webPath,
+      toSISize(size, 0),
     ));
   }
   const client = await context.getOneDriveClient(org, site, {

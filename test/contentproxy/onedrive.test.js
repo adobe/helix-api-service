@@ -171,13 +171,14 @@ describe('OneDrive Integration Tests (docx)', () => {
       .user()
       .login()
       .resolve('')
-      .getDocument('/test.docx', { size: 100 * 1024 * 1024 + 1 });
+      .getDocument('/test.docx', { size: 101 * 1024 * 1024 + 1 });
 
     const { request, context } = setupTest('/test');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 409);
-    assert.strictEqual(response.headers.get('x-error'), 'Documents larger than 100mb not supported: /test.md');
+    assert.strictEqual(response.headers.get('x-error'), 'Unable to preview \'/test\': Documents larger than 100mb not supported: 101MB');
+    assert.strictEqual(response.headers.get('x-error-code'), 'AEM_BACKEND_FILE_TOO_BIG');
   });
 
   it('Retrieves Document from Word with selected version', async () => {

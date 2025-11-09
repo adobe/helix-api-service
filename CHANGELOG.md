@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/adobe/helix-api-service/compare/v1.12.0...v1.13.0) (2025-11-09)
+
+
+### Features
+
+* implement `index` route ([#26](https://github.com/adobe/helix-api-service/issues/26)) ([95f8cde](https://github.com/adobe/helix-api-service/commit/95f8cde9f154008e9792df0d6ff010bc216786cf))
+
 # [1.12.0](https://github.com/adobe/helix-api-service/compare/v1.11.1...v1.12.0) (2025-11-07)
 
 

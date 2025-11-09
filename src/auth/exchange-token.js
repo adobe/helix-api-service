@@ -43,15 +43,15 @@ async function fetchTokens(context, info, idp, tenantId) {
     redirect_uri: info.getLinkUrl(idp.routes.loginRedirect),
   };
   log.info('exchanging token with %s via %s', idp.name, url.href);
-  const res = await fetch(url.href, {
+  const response = await fetch(url.href, {
     method: 'POST',
     body: encode(body),
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
     },
   });
-  if (!res.ok) {
-    log.warn(`code exchange failed: ${res.status}`, await res.text());
+  if (!response.ok) {
+    log.warn(`code exchange failed: ${response.status}`, await response.text());
     return {
       error: new Response('', {
         status: 401,
@@ -59,7 +59,7 @@ async function fetchTokens(context, info, idp, tenantId) {
     };
   }
 
-  const tokenResponse = await res.json();
+  const tokenResponse = await response.json();
   const { id_token: idToken, access_token: accessToken } = tokenResponse;
 
   return { idToken, accessToken };

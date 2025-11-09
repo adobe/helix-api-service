@@ -527,7 +527,7 @@ const purge = {
       const id = context.nextRequestId();
       const url = `https://api.fastly.com/service/${svc}/purge`;
       log.info(`${suffix} [${id}] [fastly] ${SERVICE_NAMES[svc]} purging keys: '${body.surrogate_keys}'`);
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         method: 'POST',
         body,
         headers: {
@@ -536,15 +536,15 @@ const purge = {
           'fastly-key': fastlyKey,
         },
       });
-      const msg = await res.text();
-      if (res.ok) {
-        log.info(`${suffix} [${id}] [fastly] response: ${res.status}: ${msg}`);
+      const msg = await response.text();
+      if (response.ok) {
+        log.info(`${suffix} [${id}] [fastly] response: ${response.status}: ${msg}`);
       } else {
-        const level = logLevelForStatusCode(res.status);
+        const level = logLevelForStatusCode(response.status);
         /* c8 ignore next */
-        log[level](`${suffix} [${id}] [fastly] response: ${res.status}: ${msg}`);
+        log[level](`${suffix} [${id}] [fastly] response: ${response.status}: ${msg}`);
       }
-      return res.status;
+      return response.status;
     }, 32);
 
     if (result.some((status) => status >= 300)) {
@@ -579,23 +579,23 @@ const purge = {
       const url = `https://api.fastly.com/purge/${host}${path}`;
       /* c8 ignore next */
       log.info(`${suffix} [${id}] [fastly] ${host} purging url '${path}'`);
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           accept: 'application/json',
           'fastly-key': fastlyKey,
         },
       });
-      const msg = await res.text();
-      if (res.ok) {
+      const msg = await response.text();
+      if (response.ok) {
         /* c8 ignore next */
-        log.info(`${suffix} [${id}] [fastly] response: ${res.status}: ${msg}`);
+        log.info(`${suffix} [${id}] [fastly] response: ${response.status}: ${msg}`);
       } else {
-        const level = logLevelForStatusCode(res.status);
+        const level = logLevelForStatusCode(response.status);
         /* c8 ignore next */
-        log[level](`${suffix} [${id}] [fastly] response: ${res.status}: ${msg}`);
+        log[level](`${suffix} [${id}] [fastly] response: ${response.status}: ${msg}`);
       }
-      return res.status;
+      return response.status;
     }, 32);
 
     if (result.some((status) => status >= 300)) {
@@ -977,21 +977,21 @@ const purge = {
       const id = context.nextRequestId();
       const url = `https://api.fastly.com/purge/${host}${path}`;
       log.info(`[${id}] [fastly] sending url purge to ${url}`);
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           accept: 'application/json',
           'fastly-key': fastlyKey,
         },
       });
-      const msg = await res.text();
-      if (res.ok) {
-        log.info(`[${id}] [fastly] response: ${res.status}: ${msg}`);
+      const msg = await response.text();
+      if (response.ok) {
+        log.info(`[${id}] [fastly] response: ${response.status}: ${msg}`);
       } else {
-        const level = logLevelForStatusCode(res.status);
-        log[level](`[${id}] [fastly] response: ${res.status}: ${msg}`);
+        const level = logLevelForStatusCode(response.status);
+        log[level](`[${id}] [fastly] response: ${response.status}: ${msg}`);
       }
-      return res.status;
+      return response.status;
     }, 32);
 
     if (result.some((status) => status >= 300)) {

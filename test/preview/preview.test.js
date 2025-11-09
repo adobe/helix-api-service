@@ -12,6 +12,8 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { readFile } from 'fs/promises';
+import { resolve } from 'path';
 import sinon from 'sinon';
 import { Request, Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
@@ -202,7 +204,7 @@ describe('Preview Action Tests', () => {
 
   it('preview redirects with forced update', async () => {
     sandbox.stub(contentproxy, 'handleJSON')
-      .returns(new Response(200, {
+      .returns(new Response({
         default: {
           data: {
             source: '/from',
@@ -283,5 +285,40 @@ describe('Preview Action Tests', () => {
       'x-error': "Unable to fetch '/redirects.json' from 'google': ",
       'x-error-code': 'AEM_BACKEND_FETCH_FAILED',
     });
+  });
+
+  it('preview media', async () => {
+    const png = await readFile(resolve(__testdir, 'contentproxy/fixtures/image.png'));
+    const hash = '14194ad0b7e2f6d345e3e8070ea9976b588a7d3bc';
+
+    sandbox.stub(contentproxy, 'handleFile')
+      .returns(new Response(png, {
+        headers: {
+          'content-type': 'image/png',
+        },
+      }));
+
+    nock.media()
+      .putObject(`/${hash}`)
+      .reply(201);
+    nock.content()
+      .head('/preview/image.png')
+      .reply(404)
+      .putObject('/preview/image.png')
+      .reply(201, function fn() {
+        assert.strictEqual(this.req.headers['x-amz-meta-redirect-location'], `/media_${hash}.png`);
+      })
+      .head('/preview/image.png')
+      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+    const { request, context } = setupTest('/image.png');
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(purgeInfos, [
+      { path: '/image.png' },
+      { key: 'p_K79E0Vf7_vRXHAKZ' },
+      { key: 'dEpW7v-nLTvPjOcy' },
+    ]);
   });
 });

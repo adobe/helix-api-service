@@ -9,34 +9,17 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response } from '@adobe/fetch';
-import purge, { PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
-import { rebuildSitemap } from './update.js';
+import { indexPage } from './index-page.js';
 
 /**
- * Allowed methods for that handler.
- */
-const ALLOWED_METHODS = ['POST'];
-
-/**
- * Handles the sitemap route
+ * Returns the index records for a resource.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('@adobe/helix-shared-indexer').IndexConfig} index index config
  * @returns {Promise<Response>} response
  */
-export default async function sitemapHandler(context, info) {
-  if (ALLOWED_METHODS.indexOf(info.method) < 0) {
-    return new Response('method not allowed', {
-      status: 405,
-    });
-  }
-
-  const response = await rebuildSitemap(context, info, { updatePreview: true });
-  if (response.status === 200) {
-    const result = await response.json();
-    await purge.content(context, info, result.paths, PURGE_PREVIEW_AND_LIVE);
-    return new Response(result, { status: 200 });
-  }
+export default async function status(context, info, index) {
+  const response = await indexPage(context, info, index);
   return response;
 }

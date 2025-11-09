@@ -11,7 +11,7 @@
  */
 import { keepAliveNoCache, timeoutSignal } from '@adobe/fetch';
 import { fetchS3 } from '@adobe/helix-admin-support';
-import { SitemapConfig } from '@adobe/helix-shared-config';
+import { IndexConfig, SitemapConfig } from '@adobe/helix-shared-config';
 import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { GoogleClient } from '@adobe/helix-google-support';
@@ -158,7 +158,7 @@ export class AdminContext {
    * @param {string} partition partition
    * @returns {Promise<object>} the access configuration for this partition
    */
-  async getSiteAccessConfig(partition) {
+  getSiteAccessConfig(partition) {
     const { attributes } = this;
     const { config } = attributes;
 
@@ -326,8 +326,38 @@ export class AdminContext {
   }
 
   /**
-   * Retrieves the sitemap from the underlying storage and stores it in the
-   * context as `sitemapConfig`.
+   * Retrieves the index configuration from the underlying storage and stores
+   * it in the context as `indexConfig`.
+   *
+   * TODO: move to @adobe/helix-admin-support
+   *
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @returns {Promise<IndexConfig>} the sitemap configuration
+   */
+  async fetchIndex(info) {
+    const { attributes, contentBusId } = this;
+    const { org, site } = info;
+
+    if (attributes.indexConfig === undefined) {
+      const key = `${contentBusId}/preview/.helix/query.yaml`;
+      const response = await fetchS3(this, 'content', key);
+      if (response.ok) {
+        const text = await response.text();
+        attributes.indexConfig = await new IndexConfig().withSource(text).init();
+      } else if (response.status === 404) {
+        attributes.indexConfig = null;
+      } else {
+        throw new StatusCodeError(`unable to load index configuration for ${org}/${site}`, response.status);
+      }
+    }
+    return attributes.indexConfig;
+  }
+
+  /**
+   * Retrieves the sitemap configuration from the underlying storage and stores
+   * it in the context as `sitemapConfig`.
+   *
+   * TODO: move to @adobe/helix-admin-support
    *
    * TODO: move to @adobe/helix-admin-support
    *

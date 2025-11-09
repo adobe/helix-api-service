@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import assert from 'assert';
+import crypto from 'crypto';
 import nock from 'nock';
 import xml2js from 'xml2js';
 
@@ -163,6 +164,23 @@ export function Nock() {
     return scope;
   };
 
+  nocker.indexConfig = (config) => {
+    const scope = nocker.content()
+      .getObject('/preview/.helix/query.yaml');
+
+    if (config) {
+      scope.reply(200, config);
+    } else {
+      const notFound = new xml2js.Builder().buildObject({
+        Error: {
+          Code: 'NoSuchKey',
+          Message: 'The specified key does not exist.',
+        },
+      });
+      scope.reply(404, notFound);
+    }
+  };
+
   nocker.sitemapConfig = (config) => {
     const scope = nocker.content()
       .getObject('/preview/.helix/sitemap.yaml');
@@ -190,6 +208,29 @@ export function Nock() {
 
   nocker.google = (content) => new GoogleNock(nocker, content);
   nocker.onedrive = (content) => new OneDriveNock(nocker, content);
+
+  nocker.sqs = (queue, entries) => nock('https://sqs.us-east-1.amazonaws.com')
+    .post('/', (body) => {
+      const { QueueUrl = '' } = body;
+      return QueueUrl.split('/').at(-1) === queue;
+    })
+    .reply((_, body) => {
+      const { Entries } = JSON.parse(body);
+      if (entries) {
+        entries.push(...Entries.map(({ MessageAttributes, MessageBody }) => {
+          const messageBody = JSON.parse(MessageBody);
+          delete messageBody.timestamp;
+          return {
+            MessageAttributes,
+            MessageBody: messageBody,
+          };
+        }));
+      }
+      return [200, JSON.stringify({
+        MessageId: '374cec7b-d0c8-4a2e-ad0b-67be763cf97e',
+        MD5OfMessageBody: crypto.createHash('md5').update(body, 'utf-8').digest().toString('hex'),
+      })];
+    });
 
   nock.disableNetConnect();
   return nocker;

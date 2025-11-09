@@ -73,16 +73,16 @@ export async function updateRedirects(context, partition, oldRedirects, newRedir
       const path = `/${contentBusId}/${partition}${name}`;
       try {
         // read existing resource
-        const res = await storage.head(path);
-        if (!res && !value) {
+        const response = await storage.head(path);
+        if (!response && !value) {
           // if resource does not exist, and redirect was deleted, do nothing
           stats.ignored += 1;
           return;
         }
 
-        if (res) {
+        if (response) {
           /* c8 ignore next */
-          const meta = res?.Metadata ?? {};
+          const meta = response?.Metadata ?? {};
 
           // if no content resource and redirect was deleted, schedule for deletion
           if (!value && !meta['x-source-location']) {
@@ -120,8 +120,8 @@ export async function updateRedirects(context, partition, oldRedirects, newRedir
           }
           const opts = {};
           for (const key of Object.values(HelixStorage.AWS_S3_SYSTEM_HEADERS)) {
-            if (res[key]) {
-              opts[key] = res[key];
+            if (response[key]) {
+              opts[key] = response[key];
             }
           }
           stats.updated += 1;

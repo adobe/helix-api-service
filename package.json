@@ -57,6 +57,7 @@
     "@adobe/helix-onedrive-support": "12.1.1",
     "@adobe/helix-shared-body-data": "2.2.1",
     "@adobe/helix-shared-config": "11.1.12",
+    "@adobe/helix-shared-indexer": "2.2.5",
     "@adobe/helix-shared-process-queue": "3.1.3",
     "@adobe/helix-shared-secrets": "2.3.0",
     "@adobe/helix-shared-storage": "1.8.0",

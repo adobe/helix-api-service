@@ -39,17 +39,17 @@ export async function fetchMedia(context, url) {
   };
 
   try {
-    const res = await fetch(url, opts);
-    const buffer = await res.buffer();
+    const response = await fetch(url, opts);
+    const buffer = await response.buffer();
 
     log.debug(`Fetched media at: ${url}`, {
-      statusCode: res.status,
-      headers: res.headers.plain(),
+      statusCode: response.status,
+      headers: response.headers.plain(),
     });
-    if (!res.ok) {
-      return { error: `Failed to fetch media at: ${url}: ${res.status}` };
+    if (!response.ok) {
+      return { error: `Failed to fetch media at: ${url}: ${response.status}` };
     }
-    return { buffer, contentType: res.headers.get('content-type') };
+    return { buffer, contentType: response.headers.get('content-type') };
   } catch (e) {
     return { error: `Failed to fetch media at: ${url}: ${e.message}` };
     /* c8 ignore next 3 */

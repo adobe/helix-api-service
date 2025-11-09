@@ -46,7 +46,7 @@ async function handle(context, info, opts) {
     providerParams.limits.maxImageSize = config.limits.preview.maxImageSize;
   }
 
-  const res = await fetchContent(context, info, {
+  const response = await fetchContent(context, info, {
     ...opts,
     usePost: true,
     provider: {
@@ -60,9 +60,9 @@ async function handle(context, info, opts) {
     providerHeaders,
   });
 
-  updateMarkupSourceInfo(info.sourceInfo, res);
+  updateMarkupSourceInfo(info.sourceInfo, response);
 
-  return res;
+  return response;
 }
 
 /**

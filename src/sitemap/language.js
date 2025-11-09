@@ -157,12 +157,12 @@ export default class SitemapLanguage {
     const { pathname: key, searchParams } = url;
     const sheet = searchParams.get('sheet');
 
-    const res = await fetchS3(context, 'content', key);
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new StatusCodeError(`Fetching index contents from ${key} failed: ${msg}`, res.status);
+    const response = await fetchS3(context, 'content', key);
+    if (!response.ok) {
+      const msg = await response.text();
+      throw new StatusCodeError(`Fetching index contents from ${key} failed: ${msg}`, response.status);
     }
-    const json = await res.json();
+    const json = await response.json();
     const extractSitemapData = () => {
       if (sheet) {
         if (json[sheet] === undefined) {

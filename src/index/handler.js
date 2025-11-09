@@ -10,7 +10,10 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import remove from './remove.js';
 import status from './status.js';
+import update from './update.js';
+import { fetchExtendedIndex } from './utils.js';
 
 const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
@@ -22,14 +25,35 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function indexHandler(context, info) {
+  const { log } = context;
+  const { org, site, webPath } = info;
+
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
       status: 405,
     });
   }
 
-  if (info.method === 'GET') {
-    return status(context, info);
+  let index;
+  try {
+    index = await fetchExtendedIndex(context, info);
+  } catch (e) {
+    log.warn(`Unable to fetch index: ${e.message}`);
   }
-  return new Response('NYI', { status: 405 });
+  if (!index) {
+    return new Response('', {
+      status: 404,
+      headers: {
+        'x-error': `no index configuration could be loaded for document ${org}/${site}${webPath}`,
+      },
+    });
+  }
+
+  if (info.method === 'GET') {
+    return status(context, info, index);
+  }
+  if (info.method === 'POST') {
+    return update(context, info, index);
+  }
+  return remove(context, info, index);
 }

@@ -9,8 +9,12 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { BatchedQueueClient } from '@adobe/helix-admin-support';
 import { IndexConfig } from '@adobe/helix-shared-config';
 import { contains } from '@adobe/helix-shared-indexer';
+import processQueue from '@adobe/helix-shared-process-queue';
+import { HelixStorage } from '@adobe/helix-shared-storage';
+import { getDefaultSheetData } from '../contentproxy/utils.js';
 import { hasSimpleSitemap } from '../sitemap/utils.js';
 import { getPackedMessageQueue, getSingleMessageQueue } from '../support/utils.js';
 
@@ -193,4 +197,97 @@ export function getTasksQueue(region, accountId, test) {
  */
 export function getIndexType(config, backendType) {
   return config.target?.startsWith('s3://') ? 'markup' : backendType;
+}
+
+/**
+ * Sends the index results to our SQS queue.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {object[]} results index results
+ * @param {object} properties additional properties to add to every message
+ *
+ * @returns {Promise<void>}
+ */
+export async function sendToQueue(context, info, results, properties) {
+  const { log, runtime: { region, accountId } } = context;
+  const { org, site, webPath } = info;
+
+  const queueClient = new BatchedQueueClient({
+    log,
+    outQueue: getUpdatesQueue(region, accountId, !!process.env.HLX_DEV_SERVER_HOST),
+    swapBucket: context.attributes.bucketMap.content,
+  });
+  const messages = [];
+
+  try {
+    for (const { name, type, result } of results) {
+      const { record, noIndex, message } = result;
+      if (noIndex) {
+        messages.push(BatchedQueueClient.createMessage(org, site, {
+          index: name,
+          deleted: true,
+          record: {
+            path: webPath,
+          },
+          timestamp: Date.now(),
+          type,
+        }));
+      } else if (!message) {
+        messages.push(BatchedQueueClient.createMessage(org, site, {
+          index: name,
+          record: {
+            ...record,
+            ...properties,
+            path: webPath,
+          },
+          timestamp: Date.now(),
+          type,
+        }));
+      }
+    }
+    await queueClient.send(messages);
+  } finally {
+    queueClient.close();
+  }
+}
+
+/**
+ * Load the complete index data from S3.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('@adobe/helix-shared-indexer').IndexConfig} index index config
+ * @returns {Promise<Object>} complete index data, keyed by index name
+ */
+export async function loadIndexData(context, index) {
+  const { contentBusId, log } = context;
+
+  const storage = HelixStorage.fromContext(context).contentBus();
+  const indexData = {};
+
+  await processQueue([...index.indices], async ({ name, target }) => {
+    const jsonTarget = jsonPath(target);
+    const key = `/${contentBusId}/live${jsonTarget}`;
+    const contents = await storage.get(key);
+    if (!contents) {
+      log.warn(`Unable to fetch paths for index ${name}, index contents not found: ${target}`);
+      return;
+    }
+    let json;
+    try {
+      json = JSON.parse(contents);
+    } catch (e) {
+      log.warn(`Unable to fetch paths for index ${name}, index contents is not JSON.`);
+      return;
+    }
+    const data = getDefaultSheetData(json);
+    if (!Array.isArray(data)) {
+      log.warn(`Unable to fetch paths for index ${name}, index contents not iterable (${data}): ${target}`);
+      return;
+    }
+    if (contents) {
+      indexData[name] = data;
+    }
+  });
+  return indexData;
 }

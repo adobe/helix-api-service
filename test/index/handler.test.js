@@ -34,16 +34,62 @@ describe('Index Handler Tests', () => {
     nock.done();
   });
 
-  it('return 405 with method not allowed', async () => {
+  function setupTest(method = 'POST') {
     const suffix = '/org/sites/site/index/document';
 
-    const response = await main(new Request('https://localhost/', { method: 'PUT' }), {
+    const request = new Request(`https://localhost${suffix}`, {
+      method,
+      headers: {
+        'x-request-id': 'rid',
+      },
+    });
+    const context = {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
-    });
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    };
+    return { request, context };
+  }
+
+  it('return 405 with method not allowed', async () => {
+    const { request, context } = await setupTest('PUT');
+    const response = await main(request, context);
+
     assert.strictEqual(response.status, 405);
     assert.strictEqual(await response.text(), 'method not allowed');
+  });
+
+  it('reports error if index definition is not found', async () => {
+    nock.indexConfig(null);
+
+    const { request, context } = await setupTest();
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 404);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'no index configuration could be loaded for document org/site/document',
+    });
+  });
+
+  it('reports error if loading index definition causes an error', async () => {
+    nock.content()
+      .getObject('/preview/.helix/query.yaml')
+      .reply(500);
+
+    const { request, context } = await setupTest();
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 404);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'no index configuration could be loaded for document org/site/document',
+    });
   });
 });

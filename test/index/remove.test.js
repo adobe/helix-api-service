@@ -12,7 +12,6 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
@@ -21,6 +20,8 @@ import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
 const INDEX_CONFIG = `
 indices:
   default:
+    exclude:
+    - '/drafts/**'
     target: /query-index.json
     properties:
       title:
@@ -33,9 +34,12 @@ indices:
           parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
 `;
 
-describe('Index Status Tests', () => {
+describe('Index Remove Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
+
+  /** @type {object[]} */
+  const entries = [];
 
   beforeEach(() => {
     nock = new Nock().env();
@@ -43,12 +47,14 @@ describe('Index Status Tests', () => {
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
     nock.sitemapConfig(null);
+    nock.sqs('helix-indexer', entries);
     nock.content()
       .head('/live/sitemap.json')
       .reply(404);
   });
 
   afterEach(() => {
+    entries.length = 0;
     nock.done();
   });
 
@@ -56,6 +62,7 @@ describe('Index Status Tests', () => {
     const suffix = `/org/sites/site/index${path}`;
 
     const request = new Request(`https://localhost${suffix}`, {
+      method: 'DELETE',
       headers: {
         'x-request-id': 'rid',
       },
@@ -64,9 +71,12 @@ describe('Index Status Tests', () => {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
-        googleApiOpts: { retry: false },
+        retryDelay: 1,
       },
-      runtime: { region: 'us-east-1' },
+      runtime: {
+        accountId: '123456789012',
+        region: 'us-east-1',
+      },
       env: {
         HELIX_STORAGE_MAX_ATTEMPTS: '1',
         HLX_CONFIG_SERVICE_TOKEN: 'token',
@@ -75,18 +85,44 @@ describe('Index Status Tests', () => {
     return { request, context };
   }
 
-  it('returns index status', async () => {
+  it('removes indexed resource', async () => {
     nock.indexConfig(INDEX_CONFIG);
-
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .replyWithFile(
-        200,
-        resolve(__testdir, 'index', 'fixtures', 'document.html'),
-        { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
-      );
-
+    nock.content()
+      .getObject('/live/query-index.json')
+      .reply(200, {
+        data: [{
+          path: '/document',
+        }],
+      });
     const { request, context } = setupTest('/document');
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(entries, [{
+      MessageAttributes: {
+        owner: { DataType: 'String', StringValue: 'org' },
+        repo: { DataType: 'String', StringValue: 'site' },
+      },
+      MessageBody: {
+        owner: 'org',
+        repo: 'site',
+        index: 'default',
+        record: {
+          path: '/document',
+        },
+        type: 'google',
+        deleted: true,
+      },
+    }]);
+  });
+
+  it('ignores resource that is not contained in index', async () => {
+    nock.indexConfig(INDEX_CONFIG);
+    nock.content()
+      .getObject('/live/query-index.json')
+      .reply(200, {});
+
+    const { request, context } = setupTest('/drafts/my-draft');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
@@ -94,71 +130,14 @@ describe('Index Status Tests', () => {
       results: [{
         name: 'default',
         result: {
-          record: {
-            lastModified: 1625738656,
-            title: '3 marketing predictions for a cookieless world',
-          },
+          message: 'requested path does not match index configuration',
+          path: '/drafts/my-draft',
         },
         type: 'google',
       }],
-      resourcePath: '/document.md',
-      webPath: '/document',
+      resourcePath: '/drafts/my-draft.md',
+      webPath: '/drafts/my-draft',
     });
-  });
-
-  it('reports a page that either has status 301 or 404', async () => {
-    nock.indexConfig(INDEX_CONFIG);
-
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(404);
-
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(await response.json(), {
-      results: [{
-        name: 'default',
-        result: {
-          message: 'requested path returned a 301 or 404',
-          noIndex: true,
-        },
-        type: 'google',
-      }],
-      resourcePath: '/document.md',
-      webPath: '/document',
-    });
-  });
-
-  it('reports error if loading page fails', async () => {
-    nock.indexConfig(INDEX_CONFIG);
-
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(500);
-
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 500);
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'fetching https://main--site--org.aem.live/document failed',
-    });
-  });
-
-  it('ignores resources that are index targets', async () => {
-    nock.indexConfig(INDEX_CONFIG);
-
-    const { request, context } = setupTest('/query-index.json');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 204);
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-    });
+    assert.deepStrictEqual(entries, []);
   });
 });

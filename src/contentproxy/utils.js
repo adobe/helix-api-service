@@ -213,6 +213,18 @@ export function getSheetData(json, names) {
 }
 
 /**
+ * From a JSON response, retrieves the `data` sheet if this is a single sheet,
+ * or the `default` data sheet if it is a multisheet.
+ * Returns `null` if there is neither.
+ *
+ * @param {any} json JSON object
+ * @param {String[]} names names to check in a multi sheet
+ */
+export function getDefaultSheetData(json) {
+  return getSheetData(json, ['default']);
+}
+
+/**
  * Updates the sourceInfo based on the response from byom content source.
  * We set the size based on the Content-Length header in the response.
  * If the response is not ok, we remove size and lastModified which were

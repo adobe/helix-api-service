@@ -33,22 +33,30 @@ indices:
           parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
 `;
 
-describe('Index Status Tests', () => {
+describe('Index Update Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
+
+  /** @type {object[]} */
+  const entries = [];
 
   beforeEach(() => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
+    nock.indexConfig(INDEX_CONFIG);
     nock.sitemapConfig(null);
+    nock.sqs('helix-indexer', entries);
     nock.content()
       .head('/live/sitemap.json')
-      .reply(404);
+      .reply(404)
+      .head('/live/document.md')
+      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
   });
 
   afterEach(() => {
+    entries.length = 0;
     nock.done();
   });
 
@@ -56,6 +64,7 @@ describe('Index Status Tests', () => {
     const suffix = `/org/sites/site/index${path}`;
 
     const request = new Request(`https://localhost${suffix}`, {
+      method: 'POST',
       headers: {
         'x-request-id': 'rid',
       },
@@ -64,9 +73,12 @@ describe('Index Status Tests', () => {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
-        googleApiOpts: { retry: false },
+        retryDelay: 1,
       },
-      runtime: { region: 'us-east-1' },
+      runtime: {
+        accountId: '123456789012',
+        region: 'us-east-1',
+      },
       env: {
         HELIX_STORAGE_MAX_ATTEMPTS: '1',
         HLX_CONFIG_SERVICE_TOKEN: 'token',
@@ -75,8 +87,63 @@ describe('Index Status Tests', () => {
     return { request, context };
   }
 
-  it('returns index status', async () => {
-    nock.indexConfig(INDEX_CONFIG);
+  it('updates indexed resource', async () => {
+    nock('https://main--site--org.aem.live')
+      .get('/document')
+      .replyWithFile(
+        200,
+        resolve(__testdir, 'index', 'fixtures', 'document.html'),
+        { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+      );
+
+    const { request, context } = setupTest('/document');
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(entries, [{
+      MessageAttributes: {
+        owner: { DataType: 'String', StringValue: 'org' },
+        repo: { DataType: 'String', StringValue: 'site' },
+      },
+      MessageBody: {
+        owner: 'org',
+        repo: 'site',
+        index: 'default',
+        record: {
+          title: '3 marketing predictions for a cookieless world',
+          lastModified: 1625742256,
+          path: '/document',
+        },
+        type: 'google',
+      },
+    }]);
+  });
+
+  it('retries if first page fetch returns 404', async () => {
+    nock.content()
+      .head('/live/document.md')
+      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
+
+    nock('https://main--site--org.aem.live')
+      .get('/document')
+      .reply(404)
+      .get('/document')
+      .replyWithFile(
+        200,
+        resolve(__testdir, 'index', 'fixtures', 'document.html'),
+        { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+      );
+
+    const { request, context } = setupTest('/document');
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('retries if first page fetch returns outdated document', async () => {
+    nock.content()
+      .head('/live/document.md')
+      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
 
     nock('https://main--site--org.aem.live')
       .get('/document')
@@ -84,75 +151,55 @@ describe('Index Status Tests', () => {
         200,
         resolve(__testdir, 'index', 'fixtures', 'document.html'),
         { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
+      )
+      .get('/document')
+      .replyWithFile(
+        200,
+        resolve(__testdir, 'index', 'fixtures', 'document.html'),
+        { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
       );
 
     const { request, context } = setupTest('/document');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(await response.json(), {
-      results: [{
-        name: 'default',
-        result: {
-          record: {
-            lastModified: 1625738656,
-            title: '3 marketing predictions for a cookieless world',
-          },
-        },
-        type: 'google',
-      }],
-      resourcePath: '/document.md',
-      webPath: '/document',
-    });
   });
 
-  it('reports a page that either has status 301 or 404', async () => {
-    nock.indexConfig(INDEX_CONFIG);
+  it('removes indexed resoure if it is a redirect', async () => {
+    nock.content()
+      .head('/live/document.md')
+      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
 
     nock('https://main--site--org.aem.live')
       .get('/document')
-      .reply(404);
+      .reply(301, '', { location: '/moved-here' });
 
     const { request, context } = setupTest('/document');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(await response.json(), {
-      results: [{
-        name: 'default',
-        result: {
-          message: 'requested path returned a 301 or 404',
-          noIndex: true,
+    assert.deepStrictEqual(entries, [{
+      MessageAttributes: {
+        owner: { DataType: 'String', StringValue: 'org' },
+        repo: { DataType: 'String', StringValue: 'site' },
+      },
+      MessageBody: {
+        owner: 'org',
+        repo: 'site',
+        index: 'default',
+        record: {
+          path: '/document',
         },
         type: 'google',
-      }],
-      resourcePath: '/document.md',
-      webPath: '/document',
-    });
+        deleted: true,
+      },
+    }]);
   });
 
-  it('reports error if loading page fails', async () => {
+  it('ignores resources in `.helix`', async () => {
     nock.indexConfig(INDEX_CONFIG);
 
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(500);
-
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 500);
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'fetching https://main--site--org.aem.live/document failed',
-    });
-  });
-
-  it('ignores resources that are index targets', async () => {
-    nock.indexConfig(INDEX_CONFIG);
-
-    const { request, context } = setupTest('/query-index.json');
+    const { request, context } = setupTest('/.helix/config.json');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 204);

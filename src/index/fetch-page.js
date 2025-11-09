@@ -9,6 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import wrapFetch from 'fetch-retry';
 import { Headers } from '@adobe/fetch';
 
 /**
@@ -17,12 +18,14 @@ import { Headers } from '@adobe/fetch';
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {URL} url URL
  * @param {Headers} [headers] additional headers
+ * @param {import('fetch-retry').RequestInitRetryParams} params retry params
  * @returns response body and headers or error
  */
-export async function fetchPage(context, url, headers = {}) {
+export async function fetchPage(context, url, headers, params) {
   const { log } = context;
 
-  const fetch = context.getFetch();
+  const fetch = wrapFetch(context.getFetch(), params);
+
   const filename = url.split('/').pop();
   const idx = filename.lastIndexOf('.');
   const isHTML = idx === -1;
@@ -56,6 +59,7 @@ export async function fetchPage(context, url, headers = {}) {
     if (response.status === 404 || response.status === 301) {
       return {
         status: response.status,
+        gone: true,
       };
     }
     // check 302 redirect (todo: fix browser detection in *.live)

@@ -25,7 +25,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function indexHandler(context, info) {
-  const { log } = context;
+  const { log, attributes: { authInfo } } = context;
   const { org, site, webPath } = info;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
@@ -49,9 +49,12 @@ export default async function indexHandler(context, info) {
     });
   }
 
+  authInfo.assertPermissions('index:read');
   if (info.method === 'GET') {
     return status(context, info, index);
   }
+
+  authInfo.assertPermissions('index:write');
   if (info.method === 'POST') {
     return update(context, info, index);
   }

@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/adobe/helix-api-service/compare/v1.13.0...v1.13.1) (2025-11-09)
+
+
+### Bug Fixes
+
+* catch up changes from `helix-admin` ([89e7499](https://github.com/adobe/helix-api-service/commit/89e74998239754840f52de46c6e74b8e62e17858))
+
 # [1.13.0](https://github.com/adobe/helix-api-service/compare/v1.12.0...v1.13.0) (2025-11-09)
 
 

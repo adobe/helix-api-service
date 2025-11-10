@@ -9,8 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { HelixStorage } from '@adobe/helix-shared-storage';
 import { getSource } from './get.js';
+import { getS3Storage } from './utils.js';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
@@ -18,22 +18,30 @@ const CONTENT_TYPES = {
 };
 
 function contentTypeFromExtension(ext) {
-  return CONTENT_TYPES[ext] || 'application/octet-stream';
+  const contentType = CONTENT_TYPES[ext];
+  if (contentType) {
+    return contentType;
+  }
+  const e = new Error(`Unknown file type: ${ext}`);
+  e.$metadata = { httpStatusCode: 400 };
+  throw e;
 }
 
-export async function putSource({ context, info, storage = HelixStorage.fromContext(context) }) {
-  // Get object first
-  const getResp = await getSource(context, info, true, storage);
-  const ID = getResp.metadata?.id || crypto.randomUUID();
+export async function putSource({ context, info, storage = getS3Storage(context) }) {
+  const getResp = await getSource({
+    context, info, headOnly: true, storage,
+  });
+  const existingId = context.data?.guid;
+  if (existingId && getResp.metadata?.id && getResp.metadata?.id !== existingId) {
+    return { body: `ID mismatch: ${existingId} !== ${getResp.metadata?.id}`, status: 409, metadata: { id: existingId } };
+  }
+  const ID = existingId || getResp.metadata?.id || crypto.randomUUID();
 
   const bucket = storage.sourceBus();
 
-  const body = Object.keys(context.data)[0]; // TODO
+  const body = context.data?.data;
   const {
-    org,
-    resourcePath: key,
-    site,
-    ext,
+    org, resourcePath: key, site, ext,
   } = info;
   const path = `${org}/${site}${key}`;
   try {

@@ -12,15 +12,8 @@
 import { HelixStorage } from '@adobe/helix-shared-storage';
 
 export function getS3Storage(context) {
-  // TODO get this from the context
-  // return HelixStorage.fromContext(context);
-
-  return new HelixStorage({
-    disableR2: true,
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    // bucketNames: 'helix-source-bus-db',
-    bucketNames: '{"source":"helix-source-bus-db"}',
-  });
+  if (context.storage) {
+    return context.storage;
+  }
+  return HelixStorage.fromContext(context);
 }

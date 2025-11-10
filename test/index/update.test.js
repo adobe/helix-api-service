@@ -57,6 +57,7 @@ describe('Index Update Tests', () => {
 
   afterEach(() => {
     entries.length = 0;
+
     nock.done();
   });
 

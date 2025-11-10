@@ -11,26 +11,29 @@
  */
 import { Response } from '@adobe/fetch';
 import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
-import purge from '../cache/purge.js';
-import { getUserListPaths } from '../config/utils.js';
 import { getMetadataPaths } from '../contentbus/contentbus.js';
-import contentbusUpdate from '../contentbus/update.js';
+import contentBusCopy from '../contentbus/copy.js';
 import { updateRedirect } from '../redirects/update.js';
-import previewStatus from './status.js';
+import { hasSimpleSitemap } from '../sitemap/utils.js';
+import publishStatus from './status.js';
 
 /**
- * Preview a resource by invoking the content-bus.
+ * Publish a resource by invoking the content-bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- *
  * @returns {Promise<Response>} response
  */
-export default async function previewUpdate(context, info) {
+export default async function liveUpdate(context, info) {
   const { log } = context;
 
-  log.info('updating preview in content-bus.');
-  const response = await contentbusUpdate(context, info);
+  // TODO: really?
+  // const response = info.snapshotId
+  //   ? await publishSnapshot(ctx, info)
+  //   : await publish(ctx, info);
+
+  log.info('updating live in content-bus.');
+  const response = await contentBusCopy(context, info);
 
   // check if redirect overwrites the content
   const sourceRedirectLocation = await updateRedirect(context, info);
@@ -42,45 +45,28 @@ export default async function previewUpdate(context, info) {
       // tweak status if existing redirect
       if (sourceRedirectLocation) {
         status = 200;
-      } else {
-        return response;
       }
     }
     if (status !== 304 && status !== 200) {
       status = propagateStatusCode(status);
       const level = logLevelForStatusCode(status);
-      const headers = ['x-error', 'x-error-code', 'x-severity'].reduce((p, name) => {
-        if (response.headers.has(name)) {
-          // eslint-disable-next-line no-param-reassign
-          p[name] = response.headers.get(name);
-        }
-        return p;
-      }, {});
 
       const err = response.headers.get('x-error');
       log[level](`error from content bus: ${response.status} ${err}`);
-
-      return new Response('error from content-bus', { status, headers });
+      return new Response('error from content-bus', {
+        status,
+        headers: {
+          'x-error': err,
+        },
+      });
     }
   }
 
-  // TODO: update snapshot if the previewed resource is in a snapshot
-  // if (/^\/\.snapshots\/[A-Za-z0-9-_]+\//.test(info.rawPath)) {
-  // eslint-disable-next-line max-len
-  //   const snapshotId = info.rawPath.substring(SNAPSHOT_DIR.length, info.rawPath.indexOf('/', SNAPSHOT_DIR.length));
-  //   const snapInfo = info.cloneWithPath(info.rawPath, {
-  //     route: 'snapshot',
-  //     snapshotId,
-  //     ref: 'main',
-  //     method: 'POST',
-  //   });
-  //   await snapshotHandler(ctx, snapInfo);
-  // }
-
-  // check if metadata was updated for a helix5 project
-  if (getMetadataPaths(context).includes(info.webPath)
-      || (await getUserListPaths(context, info)).includes(info.webPath)) {
-    await purge.config(context, info);
+  if (getMetadataPaths(context).includes(info.webPath) && await hasSimpleSitemap(context, info)) {
+    // TODO
+    // await bulkIndex(context, info, ['/*'], {
+    //   indexNames: ['#simple'],
+    // });
   }
-  return previewStatus(context, info);
+  return publishStatus(context, info);
 }

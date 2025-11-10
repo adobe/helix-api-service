@@ -90,7 +90,7 @@ describe('Preview Action Tests', () => {
 
   it('preview document', async () => {
     sandbox.stub(contentproxy, 'handle')
-      .returns(new Response(200, '# hello, world!'));
+      .returns(new Response('# hello, world!'));
 
     nock.content()
       .head('/preview/index.md')
@@ -160,7 +160,7 @@ describe('Preview Action Tests', () => {
     assert.deepStrictEqual(await response.json(), {
       preview: {
         configRedirectLocation: '/target',
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [

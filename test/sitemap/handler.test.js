@@ -95,4 +95,24 @@ describe('Cache Handler Tests', () => {
     });
     assert.deepStrictEqual(purges, ['/sitemap.xml']);
   });
+
+  it('reports build failure with sitemap', async () => {
+    nock.sitemapConfig('sitemaps:');
+
+    const result = await main(new Request(`https://api.aem.live${suffix}`, {
+      method: 'POST',
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+
+    assert.strictEqual(result.status, 400);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'Error fetching sitemap configuration: Invalid sitemap configuration:undefined must be object: type(null, {"type":"object"})data/sitemaps must be object',
+    });
+  });
 });

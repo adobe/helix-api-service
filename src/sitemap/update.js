@@ -217,34 +217,62 @@ async function rebuildIfChanged(
   }
 }
 
-/**
- * Checks whether a change to some sitemap source also changed the sitemap and it therefore
- * needs to be rebuilt.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {object} opts options
- * @returns {Promise<Response>} response
- */
-export async function sourceChanged(context, info, opts = {}) {
-  const { log } = context;
-  const { org, site } = info;
-  const { source, fetchTimeout = 5000, updatePreview = false } = opts;
+const exports = {
+  /**
+   * Checks whether a change to some sitemap source also changed the sitemap and it therefore
+   * needs to be rebuilt.
+   *
+   * @param {import('../support/AdminContext').AdminContext} context context
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @param {object} opts options
+   * @returns {Promise<Response>} response
+   */
+  sourceChanged: async (context, info, opts = {}) => {
+    const { log } = context;
+    const { org, site } = info;
+    const { source, fetchTimeout = 5000, updatePreview = false } = opts;
 
-  let sitemapConfig;
-  try {
-    sitemapConfig = await fetchExtendedSitemap(context, info);
-    if (!sitemapConfig) {
-      return errorResponse(log, 404, `No sitemap configuration found for: ${org}/${site}`);
+    let sitemapConfig;
+    try {
+      sitemapConfig = await fetchExtendedSitemap(context, info);
+      if (!sitemapConfig) {
+        return errorResponse(log, 404, `No sitemap configuration found for: ${org}/${site}`);
+      }
+    } catch (e) {
+      const msg = `Error fetching sitemap configuration: ${e.message}`;
+      if (e.status) {
+        return errorResponse(log, e.status, msg);
+      } else {
+        // no status indicates the sitemap config is invalid
+        return new Response('', {
+          status: 400,
+          headers: {
+            'content-type': 'text/plain; charset=utf-8',
+            'cache-control': 'no-store, private, must-revalidate',
+            'x-error': cleanupHeaderValue(msg),
+          },
+        });
+      }
     }
-  } catch (e) {
-    const msg = `Error fetching sitemap configuration: ${e.message}`;
-    if (e.status) {
-      return errorResponse(log, e.status, msg);
-    } else {
-      // no status indicates the sitemap config is invalid
+
+    const { sitemaps } = sitemapConfig;
+
+    const match = (sitemap) => matchSource(sitemap, source);
+    const configs = sitemaps.filter(
+      (
+        /* simple sitemap matches the source */
+        s,
+      ) => match(s)
+      || (
+        /* multi-language sitemap has a language that matches the source */
+        s.languages && Object.values(s.languages).find((l) => match(l))
+      ),
+    );
+    if (!configs.length) {
+      const msg = `Unable to find any sitemap that has source: ${source}`;
+      log.info(msg);
       return new Response('', {
-        status: 400,
+        status: 204,
         headers: {
           'content-type': 'text/plain; charset=utf-8',
           'cache-control': 'no-store, private, must-revalidate',
@@ -252,70 +280,46 @@ export async function sourceChanged(context, info, opts = {}) {
         },
       });
     }
-  }
 
-  const { sitemaps } = sitemapConfig;
+    // gather prerequisites and create builder
+    const { attributes: { config: { cdn } } } = context;
+    const host = cdn?.prod?.host;
 
-  const match = (sitemap) => matchSource(sitemap, source);
-  const configs = sitemaps.filter(
-    (
-      /* simple sitemap matches the source */
-      s,
-    ) => match(s)
-    || (
-      /* multi-language sitemap has a language that matches the source */
-      s.languages && Object.values(s.languages).find((l) => match(l))
-    ),
-  );
-  if (!configs.length) {
-    const msg = `Unable to find any sitemap that has source: ${source}`;
-    log.info(msg);
-    return new Response('', {
-      status: 204,
+    const responses = await Promise.all(configs.map(
+      async (config) => rebuildIfChanged(context, config, source, `https://${host}`, fetchTimeout, updatePreview),
+    ));
+
+    const paths = [];
+    for (const response of responses) {
+      if (response.status === 200) {
+        // eslint-disable-next-line no-await-in-loop
+        const json = await response.json();
+        paths.push(...json.paths);
+      }
+    }
+    if (paths.length === 0) {
+      // if no paths were processed, we only have error responses, so return the first
+      return responses[0];
+    }
+    // TODO
+    // await getNotifier(ctx).publish('sitemap-updated', info, {
+    //   status: 200,
+    //   resourcePaths: paths,
+    // });
+    // await audit(ctx, info, {
+    //   start: Date.now(),
+    //   properties: {
+    //     source: 'sitemap',
+    //     updated: [paths],
+    //   },
+    // });
+    return new Response(JSON.stringify({ paths }), {
+      status: 200,
       headers: {
-        'content-type': 'text/plain; charset=utf-8',
-        'cache-control': 'no-store, private, must-revalidate',
-        'x-error': cleanupHeaderValue(msg),
+        'content-type': 'application/json',
       },
     });
-  }
+  },
+};
 
-  // gather prerequisites and create builder
-  const { attributes: { config: { cdn } } } = context;
-  const host = cdn?.prod?.host;
-
-  const responses = await Promise.all(configs.map(
-    async (config) => rebuildIfChanged(context, config, source, `https://${host}`, fetchTimeout, updatePreview),
-  ));
-
-  const paths = [];
-  for (const response of responses) {
-    if (response.status === 200) {
-      // eslint-disable-next-line no-await-in-loop
-      const json = await response.json();
-      paths.push(...json.paths);
-    }
-  }
-  if (paths.length === 0) {
-    // if no paths were processed, we only have error responses, so return the first
-    return responses[0];
-  }
-  // TODO
-  // await getNotifier(ctx).publish('sitemap-updated', info, {
-  //   status: 200,
-  //   resourcePaths: paths,
-  // });
-  // await audit(ctx, info, {
-  //   start: Date.now(),
-  //   properties: {
-  //     source: 'sitemap',
-  //     updated: [paths],
-  //   },
-  // });
-  return new Response(JSON.stringify({ paths }), {
-    status: 200,
-    headers: {
-      'content-type': 'application/json',
-    },
-  });
-}
+export default exports;

@@ -135,6 +135,7 @@ export function Nock() {
     scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
     scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
     scope.deleteObject = (key) => scope.delete(key).query({ 'x-id': 'DeleteObject' });
+    scope.copyObject = (key) => scope.put(key).query({ 'x-id': 'CopyObject' });
     return scope;
   };
 

@@ -11,20 +11,20 @@
  */
 import { Response } from '@adobe/fetch';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
-import preview from './preview.js';
+import publish from './publish.js';
 import status from './status.js';
-import unpreview from './unpreview.js';
+import unpublish from './unpublish.js';
 
 const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**
- * Handles the preview route.
+ * Handles the live route.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function previewHandler(context, info) {
+export default async function liveHandler(context, info) {
   const { log, attributes: { authInfo } } = context;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
@@ -32,21 +32,22 @@ export default async function previewHandler(context, info) {
       status: 405,
     });
   }
+
   if (info.method !== 'DELETE' && isIllegalPath(info.webPath, true)) {
     return errorResponse(log, 400, `illegal path: ${info.webPath}`);
   }
-  authInfo.assertPermissions('preview:read');
+  authInfo.assertPermissions('live:read');
 
   if (info.method === 'GET') {
     return status(context, info);
   }
 
   if (info.method === 'POST') {
-    authInfo.assertPermissions('preview:write');
-    return preview(context, info);
+    authInfo.assertPermissions('live:write');
+    return publish(context, info);
   }
 
   // DELETE
-  authInfo.assertPermissions('preview:delete');
-  return unpreview(context, info);
+  authInfo.assertPermissions('live:delete');
+  return unpublish(context, info);
 }

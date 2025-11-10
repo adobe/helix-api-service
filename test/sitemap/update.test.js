@@ -12,7 +12,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import zlib from 'zlib';
-import { sourceChanged, rebuildSitemap } from '../../src/sitemap/update.js';
+import sitemap, { rebuildSitemap } from '../../src/sitemap/update.js';
 import {
   createInfo, createContext, Nock, SITE_CONFIG, ORG_CONFIG,
 } from '../utils.js';
@@ -138,7 +138,7 @@ describe('Sitemap update tests', () => {
         });
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json', updatePreview: true,
       });
 
@@ -209,7 +209,7 @@ describe('Sitemap update tests', () => {
         });
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index-with-lastmod.json',
       });
       assert.strictEqual(resp.status, 200);
@@ -256,7 +256,7 @@ describe('Sitemap update tests', () => {
         });
 
       const { context, info } = setupTest();
-      await sourceChanged(context, info, {
+      await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
 
@@ -299,7 +299,7 @@ describe('Sitemap update tests', () => {
         });
 
       const { context, info } = setupTest();
-      await sourceChanged(context, info, {
+      await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
 
@@ -365,7 +365,7 @@ describe('Sitemap update tests', () => {
 </urlset>>`);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/de/query-index.json',
       });
 
@@ -499,7 +499,7 @@ sitemaps:
         });
 
       const { context, info } = setupTest(sitemapConfig);
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/de/query-index.json',
       });
       assert.strictEqual(resp.status, 200);
@@ -576,7 +576,7 @@ sitemaps:
         });
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/no/query-index.json',
       });
       assert.strictEqual(resp.status, 200);
@@ -667,7 +667,7 @@ sitemaps:
         });
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/other/query-index.json',
       });
       assert.strictEqual(resp.status, 200);
@@ -699,7 +699,7 @@ sitemaps:
         .reply(200);
 
       const { context, info } = setupTest(null);
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/sitemap.json',
       });
       assert.strictEqual(resp.status, 200);
@@ -713,7 +713,7 @@ sitemaps:
         .reply(500);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/de/query-index.json',
       });
       assert.strictEqual(resp.status, 204);
@@ -749,7 +749,7 @@ sitemaps:
 </urlset>>`);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/en/query-index.json',
       });
       assert.strictEqual(resp.status, 502);
@@ -783,7 +783,7 @@ sitemaps:
         .reply(404, 'Not found');
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/en/query-index.json',
       });
       assert.strictEqual(resp.status, 404);
@@ -822,7 +822,7 @@ sitemaps:
         .reply(404);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/en/query-index.json', fetchTimeout: 1,
       });
       assert.strictEqual(resp.status, 500);
@@ -867,7 +867,7 @@ sitemaps:
 <//urlset>>`);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/en/query-index.json',
       });
       assert.strictEqual(resp.status, 500);
@@ -886,14 +886,14 @@ sitemaps:
 </urlset>
 `);
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
       assert.strictEqual(resp.status, 204);
     });
 
     it('handles existing sitemap that has no URLs', async () => {
-      let sitemap;
+      let contents;
 
       nock.content()
         .getObject('/live/query-index.json')
@@ -905,15 +905,15 @@ sitemaps:
 `)
         .putObject('/live/sitemap.xml')
         .reply((_, body) => {
-          sitemap = zlib.gunzipSync(Buffer.from(body, 'hex')).toString();
+          contents = zlib.gunzipSync(Buffer.from(body, 'hex')).toString();
           return [200];
         });
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
       assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(sitemap, `<?xml version="1.0" encoding="utf-8"?>
+      assert.deepStrictEqual(contents, `<?xml version="1.0" encoding="utf-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.example.com/page1</loc>
@@ -928,7 +928,7 @@ sitemaps:
         .reply(404);
 
       const { context, info } = setupTest(null);
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
       assert.strictEqual(resp.status, 404);
@@ -936,7 +936,7 @@ sitemaps:
 
     it('handles source not matching any sitemap source', async () => {
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/something-else.json',
       });
       assert.strictEqual(resp.status, 204);
@@ -950,7 +950,7 @@ sitemaps:
         .reply(500);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
       assert.strictEqual(resp.status, 500);
@@ -966,7 +966,7 @@ sitemaps:
         .reply(403);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json',
       });
       assert.strictEqual(resp.status, 500);
@@ -984,7 +984,7 @@ sitemaps:
         .reply(403);
 
       const { context, info } = setupTest();
-      const resp = await sourceChanged(context, info, {
+      const resp = await sitemap.sourceChanged(context, info, {
         source: '/query-index.json', updatePreview: true,
       });
       assert.strictEqual(resp.status, 500);

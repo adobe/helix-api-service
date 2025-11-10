@@ -159,7 +159,7 @@ describe('Status Handler Tests', () => {
       live: {
         url: 'https://main--site--org.aem.live/folder/page',
         status: 200,
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/folder/page.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/folder/page.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         sourceLocation: 'google:*',
@@ -171,7 +171,7 @@ describe('Status Handler Tests', () => {
       preview: {
         url: 'https://main--site--org.aem.page/folder/page',
         status: 200,
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/folder/page.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/folder/page.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         sourceLocation: 'google:*',
@@ -254,7 +254,7 @@ describe('Status Handler Tests', () => {
         url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
       },
       live: {
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/index.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
@@ -266,7 +266,7 @@ describe('Status Handler Tests', () => {
         url: 'https://main--site--org.aem.live/',
       },
       preview: {
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [

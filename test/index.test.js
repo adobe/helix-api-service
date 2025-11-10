@@ -141,7 +141,7 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(await result.json(), {
       edit: {},
       live: {
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/document.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/document.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
@@ -153,7 +153,7 @@ describe('Index Tests', () => {
         url: 'https://main--site--org.aem.live/document',
       },
       preview: {
-        contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/document.md',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/document.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 09:04:16 GMT',
         permissions: [

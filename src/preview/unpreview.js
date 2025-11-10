@@ -62,8 +62,7 @@ export default async function unpreview(context, info) {
     await updateRedirects(context, 'preview', oldRedirects, {});
   }
 
-  // TODO
-  // if (!context.data?.disableNotifications) {
+  // TODO if (!context.data?.disableNotifications) {
   //   await getNotifier(context).publish('resource-unpreviewed', info, {
   //     status: resp.status,
   //     resourcePath: info.resourcePath,

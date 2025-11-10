@@ -20,8 +20,14 @@ export default class Router {
    */
   #root;
 
-  constructor() {
+  /**
+   * Name selector callback
+   */
+  #nameSelector;
+
+  constructor(nameSelector) {
     this.#root = new Node('');
+    this.#nameSelector = nameSelector;
   }
 
   /**
@@ -33,7 +39,8 @@ export default class Router {
   add(expr, handler) {
     const segs = expr.split('/').slice(1);
 
-    this.#root.add(segs, handler);
+    const name = this.#nameSelector(segs);
+    this.#root.add(segs, { name, handler });
 
     return this;
   }
@@ -51,8 +58,10 @@ export default class Router {
     const variables = new Map();
     const match = this.#root.match(segs, variables);
 
-    const { handler } = match ?? {};
-    if (handler) {
+    const { route } = match ?? {};
+    if (route) {
+      const { name, handler } = route;
+      variables.set('route', name);
       return { handler, variables: Object.fromEntries(variables) };
     }
     return null;

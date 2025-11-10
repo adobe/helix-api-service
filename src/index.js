@@ -41,9 +41,23 @@ import commonResponseHeaders from './wrappers/response-headers.js';
 const notImplemented = () => new Response('', { status: 405 });
 
 /**
+ * Name selector for routes.
+ */
+const nameSelector = (segs) => {
+  const literals = segs.filter((seg) => seg !== '*' && !seg.startsWith(':'));
+  if (literals.length === 0) {
+    return 'org';
+  }
+  if (literals.at(0) === 'sites' && literals.length > 1) {
+    literals.shift();
+  }
+  return literals.join('-');
+};
+
+/**
  * Routing table.
  */
-export const router = new Router()
+export const router = new Router(nameSelector)
   .add('/auth/*', auth)
   .add('/login', login)
   .add('/logout', logout)

@@ -68,8 +68,7 @@ export default async function unpublish(context, info) {
     }
   }
 
-  // TODO
-  // if (!context.data?.disableNotifications) {
+  // TODO if (!context.data?.disableNotifications) {
   //   await getNotifier(context).publish('resource-unpublished', info, {
   //     status: resp.status,
   //     resourcePath: info.resourcePath,

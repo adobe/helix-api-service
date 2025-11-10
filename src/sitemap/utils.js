@@ -36,6 +36,43 @@ export function getDestinations(sitemap) {
 }
 
 /**
+ * Returns a flag indicating whether the project has a simple sitemap.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns true or false
+ */
+export async function hasSimpleSitemap(context, info) {
+  const { attributes, contentBusId, log } = context;
+  if (attributes.hasSimpleSitemap === undefined) {
+    const determine = async () => {
+      let sitemapConfig;
+
+      try {
+        sitemapConfig = await context.fetchSitemap(info);
+      } catch (e) {
+        log.warn(`Unable to fetch sitemap configuration: ${e.message}`);
+        return false;
+      }
+
+      if (sitemapConfig) {
+        log.debug('Explicitly defined sitemap configuration found');
+        return false;
+      }
+      const contentBus = HelixStorage.fromContext(context).contentBus();
+
+      const key = `${contentBusId}/live/sitemap.json`;
+      if (await contentBus.head(key) === null) {
+        log.debug(`Simple sitemap source not found: ${key}`);
+        return false;
+      }
+      return true;
+    };
+    attributes.hasSimpleSitemap = await determine();
+  }
+  return attributes.hasSimpleSitemap;
+}
+/**
  * Returns a flag indicating whether a simple sitemap was just added to a project.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -61,49 +98,20 @@ export async function installSimpleSitemap(context, info, verbose) {
     log[level]('Explicitly defined sitemap configuration found, will not install simple sitemap.');
     return false;
   }
-  const contentBus = HelixStorage.fromContext(context).contentBus();
 
-  const key = `${contentBusId}/live/sitemap.json`;
-  if (await contentBus.head(key) !== null) {
-    log[level](`Simple sitemap source found: ${key}, will not install simple sitemap.`);
+  if (await hasSimpleSitemap(context, info)) {
+    log[level]('Simple sitemap source found, will not install simple sitemap.');
     return false;
   }
 
   // install an empty array in live, this will trigger the rest
+  const contentBus = HelixStorage.fromContext(context).contentBus();
+  const key = `${contentBusId}/live/sitemap.json`;
+
   await contentBus.put(key, JSON.stringify({ data: [] }), 'application/json');
   log.info(`Installed simple sitemap in: ${org}/${site}`);
-  return true;
-}
+  context.attributes.hasSimpleSitemap = true;
 
-/**
- * Returns a flag indicating whether the project has a simple sitemap.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns true or false
- */
-export async function hasSimpleSitemap(context, info) {
-  const { contentBusId, log } = context;
-  let sitemapConfig;
-
-  try {
-    sitemapConfig = await context.fetchSitemap(info);
-  } catch (e) {
-    log.warn(`Unable to fetch sitemap configuration: ${e.message}`);
-    return false;
-  }
-
-  if (sitemapConfig) {
-    log.debug('Explicitly defined sitemap configuration found');
-    return false;
-  }
-  const contentBus = HelixStorage.fromContext(context).contentBus();
-
-  const key = `${contentBusId}/live/sitemap.json`;
-  if (await contentBus.head(key) === null) {
-    log.debug(`Simple sitemap source not found: ${key}`);
-    return false;
-  }
   return true;
 }
 
@@ -118,15 +126,7 @@ export async function hasSimpleSitemap(context, info) {
  * @returns {import('@adobe/helix-shared-config').SitemapConfig} config or null
  */
 export async function fetchExtendedSitemap(context, info) {
-  const { log } = context;
-  let sitemapConfig;
-
-  try {
-    sitemapConfig = await context.fetchSitemap(info);
-  } catch (e) {
-    log.warn(`Unable to fetch sitemap configuration: ${e.message}`);
-    return null;
-  }
+  let sitemapConfig = await context.fetchSitemap(info);
   if (sitemapConfig) {
     return sitemapConfig;
   }

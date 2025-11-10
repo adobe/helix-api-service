@@ -10,52 +10,26 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import purge, { PURGE_PREVIEW } from '../cache/purge.js';
+import purge, { PURGE_LIVE } from '../cache/purge.js';
 import { REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
 import contentbusRemove from '../contentbus/remove.js';
-import web2edit from '../lookup/web2edit.js';
+import indexRemove from '../index/remove.js';
+import { fetchExtendedIndex } from '../index/utils.js';
+import { assertSourceGone } from '../lookup/utils.js';
 import { updateRedirects } from '../redirects/update.js';
 
 /**
- * Ensure source document does not exist anymore.
- */
-async function assertSourceGone(context, info) {
-  const { log } = context;
-  const { org, site, resourcePath } = info;
-
-  const result = await web2edit(context, info);
-  if (result.error && result.status !== 404) {
-    return new Response('', {
-      status: result.status,
-      headers: {
-        'x-error': result.error,
-      },
-    });
-  }
-  if (result.editUrl) {
-    log.warn(`rejecting deletion of /${org}/${site}${resourcePath} since source document still exists.`);
-    return new Response('', {
-      status: 403,
-      headers: {
-        'x-error': 'delete not allowed while source exists.',
-      },
-    });
-  }
-  return new Response();
-}
-
-/**
- * Removes a previewed resource.
+ * Unpublish a resource.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function previewRemove(context, info) {
+export default async function unpublish(context, info) {
   const { log, attributes: { authInfo } } = context;
   const { resourcePath } = info;
 
-  if (!authInfo.hasPermissions('preview:delete-forced')) {
+  if (!authInfo.hasPermissions('live:delete-forced')) {
     const response = await assertSourceGone(context, info);
     if (!response.ok) {
       return response;
@@ -65,11 +39,11 @@ export default async function previewRemove(context, info) {
   // special handling for redirects
   let oldRedirects;
   if (resourcePath === REDIRECTS_JSON_PATH) {
-    oldRedirects = await context.getRedirects('preview');
+    oldRedirects = await context.getRedirects('live');
     delete context.attributes.redirects;
   }
 
-  const response = await contentbusRemove(context, info, 'preview');
+  const response = await contentbusRemove(context, info, 'live');
   if (!response.ok && response.status !== 404) {
     const err = response.headers.get('x-error');
     log.error(`error from content bus: ${response.status} ${err}`);
@@ -83,19 +57,24 @@ export default async function previewRemove(context, info) {
   if (response.status !== 204) {
     return response;
   }
-
-  await purge.resource(context, info, PURGE_PREVIEW);
+  await purge.resource(context, info, PURGE_LIVE);
 
   if (oldRedirects) {
-    await updateRedirects(context, 'preview', oldRedirects, {});
+    await updateRedirects(context, info, oldRedirects, {});
+  } else {
+    const index = await fetchExtendedIndex(context, info);
+    if (index) {
+      await indexRemove(context, info, index);
+    }
   }
 
   // TODO
   // if (!context.data?.disableNotifications) {
-  //   await getNotifier(context).publish('resource-unpreviewed', info, {
+  //   await getNotifier(context).publish('resource-unpublished', info, {
   //     status: resp.status,
   //     resourcePath: info.resourcePath,
   //   });
   // }
+
   return response;
 }

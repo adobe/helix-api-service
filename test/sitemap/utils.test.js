@@ -118,7 +118,9 @@ sitemaps:
     const sitemapConfig = 'sitemaps:';
 
     const { context, info } = setupTest(sitemapConfig);
-    const config = await fetchExtendedSitemap(context, info);
-    assert.strictEqual(config, null);
+    await assert.rejects(
+      () => fetchExtendedSitemap(context, info),
+      /Invalid sitemap configuration/,
+    );
   });
 });

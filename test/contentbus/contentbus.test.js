@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import {
-  Nock, createContext, createInfo,
+  Nock, createContext, createInfo, SITE_CONFIG,
 } from '../utils.js';
 import { getContentBusInfo } from '../../src/contentbus/contentbus.js';
 
@@ -43,7 +43,7 @@ describe('ContentBus Tests', () => {
     );
 
     assert.deepStrictEqual(result, {
-      contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.snapshots/document.md',
+      contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/.snapshots/document.md`,
       contentType: 'text/plain; charset=utf-8',
       lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
       lastModifiedBy: undefined,
@@ -71,7 +71,7 @@ describe('ContentBus Tests', () => {
     );
 
     assert.deepStrictEqual(result, {
-      contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/document.md',
+      contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/document.md`,
       error: 'error while fetching: 403',
       status: 502,
     });

@@ -426,8 +426,26 @@ export class AdminContext {
   }
 }
 
+/**
+ * Return a wrapper that creates an `AdminContext`.
+ *
+ * @param {function} func next function in chain
+ * @returns {callback} callback to invoke
+ */
 export function adminContext(func) {
-  return async (request, context) => func(request, AdminContext.create(context, {
-    headers: request.headers, attributes: context.attributes,
-  }));
+  return async (request, context) => {
+    const wrappedContext = AdminContext.create(context, {
+      headers: request.headers, attributes: context.attributes,
+    });
+
+    try {
+      const response = await func(request, wrappedContext);
+      return response;
+    } finally {
+      const { attributes } = wrappedContext;
+      await attributes.onedrive?.dispose();
+      attributes.storage?.close();
+      await attributes.fetchContext?.reset();
+    }
+  };
 }

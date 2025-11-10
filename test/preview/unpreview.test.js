@@ -172,7 +172,7 @@ describe('Preview Remove Tests', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'removing helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md from storage failed: [S3] UnknownError',
+      'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md from storage failed: [S3] UnknownError`,
     });
   });
 
@@ -193,7 +193,7 @@ describe('Preview Remove Tests', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'removing helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/index.md from storage failed: [S3] UnknownError',
+      'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md from storage failed: [S3] UnknownError`,
     });
   });
 });

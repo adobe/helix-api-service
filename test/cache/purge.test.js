@@ -427,7 +427,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f_metadata',
+              `${SITE_CONFIG.content.contentBusId}_metadata`,
               '0BbXqRmqgStJ7irR',
             ],
           });
@@ -448,7 +448,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f_metadata',
+              `${SITE_CONFIG.content.contentBusId}_metadata`,
               '0BbXqRmqgStJ7irR',
             ],
           });
@@ -487,7 +487,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f_metadata',
+              `${SITE_CONFIG.content.contentBusId}_metadata`,
               '8DD0pNaE1hdJrCU3',
             ],
           });
@@ -508,7 +508,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f_metadata',
+              `${SITE_CONFIG.content.contentBusId}_metadata`,
               '8DD0pNaE1hdJrCU3',
             ],
           });

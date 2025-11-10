@@ -9,54 +9,65 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
+import contentbusRemove from '../contentbus/remove.js';
+import { assertSourceGone } from '../lookup/utils.js';
 import { updateRedirects } from '../redirects/update.js';
-import update from './update.js';
 
 /**
- * Preview a resource.
+ * Unpreview a resource.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function preview(context, info) {
-  const { log, data: { forceUpdateRedirects } } = context;
+export default async function unpreview(context, info) {
+  const { log, attributes: { authInfo } } = context;
   const { resourcePath } = info;
 
-  let oldRedirects;
-  if (resourcePath === REDIRECTS_JSON_PATH) {
-    // if the update is forced, assume empty old redirects
-    if (forceUpdateRedirects) {
-      oldRedirects = {};
-      log.warn('forcing update of redirects due to specified request parameter.');
-    } else {
-      oldRedirects = await context.getRedirects('preview');
-      delete context.attributes.redirects;
+  if (!authInfo.hasPermissions('preview:delete-forced')) {
+    const response = await assertSourceGone(context, info);
+    if (!response.ok) {
+      return response;
     }
   }
 
-  const response = await update(context, info);
-  if (response.status !== 200) {
+  // special handling for redirects
+  let oldRedirects;
+  if (resourcePath === REDIRECTS_JSON_PATH) {
+    oldRedirects = await context.getRedirects('preview');
+    delete context.attributes.redirects;
+  }
+
+  const response = await contentbusRemove(context, info, 'preview');
+  if (!response.ok && response.status !== 404) {
+    const err = response.headers.get('x-error');
+    log.error(`error from content bus: ${response.status} ${err}`);
+    return new Response('error from content-bus', {
+      status: 502,
+      headers: {
+        'x-error': err,
+      },
+    });
+  }
+  if (response.status !== 204) {
     return response;
   }
 
   await purge.resource(context, info, PURGE_PREVIEW);
 
   if (oldRedirects) {
-    const newRedirects = await context.getRedirects('preview');
-    const updated = await updateRedirects(context, 'preview', oldRedirects, newRedirects);
-    await purge.redirects(context, info, updated, PURGE_PREVIEW);
+    await updateRedirects(context, 'preview', oldRedirects, {});
   }
 
   // TODO
   // if (!context.data?.disableNotifications) {
-  //   await getNotifier(context).publish('resource-previewed', info, {
+  //   await getNotifier(context).publish('resource-unpreviewed', info, {
   //     status: resp.status,
   //     resourcePath: info.resourcePath,
   //   });
   // }
-
   return response;
 }

@@ -19,7 +19,7 @@ import {
   Nock, SITE_CONFIG, ORG_CONFIG,
 } from '../utils.js';
 
-describe('Preview Info Tests', () => {
+describe('Live Info Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
@@ -35,9 +35,9 @@ describe('Preview Info Tests', () => {
   });
 
   function setupTest(path = '/') {
-    const suffix = `/org/sites/site/preview${path}`;
+    const suffix = `/org/sites/site/live${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       headers: {
         'x-request-id': 'rid',
       },
@@ -56,11 +56,11 @@ describe('Preview Info Tests', () => {
     return { request, context };
   }
 
-  it('returns preview info', async () => {
+  it('returns live info', async () => {
     nock.content()
-      .getObject('/preview/redirects.json')
+      .getObject('/live/redirects.json')
       .reply(404)
-      .head('/preview/document.md')
+      .head('/live/document.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' });
 
     const { request, context } = setupTest('/document');
@@ -68,8 +68,8 @@ describe('Preview Info Tests', () => {
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
-      preview: {
-        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/document.md`,
+      live: {
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/document.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 09:04:16 GMT',
         permissions: [
@@ -79,7 +79,7 @@ describe('Preview Info Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--site--org.aem.page/document',
+        url: 'https://main--site--org.aem.live/document',
       },
       resourcePath: '/document.md',
       webPath: '/document',

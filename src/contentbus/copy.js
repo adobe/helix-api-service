@@ -14,37 +14,29 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from './utils.js';
 
 /**
- * Removes a content resource.
+ * Copy a content resource from the preview to the live partition.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} partition content bus partition of the file to remove
  * @returns {Promise<Response>} response
  */
-export default async function remove(context, info, partition) {
-  const { contentBusId, log } = context;
+export default async function copy(context, info) {
+  const { attributes, contentBusId, log } = context;
   const { resourcePath } = info;
 
   try {
     const storage = HelixStorage.fromContext(context).contentBus();
-    const key = `${contentBusId}/${partition}${resourcePath}`;
-
-    if (resourcePath.endsWith('.md')) {
-      // preserve redirect location if already set on the content
-      // redirects on assets are removed
-      const metadata = await storage.metadata(key);
-      const redirectLocation = metadata?.['redirect-location'];
-      if (redirectLocation) {
-        log.info(`removing ${key} from storage but keeping redirect object.`);
-        await storage.put(key, Buffer.from(redirectLocation, 'utf-8'), 'text/plain', {
-          'redirect-location': redirectLocation,
-        }, false);
-        return new Response('', { status: 204 });
-      }
-    }
-    await storage.remove(key);
-    return new Response('', { status: 204 });
-    /* c8 ignore next 3 */
+    await storage.copy(
+      `${contentBusId}/preview${resourcePath}`,
+      `${contentBusId}/live${resourcePath}`,
+      {
+        addMetadata: {
+          'x-last-modified-by': attributes.authInfo?.resolveEmail() || 'anonymous',
+        },
+      },
+    );
+    return new Response('', { status: 200 });
+  /* c8 ignore next 3 */
   } catch (e) {
     return createErrorResponse({ e, log });
   }

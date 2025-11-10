@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/adobe/helix-api-service/compare/v1.14.0...v1.14.1) (2025-11-10)
+
+
+### Bug Fixes
+
+* **index:** stop fetching on error ([6eb4a69](https://github.com/adobe/helix-api-service/commit/6eb4a69d2e756a595b6964b93e1a9b0b3a0cdb72))
+
 # [1.14.0](https://github.com/adobe/helix-api-service/compare/v1.13.1...v1.14.0) (2025-11-10)
 
 

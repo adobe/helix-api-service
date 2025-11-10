@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { getS3Storage } from './utils.js';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { getSource } from './get.js';
 
 const CONTENT_TYPES = {
@@ -21,19 +21,21 @@ function contentTypeFromExtension(ext) {
   return CONTENT_TYPES[ext] || 'application/octet-stream';
 }
 
-export async function putSource(context, info) {
+export async function putSource({ context, info, storage = HelixStorage.fromContext(context) }) {
   // Get object first
-  const getResp = await getSource(context, info, true);
+  const getResp = await getSource(context, info, true, storage);
   const ID = getResp.metadata?.id || crypto.randomUUID();
 
-  const storage = getS3Storage(context);
+  const bucket = storage.sourceBus();
 
-  // const bucket = storage.sourceBus();
-  const bucket = storage.bucket('helix-source-bus-db'); // TODO
-
-  const body = context.data.data; // TODO change
-  const { org, resourcePath: key, ext } = info;
-  const path = `${org}${key}`;
+  const body = Object.keys(context.data)[0]; // TODO
+  const {
+    org,
+    resourcePath: key,
+    site,
+    ext,
+  } = info;
+  const path = `${org}/${site}${key}`;
   try {
     const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
       id: ID,

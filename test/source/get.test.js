@@ -13,16 +13,14 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import sinon from 'sinon';
 import { getSource } from '../../src/source/get.js';
 
 describe('Source GET Tests', () => {
   it.only('test getSource', async () => {
-    // const ctx = { test: 707 };
-    const ctx = { attributes: {}, env: {} };
+    const context = { test: 707 };
 
-    const mockGet = (p, m) => {
-      if (p !== 'test/toast/jam.html') {
+    const mockGet = async (p, m) => {
+      if (p !== 'test/rest/toast/jam.html') {
         return null;
       }
       m.ContentType = 'text/plain';
@@ -35,27 +33,16 @@ describe('Source GET Tests', () => {
       get: mockGet,
     };
 
-    const mockS3Storage = (c) => {
-      if (c === ctx) {
-        return {
-          bucket: () => bucket,
-        };
-      }
-      return null;
+    const mockS3Storage = {
+      sourceBus: () => bucket,
     };
 
-    // const { getSource } = await esmock('../../src/source/get.js', {
-    //   '../../src/source/utils.js': {
-    //     getS3Storage: mockS3Storage,
-    //   },
-    // });
-
-
-    const inf = {
+    const info = {
       org: 'test',
+      site: 'rest',
       resourcePath: '/toast/jam.html',
     };
-    const result = await getSource(ctx, inf);
+    const result = await getSource({ context, info, storage: mockS3Storage });
     assert.equal(result.body, 'The body');
     assert.equal(result.contentType, 'text/plain');
     assert.equal(result.contentLength, 8);

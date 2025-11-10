@@ -9,34 +9,36 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-// import { getS3Storage } from './utils.js';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 
-export async function getSource(context, info, headOnly = false, storage = null) {
-  const stg = storage || HelixStorage.fromContext(context).sourceBus();
-  // const storage = HelixStorage.fromContext(context).sourceBus();
-  // const storage = getS3Storage(context);
+export async function getSource({
+  context,
+  info,
+  headOnly = false,
+  storage = HelixStorage.fromContext(context),
+}) {
+  const bucket = storage.sourceBus();
 
-  // const bucket = storage.sourceBus();
-  const bucket = stg.bucket('helix-source-bus-db'); // TODO
-
-  const { org, resourcePath: key } = info;
-  const path = `${org}${key}`;
+  const { org, site, resourcePath: key } = info;
+  const path = `${org}/${site}${key}`;
 
   try {
     if (headOnly) {
       const head = await bucket.head(path);
-
-      return {
-        status: head.$metadata.httpStatusCode,
-        contentType: head.ContentType,
-        contentLength: head.ContentLength,
-        etag: head.ETag,
-        lastModified: head.Metadata.timestamp,
-        metadata: {
-          id: head.Metadata.id,
-        },
-      };
+      if (!head) {
+        return { body: '', status: 404, contentLength: 0 };
+      } else {
+        return {
+          status: head.$metadata.httpStatusCode,
+          contentType: head.ContentType,
+          contentLength: head.ContentLength,
+          etag: head.ETag,
+          lastModified: head.Metadata.timestamp,
+          metadata: {
+            id: head.Metadata.id,
+          },
+        };
+      }
     } else {
       const meta = {};
       const body = await bucket.get(path, meta);

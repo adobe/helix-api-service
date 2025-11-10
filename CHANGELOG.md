@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/adobe/helix-api-service/compare/v1.13.1...v1.14.0) (2025-11-10)
+
+
+### Features
+
+* implement `live` route ([#27](https://github.com/adobe/helix-api-service/issues/27)) ([5dac6c3](https://github.com/adobe/helix-api-service/commit/5dac6c3007f3f2885afdfb5ceb6c696c68a4ba19))
+
 ## [1.13.1](https://github.com/adobe/helix-api-service/compare/v1.13.0...v1.13.1) (2025-11-09)
 
 

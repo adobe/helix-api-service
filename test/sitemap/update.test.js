@@ -989,6 +989,22 @@ sitemaps:
       });
       assert.strictEqual(resp.status, 500);
     });
+
+    it('reports error when no sitemap is configured', async () => {
+      nock.content()
+        .head('/live/sitemap.json')
+        .reply(404);
+
+      const { context, info } = setupTest(null);
+      const response = await sitemap.sourceChanged(context, info);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'No sitemap configuration found for: org/site',
+      });
+    });
   });
 
   describe('rebuild sitemap tests', () => {
@@ -1117,6 +1133,22 @@ sitemaps:
       const { context, info } = setupTest();
       const resp = await rebuildSitemap(context, info);
       assert.strictEqual(resp.status, 500);
+    });
+
+    it('reports error when no sitemap is configured', async () => {
+      nock.content()
+        .head('/live/sitemap.json')
+        .reply(404);
+
+      const { context, info } = setupTest(null);
+      const response = await rebuildSitemap(context, info);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'No sitemap configuration found for: org/site',
+      });
     });
   });
 });

@@ -84,7 +84,7 @@ export async function fetchPage(context, url, headers, params) {
       const error = `document returned from ${url} seems incomplete (html end tag not found)`;
       log.warn(error);
       return {
-        status: 500,
+        status: 502,
         error,
       };
     }

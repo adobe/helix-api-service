@@ -16,22 +16,8 @@ import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
+import { INTERNAL_SITEMAP_INDEX } from '../../src/index/utils.js';
 import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
-
-const INDEX_CONFIG = `
-indices:
-  default:
-    target: /query-index.json
-    properties:
-      title:
-        select: head > meta[property="og:title"]
-        value: |
-          attribute(el, 'content')
-      lastModified:
-        select: none
-        value: |
-          parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
-`;
 
 describe('Index Update Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -45,14 +31,8 @@ describe('Index Update Tests', () => {
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
-    nock.indexConfig(INDEX_CONFIG);
     nock.sitemapConfig(null);
     nock.sqs('helix-indexer', entries);
-    nock.content()
-      .head('/live/sitemap.json')
-      .reply(404)
-      .head('/live/document.md')
-      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
   });
 
   afterEach(() => {
@@ -88,125 +68,309 @@ describe('Index Update Tests', () => {
     return { request, context };
   }
 
-  it('updates indexed resource', async () => {
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .replyWithFile(
-        200,
-        resolve(__testdir, 'index', 'fixtures', 'document.html'),
-        { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
-      );
+  describe('Standard index', () => {
+    const INDEX_CONFIG = `
+    indices:
+      default:
+        target: /query-index.json
+        properties:
+          title:
+            select: head > meta[property="og:title"]
+            value: |
+              attribute(el, 'content')
+          lastModified:
+            select: none
+            value: |
+              parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
+    `;
 
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
+    beforeEach(() => {
+      nock.content()
+        .head('/live/sitemap.json')
+        .reply(404)
+        .head('/live/document.md')
+        .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
+      nock.indexConfig(INDEX_CONFIG);
+    });
 
-    assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(entries, [{
-      MessageAttributes: {
-        owner: { DataType: 'String', StringValue: 'org' },
-        repo: { DataType: 'String', StringValue: 'site' },
-      },
-      MessageBody: {
-        owner: 'org',
-        repo: 'site',
-        index: 'default',
-        record: {
-          title: '3 marketing predictions for a cookieless world',
-          lastModified: 1625742256,
-          path: '/document',
+    it('updates indexed resource', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+        );
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(entries, [{
+        MessageAttributes: {
+          owner: { DataType: 'String', StringValue: 'org' },
+          repo: { DataType: 'String', StringValue: 'site' },
         },
-        type: 'google',
-      },
-    }]);
-  });
-
-  it('retries if first page fetch returns 404', async () => {
-    nock.content()
-      .head('/live/document.md')
-      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
-
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(404)
-      .get('/document')
-      .replyWithFile(
-        200,
-        resolve(__testdir, 'index', 'fixtures', 'document.html'),
-        { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
-      );
-
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 200);
-  });
-
-  it('retries if first page fetch returns outdated document', async () => {
-    nock.content()
-      .head('/live/document.md')
-      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
-
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .replyWithFile(
-        200,
-        resolve(__testdir, 'index', 'fixtures', 'document.html'),
-        { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
-      )
-      .get('/document')
-      .replyWithFile(
-        200,
-        resolve(__testdir, 'index', 'fixtures', 'document.html'),
-        { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
-      );
-
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 200);
-  });
-
-  it('removes indexed resoure if it is a redirect', async () => {
-    nock.content()
-      .head('/live/document.md')
-      .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
-
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(301, '', { location: '/moved-here' });
-
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(entries, [{
-      MessageAttributes: {
-        owner: { DataType: 'String', StringValue: 'org' },
-        repo: { DataType: 'String', StringValue: 'site' },
-      },
-      MessageBody: {
-        owner: 'org',
-        repo: 'site',
-        index: 'default',
-        record: {
-          path: '/document',
+        MessageBody: {
+          owner: 'org',
+          repo: 'site',
+          index: 'default',
+          record: {
+            title: '3 marketing predictions for a cookieless world',
+            lastModified: 1625742256,
+            path: '/document',
+          },
+          type: 'google',
         },
-        type: 'google',
-        deleted: true,
-      },
-    }]);
+      }]);
+    });
+
+    it('retries if first page fetch returns 404', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .reply(404)
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+        );
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it('retries if first page fetch returns outdated document', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
+        )
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+        );
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it('removes indexed resource if it is a redirect', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .reply(301, '', { location: '/moved-here' });
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(entries, [{
+        MessageAttributes: {
+          owner: { DataType: 'String', StringValue: 'org' },
+          repo: { DataType: 'String', StringValue: 'site' },
+        },
+        MessageBody: {
+          owner: 'org',
+          repo: 'site',
+          index: 'default',
+          record: {
+            path: '/document',
+          },
+          type: 'google',
+          deleted: true,
+        },
+      }]);
+    });
+
+    it('reports error if HTML document is malformed', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .reply(200, '<html><head></head><main></main>');
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 502);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'document returned from https://main--site--org.aem.live/document seems incomplete (html end tag not found)',
+      });
+    });
+
+    it('reports error if we hit a login redirect', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .reply(302);
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 401);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'unauthorized to fetch https://main--site--org.aem.live/document',
+      });
+    });
+
+    it('reports error if fetching the live URL throws', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithError('Boom!');
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 502);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'fetching https://main--site--org.aem.live/document failed',
+      });
+    });
+
+    it('ignores resources in `.helix`', async () => {
+      const { request, context } = setupTest('/.helix/config.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 204);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+      });
+    });
   });
 
-  it('ignores resources in `.helix`', async () => {
-    nock.indexConfig(INDEX_CONFIG);
+  describe('Site index', () => {
+    const INDEX_CONFIG = `
+    indices:
+      sitemap:
+        target: /sitemap-index.json
+        properties:
+          lastModified:
+            select: none
+            value: |
+              parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
+    `;
 
-    const { request, context } = setupTest('/.helix/config.json');
-    const response = await main(request, context);
+    beforeEach(() => {
+      nock.content()
+        .head('/live/sitemap.json')
+        .reply(404);
+      nock.indexConfig(INDEX_CONFIG);
+    });
 
-    assert.strictEqual(response.status, 204);
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
+    it('updates indexed resource', async () => {
+      nock.content()
+        .head('/live/sample.pdf')
+        .reply(404);
+
+      nock('https://main--site--org.aem.live')
+        .head('/sample.pdf')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
+
+      const { request, context } = setupTest('/sample.pdf');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(entries, [{
+        MessageAttributes: {
+          owner: { DataType: 'String', StringValue: 'org' },
+          repo: { DataType: 'String', StringValue: 'site' },
+        },
+        MessageBody: {
+          owner: 'org',
+          repo: 'site',
+          index: 'sitemap',
+          record: {
+            lastModified: 1625742256,
+            path: '/sample.pdf',
+          },
+          type: 'google',
+        },
+      }]);
+    });
+  });
+
+  describe(INTERNAL_SITEMAP_INDEX, () => {
+    beforeEach(() => {
+      nock.indexConfig(null);
+      nock.content()
+        .head('/live/sitemap.json')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' })
+        .head('/live/document.md')
+        .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
+    });
+
+    it('updates indexed resource', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+        );
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(entries, [{
+        MessageAttributes: {
+          owner: { DataType: 'String', StringValue: 'org' },
+          repo: { DataType: 'String', StringValue: 'site' },
+        },
+        MessageBody: {
+          owner: 'org',
+          repo: 'site',
+          index: INTERNAL_SITEMAP_INDEX,
+          record: {
+            lastModified: 1625742256,
+            path: '/document',
+          },
+          type: 'markup',
+        },
+      }]);
+    });
+
+    it('removes indexed resource with `noindex` in its `robots` property', async () => {
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'noindex.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' },
+        );
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(entries, [{
+        MessageAttributes: {
+          owner: { DataType: 'String', StringValue: 'org' },
+          repo: { DataType: 'String', StringValue: 'site' },
+        },
+        MessageBody: {
+          owner: 'org',
+          repo: 'site',
+          index: INTERNAL_SITEMAP_INDEX,
+          record: {
+            path: '/document',
+          },
+          type: 'markup',
+          deleted: true,
+        },
+      }]);
     });
   });
 });

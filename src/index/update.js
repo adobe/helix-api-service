@@ -47,6 +47,9 @@ async function getRetryParams(context, info) {
     retries: MOCHA_ENV ? 1 /* c8 ignore next */ : 2,
     retryDelay: (attempt) => 2 ** attempt * retryDelay,
     retryOn: (attempt, error, response) => {
+      if (error) {
+        return false;
+      }
       const { status } = response;
       if (status === 404 && !Number.isNaN(sourceLastModified.n)) {
         log.warn(`404 HTTP response from url but source exists: (${sourceLastModified.s}), will retry`);

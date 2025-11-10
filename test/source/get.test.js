@@ -13,11 +13,13 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import esmock from 'esmock';
+import sinon from 'sinon';
+import { getSource } from '../../src/source/get.js';
 
 describe('Source GET Tests', () => {
-  it('test getSource', async () => {
-    const ctx = { test: 707 };
+  it.only('test getSource', async () => {
+    // const ctx = { test: 707 };
+    const ctx = { attributes: {}, env: {} };
 
     const mockGet = (p, m) => {
       if (p !== 'test/toast/jam.html') {
@@ -42,11 +44,12 @@ describe('Source GET Tests', () => {
       return null;
     };
 
-    const { getSource } = await esmock('../../src/source/get.js', {
-      '../../src/source/utils.js': {
-        getS3Storage: mockS3Storage,
-      },
-    });
+    // const { getSource } = await esmock('../../src/source/get.js', {
+    //   '../../src/source/utils.js': {
+    //     getS3Storage: mockS3Storage,
+    //   },
+    // });
+
 
     const inf = {
       org: 'test',

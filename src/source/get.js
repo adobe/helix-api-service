@@ -9,13 +9,16 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { getS3Storage } from './utils.js';
+// import { getS3Storage } from './utils.js';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 
-export async function getSource(context, info, headOnly = false) {
-  const storage = getS3Storage(context);
+export async function getSource(context, info, headOnly = false, storage = null) {
+  const stg = storage || HelixStorage.fromContext(context).sourceBus();
+  // const storage = HelixStorage.fromContext(context).sourceBus();
+  // const storage = getS3Storage(context);
 
   // const bucket = storage.sourceBus();
-  const bucket = storage.bucket('helix-source-bus-db'); // TODO
+  const bucket = stg.bucket('helix-source-bus-db'); // TODO
 
   const { org, resourcePath: key } = info;
   const path = `${org}${key}`;

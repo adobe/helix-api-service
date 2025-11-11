@@ -409,13 +409,11 @@ describe('Publish Action Tests', () => {
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
-      assert.deepStrictEqual(purgeInfos, [{
-        key: 'sby9rtkIBtNieA0T',
-      }, {
-        key: 'p_sby9rtkIBtNieA0T',
-      }, {
-        path: '/sitemap.xml',
-      }]);
+      assert.deepStrictEqual(purgeInfos, [
+        { key: 'sby9rtkIBtNieA0T' },
+        { key: 'p_sby9rtkIBtNieA0T' },
+        { path: '/sitemap.xml' },
+      ]);
     });
   });
 });

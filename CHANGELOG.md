@@ -1,3 +1,10 @@
+## [1.14.4](https://github.com/adobe/helix-api-service/compare/v1.14.3...v1.14.4) (2025-11-11)
+
+
+### Bug Fixes
+
+* **auth:** port testing from `helix-admin` ([#32](https://github.com/adobe/helix-api-service/issues/32)) ([49826e3](https://github.com/adobe/helix-api-service/commit/49826e31987965da0c330215b8f85358d82ef44c))
+
 ## [1.14.3](https://github.com/adobe/helix-api-service/compare/v1.14.2...v1.14.3) (2025-11-11)
 
 

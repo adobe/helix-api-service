@@ -12,7 +12,7 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { loadSiteConfig } from '../../src/config/utils.js';
+import { loadOrgConfig, loadSiteConfig } from '../../src/config/utils.js';
 import { Nock } from '../utils.js';
 import { AdminContext } from '../../src/support/AdminContext.js';
 
@@ -26,6 +26,30 @@ describe('Config Utils Tests', () => {
 
   afterEach(() => {
     nock.done();
+  });
+
+  it('adds the config api keys from site config', async () => {
+    nock.siteConfig()
+      .reply(200, {
+        apiKeys: {
+          site: {
+            id: 'site-api-key-id',
+          },
+        },
+      });
+
+    const cfg = await loadSiteConfig(AdminContext.create({
+      pathInfo: {
+        suffix: '/org/sites/site/status/index.md',
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    }), 'org', 'site');
+
+    assert.deepStrictEqual(cfg.access.admin, {
+      apiKeyId: ['site-api-key-id'],
+    });
   });
 
   it('return null for non 404 error config response', async () => {
@@ -58,6 +82,66 @@ describe('Config Utils Tests', () => {
     await assert.rejects(
       task,
       /Fetching site config from https:\/\/config.aem.page\/main--site--org\/config.json\?scope=admin failed: boom!/,
+    );
+  });
+
+  it('adds the config api keys from org config', async () => {
+    nock.orgConfig()
+      .reply(200, {
+        apiKeys: {
+          org: {
+            id: 'org-api-key-id',
+          },
+          org2: {
+            id: 'org2-api-key-id',
+          },
+        },
+      });
+
+    const cfg = await loadOrgConfig(AdminContext.create({
+      pathInfo: {
+        suffix: '/org/sites/site/status/index.md',
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    }), 'org', 'site');
+
+    assert.deepStrictEqual(cfg.access.admin, {
+      apiKeyId: ['org-api-key-id', 'org2-api-key-id'],
+    });
+  });
+
+  it('return null for non 404 error org config response', async () => {
+    nock.orgConfig()
+      .reply(500);
+
+    const cfg = await loadOrgConfig(AdminContext.create({
+      pathInfo: {
+        suffix: '/org/sites/site/status/index.md',
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    }), 'org', 'site');
+    assert.strictEqual(cfg, null);
+  });
+
+  it('throws error for error config', async () => {
+    nock.orgConfig()
+      .replyWithError(new Error('boom!'));
+
+    const task = loadOrgConfig(AdminContext.create({
+      pathInfo: {
+        suffix: '/org/sites/owner/status/index.md',
+      },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
+    }), 'org', 'site');
+    await assert.rejects(
+      task,
+      /Fetching org config from https:\/\/config.aem.page\/org\/config.json\?scope=admin failed: boom!/,
     );
   });
 });

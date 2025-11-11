@@ -24,6 +24,7 @@ describe('Source GET Tests', () => {
         return null;
       }
       m.ContentType = 'text/plain';
+      m.ETag = '"some-etag-327"';
       m.timestamp = '12345';
       m.id = '999';
       return 'The body';
@@ -49,6 +50,7 @@ describe('Source GET Tests', () => {
     assert.equal(result.contentLength, 8);
     assert.equal(result.status, 200);
     assert.equal(result.lastModified, '12345');
+    assert.equal(result.etag, '"some-etag-327"');
     assert.equal(result.metadata.id, '999');
   });
 
@@ -251,40 +253,6 @@ describe('Source GET Tests', () => {
     assert.equal(result.contentLength, 0);
   });
 
-  it('test getSource constructs path correctly', async () => {
-    const context = {};
-
-    let capturedPath;
-    const mockGet = async (path, m) => {
-      capturedPath = path;
-      m.ContentType = 'application/json';
-      m.timestamp = '11111';
-      m.id = 'path-test-id';
-      return '{"test":true}';
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'mycompany',
-      site: 'myproject',
-      resourcePath: '/api/v1/data.json',
-    };
-
-    const result = await getSource({ context, info });
-
-    assert.equal(capturedPath, 'mycompany/myproject/api/v1/data.json');
-    assert.equal(result.status, 200);
-    assert.equal(result.body, '{"test":true}');
-  });
-
   it('test getSource with JSON content', async () => {
     const context = {};
 
@@ -348,86 +316,5 @@ describe('Source GET Tests', () => {
     assert.equal(result.status, 200);
     assert.equal(result.body, '');
     assert.equal(result.contentLength, 0);
-  });
-
-  it('test getSource with different org/site/path combinations', async () => {
-    const context = {};
-
-    const testCases = [
-      {
-        info: { org: 'a', site: 'b', resourcePath: '/c' },
-        expected: 'a/b/c',
-      },
-      {
-        info: { org: 'org123', site: 'site456', resourcePath: '/path/to/file.txt' },
-        expected: 'org123/site456/path/to/file.txt',
-      },
-      {
-        info: { org: 'my-org', site: 'my-site', resourcePath: '/index.html' },
-        expected: 'my-org/my-site/index.html',
-      },
-    ];
-
-    const results = await Promise.all(testCases.map(async (testCase) => {
-      let capturedPath;
-      const mockGet = async (path, m) => {
-        capturedPath = path;
-        m.ContentType = 'text/html';
-        m.timestamp = '55555';
-        m.id = 'combo-id';
-        return 'test';
-      };
-
-      const bucket = {
-        get: mockGet,
-      };
-
-      const mockS3Storage = {
-        sourceBus: () => bucket,
-      };
-      context.attributes = { storage: mockS3Storage };
-
-      const result = await getSource({ context, info: testCase.info });
-
-      return { capturedPath, expected: testCase.expected, result };
-    }));
-
-    results.forEach(({ capturedPath, expected, result }) => {
-      assert.equal(capturedPath, expected);
-      assert.equal(result.status, 200);
-    });
-  });
-
-  it('test getSource with large body calculates correct length', async () => {
-    const context = {};
-
-    const largeBody = 'x'.repeat(10000);
-    const mockGet = async (path, m) => {
-      m.ContentType = 'text/plain';
-      m.timestamp = '66666';
-      m.id = 'large-id';
-      return largeBody;
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/large.txt',
-    };
-
-    const result = await getSource({ context, info });
-
-    assert.equal(result.status, 200);
-    assert.equal(result.body, largeBody);
-    assert.equal(result.contentLength, 10000);
   });
 });

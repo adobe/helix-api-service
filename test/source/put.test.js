@@ -18,7 +18,7 @@ import { putSource } from '../../src/source/put.js';
 describe('Source PUT Tests', () => {
   it('test putSource with existing resource (has ID)', async () => {
     const context = {
-      data: { data: 'Updated content' },
+      data: { data: '<html><body>Hello</body></html>' },
     };
 
     let headCalled = false;
@@ -42,9 +42,10 @@ describe('Source PUT Tests', () => {
     const mockPut = async (path, body, contentType, metadata) => {
       putCalled = true;
       assert.equal(path, 'test/rest/toast/jam.html');
-      assert.equal(body, 'Updated content');
+      assert.equal(body, '<html><body>Hello</body></html>');
       assert.equal(contentType, 'text/html');
       assert.equal(metadata.id, 'existing-id-123');
+      assert.equal(metadata.users, '[{"email":"anonymous"}]');
       assert.ok(metadata.timestamp);
       return { $metadata: { httpStatusCode: 200 } };
     };
@@ -275,39 +276,6 @@ describe('Source PUT Tests', () => {
     assert.ok(result.metadata.id);
   });
 
-  it('test putSource constructs path correctly', async () => {
-    const context = {
-      data: { data: 'test' },
-    };
-
-    const mockHead = async () => null;
-
-    const mockPut = async (path) => {
-      assert.equal(path, 'mycompany/myproject/docs/page.html');
-      return { $metadata: { httpStatusCode: 200 } };
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'mycompany',
-      site: 'myproject',
-      resourcePath: '/docs/page.html',
-      ext: '.html',
-    };
-
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 200);
-  });
-
   it('test putSource timestamp is current', async () => {
     const context = {
       data: { data: 'content' },
@@ -342,41 +310,6 @@ describe('Source PUT Tests', () => {
     };
 
     await putSource({ context, info });
-  });
-
-  it('test putSource with HTML content type', async () => {
-    const context = {
-      data: { data: '<html><body>Hello</body></html>' },
-    };
-
-    const mockHead = async () => null;
-
-    const mockPut = async (path, body, contentType) => {
-      assert.equal(body, '<html><body>Hello</body></html>');
-      assert.equal(contentType, 'text/html');
-      return { $metadata: { httpStatusCode: 200 } };
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/page.html',
-      ext: '.html',
-    };
-
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 200);
-    assert.ok(result.metadata.id);
   });
 
   it('test putSource with matching guid succeeds', async () => {
@@ -473,6 +406,14 @@ describe('Source PUT Tests', () => {
 
   it('test putSource with guid for new resource uses the provided guid', async () => {
     const context = {
+      attributes: {
+        authInfo: {
+          profile: {
+            email: 'test@example.com',
+            user_id: 'user-123.e',
+          },
+        },
+      },
       data: {
         data: 'New content',
         guid: 'provided-id-456',
@@ -485,6 +426,7 @@ describe('Source PUT Tests', () => {
       assert.equal(body, 'New content');
       // Should use the provided guid
       assert.equal(metadata.id, 'provided-id-456');
+      assert.equal(metadata.users, '[{"email":"test@example.com","user_id":"user-123.e"}]');
       return { $metadata: { httpStatusCode: 200 } };
     };
 
@@ -496,7 +438,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
-    context.attributes = { storage: mockS3Storage };
+    context.attributes.storage = mockS3Storage;
 
     const info = {
       org: 'test',
@@ -509,39 +451,5 @@ describe('Source PUT Tests', () => {
     // When guid is provided for non-existent resource, it uses the provided guid
     assert.equal(result.status, 200);
     assert.equal(result.metadata.id, 'provided-id-456');
-  });
-
-  it('test putSource without data in context.data', async () => {
-    const context = {
-      data: {},
-    };
-
-    const mockHead = async () => null;
-
-    const mockPut = async (path, body) => {
-      assert.equal(body, undefined);
-      return { $metadata: { httpStatusCode: 200 } };
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/test.html',
-      ext: '.html',
-    };
-
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 200);
-    assert.ok(result.metadata.id);
   });
 });

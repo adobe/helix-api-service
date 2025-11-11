@@ -27,13 +27,21 @@ function contentTypeFromExtension(ext) {
   throw e;
 }
 
+function getUsers(context) {
+  const profile = context.attributes?.authInfo?.profile;
+  if (!profile) return [{ email: 'anonymous' }];
+  const user = { email: profile.email };
+  if (profile.user_id) user.user_id = profile.user_id;
+  return [user];
+}
+
 export async function putSource({ context, info }) {
   const getResp = await getSource({ context, info, headOnly: true });
-  const existingId = context.data?.guid;
-  if (existingId && getResp.metadata?.id && getResp.metadata?.id !== existingId) {
-    return { body: `ID mismatch: ${existingId} !== ${getResp.metadata?.id}`, status: 409, metadata: { id: existingId } };
+  const assignedId = context.data?.guid;
+  if (assignedId && getResp.metadata?.id && getResp.metadata?.id !== assignedId) {
+    return { body: `ID mismatch: ${assignedId} !== ${getResp.metadata?.id}`, status: 409, metadata: { id: assignedId } };
   }
-  const ID = existingId || getResp.metadata?.id || crypto.randomUUID();
+  const ID = assignedId || getResp.metadata?.id || crypto.randomUUID();
 
   const storage = HelixStorage.fromContext(context);
   const bucket = storage.sourceBus();
@@ -47,6 +55,7 @@ export async function putSource({ context, info }) {
     const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
       id: ID,
       timestamp: `${Date.now()}`,
+      users: JSON.stringify(getUsers(context)),
     });
     return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
   } catch (e) {

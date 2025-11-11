@@ -44,7 +44,7 @@ export async function getSource({ context, info, headOnly = false }) {
         status: 200,
         contentType: meta.ContentType,
         contentLength: body.length,
-        // etag: head.ETag, we don't have this one
+        etag: meta.ETag,
         lastModified: meta.timestamp,
         metadata: {
           id: meta.id,

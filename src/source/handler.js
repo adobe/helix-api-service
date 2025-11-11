@@ -23,7 +23,7 @@ async function handle(context, info) {
       // case 'DELETE':
       //   return deleteSource(context, info);
       case 'HEAD':
-        return getSource({context, info, headOnly: true });
+        return getSource({ context, info, headOnly: true });
       default:
         return {
           body: 'method not allowed',

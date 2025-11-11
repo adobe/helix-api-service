@@ -1,3 +1,10 @@
+## [1.14.3](https://github.com/adobe/helix-api-service/compare/v1.14.2...v1.14.3) (2025-11-11)
+
+
+### Bug Fixes
+
+* make route names unique ([#29](https://github.com/adobe/helix-api-service/issues/29)) ([79dc483](https://github.com/adobe/helix-api-service/commit/79dc4833be7d2810f20c97aeb3fee473d214dcb5))
+
 ## [1.14.2](https://github.com/adobe/helix-api-service/compare/v1.14.1...v1.14.2) (2025-11-11)
 
 

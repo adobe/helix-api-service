@@ -73,12 +73,12 @@ export class AdminContext {
   }
 
   /**
-   * Loads the site configuration.
+   * Loads the site and org configuration.
    *
    * @param {import('./RequestInfo.js').RequestInfo} info info
    * @returns {Promise<object>} configuration
    */
-  async getConfig(info) {
+  async loadConfig(info) {
     if (this.attributes.config === undefined) {
       const { org, site } = info;
       if (org && site) {
@@ -91,18 +91,10 @@ export class AdminContext {
         this.attributes.config = config;
       }
     }
-    return this.attributes.config;
-  }
-
-  async getOrgConfig(info) {
     if (this.attributes.orgConfig === undefined) {
       const { org } = info;
       if (org) {
-        const config = await loadOrgConfig(this, org);
-        if (config === null) {
-          throw new StatusCodeError('', 404);
-        }
-        this.attributes.orgConfig = config;
+        this.attributes.orgConfig = await loadOrgConfig(this, org);
       }
     }
     return this.attributes.orgConfig;
@@ -131,7 +123,7 @@ export class AdminContext {
   async authenticate(info) {
     const { attributes } = this;
 
-    await this.getConfig(info);
+    await this.loadConfig(info);
 
     if (attributes.authInfo === undefined) {
       attributes.authInfo = await getAuthInfo(this, info);
@@ -146,9 +138,6 @@ export class AdminContext {
    * @returns {Promise<void>}
    */
   async authorize(info) {
-    // eslint-disable-next-line no-unused-vars
-    const orgConfig = await this.getOrgConfig(info);
-
     return authorize(this, info);
   }
 

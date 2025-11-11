@@ -209,11 +209,11 @@ export async function detectTokenIDP(token) {
  * Returns the site auth token if the project is configured as such.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {string} partition partition
  * @returns {Promise<string|null>} the auth token
  */
-export async function getSiteAuthToken(context, info) {
-  const accessConfig = await context.getSiteAccessConfig(info.partition);
+export async function getSiteAuthToken(context, partition) {
+  const accessConfig = await context.getSiteAccessConfig(partition);
 
   if (!accessConfig.allow.length
     && !accessConfig.apiKeyId.length
@@ -399,12 +399,17 @@ export async function getAuthInfo(context, info) {
         //   return AuthInfo.Default();
         // }
 
-        const { attributes: { config } } = context;
-        let apiKeyId = config?.data?.admin?.apiKeyId || [];
-        if (!Array.isArray(apiKeyId)) {
-          apiKeyId = [apiKeyId];
+        const { attributes: { config, orgConfig } } = context;
+        let siteApiKeyId = config?.access?.admin?.apiKeyId || [];
+        if (!Array.isArray(siteApiKeyId)) {
+          siteApiKeyId = [siteApiKeyId];
         }
-        if (apiKeyId.indexOf(profile.jti) < 0) {
+        let orgApiKeyId = orgConfig?.access?.admin?.apiKeyId || [];
+        if (!Array.isArray(orgApiKeyId)) {
+          orgApiKeyId = [orgApiKeyId];
+        }
+        if (siteApiKeyId.indexOf(profile.jti) < 0 && orgApiKeyId.indexOf(profile.jti) < 0) {
+          const apiKeyId = [...siteApiKeyId, ...orgApiKeyId];
           log.warn(`auth: api token invalid: jti ${profile.jti} does not match configured id [${apiKeyId}] in ${info.org}/${info.site || '*'}`);
           return AuthInfo.Default();
         }

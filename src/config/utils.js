@@ -80,7 +80,7 @@ export async function loadSiteConfig(context, org, site) {
 
 export async function loadOrgConfig(context, org) {
   const url = `https://config.aem.page/${org}/config.json?scope=admin`;
-  const orgConfig = loadConfig(context, url, 'org');
+  const orgConfig = await loadConfig(context, url, 'org');
   if (orgConfig) {
     addConfigApiKeys(orgConfig);
   }

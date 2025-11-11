@@ -1,3 +1,10 @@
+## [1.14.2](https://github.com/adobe/helix-api-service/compare/v1.14.1...v1.14.2) (2025-11-11)
+
+
+### Bug Fixes
+
+* add missing await in loadOrgConfig() ([#31](https://github.com/adobe/helix-api-service/issues/31)) ([eb49e30](https://github.com/adobe/helix-api-service/commit/eb49e304373e13bc5e99bf1f5db2163a18126517))
+
 ## [1.14.1](https://github.com/adobe/helix-api-service/compare/v1.14.0...v1.14.1) (2025-11-10)
 
 

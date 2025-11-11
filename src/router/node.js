@@ -25,7 +25,7 @@ export class Node {
   #children;
 
   /**
-   * Star node (e.g. `/*`)
+   * Star node (i.e. `/*`)
    */
   #star;
 
@@ -39,10 +39,9 @@ export class Node {
    */
   #route;
 
-  constructor(label, route) {
+  constructor(label) {
     this.#label = label;
     this.#children = [];
-    this.#route = route;
   }
 
   #getOrCreateChild(seg) {
@@ -69,9 +68,10 @@ export class Node {
   add(segs, route) {
     if (segs.length === 0) {
       this.#route = route;
+      return this;
     } else {
       const seg = segs.shift();
-      this.#getOrCreateChild(seg).add(segs, route);
+      return this.#getOrCreateChild(seg).add(segs, route);
     }
   }
 

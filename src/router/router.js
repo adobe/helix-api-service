@@ -25,13 +25,19 @@ export default class Router {
    */
   #nameSelector;
 
+  /**
+   * Routes
+   */
+  #routes;
+
   constructor(nameSelector) {
-    this.#root = new Node('');
+    this.#root = new Node('', (info, segs) => segs.push(''));
     this.#nameSelector = nameSelector;
+    this.#routes = new Map();
   }
 
   /**
-   * Add a new handler for a given expression.
+   * Add a new route for a given expression.
    *
    * @param {string} expr expression
    * @param {function} handler handler
@@ -40,7 +46,8 @@ export default class Router {
     const segs = expr.split('/').slice(1);
 
     const name = this.#nameSelector(segs);
-    this.#root.add(segs, { name, handler });
+    const route = this.#root.add(segs, { name, handler });
+    this.#routes.set(name, route);
 
     return this;
   }

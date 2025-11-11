@@ -36,13 +36,14 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
       site: 'rest',
       resourcePath: '/toast/jam.html',
     };
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
     assert.equal(result.body, 'The body');
     assert.equal(result.contentType, 'text/plain');
     assert.equal(result.contentLength, 8);
@@ -78,6 +79,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'myorg',
@@ -85,12 +87,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/document.html',
     };
 
-    const result = await getSource({
-      context,
-      info,
-      headOnly: true,
-      storage: mockS3Storage,
-    });
+    const result = await getSource({ context, info, headOnly: true });
 
     assert.equal(result.status, 200);
     assert.equal(result.contentType, 'text/html');
@@ -119,6 +116,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -126,12 +124,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/missing.html',
     };
 
-    const result = await getSource({
-      context,
-      info,
-      headOnly: true,
-      storage: mockS3Storage,
-    });
+    const result = await getSource({ context, info, headOnly: true });
 
     assert.equal(result.status, 404);
     assert.equal(result.body, '');
@@ -154,6 +147,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -161,7 +155,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/forbidden.html',
     };
 
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
 
     assert.equal(result.status, 403);
     assert.equal(result.body, '');
@@ -182,6 +176,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -189,7 +184,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/error.html',
     };
 
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
 
     assert.equal(result.status, 404);
     assert.equal(result.body, '');
@@ -212,6 +207,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -219,12 +215,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/error.html',
     };
 
-    const result = await getSource({
-      context,
-      info,
-      headOnly: true,
-      storage: mockS3Storage,
-    });
+    const result = await getSource({ context, info, headOnly: true });
 
     assert.equal(result.status, 500);
     assert.equal(result.body, '');
@@ -245,6 +236,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -252,12 +244,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/error.html',
     };
 
-    const result = await getSource({
-      context,
-      info,
-      headOnly: true,
-      storage: mockS3Storage,
-    });
+    const result = await getSource({ context, info, headOnly: true });
 
     assert.equal(result.status, 404);
     assert.equal(result.body, '');
@@ -283,6 +270,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'mycompany',
@@ -290,7 +278,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/api/v1/data.json',
     };
 
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
 
     assert.equal(capturedPath, 'mycompany/myproject/api/v1/data.json');
     assert.equal(result.status, 200);
@@ -314,6 +302,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'org',
@@ -321,7 +310,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/data.json',
     };
 
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
 
     assert.equal(result.status, 200);
     assert.equal(result.contentType, 'application/json');
@@ -346,6 +335,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'org',
@@ -353,7 +343,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/empty.txt',
     };
 
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
 
     assert.equal(result.status, 200);
     assert.equal(result.body, '');
@@ -395,12 +385,9 @@ describe('Source GET Tests', () => {
       const mockS3Storage = {
         sourceBus: () => bucket,
       };
+      context.attributes = { storage: mockS3Storage };
 
-      const result = await getSource({
-        context,
-        info: testCase.info,
-        storage: mockS3Storage,
-      });
+      const result = await getSource({ context, info: testCase.info });
 
       return { capturedPath, expected: testCase.expected, result };
     }));
@@ -429,6 +416,7 @@ describe('Source GET Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -436,7 +424,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/large.txt',
     };
 
-    const result = await getSource({ context, info, storage: mockS3Storage });
+    const result = await getSource({ context, info });
 
     assert.equal(result.status, 200);
     assert.equal(result.body, largeBody);

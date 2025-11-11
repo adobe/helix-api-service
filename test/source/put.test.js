@@ -57,6 +57,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -65,7 +66,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.ok(headCalled, 'head should have been called');
     assert.ok(putCalled, 'put should have been called');
     assert.equal(result.status, 200);
@@ -104,6 +105,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'myorg',
@@ -112,7 +114,7 @@ describe('Source PUT Tests', () => {
       ext: '.json',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 200);
     assert.equal(result.metadata.id, generatedId);
   });
@@ -137,6 +139,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -145,7 +148,7 @@ describe('Source PUT Tests', () => {
       ext: '.bin',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 400);
     assert.ok(result.metadata.id);
   });
@@ -180,6 +183,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -188,7 +192,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 403);
     assert.equal(result.metadata.id, 'test-id');
   });
@@ -221,6 +225,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -229,7 +234,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 500);
     assert.equal(result.metadata.id, 'test-id-500');
   });
@@ -256,6 +261,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'org',
@@ -264,7 +270,7 @@ describe('Source PUT Tests', () => {
       ext: '.json',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 200);
     assert.ok(result.metadata.id);
   });
@@ -289,6 +295,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'mycompany',
@@ -297,7 +304,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 200);
   });
 
@@ -325,6 +332,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -333,7 +341,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    await putSource({ context, info, storage: mockS3Storage });
+    await putSource({ context, info });
   });
 
   it('test putSource with HTML content type', async () => {
@@ -357,6 +365,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -365,7 +374,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 200);
     assert.ok(result.metadata.id);
   });
@@ -399,10 +408,10 @@ describe('Source PUT Tests', () => {
       head: mockHead,
       put: mockPut,
     };
-
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -411,7 +420,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 200);
     assert.equal(result.metadata.id, 'existing-id-123');
   });
@@ -447,6 +456,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -455,7 +465,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 409);
     assert.equal(result.metadata.id, 'wrong-id');
     assert.ok(result.body.includes('ID mismatch'));
@@ -486,6 +496,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -494,7 +505,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     // When guid is provided for non-existent resource, it uses the provided guid
     assert.equal(result.status, 200);
     assert.equal(result.metadata.id, 'provided-id-456');
@@ -520,6 +531,7 @@ describe('Source PUT Tests', () => {
     const mockS3Storage = {
       sourceBus: () => bucket,
     };
+    context.attributes = { storage: mockS3Storage };
 
     const info = {
       org: 'test',
@@ -528,7 +540,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info, storage: mockS3Storage });
+    const result = await putSource({ context, info });
     assert.equal(result.status, 200);
     assert.ok(result.metadata.id);
   });

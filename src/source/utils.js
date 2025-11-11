@@ -12,8 +12,8 @@
 import { HelixStorage } from '@adobe/helix-shared-storage';
 
 export function getS3Storage(context) {
-  if (context.storage) {
-    return context.storage;
-  }
+  // if (context.storage) {
+  //   return context.storage;
+  // }
   return HelixStorage.fromContext(context);
 }

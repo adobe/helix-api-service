@@ -9,8 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { getSource } from './get.js';
-import { getS3Storage } from './utils.js';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
@@ -27,16 +27,15 @@ function contentTypeFromExtension(ext) {
   throw e;
 }
 
-export async function putSource({ context, info, storage = getS3Storage(context) }) {
-  const getResp = await getSource({
-    context, info, headOnly: true, storage,
-  });
+export async function putSource({ context, info }) {
+  const getResp = await getSource({ context, info, headOnly: true });
   const existingId = context.data?.guid;
   if (existingId && getResp.metadata?.id && getResp.metadata?.id !== existingId) {
     return { body: `ID mismatch: ${existingId} !== ${getResp.metadata?.id}`, status: 409, metadata: { id: existingId } };
   }
   const ID = existingId || getResp.metadata?.id || crypto.randomUUID();
 
+  const storage = HelixStorage.fromContext(context);
   const bucket = storage.sourceBus();
 
   const body = context.data?.data;

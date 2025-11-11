@@ -9,10 +9,81 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
+import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
-import { REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
-import { updateRedirects } from '../redirects/update.js';
-import update from './update.js';
+import { getUserListPaths } from '../config/utils.js';
+import { getMetadataPaths, REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
+import contentbusUpdate from '../contentbus/update.js';
+import { updateRedirect, updateRedirects } from '../redirects/update.js';
+import previewStatus from './status.js';
+
+/**
+ * Preview a resource by invoking the content-bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ *
+ * @returns {Promise<Response>} response
+ */
+export async function previewUpdate(context, info) {
+  const { log } = context;
+
+  log.info('updating preview in content-bus.');
+  const response = await contentbusUpdate(context, info);
+
+  // check if redirect overwrites the content
+  const sourceRedirectLocation = await updateRedirect(context, info);
+
+  let { status } = response;
+  if (!response.ok) {
+    // handle redirects
+    if (status === 404) {
+      // tweak status if existing redirect
+      if (sourceRedirectLocation) {
+        status = 200;
+      } else {
+        return response;
+      }
+    }
+    if (status !== 304 && status !== 200) {
+      status = propagateStatusCode(status);
+      const level = logLevelForStatusCode(status);
+      const headers = ['x-error', 'x-error-code', 'x-severity'].reduce((p, name) => {
+        if (response.headers.has(name)) {
+          // eslint-disable-next-line no-param-reassign
+          p[name] = response.headers.get(name);
+        }
+        return p;
+      }, {});
+
+      const err = response.headers.get('x-error');
+      log[level](`error from content bus: ${response.status} ${err}`);
+
+      return new Response('error from content-bus', { status, headers });
+    }
+  }
+
+  // TODO: update snapshot if the previewed resource is in a snapshot
+  // if (/^\/\.snapshots\/[A-Za-z0-9-_]+\//.test(info.rawPath)) {
+  // eslint-disable-next-line max-len
+  //   const snapshotId = info.rawPath.substring(SNAPSHOT_DIR.length, info.rawPath.indexOf('/', SNAPSHOT_DIR.length));
+  //   const snapInfo = info.cloneWithPath(info.rawPath, {
+  //     route: 'snapshot',
+  //     snapshotId,
+  //     ref: 'main',
+  //     method: 'POST',
+  //   });
+  //   await snapshotHandler(ctx, snapInfo);
+  // }
+
+  // check if metadata was updated for a helix5 project
+  if (getMetadataPaths(context).includes(info.webPath)
+      || (await getUserListPaths(context, info)).includes(info.webPath)) {
+    await purge.config(context, info);
+  }
+  return previewStatus(context, info);
+}
 
 /**
  * Preview a resource.
@@ -37,7 +108,7 @@ export default async function preview(context, info) {
     }
   }
 
-  const response = await update(context, info);
+  const response = await previewUpdate(context, info);
   if (response.status !== 200) {
     return response;
   }
@@ -50,8 +121,7 @@ export default async function preview(context, info) {
     await purge.redirects(context, info, updated, PURGE_PREVIEW);
   }
 
-  // TODO
-  // if (!context.data?.disableNotifications) {
+  // TODO if (!context.data?.disableNotifications) {
   //   await getNotifier(context).publish('resource-previewed', info, {
   //     status: resp.status,
   //     resourcePath: info.resourcePath,

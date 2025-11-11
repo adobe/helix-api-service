@@ -16,6 +16,13 @@ declare function nocker(
   options?: nock.Options,
 ): nock.Scope
 
+declare interface S3Nock {
+  head(key: string): nock.Scope;
+  getObject(key: string): nock.Scope;
+  putObject(key: string): nock.Scope;
+  copyObject(key: string): nock.Scope;
+}
+
 declare interface GoogleNock {
   user(cacheData?: any): GoogleNock
   folders(files: string[], id?: string): GoogleNock
@@ -40,6 +47,9 @@ declare interface OneDriveNock {
 declare interface Nock {
   google(source: any): GoogleNock
   onedrive(source: any): OneDriveNock
+  code(ref?: string): S3Nock;
+  content(contentBusId?: string): S3Nock;
+  media(contentBusId?: string): S3Nock;
 }
 
 type NockEnv = Nock & typeof nocker;

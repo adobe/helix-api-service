@@ -20,12 +20,12 @@ export class Node {
   #label;
 
   /**
-   * Literal hildren of this node.
+   * Literal children of this node.
    */
   #children;
 
   /**
-   * Star node (e.g. `/*`)
+   * Star node (i.e. `/*`)
    */
   #star;
 
@@ -35,14 +35,13 @@ export class Node {
   #variable;
 
   /**
-   * Handler, null for intermediate leafs.
+   * Route associated with node, null for intermediate leafs.
    */
-  #handler;
+  #route;
 
-  constructor(label, handler) {
+  constructor(label) {
     this.#label = label;
     this.#children = [];
-    this.#handler = handler;
   }
 
   #getOrCreateChild(seg) {
@@ -66,21 +65,18 @@ export class Node {
     return ret;
   }
 
-  add(segs, handler) {
+  add(segs, route) {
     if (segs.length === 0) {
-      this.#handler = handler;
+      this.#route = route;
+      return this;
     } else {
       const seg = segs.shift();
-      this.#getOrCreateChild(seg).add(segs, handler);
+      return this.#getOrCreateChild(seg).add(segs, route);
     }
   }
 
-  get handler() {
-    return this.#handler;
-  }
-
-  get label() {
-    return this.#label;
+  get route() {
+    return this.#route;
   }
 
   /**
@@ -92,7 +88,6 @@ export class Node {
    */
   match(segs, variables) {
     if (segs.length === 0) {
-      variables.set('route', this.label);
       return this;
     }
     const seg = segs.shift();
@@ -114,7 +109,6 @@ export class Node {
     if (this.#star) {
       segs.unshift(seg);
       variables.set('path', `/${segs.join('/')}`);
-      variables.set('route', this.label);
       return this.#star;
     }
     return null;

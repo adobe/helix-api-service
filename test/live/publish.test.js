@@ -14,6 +14,7 @@
 import assert from 'assert';
 import { resolve } from 'path';
 import sinon from 'sinon';
+import xml2js from 'xml2js';
 import { Request, Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import purge from '../../src/cache/purge.js';
@@ -104,7 +105,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/index.md')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
         .copyObject('/live/index.md')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .head('/live/index.md')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
@@ -125,7 +131,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/redirects.json')
         .reply(200)
         .copyObject('/live/redirects.json')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .getObject('/live/redirects.json')
         .reply(200, {
           default: {
@@ -149,7 +160,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/redirects.json')
         .reply(200)
         .copyObject('/live/redirects.json')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .getObject('/live/redirects.json')
         .reply(200, {
           default: {
@@ -177,7 +193,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/metadata.json')
         .reply(200)
         .copyObject('/live/metadata.json')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .head('/live/metadata.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
@@ -193,7 +214,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/index.md')
         .reply(200)
         .copyObject('/live/index.md')
-        .reply(404, '<?xml version="1.0" encoding="UTF-8"?>\n<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>');
+        .reply(404, new xml2js.Builder().buildObject({
+          Error: {
+            Code: 'NoSuchKey',
+            Message: 'The specified key does not exist.',
+          },
+        }));
 
       const { request, context } = setupTest('/');
       const response = await main(request, context);
@@ -211,7 +237,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/index.md')
         .reply(200)
         .copyObject('/live/index.md')
-        .reply(404, '<?xml version="1.0" encoding="UTF-8"?>\n<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>')
+        .reply(404, new xml2js.Builder().buildObject({
+          Error: {
+            Code: 'NoSuchKey',
+            Message: 'The specified key does not exist.',
+          },
+        }))
         .putObject('/live/index.md')
         .reply(201, function fn(uri, body) {
           assert.strictEqual(this.req.headers['x-amz-meta-redirect-location'], '/target');
@@ -288,7 +319,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/document.md')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
         .copyObject('/live/document.md')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .head('/live/document.md')
         .twice()
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
@@ -305,7 +341,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/query-index.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
         .copyObject('/live/query-index.json')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .head('/live/query-index.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
@@ -355,7 +396,12 @@ describe('Publish Action Tests', () => {
         .head('/preview/sitemap-index.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
         .copyObject('/live/sitemap-index.json')
-        .reply(200, '<?xml version="1.0" encoding="UTF-8"?>\n<CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2021-05-05T08:37:23.000Z</LastModified><ETag>&quot;f278c0035a9b4398629613a33abe6451&quot;</ETag></CopyObjectResult>')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
         .head('/live/sitemap-index.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
@@ -363,13 +409,11 @@ describe('Publish Action Tests', () => {
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
-      assert.deepStrictEqual(purgeInfos, [{
-        key: 'sby9rtkIBtNieA0T',
-      }, {
-        key: 'p_sby9rtkIBtNieA0T',
-      }, {
-        path: '/sitemap.xml',
-      }]);
+      assert.deepStrictEqual(purgeInfos, [
+        { key: 'sby9rtkIBtNieA0T' },
+        { key: 'p_sby9rtkIBtNieA0T' },
+        { path: '/sitemap.xml' },
+      ]);
     });
   });
 });

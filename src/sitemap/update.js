@@ -96,8 +96,7 @@ export async function rebuildSitemap(context, info, opts = {}) {
     });
   }
   if (config.name === INTERNAL_SITEMAP) {
-    // TODO
-    // await getNotifier(ctx).publish('sitemap-updated', info, {
+    // TODO await getNotifier(ctx).publish('sitemap-updated', info, {
     //   status: 200,
     //   resourcePath: config.destination,
     // });
@@ -132,8 +131,7 @@ export async function rebuildSitemap(context, info, opts = {}) {
     const result = await builder.store(context, updatePreview);
 
     log.info(`Sitemap for ${config.name} rebuilt: ${result.paths}.`);
-    // TODO
-    // await getNotifier(ctx).publish('sitemap-updated', info, {
+    // TODO await getNotifier(ctx).publish('sitemap-updated', info, {
     //   status: 200,
     //   resourcePaths: result.paths,
     // });
@@ -301,8 +299,7 @@ const exports = {
       // if no paths were processed, we only have error responses, so return the first
       return responses[0];
     }
-    // TODO
-    // await getNotifier(ctx).publish('sitemap-updated', info, {
+    // TODO await getNotifier(ctx).publish('sitemap-updated', info, {
     //   status: 200,
     //   resourcePaths: paths,
     // });

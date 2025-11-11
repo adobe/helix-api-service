@@ -9,14 +9,70 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
+import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
 import purge, { PURGE_LIVE, PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
-import { REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
+import { getMetadataPaths, REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
+import contentBusCopy from '../contentbus/copy.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex, getIndexTargets } from '../index/utils.js';
-import { updateRedirects } from '../redirects/update.js';
+import { updateRedirect, updateRedirects } from '../redirects/update.js';
 import sitemap from '../sitemap/update.js';
-import { installSimpleSitemap } from '../sitemap/utils.js';
-import update from './update.js';
+import { hasSimpleSitemap, installSimpleSitemap } from '../sitemap/utils.js';
+import publishStatus from './status.js';
+
+/**
+ * Publish a resource by invoking the content-bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} response
+ */
+export async function liveUpdate(context, info) {
+  const { log } = context;
+
+  // TODO: really?
+  // const response = info.snapshotId
+  //   ? await publishSnapshot(ctx, info)
+  //   : await publish(ctx, info);
+
+  log.info('updating live in content-bus.');
+  const response = await contentBusCopy(context, info);
+
+  // check if redirect overwrites the content
+  const sourceRedirectLocation = await updateRedirect(context, info);
+
+  let { status } = response;
+  if (!response.ok) {
+    // handle redirects
+    if (status === 404) {
+      // tweak status if existing redirect
+      if (sourceRedirectLocation) {
+        status = 200;
+      }
+    }
+    if (status !== 304 && status !== 200) {
+      status = propagateStatusCode(status);
+      const level = logLevelForStatusCode(status);
+
+      const err = response.headers.get('x-error');
+      log[level](`error from content bus: ${response.status} ${err}`);
+      return new Response('error from content-bus', {
+        status,
+        headers: {
+          'x-error': err,
+        },
+      });
+    }
+  }
+
+  if (getMetadataPaths(context).includes(info.webPath) && await hasSimpleSitemap(context, info)) {
+    // TODO await bulkIndex(context, info, ['/*'], {
+    //   indexNames: ['#simple'],
+    // });
+  }
+  return publishStatus(context, info);
+}
 
 /**
  * Check whether a JSON published is actually the source of a sitemap, and if it isn't
@@ -70,7 +126,7 @@ export default async function publish(context, info) {
     }
   }
 
-  const response = await update(context, info);
+  const response = await liveUpdate(context, info);
   if (response.status !== 200) {
     return response;
   }
@@ -95,8 +151,7 @@ export default async function publish(context, info) {
     }
   }
 
-  // TODO
-  // if (!context.data?.disableNotifications) {
+  // TODO if (!context.data?.disableNotifications) {
   //   // todo: only notify if the resource was modified or newer
   //   await getNotifier(context).publish('resource-published', info, {
   //     status: response.status,

@@ -23,6 +23,15 @@ import {
 import { setAuthCookie } from './cookie.js';
 import localJWKS from '../idp-configs/jwks-json.js';
 
+/**
+ * Fetch tokens from IDP.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('./auth.d.ts').IDPConfig} idp IDP config
+ * @param {string} [tenantId] optional tenant id for the IDP
+ * @return {Promise<Response>} response
+ */
 async function fetchTokens(context, info, idp, tenantId) {
   const { data, log } = context;
 

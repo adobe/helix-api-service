@@ -208,7 +208,7 @@ describe('OneDrive Integration Tests (docx)', () => {
   it('Retrieves Document from Word via custom tenant', async () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
-      .login(undefined, '01234567-abcd')
+      .login(undefined, '01234567-abcd', '01234567-abcd')
       .resolve('')
       .getDocument('/index.docx', { size: 3956 });
 

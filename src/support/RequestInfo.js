@@ -9,6 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+/* eslint-disable max-classes-per-file */
+
 import { parse } from 'cookie';
 import { sanitizeName } from '@adobe/helix-shared-string';
 import { StatusCodeError } from './StatusCodeError.js';
@@ -136,17 +138,10 @@ export function computePaths(path) {
   };
 }
 
-export class RequestInfo {
-  #owner;
-
-  #repo;
-
-  #ref;
-
-  /**
-   * @constructs RequestInfo
-   * @param {import('@adobe/fetch').Request} request request
-   */
+/**
+ * Class containing the aspects of the HTTP request.
+ */
+class HttpRequest {
   constructor(request) {
     this.method = request.method.toUpperCase();
     this.headers = request.headers.plain();
@@ -158,6 +153,71 @@ export class RequestInfo {
     this.scheme = process.env.HLX_DEV_SERVER_SCHEME ?? 'https';
     this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.live';
     this.query = {};
+  }
+}
+
+/**
+ * Class containing the aspects of the decomposed path.
+ */
+class PathInfo {
+  constructor(route, org, site, path) {
+    this.route = route;
+    this.org = org;
+    this.site = site;
+    this.path = path;
+
+    if (path) {
+      const { webPath, resourcePath, ext } = computePaths(path);
+      if (ext === '.aspx') {
+        // onedrive doesn't like .aspx extension and reports wit 500. so we just reject it.
+        throw new StatusCodeError('', 404);
+      }
+      Object.assign(this, {
+        rawPath: path, webPath, resourcePath, ext,
+      });
+    }
+  }
+
+  /**
+   * Clone another path info.
+   *
+   * @param {PathInfo} other other info
+   * @param {object} param0 params
+   * @param {string} [param0.org] org, optional
+   * @param {string} [param0.site] site, optional
+   * @param {string} [param0.path] path, optional
+]  * @param {string} [param0.route] route, optional
+   * @returns {PathInfo} clone with the params overwritten
+   */
+  static clone(other, {
+    route, org, site, path,
+  }) {
+    return new PathInfo(
+      route ?? other.route,
+      org ?? other.org,
+      site ?? other.site,
+      path ?? other.path,
+    );
+  }
+}
+
+/**
+ * Class containing the aspects of both HTTP request and decomposed path.
+ */
+export class RequestInfo {
+  #request;
+
+  #pathInfo;
+
+  #owner;
+
+  #repo;
+
+  #ref;
+
+  constructor(request, pathInfo) {
+    this.#request = request;
+    this.#pathInfo = pathInfo;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -178,6 +238,34 @@ export class RequestInfo {
     return this;
   }
 
+  get method() {
+    return this.#request.method;
+  }
+
+  get headers() {
+    return this.#request.headers;
+  }
+
+  get buffer() {
+    return this.#request.buffer;
+  }
+
+  get cookies() {
+    return this.#request.cookies;
+  }
+
+  get scheme() {
+    return this.#request.scheme;
+  }
+
+  get host() {
+    return this.#request.host;
+  }
+
+  get query() {
+    return this.#request.query;
+  }
+
   get owner() {
     return this.#owner;
   }
@@ -190,10 +278,59 @@ export class RequestInfo {
     return this.#ref ?? 'main';
   }
 
+  get route() {
+    return this.#pathInfo.route;
+  }
+
+  get org() {
+    return this.#pathInfo.org;
+  }
+
+  get site() {
+    return this.#pathInfo.site;
+  }
+
+  get rawPath() {
+    return this.#pathInfo.rawPath;
+  }
+
+  get webPath() {
+    return this.#pathInfo.webPath;
+  }
+
+  get resourcePath() {
+    return this.#pathInfo.resourcePath;
+  }
+
+  get ext() {
+    return this.#pathInfo.ext;
+  }
+
   /**
    * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
+   * @param {object} param0 params
+   * @param {string} [param0.org] org, optional
+   * @param {string} [param0.site] site, optional
+   * @param {string} [param0.path] path, optional
+   * @param {string} [param0.ref] ref, optional
+   * @param {string} [param0.route] route, optional
+   * @returns {RequestInfo}
+   */
+  static create(request, {
+    org, site, path, ref, route,
+  } = {}) {
+    const httpRequest = new HttpRequest(request);
+    const pathInfo = new PathInfo(route, org, site, path);
+
+    return Object.freeze(new RequestInfo(httpRequest, pathInfo).withRef(ref));
+  }
+
+  /**
+   * Clone an existing request info.
+   *
+   * @param {RequestInfo} other
    * @param {object} param0 params
    * @param {string} [param0.org] org
    * @param {string} [param0.site] site, optional
@@ -201,26 +338,19 @@ export class RequestInfo {
    * @param {string} [param0.route] route
    * @returns {RequestInfo}
    */
-  static create(request, {
-    org, site, path, ref, route,
-  } = {}) {
-    const info = new RequestInfo(request)
-      .withRef(ref);
+  static clone(other, {
+    org, site, path, route,
+  }) {
+    const info = new RequestInfo(
+      other.#request,
+      PathInfo.clone(other.#pathInfo, {
+        org, site, path, route,
+      }),
+    );
+    info.#owner = other.#owner;
+    info.#repo = other.#repo;
+    info.#ref = other.#ref;
 
-    info.route = route;
-    info.org = org;
-    info.site = site;
-
-    if (path) {
-      const { webPath, resourcePath, ext } = computePaths(path);
-      if (ext === '.aspx') {
-        // onedrive doesn't like .aspx extension and reports wit 500. so we just reject it.
-        throw new StatusCodeError('', 404);
-      }
-      Object.assign(info, {
-        rawPath: path, webPath, resourcePath, ext,
-      });
-    }
     return Object.freeze(info);
   }
 

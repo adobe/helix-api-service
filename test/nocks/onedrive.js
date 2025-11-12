@@ -41,22 +41,20 @@ export class OneDriveNock {
     return this;
   }
 
-  login(auth = {
-    token_type: 'Bearer', refresh_token: 'dummy', access_token: 'dummy', expires_in: 181000,
-  }, tenant = 'adobe') {
+  resolveTenant(tenant = 'adobe', tenantId = 'fa7b1b5a-7b34-4387-94ae-d2c178decee1') {
     const { nocker } = this;
 
     nocker('https://login.windows.net')
       .get(`/${tenant}.onmicrosoft.com/.well-known/openid-configuration`)
       .optionally(true)
       .reply(200, {
-        issuer: `https://login.microsoftonline.com/${tenant}/v2.0`,
+        issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
       });
     nocker('https://login.microsoftonline.com')
-      .get(`/common/discovery/instance?api-version=1.1&authorization_endpoint=https://login.windows.net/${tenant}/oauth2/v2.0/authorize`)
+      .get(`/common/discovery/instance?api-version=1.1&authorization_endpoint=https://login.windows.net/${tenantId}/oauth2/v2.0/authorize`)
       .optionally(true)
       .reply(200, {
-        tenant_discovery_endpoint: `https://login.windows.net/${tenant}/v2.0/.well-known/openid-configuration`,
+        tenant_discovery_endpoint: `https://login.windows.net/${tenantId}/v2.0/.well-known/openid-configuration`,
         'api-version': '1.1',
         metadata: [
           {
@@ -71,21 +69,32 @@ export class OneDriveNock {
           },
         ],
       })
-      .get(`/${tenant}/v2.0/.well-known/openid-configuration`)
+      .get(`/${tenantId}/v2.0/.well-known/openid-configuration`)
       .optionally(true)
       .reply(200, {
-        token_endpoint: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
-        issuer: `https://login.microsoftonline.com/${tenant}/v2.0`,
-        authorization_endpoint: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
+        token_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+        issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
+        authorization_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`,
         token_endpoint_auth_methods_supported: ['client_secret_post', 'private_key_jwt', 'client_secret_basic'],
-        jwks_uri: `https://login.microsoftonline.com/${tenant}/discovery/v2.0/keys`,
+        jwks_uri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
         response_modes_supported: ['query', 'fragment', 'form_post'],
         subject_types_supported: ['pairwise'],
         id_token_signing_alg_values_supported: ['RS256'],
         response_types_supported: ['code', 'id_token', 'code id_token', 'id_token token'],
         scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
-      })
-      .post(`/${tenant}/oauth2/v2.0/token`)
+      });
+    return this;
+  }
+
+  login(auth = {
+    token_type: 'Bearer', refresh_token: 'dummy', access_token: 'dummy', expires_in: 181000,
+  }, tenant = 'adobe', tenantId = 'fa7b1b5a-7b34-4387-94ae-d2c178decee1') {
+    const { nocker } = this;
+
+    this.resolveTenant(tenant, tenantId);
+
+    nocker('https://login.microsoftonline.com')
+      .post(`/${tenantId}/oauth2/v2.0/token`)
       .query((query) => {
         /* we only accept client-request-id or no query */
         if (query) {

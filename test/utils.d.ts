@@ -34,7 +34,8 @@ declare interface GoogleNock {
 
 declare interface OneDriveNock {
   user(): OneDriveNock
-  login(auth?: any, tenant?: string): OneDriveNock
+  resolveTenant(tenant?: string, tenantId?: string): OneDriveNock;
+  login(auth?: any, tenant?: string, tenantId?: string): OneDriveNock
   resolve(path: string, opts: any): OneDriveNock
   getSiteItem(site: string, itemId: string, opts?: any): OneDriveNock
   getFile(path: string, item?: any): OneDriveNock

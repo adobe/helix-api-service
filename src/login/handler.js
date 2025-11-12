@@ -20,6 +20,7 @@ import { createCloseHtml, createSendMessageHtml } from '../auth/responses.js';
 import { IDPS, LOGOUT_PATH, PROFILE_PATH } from '../auth/support.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { isDAMountpoint } from '../support/adobe-source.js';
+import { RequestInfo } from '../support/RequestInfo.js';
 import idpAdobe from '../idp-configs/adobe.js';
 import localJWKS from '../idp-configs/jwks-json.js';
 import { loadSiteConfig } from '../config/utils.js';
@@ -220,10 +221,9 @@ export async function auth(context, info) {
       data.org = data.state.org;
       data.site = data.state.site;
 
-      // eslint-disable-next-line no-param-reassign
-      // TODO: info.org = data.org;
-      // eslint-disable-next-line no-param-reassign
-      // TODO: info.site = data.site;
+      const clone = RequestInfo.clone(info, {
+        org: data.org, site: data.site,
+      });
 
       if (!data.code) {
         if (data.state.prompt === 'none') {
@@ -239,7 +239,7 @@ export async function auth(context, info) {
           status: 401,
         });
       }
-      return exchangeToken(context, info, idp, data.state.tenantId);
+      return exchangeToken(context, clone, idp, data.state.tenantId);
     }
   }
   return new Response('', {

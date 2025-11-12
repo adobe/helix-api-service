@@ -636,7 +636,8 @@ const purge = {
 
     // create new path info with the ref given. this allows code-purges to force a purge of the branch
     const forcedInfo = {
-      ...info,
+      org: info.org,
+      site: info.site,
       owner: info.owner,
       repo: info.repo,
       ref,

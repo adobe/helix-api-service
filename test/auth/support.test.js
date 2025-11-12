@@ -177,36 +177,31 @@ describe('Support Test', () => {
     });
 
     it('returns null for transient site token if not protected', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             apiKeyId: [],
           },
         },
       });
-      const { context, info } = setupTest();
 
       assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
     });
 
     it('returns null for transient site token if not protected helix 5 site for helix@adobe.com', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             apiKeyId: [],
           },
         },
       });
-      const { context, info } = setupTest();
 
       assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'helix@adobe.com'), null);
     });
 
     it('returns transient preview site token if access.allowed', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             allow: ['test@example.com'],
@@ -215,8 +210,6 @@ describe('Support Test', () => {
             allow: ['*@example.com'],
           },
         },
-      });
-      const { context, info } = setupTest({
         env: {
           HLX_ADMIN_TST_PRIVATE_KEY: JSON.stringify(privateJwk),
         },
@@ -234,8 +227,7 @@ describe('Support Test', () => {
       const OneHour = 1 * 60 * 60 * 1000;
       const FiveSeconds = 5 * 1000;
 
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             allow: ['test@example.com'],
@@ -244,8 +236,6 @@ describe('Support Test', () => {
             allow: ['*@example.com'],
           },
         },
-      });
-      const { context, info } = setupTest({
         env: {
           HLX_ADMIN_TST_PRIVATE_KEY: JSON.stringify(privateJwk),
         },
@@ -260,8 +250,7 @@ describe('Support Test', () => {
     });
 
     it('returns transient live site token if access.allowed', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             allow: ['test@example.com'],
@@ -270,8 +259,6 @@ describe('Support Test', () => {
             allow: ['*@example.com'],
           },
         },
-      });
-      const { context, info } = setupTest({
         env: {
           HLX_ADMIN_TST_PRIVATE_KEY: JSON.stringify(privateJwk),
         },
@@ -289,8 +276,7 @@ describe('Support Test', () => {
       const OneHour = 1 * 60 * 60 * 1000;
       const FiveSeconds = 5 * 1000;
 
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             allow: ['test@example.com'],
@@ -299,8 +285,6 @@ describe('Support Test', () => {
             allow: ['*@example.com'],
           },
         },
-      });
-      const { context, info } = setupTest({
         env: {
           HLX_ADMIN_TST_PRIVATE_KEY: JSON.stringify(privateJwk),
         },
@@ -315,8 +299,7 @@ describe('Support Test', () => {
     });
 
     it('returns null for transient site token if not authorized', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      const { context, info } = setupTest({
         access: {
           preview: {
             apiKeyId: ['admin'],
@@ -328,13 +311,15 @@ describe('Support Test', () => {
           },
         },
       });
-      const { context, info } = setupTest();
       assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
     });
 
     it.skip('returns null if there is an error during role resolution', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+        .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/foo.json?x-id=GetObject')
+        .reply(404);
+
+      const { context, info } = setupTest({
         access: {
           preview: {
             apiKeyId: ['admin'],
@@ -346,17 +331,15 @@ describe('Support Test', () => {
           },
         },
       });
-      nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-        .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/foo.json?x-id=GetObject')
-        .reply(404);
-
-      const { context, info } = setupTest();
       assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
     });
 
     it.skip('returns null if there is an exception during role resolution', async () => {
-      nock.siteConfig({
-        ...SITE_CONFIG,
+      nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+        .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/foo.json?x-id=GetObject')
+        .reply(401);
+
+      const { context, info } = setupTest({
         access: {
           preview: {
             apiKeyId: ['admin'],
@@ -367,12 +350,7 @@ describe('Support Test', () => {
             },
           },
         },
-      }, 'owner', 'repo', 'main');
-      nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-        .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/foo.json?x-id=GetObject')
-        .reply(401);
-
-      const { context, info } = setupTest();
+      });
       assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
     });
   });

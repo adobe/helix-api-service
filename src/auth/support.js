@@ -18,7 +18,6 @@ import {
 
 import { AbortController } from '@adobe/fetch';
 
-import { loadSiteConfig } from '../config/utils.js';
 import idpMicrosoft from '../idp-configs/microsoft.js';
 import idpAdmin from '../idp-configs/admin.js';
 import idpGoogle from '../idp-configs/google.js';
@@ -239,7 +238,7 @@ export async function getSiteAuthToken(context, partition) {
  * @returns {Promise<object|null>}
  */
 export async function getTransientSiteTokenInfo(context, info, email, tokenExpiry) {
-  const config = await loadSiteConfig(context, info.org, info.site);
+  const { attributes: { config } } = context;
 
   // get access config
   const allowPreview = config.access?.preview?.allow ?? [];
@@ -400,16 +399,8 @@ export async function getAuthInfo(context, info) {
         // }
 
         const { attributes: { config, orgConfig } } = context;
-        let siteApiKeyId = config?.access?.admin?.apiKeyId || [];
-        if (!Array.isArray(siteApiKeyId)) {
-          siteApiKeyId = [siteApiKeyId];
-        }
-        let orgApiKeyId = orgConfig?.access?.admin?.apiKeyId || [];
-        if (!Array.isArray(orgApiKeyId)) {
-          orgApiKeyId = [orgApiKeyId];
-        }
-        if (siteApiKeyId.indexOf(profile.jti) < 0 && orgApiKeyId.indexOf(profile.jti) < 0) {
-          const apiKeyId = [...siteApiKeyId, ...orgApiKeyId];
+        const apiKeyId = config?.access?.admin?.apiKeyId || orgConfig?.access?.admin?.apiKeyId;
+        if (apiKeyId.indexOf(profile.jti) < 0) {
           log.warn(`auth: api token invalid: jti ${profile.jti} does not match configured id [${apiKeyId}] in ${info.org}/${info.site || '*'}`);
           return AuthInfo.Default();
         }

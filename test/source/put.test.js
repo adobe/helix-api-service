@@ -70,7 +70,7 @@ describe('Source PUT Tests', () => {
     const result = await putSource({ context, info });
     assert.ok(headCalled, 'head should have been called');
     assert.ok(putCalled, 'put should have been called');
-    assert.equal(result.status, 200);
+    assert.equal(result.status, 201);
     assert.equal(result.metadata.id, 'existing-id-123');
   });
 
@@ -116,7 +116,7 @@ describe('Source PUT Tests', () => {
     };
 
     const result = await putSource({ context, info });
-    assert.equal(result.status, 200);
+    assert.equal(result.status, 201);
     assert.equal(result.metadata.id, generatedId);
   });
 
@@ -272,7 +272,7 @@ describe('Source PUT Tests', () => {
     };
 
     const result = await putSource({ context, info });
-    assert.equal(result.status, 200);
+    assert.equal(result.status, 201);
     assert.ok(result.metadata.id);
   });
 
@@ -334,7 +334,7 @@ describe('Source PUT Tests', () => {
     const mockPut = async (path, body, contentType, metadata) => {
       assert.equal(body, 'Updated content');
       assert.equal(metadata.id, 'existing-id-123');
-      return { $metadata: { httpStatusCode: 200 } };
+      return { $metadata: { httpStatusCode: 204 } };
     };
 
     const bucket = {
@@ -354,7 +354,7 @@ describe('Source PUT Tests', () => {
     };
 
     const result = await putSource({ context, info });
-    assert.equal(result.status, 200);
+    assert.equal(result.status, 204);
     assert.equal(result.metadata.id, 'existing-id-123');
   });
 
@@ -449,7 +449,7 @@ describe('Source PUT Tests', () => {
 
     const result = await putSource({ context, info });
     // When guid is provided for non-existent resource, it uses the provided guid
-    assert.equal(result.status, 200);
+    assert.equal(result.status, 201);
     assert.equal(result.metadata.id, 'provided-id-456');
   });
 });

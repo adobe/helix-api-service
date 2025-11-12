@@ -17,13 +17,13 @@ async function handle(context, info) {
   try {
     switch (info.method) {
       case 'GET':
-        return getSource({ context, info });
+        return await getSource({ context, info });
       case 'PUT':
-        return putSource({ context, info });
+        return await putSource({ context, info });
       // case 'DELETE':
       //   return deleteSource(context, info);
       case 'HEAD':
-        return getSource({ context, info, headOnly: true });
+        return await getSource({ context, info, headOnly: true });
       default:
         return {
           body: 'method not allowed',

@@ -57,7 +57,9 @@ export async function putSource({ context, info }) {
       timestamp: `${Date.now()}`,
       users: JSON.stringify(getUsers(context)),
     });
-    return { status: resp.$metadata.httpStatusCode, metadata: { id: ID } };
+
+    const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
+    return { status, metadata: { id: ID } };
   } catch (e) {
     return { status: e.$metadata?.httpStatusCode || 500, metadata: { id: ID } };
   }

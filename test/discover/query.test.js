@@ -18,9 +18,7 @@ import path from 'path';
 import { AcquireMethod } from '@adobe/helix-onedrive-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import query from '../../src/discover/query.js';
-import {
-  createContext, createInfo, Nock, SITE_CONFIG,
-} from '../utils.js';
+import { createContext, Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Discover query tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -94,6 +92,215 @@ describe('Discover query tests', () => {
     const { context } = setupTest('https://www.aem.live');
     const resp = await query(context);
     assert.strictEqual(resp.status, 404);
+  });
+
+
+  it('returns empty result for known sharepoint without any entry', async () => {
+    const url = 'https://other.sharepoint.com/:w:/r/sites/subsites/_layouts/15/Doc.aspx?sourcedoc=%7BBD3692CF-8BF0-4730-9360-A47F52E124B2%7D&file=index.docx&action=default&mobileredirect=true';
+
+    nock.onedrive(SITE_CONFIG.content)
+      .user('default');
+
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/default/inventory-v2.json?x-id=GetObject')
+      .reply(200, {
+        entries: [{}],
+        hostTypes: {
+          'other.sharepoint.com': 'sharepoint',
+        },
+      });
+
+    const { context } = setupTest(url);
+    const resp = await query(context);
+
+    assert.strictEqual(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+    });
+    const actual = await resp.json();
+    assert.deepStrictEqual(actual, []);
+  });
+
+  it('returns empty result for bad sharepoint path name', async () => {
+    const url = 'https://other.sharepoint.com//?startedResponseCatch=true#startedResponseCatch=true&view=0';
+
+    nock.onedrive(SITE_CONFIG.content)
+      .user('default');
+
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/default/inventory-v2.json?x-id=GetObject')
+      .reply(200, {
+        entries: [{}],
+        hostTypes: {
+          'other.sharepoint.com': 'sharepoint',
+        },
+      });
+
+    const { context } = setupTest(url);
+    const resp = await query(context);
+
+    assert.strictEqual(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+    });
+    const actual = await resp.json();
+    assert.deepStrictEqual(actual, []);
+  });
+
+  it('returns result for known sharepoint that only matches host name', async () => {
+    const url = 'https://other.sharepoint.com/:w:/r/sites/subsites/_layouts/15/Doc.aspx?sourcedoc=%7BBD3692CF-8BF0-4730-9360-A47F52E124B2%7D&file=index.docx&action=default&mobileredirect=true';
+
+    nock.onedrive(SITE_CONFIG.content)
+      .login(undefined, 'other')
+      .user('default');
+
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/default/inventory-v2.json?x-id=GetObject')
+      .reply(200, {
+        entries: [{
+          sharepointSite: 'https://other.sharepoint.com/',
+        }],
+        hostTypes: {
+          'other.sharepoint.com': 'sharepoint',
+        },
+      });
+    nock('https://graph.microsoft.com')
+      .get('/v1.0/sites/other.sharepoint.com:/sites/subsites:/items/BD3692CF-8BF0-4730-9360-A47F52E124B2')
+      .reply(200, {
+        webUrl: 'https://other.sharepoint.com/sites/mysite/Shared%20Documents/index.docx',
+      });
+
+    const { context } = setupTest(url);
+    const resp = await query(context);
+
+    assert.strictEqual(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+    });
+    const actual = await resp.json();
+    assert.strictEqual(actual.length, 1);
+  });
+
+  it('returns all entries for url=*', async () => {
+    const url = '*';
+
+    const inventory = JSON.parse(await loadFile('inventory-small.json'));
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/default/inventory-v2.json?x-id=GetObject')
+      .reply(200, inventory);
+
+    const { context } = setupTest(url, {
+      authInfo: AuthInfo.Default().withPermissions(['discover:list']),
+    });
+    const resp = await query(context);
+
+    assert.strictEqual(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+    });
+    const actual = await resp.json();
+
+    assert.deepStrictEqual(actual, [{
+      originalRepository: true,
+      org: 'company',
+      site: 'test',
+      originalSite: true,
+      owner: 'company',
+      repo: 'test',
+    },
+    {
+      originalRepository: true,
+      org: 'company',
+      site: 'testother',
+      originalSite: true,
+      owner: 'company',
+      repo: 'testother',
+    }]);
+  });
+
+  it('returns only original repository for boilerplate', async () => {
+    const url = 'https://drive.google.com/drive/u/0/folders/1gpVvMWaxoXxVvtq0LLbbMyF6_H_IB6th';
+
+    const inventory = JSON.parse(await loadFile('inventory-boilerplate.json'));
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/default/inventory-v2.json?x-id=GetObject')
+      .reply(200, inventory);
+
+    nock.google(SITE_CONFIG.content)
+      .user('default');
+
+    nock('https://www.googleapis.com')
+      .get('/drive/v3/files/1gpVvMWaxoXxVvtq0LLbbMyF6_H_IB6th')
+      .query(true)
+      .reply(200, {
+        name: 'documents',
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [
+          '1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
+        ],
+        modifiedTime: '2022-04-12T08:38:14.913Z',
+      })
+      .get('/drive/v3/files/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1')
+      .query(true)
+      .reply(200, {
+        name: 'aem-boilerplate',
+        mimeType: 'application/vnd.google-apps.folder',
+        modifiedTime: '2022-04-12T08:30:18.845Z',
+      });
+
+    const { context } = setupTest(url, {
+      authInfo: new AuthInfo().withRole('basic_publish'),
+    });
+    const resp = await query(context);
+
+    assert.strictEqual(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+    });
+    const actual = await resp.json();
+
+    assert.deepStrictEqual(actual, [{
+      org: 'adobe',
+      site: 'aem-boilerplate',
+      owner: 'adobe',
+      repo: 'aem-boilerplate',
+      originalRepository: true,
+      originalSite: true,
+    }]);
+  });
+
+  it('returns empty result for bad pathname', async () => {
+    const url = 'https://other.sharepoint.com//';
+
+    nock.onedrive(SITE_CONFIG.content)
+      .user('default');
+
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/default/inventory-v2.json?x-id=GetObject')
+      .reply(200, {
+        entries: [{
+          sharepointSite: 'https://other.sharepoint.com/',
+        }],
+        hostTypes: {
+          'other.sharepoint.com': 'sharepoint',
+        },
+      });
+
+    const { context } = setupTest(url);
+    const resp = await query(context);
+
+    assert.strictEqual(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+    });
+    const actual = await resp.json();
+    assert.strictEqual(actual.length, 0);
+  });
+
+  it('list needs discover:list permission', async () => {
+    const { context } = setupTest('*');
+
+    await assert.rejects(query(context), Error('discover:list'));
   });
 
   describe('with large inventory', () => {
@@ -981,213 +1188,5 @@ describe('Discover query tests', () => {
         repo: 'subsiteA',
       }]);
     });
-  });
-
-  it('returns empty result for known sharepoint without any entry', async () => {
-    const url = 'https://other.sharepoint.com/:w:/r/sites/subsites/_layouts/15/Doc.aspx?sourcedoc=%7BBD3692CF-8BF0-4730-9360-A47F52E124B2%7D&file=index.docx&action=default&mobileredirect=true';
-
-    nock.onedrive(SITE_CONFIG.content)
-      .user('default');
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, {
-        entries: [{}],
-        hostTypes: {
-          'other.sharepoint.com': 'sharepoint',
-        },
-      });
-
-    const { context } = setupTest(url);
-    const resp = await query(context);
-
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.deepStrictEqual(actual, []);
-  });
-
-  it('returns empty result for bad sharepoint path name', async () => {
-    const url = 'https://other.sharepoint.com//?startedResponseCatch=true#startedResponseCatch=true&view=0';
-
-    nock.onedrive(SITE_CONFIG.content)
-      .user('default');
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, {
-        entries: [{}],
-        hostTypes: {
-          'other.sharepoint.com': 'sharepoint',
-        },
-      });
-
-    const { context } = setupTest(url);
-    const resp = await query(context);
-
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.deepStrictEqual(actual, []);
-  });
-
-  it('returns result for known sharepoint that only matches host name', async () => {
-    const url = 'https://other.sharepoint.com/:w:/r/sites/subsites/_layouts/15/Doc.aspx?sourcedoc=%7BBD3692CF-8BF0-4730-9360-A47F52E124B2%7D&file=index.docx&action=default&mobileredirect=true';
-
-    nock.onedrive(SITE_CONFIG.content)
-      .login(undefined, 'other')
-      .user('default');
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, {
-        entries: [{
-          sharepointSite: 'https://other.sharepoint.com/',
-        }],
-        hostTypes: {
-          'other.sharepoint.com': 'sharepoint',
-        },
-      });
-    nock('https://graph.microsoft.com')
-      .get('/v1.0/sites/other.sharepoint.com:/sites/subsites:/items/BD3692CF-8BF0-4730-9360-A47F52E124B2')
-      .reply(200, {
-        webUrl: 'https://other.sharepoint.com/sites/mysite/Shared%20Documents/index.docx',
-      });
-
-    const { context } = setupTest(url);
-    const resp = await query(context);
-
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.strictEqual(actual.length, 1);
-  });
-
-  it('returns all entries for url=*', async () => {
-    const url = '*';
-
-    const inventory = JSON.parse(await loadFile('inventory-small.json'));
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, inventory);
-
-    const { context } = setupTest(url, {
-      authInfo: AuthInfo.Default().withPermissions(['discover:list']),
-    });
-    const resp = await query(context);
-
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-
-    assert.deepStrictEqual(actual, [{
-      originalRepository: true,
-      org: 'company',
-      site: 'test',
-      originalSite: true,
-      owner: 'company',
-      repo: 'test',
-    },
-    {
-      originalRepository: true,
-      org: 'company',
-      site: 'testother',
-      originalSite: true,
-      owner: 'company',
-      repo: 'testother',
-    }]);
-  });
-
-  it('returns only original repository for boilerplate', async () => {
-    const url = 'https://drive.google.com/drive/u/0/folders/1gpVvMWaxoXxVvtq0LLbbMyF6_H_IB6th';
-
-    const inventory = JSON.parse(await loadFile('inventory-boilerplate.json'));
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, inventory);
-
-    nock.google(SITE_CONFIG.content)
-      .user('default');
-
-    nock('https://www.googleapis.com')
-      .get('/drive/v3/files/1gpVvMWaxoXxVvtq0LLbbMyF6_H_IB6th')
-      .query(true)
-      .reply(200, {
-        name: 'documents',
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [
-          '1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
-        ],
-        modifiedTime: '2022-04-12T08:38:14.913Z',
-      })
-      .get('/drive/v3/files/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1')
-      .query(true)
-      .reply(200, {
-        name: 'aem-boilerplate',
-        mimeType: 'application/vnd.google-apps.folder',
-        modifiedTime: '2022-04-12T08:30:18.845Z',
-      });
-
-    const { context } = setupTest(url, {
-      authInfo: new AuthInfo().withRole('basic_publish'),
-    });
-    const resp = await query(context);
-
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-
-    assert.deepStrictEqual(actual, [{
-      org: 'adobe',
-      site: 'aem-boilerplate',
-      owner: 'adobe',
-      repo: 'aem-boilerplate',
-      originalRepository: true,
-      originalSite: true,
-    }]);
-  });
-
-  it('returns empty result for bad pathname', async () => {
-    const url = 'https://other.sharepoint.com//';
-
-    nock.onedrive(SITE_CONFIG.content)
-      .user('default');
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, {
-        entries: [{
-          sharepointSite: 'https://other.sharepoint.com/',
-        }],
-        hostTypes: {
-          'other.sharepoint.com': 'sharepoint',
-        },
-      });
-
-    const { context } = setupTest(url);
-    const resp = await query(context);
-
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.strictEqual(actual.length, 0);
-  });
-
-  it('list needs discover:list permission', async () => {
-    const { context } = setupTest('*');
-
-    await assert.rejects(query(context), Error('discover:list'));
   });
 });

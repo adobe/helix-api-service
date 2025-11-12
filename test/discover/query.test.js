@@ -94,7 +94,6 @@ describe('Discover query tests', () => {
     assert.strictEqual(resp.status, 404);
   });
 
-
   it('returns empty result for known sharepoint without any entry', async () => {
     const url = 'https://other.sharepoint.com/:w:/r/sites/subsites/_layouts/15/Doc.aspx?sourcedoc=%7BBD3692CF-8BF0-4730-9360-A47F52E124B2%7D&file=index.docx&action=default&mobileredirect=true';
 

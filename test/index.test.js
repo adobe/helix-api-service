@@ -233,6 +233,30 @@ describe('Index Tests', () => {
     assert.strictEqual(await result.text(), '');
   });
 
+  it('sends 204 for OPTIONS request', async () => {
+    const result = await main(new Request('https://admin.hlx.page/', {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'api.aem.live',
+      },
+    }), {
+      pathInfo: {
+        suffix: '/org/sites/site/status/',
+      },
+    });
+    assert.strictEqual(result.status, 204);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, HEAD, POST, PUT, OPTIONS, DELETE',
+      'access-control-allow-headers': 'Authorization, x-auth-token, x-content-source-authorization, content-type',
+      'access-control-allow-origin': 'api.aem.live',
+      'access-control-max-age': '86400',
+      'access-control-expose-headers': 'x-error, x-error-code',
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+    });
+  });
+
   it('verifies extraction of variables', () => {
     const entries = [{
       suffix: '/auth/discovery/keys',

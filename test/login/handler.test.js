@@ -82,10 +82,6 @@ function extractTokenFromMessageHTML(html) {
   return html.match(/"authToken":"([^"]+)"/)[1];
 }
 
-function extractSiteTokenFromMessageHTML(html) {
-  return html.match(/"siteToken":"([^"]+)"/)[1];
-}
-
 describe('Login Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;

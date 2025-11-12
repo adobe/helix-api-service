@@ -24,11 +24,11 @@ export class GoogleNock {
     });
   }
 
-  user(cacheData = {
+  user(contentBusId = this.contentBusId, cacheData = {
     refresh_token: 'dummy-refresh-token',
     access_token: 'dummy-access-token',
   }) {
-    const { nocker, contentBusId } = this;
+    const { nocker } = this;
 
     nocker.content(contentBusId)
       .head('/.helix-auth/auth-google-content.json')

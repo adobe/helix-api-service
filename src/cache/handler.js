@@ -13,7 +13,7 @@ import { Response } from '@adobe/fetch';
 import purge, { PURGE_PREVIEW_AND_LIVE } from './purge.js';
 
 /**
- * Allowed methods for that handler.
+ * Allowed methods for that handler
  */
 const ALLOWED_METHODS = ['POST'];
 

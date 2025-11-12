@@ -10,33 +10,38 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import purge, { PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
-import { rebuildSitemap } from './update.js';
+import query from './query.js';
+// import reindex from './reindex.js';
+// import remove from './remove.js';
 
 /**
  * Allowed methods for that handler
  */
-const ALLOWED_METHODS = ['POST'];
+const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**
- * Handles the sitemap route
+ * Handles the discover route.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function sitemapHandler(context, info) {
+export default async function discoverHandler(context, info) {
+  const { attributes: { authInfo } } = context;
+
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
       status: 405,
     });
   }
-
-  const response = await rebuildSitemap(context, info, { updatePreview: true });
-  if (response.status === 200) {
-    const result = await response.json();
-    await purge.content(context, info, result.paths, PURGE_PREVIEW_AND_LIVE);
-    return new Response(result, { status: 200 });
+  if (info.method === 'GET') {
+    return query(context, info);
   }
-  return response;
+
+  authInfo.assertPermissions('discover:write');
+  // if (info.method === 'POST') {
+  //   return reindex(context, info);
+  // }
+  // return remove(context, info);
+  return new Response('', { status: 405 });
 }

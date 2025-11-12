@@ -10,9 +10,11 @@
  * governing permissions and limitations under the License.
  */
 /* eslint-disable no-param-reassign */
-
-import { OneDrive } from '@adobe/helix-onedrive-support';
+import { OneDrive, OneDriveAuth } from '@adobe/helix-onedrive-support';
+import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { StatusCodeError } from './StatusCodeError.js';
+
+const APP_USER_AGENT = 'NONISV|Adobe|AEMContentSync/1.0';
 
 /**
  * Returns the edit folders for the given drive item.
@@ -172,4 +174,43 @@ export async function resolveResource(context, info, { source }) {
     size: driveItem.size || 0,
     driveItem, // we include the driveItem here, but it is only used by lookup.
   };
+}
+
+/**
+ * Get or create a OneDrive client.
+ *
+ * @param {string} org org
+ * @param {string} site site
+ * @param {string} contentBusId content bus id
+ * @param {string} tenant tenant id
+ * @param {object} logFields log fields
+ * @returns {Promise<OneDrive>} onedrive client
+ */
+export async function getOneDriveClient({
+  bucketMap, org, contentBusId, tenant, logFields, env, log,
+}) {
+  const { code: codeBucket, content: contentBucket } = bucketMap;
+  const cachePlugin = await getCachePlugin({
+    owner: org,
+    contentBusId,
+    log,
+    codeBucket,
+    contentBucket,
+  }, 'onedrive');
+
+  const auth = new OneDriveAuth({
+    log,
+    clientId: env.AZURE_HELIX_SERVICE_CLIENT_ID,
+    clientSecret: env.AZURE_HELIX_SERVICE_CLIENT_SECRET,
+    cachePlugin,
+    tenant,
+    acquireMethod: env.AZURE_HELIX_SERVICE_ACQUIRE_METHOD,
+    logFields,
+  });
+
+  return new OneDrive({
+    userAgent: APP_USER_AGENT,
+    auth,
+    log,
+  });
 }

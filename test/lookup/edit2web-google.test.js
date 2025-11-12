@@ -35,19 +35,24 @@ describe('edit2web Google Tests', () => {
     nock.done();
   });
 
+  const suffix = '/owner/sites/repo/status/page';
+
+  function setupTest() {
+    const context = createContext(suffix);
+    const info = createInfo(suffix);
+    return { context, info };
+  }
+
   it('returns error when document does not exist', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/documents/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
     nock.google(SITE_CONFIG.content)
       .user()
       .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(404);
 
-    const result = await edit2web(
-      createContext(suffix),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       error: 'Handler google could not lookup https://drive.google.com/drive/documents/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys.',
       status: 404,
@@ -55,7 +60,6 @@ describe('edit2web Google Tests', () => {
   });
 
   it('returns error when document name contains illegal characters', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
     nock.google(SITE_CONFIG.content)
@@ -73,11 +77,9 @@ describe('edit2web Google Tests', () => {
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       });
 
-    const result = await edit2web(
-      createContext(suffix),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       error: 'Illegal characters in document path',
       status: 404,
@@ -85,7 +87,6 @@ describe('edit2web Google Tests', () => {
   });
 
   it('adds `illegalPath` for documents', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/u/2/folders/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
     nock.google(SITE_CONFIG.content)
@@ -109,11 +110,9 @@ describe('edit2web Google Tests', () => {
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       });
 
-    const result = await edit2web(
-      createContext(suffix),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       editContentType: 'application/vnd.google-apps.document',
       editFolders: [
@@ -140,7 +139,6 @@ describe('edit2web Google Tests', () => {
   });
 
   it('adds `illegalPath` for folders', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'https://drive.google.com/drive/u/2/folders/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
     nock.google(SITE_CONFIG.content)
@@ -158,11 +156,9 @@ describe('edit2web Google Tests', () => {
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       });
 
-    const result = await edit2web(
-      createContext(suffix),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       editContentType: 'application/folder',
       editFolders: [
@@ -184,18 +180,15 @@ describe('edit2web Google Tests', () => {
   });
 
   it('returns error when handler throws', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
     nock.google(SITE_CONFIG.content)
       .user()
       .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(500);
 
-    const result = await edit2web(
-      createContext(suffix),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       error: 'Handler google could not lookup gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys.',
       status: 404,
@@ -203,18 +196,15 @@ describe('edit2web Google Tests', () => {
   });
 
   it('passes information about throttling', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const editUrl = 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys';
 
     nock.google(SITE_CONFIG.content)
       .user()
       .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys').reply(429);
 
-    const result = await edit2web(
-      createContext(suffix),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       error: 'Handler google could not lookup gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys: (429) ',
       severity: 'warn',

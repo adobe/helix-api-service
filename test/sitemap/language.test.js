@@ -21,18 +21,21 @@ describe('Sitemap Language tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('../../src/support/AdminContext.js')} */
+  let context;
+
   beforeEach(() => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
+
+    context = createContext('/org/sites/site/sitemap');
   });
 
   afterEach(() => {
     nock.done();
   });
-
-  const suffix = '/org/sites/site/sitemap/';
 
   it('alternate with prefix and suffix', async () => {
     nock.content()
@@ -45,7 +48,6 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
     const language = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json',
@@ -71,7 +73,6 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
     const language = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json',
@@ -96,14 +97,12 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json',
       hreflang: 'en',
       alternate: '/en/{path}',
-    });
-    await language.init(context);
+    }).init(context);
 
     const { canonicals } = language;
     assert.deepStrictEqual([...canonicals], [
@@ -122,14 +121,12 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json',
       hreflang: 'en',
       alternate: '{path}',
-    });
-    await language.init(context);
+    }).init(context);
 
     const { canonicals } = language;
     assert.deepStrictEqual([...canonicals], [
@@ -148,13 +145,11 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json',
       hreflang: 'en',
-    });
-    await language.init(context);
+    }).init(context);
 
     const { canonicals } = language;
     assert.deepStrictEqual([...canonicals], [
@@ -173,13 +168,11 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json',
       hreflang: 'en',
-    });
-    await language.init(context);
+    }).init(context);
 
     const { canonicals } = language;
     assert.deepStrictEqual([...canonicals], [
@@ -200,7 +193,6 @@ describe('Sitemap Language tests', () => {
         },
       }));
 
-    const context = createContext(suffix);
     const language = new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/query-index.json',
@@ -221,14 +213,12 @@ describe('Sitemap Language tests', () => {
         },
       }));
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/query-index.json?sheet=sitemap-de',
       hreflang: 'de',
       alternate: '/de/{path}',
-    });
-    await language.init(context);
+    }).init(context);
 
     const { canonicals } = language;
     assert.deepStrictEqual([...canonicals], [
@@ -275,7 +265,6 @@ describe('Sitemap Language tests', () => {
         },
       }));
 
-    const context = createContext(suffix);
     const language = new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/query-index.json?sheet=sitemap-fr',
@@ -308,14 +297,12 @@ describe('Sitemap Language tests', () => {
   </url>
 </urlset>>`);
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: 'https://www.example.com/it/sitemap.xml',
       hreflang: 'it',
       alternate: '/it/{path}',
-    });
-    await language.init(context);
+    }).init(context);
 
     const { canonicals } = language;
     assert.deepStrictEqual([...canonicals], [
@@ -369,15 +356,13 @@ describe('Sitemap Language tests', () => {
         },
       }));
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/de/query-index.json',
       hreflang: 'de',
       alternate: '/de/{path}',
       lastmod: 'YYYY-MM-DD',
-    });
-    await language.init(context);
+    }).init(context);
 
     const urls = language.urls().map(({ location, lastmod }) => ({ location, lastmod }));
     assert.deepStrictEqual(urls, [
@@ -399,15 +384,13 @@ describe('Sitemap Language tests', () => {
         },
       }));
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/de/query-index.json',
       hreflang: 'de',
       alternate: '/de/{path}',
       lastmod: 'YYYY-MM-DD',
-    });
-    await language.init(context);
+    }).init(context);
 
     const urls = language.urls().map(({ location, lastmod }) => ({ location, lastmod }));
     assert.deepStrictEqual(urls, [
@@ -429,15 +412,13 @@ describe('Sitemap Language tests', () => {
         },
       }));
 
-    const context = createContext(suffix);
-    const language = new SitemapLanguage({
+    const language = await new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/de/query-index.json',
       hreflang: 'de',
       alternate: '/de/{path}',
       lastmod: 'YYYY-MM-DD',
-    });
-    await language.init(context);
+    }).init(context);
 
     const xml = language.toXML();
     assert.deepStrictEqual(xml, `  <url>
@@ -465,7 +446,6 @@ describe('Sitemap Language tests', () => {
         ],
       }));
 
-    const context = createContext(suffix);
     const language = new SitemapLanguage({
       origin: 'https://www.origin.com',
       source: '/query-index.json',
@@ -487,15 +467,13 @@ describe('Sitemap Language tests', () => {
         ],
       });
 
-    const context = createContext(suffix);
-    const part1 = new SitemapLanguage({
+    const part1 = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json?limit=2',
       hreflang: 'en',
-    });
-    await part1.init(context);
+    }).init(context);
 
-    const part2 = new SitemapLanguage({
+    const part2 = await new SitemapLanguage({
       origin: 'https://www.example.com',
       source: '/en/query-index.json?offset=2&limit=2',
       hreflang: 'en',

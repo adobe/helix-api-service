@@ -1,3 +1,10 @@
+## [1.14.6](https://github.com/adobe/helix-api-service/compare/v1.14.5...v1.14.6) (2025-11-12)
+
+
+### Bug Fixes
+
+* make `RequestInfo` cloneable ([#34](https://github.com/adobe/helix-api-service/issues/34)) ([0e2ebad](https://github.com/adobe/helix-api-service/commit/0e2ebad994bfa29eb6e42308268e078c07302b98))
+
 ## [1.14.5](https://github.com/adobe/helix-api-service/compare/v1.14.4...v1.14.5) (2025-11-12)
 
 

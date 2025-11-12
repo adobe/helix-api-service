@@ -25,6 +25,7 @@ import media from './media/handler.js';
 import preview from './preview/handler.js';
 import profile from './profile/handler.js';
 import sitemap from './sitemap/handler.js';
+import source from './source/handler.js';
 import status from './status/handler.js';
 
 import Router from './router/router.js';
@@ -85,7 +86,7 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/index/*', index)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
-  .add('/:org/sites/:site/source/*', notImplemented)
+  .add('/:org/sites/:site/source/*', source)
   .add('/:org/sites/:site/jobs', notImplemented)
   .add('/:org/sites/:site/log', notImplemented);
 

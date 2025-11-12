@@ -139,4 +139,21 @@ describe('Source Handler Tests', () => {
     const result = await sourceHandler(context, info);
     assert.equal(result.status, 500);
   });
+
+  it('handles putSource throws an error', async () => {
+    const mockStorage = {
+      sourceBus: () => {
+        const e = new Error('Test error');
+        e.$metadata = { httpStatusCode: 418 };
+        throw e;
+      },
+    };
+
+    const context = { attributes: { storage: mockStorage } };
+    const info = { method: 'PUT' };
+
+    // Throws an error because context.attributes.storage is not set
+    const result = await sourceHandler(context, info);
+    assert.equal(result.status, 418);
+  });
 });

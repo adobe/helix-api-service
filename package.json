@@ -51,7 +51,7 @@
   "dependencies": {
     "@adobe/fetch": "4.2.3",
     "@adobe/helix-admin-support": "5.0.3",
-    "@adobe/helix-config": "5.6.11",
+    "@adobe/helix-config": "5.7.0",
     "@adobe/helix-google-support": "4.0.0",
     "@adobe/helix-mediahandler": "2.9.5",
     "@adobe/helix-onedrive-support": "12.1.1",
@@ -82,7 +82,7 @@
   },
   "devDependencies": {
     "@adobe/eslint-config-helix": "3.0.13",
-    "@adobe/helix-deploy": "13.1.21",
+    "@adobe/helix-deploy": "13.1.22",
     "@adobe/helix-universal": "5.3.0",
     "@adobe/helix-universal-devserver": "1.1.141",
     "@adobe/semantic-release-coralogix": "1.1.40",

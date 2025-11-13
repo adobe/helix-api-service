@@ -13,12 +13,11 @@
 /* eslint-env mocha */
 
 import assert from 'assert';
-import { promises as fs } from 'fs';
 import path from 'path';
 import { AcquireMethod } from '@adobe/helix-onedrive-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import query from '../../src/discover/query.js';
-import { createContext, Nock, SITE_CONFIG } from '../utils.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Discover query tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -32,66 +31,68 @@ describe('Discover query tests', () => {
     nock.done();
   });
 
-  const TEST_ENV = {
-    AWS_REGION: 'us-east-1',
-    AWS_ACCESS_KEY_ID: 'aws-access-key',
-    AWS_SECRET_ACCESS_KEY: 'aws-secret',
-    CLOUDFLARE_ACCOUNT_ID: 'cloudflare-account',
-    CLOUDFLARE_R2_ACCESS_KEY_ID: 'cloudflare-access-key',
-    CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'cloudflare-secret',
-    AZURE_HELIX_SERVICE_CLIENT_ID: 'client-id',
-    AZURE_HELIX_SERVICE_CLIENT_SECRET: 'client-secret',
-    AZURE_HELIX_SERVICE_ACQUIRE_METHOD: AcquireMethod.BY_CLIENT_CREDENTIAL,
-    HLX_CONTENT_SOURCE_LOCK: JSON.stringify({ 'adobe.sharepoint.com': ['adobe/*'] }),
-  };
-
-  const suffix = '/disover';
-
   function setupTest(url, {
-    authInfo = new AuthInfo().withRole('index'),
+    authInfo = new AuthInfo().withRole('index').withAuthenticated(true),
     env,
   } = {}) {
-    const context = createContext(suffix, {
+    const suffix = '/discover';
+    const query = new URLSearchParams(Object.entries({ url }).filter(([, v]) => !!v));
+
+    const request = new Request(`https://api.aem.live${suffix}?${query}`);
+
+    const context = {
+      pathInfo: { suffix },
       attributes: {
         authInfo,
       },
-      data: {
-        url,
-      },
       env: {
-        ...TEST_ENV,
+        AWS_REGION: 'us-east-1',
+        AWS_ACCESS_KEY_ID: 'aws-access-key',
+        AWS_SECRET_ACCESS_KEY: 'aws-secret',
+        CLOUDFLARE_ACCOUNT_ID: 'cloudflare-account',
+        CLOUDFLARE_R2_ACCESS_KEY_ID: 'cloudflare-access-key',
+        CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'cloudflare-secret',
+        AZURE_HELIX_SERVICE_CLIENT_ID: 'client-id',
+        AZURE_HELIX_SERVICE_CLIENT_SECRET: 'client-secret',
+        AZURE_HELIX_SERVICE_ACQUIRE_METHOD: AcquireMethod.BY_CLIENT_CREDENTIAL,
+        HLX_CONTENT_SOURCE_LOCK: JSON.stringify({ 'adobe.sharepoint.com': ['adobe/*'] }),
         ...env,
       },
-    });
-    return { context };
-  }
-
-  async function loadFile(filename) {
-    return fs.readFile(path.resolve(__testdir, 'discover', 'fixtures', filename));
+    };
+    return { request, context };
   }
 
   it('returns 400 when no URL is specified', async () => {
-    const { context } = setupTest();
-    const resp = await query(context);
+    const { request, context } = setupTest();
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 400);
+    assert.strictEqual(response.status, 400);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'discover requires a `url` parameter',
+    });
   });
 
   it('returns 400 when a malformed URL is passed', async () => {
-    const { context } = setupTest('www.aem.live');
-    const resp = await query(context);
+    const { request, context } = setupTest('www.aem.live');
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 400);
+    assert.strictEqual(response.status, 400);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'URL is malformed: www.aem.live: Invalid URL',
+    });
   });
 
   it('returns 404 when no inventory is found', async () => {
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
+    nock.inventory()
       .reply(404);
 
-    const { context } = setupTest('https://www.aem.live');
-    const resp = await query(context);
-    assert.strictEqual(resp.status, 404);
+    const { request, context } = setupTest('https://www.aem.live');
+    const response = await main(request, context);
+    assert.strictEqual(response.status, 404);
   });
 
   it('returns empty result for known sharepoint without any entry', async () => {
@@ -100,8 +101,7 @@ describe('Discover query tests', () => {
     nock.onedrive(SITE_CONFIG.content)
       .user('default');
 
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
+    nock.inventory()
       .reply(200, {
         entries: [{}],
         hostTypes: {
@@ -109,14 +109,16 @@ describe('Discover query tests', () => {
         },
       });
 
-    const { context } = setupTest(url);
-    const resp = await query(context);
+    const { request, context } = setupTest(url);
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'application/json',
+      vary: 'Accept-Encoding',
     });
-    const actual = await resp.json();
+    const actual = await response.json();
     assert.deepStrictEqual(actual, []);
   });
 
@@ -126,8 +128,7 @@ describe('Discover query tests', () => {
     nock.onedrive(SITE_CONFIG.content)
       .user('default');
 
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
+    nock.inventory()
       .reply(200, {
         entries: [{}],
         hostTypes: {
@@ -135,15 +136,11 @@ describe('Discover query tests', () => {
         },
       });
 
-    const { context } = setupTest(url);
-    const resp = await query(context);
+    const { request, context } = setupTest(url);
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.deepStrictEqual(actual, []);
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), []);
   });
 
   it('returns result for known sharepoint that only matches host name', async () => {
@@ -153,8 +150,7 @@ describe('Discover query tests', () => {
       .login(undefined, 'other')
       .user('default');
 
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
+    nock.inventory()
       .reply(200, {
         entries: [{
           sharepointSite: 'https://other.sharepoint.com/',
@@ -169,37 +165,30 @@ describe('Discover query tests', () => {
         webUrl: 'https://other.sharepoint.com/sites/mysite/Shared%20Documents/index.docx',
       });
 
-    const { context } = setupTest(url);
-    const resp = await query(context);
+    const { request, context } = setupTest(url);
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.strictEqual(actual.length, 1);
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), [{
+      githubUrl: 'https://github.com/undefined',
+      originalRepository: false,
+      originalSite: false,
+    }]);
   });
 
   it('returns all entries for url=*', async () => {
     const url = '*';
 
-    const inventory = JSON.parse(await loadFile('inventory-small.json'));
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, inventory);
+    nock.inventory()
+      .replyWithFile(200, path.resolve(__testdir, 'discover', 'fixtures', 'inventory-small.json'));
 
-    const { context } = setupTest(url, {
+    const { request, context } = setupTest(url, {
       authInfo: AuthInfo.Default().withPermissions(['discover:list']),
     });
-    const resp = await query(context);
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-
-    assert.deepStrictEqual(actual, [{
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), [{
       originalRepository: true,
       org: 'company',
       site: 'test',
@@ -220,10 +209,8 @@ describe('Discover query tests', () => {
   it('returns only original repository for boilerplate', async () => {
     const url = 'https://drive.google.com/drive/u/0/folders/1gpVvMWaxoXxVvtq0LLbbMyF6_H_IB6th';
 
-    const inventory = JSON.parse(await loadFile('inventory-boilerplate.json'));
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
-      .reply(200, inventory);
+    nock.inventory()
+      .replyWithFile(200, path.resolve(__testdir, 'discover', 'fixtures', 'inventory-boilerplate.json'));
 
     nock.google(SITE_CONFIG.content)
       .user('default');
@@ -247,18 +234,13 @@ describe('Discover query tests', () => {
         modifiedTime: '2022-04-12T08:30:18.845Z',
       });
 
-    const { context } = setupTest(url, {
+    const { request, context } = setupTest(url, {
       authInfo: new AuthInfo().withRole('basic_publish'),
     });
-    const resp = await query(context);
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-
-    assert.deepStrictEqual(actual, [{
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), [{
       org: 'adobe',
       site: 'aem-boilerplate',
       owner: 'adobe',
@@ -274,8 +256,7 @@ describe('Discover query tests', () => {
     nock.onedrive(SITE_CONFIG.content)
       .user('default');
 
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
+    nock.inventory()
       .reply(200, {
         entries: [{
           sharepointSite: 'https://other.sharepoint.com/',
@@ -285,56 +266,54 @@ describe('Discover query tests', () => {
         },
       });
 
-    const { context } = setupTest(url);
-    const resp = await query(context);
+    const { request, context } = setupTest(url);
+    const response = await main(request, context);
 
-    assert.strictEqual(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
-      'content-type': 'application/json',
-    });
-    const actual = await resp.json();
-    assert.strictEqual(actual.length, 0);
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), []);
   });
 
   it('list needs discover:list permission', async () => {
-    const { context } = setupTest('*');
+    const { request, context } = setupTest('*');
+    const response = await main(request, context);
 
-    await assert.rejects(query(context), Error('discover:list'));
+    assert.strictEqual(response.status, 403);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'not authorized',
+    });
   });
 
   describe('with large inventory', () => {
     beforeEach(async () => {
-      const inventory = JSON.parse(await loadFile('inventory.json'));
-      nock.inventory(inventory);
+      nock.inventory()
+        .replyWithFile(200, path.resolve(__testdir, 'discover', 'fixtures', 'inventory.json'));
     });
 
     it('returns 404 correct entry for unsupported url', async () => {
       const url = 'https://site.company.com/';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 404);
-      assert.deepStrictEqual(resp.headers.plain(), {
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'text/plain; charset=utf-8',
         'x-error': 'no matcher found for https://site.company.com/',
+        vary: 'Accept-Encoding',
       });
     });
 
     it('returns only entries that match site (with Defender DNS suffix)', async () => {
       const url = 'https://company.sharepoint.com.rs-mcas.ms/sites/subsites/Shared%20Documents/test/mydocument.docx';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           contentBusId: '9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6e',
           contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/test',
@@ -355,16 +334,11 @@ describe('Discover query tests', () => {
     it('returns only entries that match site (not a prefix)', async () => {
       const url = 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/test/mydocument.docx';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/test',
           contentBusId: '9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6e',
@@ -385,16 +359,11 @@ describe('Discover query tests', () => {
     it('returns sharepoint entry when part of the URL has different case', async () => {
       const url = 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Test/mydocument.docx';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/test',
           contentBusId: '9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6e',
@@ -415,16 +384,11 @@ describe('Discover query tests', () => {
     it('returns entries that match site with trailing slash', async () => {
       const url = 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/slash/mydocument.docx';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/slash',
           contentBusId: '9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6f',
@@ -445,15 +409,11 @@ describe('Discover query tests', () => {
     it('returns correct entry for github', async () => {
       const url = 'https://github.com/company/site/blob/main/fstab.yaml';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [{
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [{
         codeBusId: 'company/site',
         contentBusId: '9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6d',
         contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/site',
@@ -496,15 +456,11 @@ describe('Discover query tests', () => {
           modifiedTime: '2022-07-08T14:09:39.871Z',
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [{
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [{
         codeBusId: 'company/subsiteB',
         contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
         contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
@@ -547,15 +503,11 @@ describe('Discover query tests', () => {
           modifiedTime: '2022-04-12T08:30:18.845Z',
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns correct entry for google folder', async () => {
@@ -583,15 +535,11 @@ describe('Discover query tests', () => {
           modifiedTime: '2022-04-12T08:30:18.845Z',
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteB',
           contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
@@ -640,19 +588,15 @@ describe('Discover query tests', () => {
           modifiedTime: '2022-04-12T08:30:18.845Z',
         });
 
-      const { context } = setupTest(url, {
+      const { request, context } = setupTest(url, {
         env: {
           HLX_CUSTOM_GOOGLE_USERS: 'company/*',
         },
       });
-      const resp = await query(context);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteC',
           contentBusId: '96c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
@@ -681,15 +625,11 @@ describe('Discover query tests', () => {
         .query(true)
         .reply(404);
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns empty result for google folder (custom user) if root id does not match', async () => {
@@ -721,19 +661,15 @@ describe('Discover query tests', () => {
           modifiedTime: '2022-04-12T08:30:18.845Z',
         });
 
-      const { context } = setupTest(url, {
+      const { request, context } = setupTest(url, {
         env: {
           HLX_CUSTOM_GOOGLE_USERS: 'company/*',
         },
       });
-      const resp = await query(context);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('catches error for google folder (custom user)', async () => {
@@ -759,33 +695,25 @@ describe('Discover query tests', () => {
           },
         });
 
-      const { context } = setupTest(url, {
+      const { request, context } = setupTest(url, {
         env: {
           HLX_CUSTOM_GOOGLE_USERS: 'company/*',
         },
       });
-      const resp = await query(context);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns correct entry for google root folder', async () => {
       const url = 'https://drive.google.com/drive/u/0/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteB',
           contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
@@ -818,19 +746,15 @@ describe('Discover query tests', () => {
         .query(true)
         .reply(404);
 
-      const { context } = setupTest(url, {
+      const { request, context } = setupTest(url, {
         env: {
           HLX_CUSTOM_GOOGLE_USERS: 'company/subsiteC',
         },
       });
-      const resp = await query(context);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns empty result if get items returns error', async () => {
@@ -854,43 +778,31 @@ describe('Discover query tests', () => {
           },
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns empty result for gdrive URL with no id', async () => {
       const url = 'https://docs.google.com/forms/u/0/?tgif=d';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns correct entry for sharepoint folder with id parameter', async () => {
       const url = 'https://company.sharepoint.com/:f:/r/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteA',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
@@ -913,15 +825,11 @@ describe('Discover query tests', () => {
     it('returns correct entry for sharepoint folder with AllItems1 and id parameter', async () => {
       const url = 'https://company.sharepoint.com/:f:/r/sites/subsites/Shared%20Documents/Forms/AllItems1.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteA',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
@@ -944,15 +852,11 @@ describe('Discover query tests', () => {
     it('returns correct entry for sharepoint folder with RootFolder parameter', async () => {
       const url = 'https://company.sharepoint.com/:f:/r/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?RootFolder=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteA',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
@@ -975,29 +879,21 @@ describe('Discover query tests', () => {
     it('returns no result for sharepoint folder that has neither id nor RootFolder parameter', async () => {
       const url = 'https://company.sharepoint.com/:f:/r/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?FolderCTID=0x0123456789ABCDEF0123456789ABCDEF012345';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns correct entry for sharepoint media with stream and id parameter', async () => {
       const url = 'https://company.sharepoint.com/sites/subsites/_layouts/15/stream.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA%2Ftest.map4';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [
         {
           codeBusId: 'company/subsiteA',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
@@ -1020,15 +916,11 @@ describe('Discover query tests', () => {
     it('returns no result for sharepoint media that has no id parameter', async () => {
       const url = 'https://company.sharepoint.com/sites/subsites/_layouts/15/stream.aspx';
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns correct entry for sharepoint document', async () => {
@@ -1051,15 +943,11 @@ describe('Discover query tests', () => {
           webUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/subsiteA/index.docx',
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [{
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [{
         codeBusId: 'company/subsiteA',
         contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
         contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA',
@@ -1090,15 +978,11 @@ describe('Discover query tests', () => {
           webUrl: 'https://adobe-my.sharepoint.com/personal/foo_adobe_com/Shared%20Documents/subsiteA/index.docx',
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, []);
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), []);
     });
 
     it('returns simple sharepoint lookup for other tenant', async () => {
@@ -1124,15 +1008,11 @@ describe('Discover query tests', () => {
           },
         });
 
-      const { context } = setupTest(url);
-      const resp = await query(context);
+      const { request, context } = setupTest(url);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [{
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [{
         codeBusId: 'tenant/site',
         contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bc',
         contentSourceUrl: 'https://tenant.sharepoint.com/:f:/r/sites/site/Shared%20Documents/website/root?csf=1&web=1&e=rQbhRS',
@@ -1168,17 +1048,13 @@ describe('Discover query tests', () => {
           webUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/subsiteA/index.docx',
         });
 
-      const { context } = setupTest(url, {
+      const { request, context } = setupTest(url, {
         authInfo: new AuthInfo().withRole('basic_publish'),
       });
-      const resp = await query(context);
+      const response = await main(request, context);
 
-      assert.strictEqual(resp.status, 200);
-      assert.deepStrictEqual(resp.headers.plain(), {
-        'content-type': 'application/json',
-      });
-      const actual = await resp.json();
-      assert.deepStrictEqual(actual, [{
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), [{
         org: 'company',
         site: 'subsiteA',
         originalRepository: true,

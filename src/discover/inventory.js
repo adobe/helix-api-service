@@ -34,7 +34,7 @@ import { isDeepStrictEqual } from 'util';
 /**
  * Inventory path in content bus.
  */
-const INVENTORY_PATH = '/default/inventory-v2.json';
+const INVENTORY_PATH = '/default/inventory.json';
 
 /**
  * Simple inventory class
@@ -49,12 +49,12 @@ export class Inventory {
   };
 
   /**
-   * @type {Bucket}
+   * @type {import('@adobe/helix-shared-storage').Bucket}
    */
   #bucket;
 
   /**
-   * @type {Logger}
+   * @type {any}
    */
   #log;
 
@@ -64,10 +64,11 @@ export class Inventory {
   #modified;
 
   /**
-   * @param {Logger} log
-   * @param {Bucket} bucket
+   * @constructs Inventory
+   * @param {import('@adobe/helix-shared-storage').Bucket} bucket bucket
+   * @param {any} log logger
    */
-  constructor(log, bucket) {
+  constructor(bucket, log) {
     this.#log = log;
     this.#bucket = bucket;
     this.#modified = true;

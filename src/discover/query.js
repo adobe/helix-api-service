@@ -112,7 +112,7 @@ function addLegacyInformation(entry) {
 export default async function query(context) {
   const { attributes: { authInfo }, data: { url: urlString }, log } = context;
   if (!urlString) {
-    return errorResponse(log, 400, 'Discover requires a <url> parameter');
+    return errorResponse(log, 400, 'discover requires a `url` parameter');
   }
 
   let url;
@@ -127,7 +127,7 @@ export default async function query(context) {
     authInfo.assertPermissions('discover:peek');
   }
 
-  const inventory = new Inventory(log, HelixStorage.fromContext(context).contentBus());
+  const inventory = new Inventory(HelixStorage.fromContext(context).contentBus(), log);
   if (!await inventory.load()) {
     return errorResponse(log, 404, 'inventory not available');
   }

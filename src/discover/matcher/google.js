@@ -180,22 +180,21 @@ export default class GoogleMatcher {
   /**
    * Extract some data from a URL to store in the inventory.
    *
-   * @param {import('../../index.js').AdminContext} ctx context
+   * @param {import('../../index.js').AdminContext} context context
    * @param {URL} url url to extract data from
    * @returns object that contains additional entries to store in inventory
    */
-  static async extract(ctx, url, entry) {
+  static async extract(context, url, entry) {
     const match = url.pathname.match(/\/.*\/folders\/([^?/]+)$/);
     if (match) {
       // eslint-disable-next-line no-param-reassign
       [, entry.gdriveId] = match;
       // check for custom user
       if (entry.contentBusId) {
-        const { code: codeBucket, content: contentBucket } = ctx.attributes.bucketMap;
+        const { code: codeBucket, content: contentBucket } = context.attributes.bucketMap;
         const plugin = await getCachePlugin({
-          log: ctx.log,
+          log: context.log,
           contentBusId: entry.contentBusId,
-          owner: entry.org,
           readOnly: true,
           codeBucket,
           contentBucket,
@@ -206,13 +205,5 @@ export default class GoogleMatcher {
         }
       }
     }
-  }
-
-  /**
-   * checks if this matcher is defined for the mountpoint
-   * @param {MountPoint} mp
-   */
-  static test(mp) {
-    return mp && mp.type === 'google';
   }
 }

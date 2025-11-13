@@ -229,12 +229,4 @@ export default class SharepointMatcher {
     // eslint-disable-next-line no-param-reassign
     entry.sharepointSite = new URL(pathname, url).href;
   }
-
-  /**
-   * checks if this matcher is defined for the mountpoint
-   * @param {MountPoint} mp
-   */
-  static test(mp) {
-    return mp && mp.type === 'onedrive';
-  }
 }

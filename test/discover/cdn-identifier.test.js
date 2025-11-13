@@ -13,7 +13,6 @@
 /* eslint-env mocha */
 
 import assert from 'assert';
-import { promises as fs } from 'fs';
 import path from 'path';
 import { generate, querySiblingSites } from '../../src/discover/cdn-identifier.js';
 import { createContext, createInfo, Nock } from '../utils.js';
@@ -35,10 +34,6 @@ describe('Discover CDN identifier tests', () => {
     nock.done();
   });
 
-  async function loadFile(filename) {
-    return fs.readFile(path.resolve(__testdir, 'discover', 'fixtures', filename));
-  }
-
   it('returns expected identifier', () => {
     const CDN_PROD_CONFIGS = [
       { type: 'akamai', endpoint: '1234', '#expected': 'akamai:1234' },
@@ -57,8 +52,7 @@ describe('Discover CDN identifier tests', () => {
   });
 
   it('returns empty list when no inventory is found', async () => {
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/default/inventory-v2.json?x-id=GetObject')
+    nock.inventory()
       .reply(404);
 
     const entries = await querySiblingSites(context, {
@@ -69,8 +63,8 @@ describe('Discover CDN identifier tests', () => {
 
   describe('with a helix 5 inventory', () => {
     beforeEach(async () => {
-      const inventory = JSON.parse(await loadFile('inventory-helix5.json'));
-      nock.inventory(inventory);
+      nock.inventory()
+        .replyWithFile(200, path.resolve(__testdir, 'discover', 'fixtures', 'inventory-helix5.json'));
     });
 
     it('returns sibling sites for siteA', async () => {

@@ -31,6 +31,7 @@ import status from './status/handler.js';
 import Router from './router/router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
+import { logRequest } from './support/utils.js';
 import catchAll from './wrappers/catch-all.js';
 import { contentEncodeWrapper } from './wrappers/content-encode.js';
 import commonResponseHeaders from './wrappers/response-headers.js';
@@ -123,21 +124,8 @@ async function run(request, context) {
     return new Response('', { status: 403 });
   }
 
-  const { suffix, log } = context;
   const response = await handler(context, info);
-  const admin = {
-    method: info.method,
-    route: info.route,
-    path: info.webPath,
-    suffix,
-    status: response.status,
-  };
-  ['org', 'site'].forEach((key) => {
-    if (info[key]) {
-      admin[key] = info[key];
-    }
-  });
-  log.info('%j', { admin });
+  logRequest(context, info, response);
   return response;
 }
 

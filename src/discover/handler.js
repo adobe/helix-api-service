@@ -11,8 +11,8 @@
  */
 import { Response } from '@adobe/fetch';
 import query from './query.js';
-// import reindex from './reindex.js';
-// import remove from './remove.js';
+import reindex from './reindex.js';
+import remove from './remove.js';
 
 /**
  * Allowed methods for that handler
@@ -39,9 +39,8 @@ export default async function discoverHandler(context, info) {
   }
 
   authInfo.assertPermissions('discover:write');
-  // if (info.method === 'POST') {
-  //   return reindex(context, info);
-  // }
-  // return remove(context, info);
-  return new Response('', { status: 405 });
+  if (info.method === 'POST') {
+    return reindex(context, info);
+  }
+  return remove(context, info);
 }

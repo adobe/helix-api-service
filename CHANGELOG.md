@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/adobe/helix-api-service/compare/v1.14.6...v1.15.0) (2025-11-13)
+
+
+### Features
+
+* implement `discover` route ([#36](https://github.com/adobe/helix-api-service/issues/36)) ([3bd4355](https://github.com/adobe/helix-api-service/commit/3bd435589403e0fc73de82e09a95072d86db40b2))
+
 ## [1.14.6](https://github.com/adobe/helix-api-service/compare/v1.14.5...v1.14.6) (2025-11-12)
 
 

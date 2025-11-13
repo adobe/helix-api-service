@@ -59,7 +59,7 @@ export async function querySiblingSites(context, info) {
   const { owner, repo } = info;
   const codeBusId = `${owner}/${repo}`;
 
-  const inventory = new Inventory(log, HelixStorage.fromContext(context).contentBus());
+  const inventory = new Inventory(HelixStorage.fromContext(context).contentBus(), log);
   if (!await inventory.load()) {
     log.warn('Inventory not available');
     return [];

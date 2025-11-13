@@ -24,8 +24,8 @@ export class OneDriveNock {
     });
   }
 
-  user() {
-    const { nocker, contentBusId } = this;
+  user(contentBusId = this.contentBusId) {
+    const { nocker } = this;
 
     nocker.content(contentBusId)
       .head('/.helix-auth/auth-onedrive-content.json')
@@ -88,7 +88,7 @@ export class OneDriveNock {
 
   login(auth = {
     token_type: 'Bearer', refresh_token: 'dummy', access_token: 'dummy', expires_in: 181000,
-  }, tenant = 'adobe', tenantId = 'fa7b1b5a-7b34-4387-94ae-d2c178decee1') {
+  }, tenant = 'adobe', tenantId = tenant) {
     const { nocker } = this;
 
     this.resolveTenant(tenant, tenantId);

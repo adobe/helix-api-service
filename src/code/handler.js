@@ -12,7 +12,7 @@
 import { Response } from '@adobe/fetch';
 
 /**
- * Allowed methods for that handler.
+ * Allowed methods for that handler
  */
 const ALLOWED_METHODS = ['POST'];
 

@@ -17,7 +17,7 @@ import { storeBlob } from './store.js';
 import { MEDIA_TYPES } from './validate.js';
 
 /**
- * Allowed methods for that handler.
+ * Allowed methods for that handler
  */
 const ALLOWED_METHODS = ['POST'];
 

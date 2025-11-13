@@ -18,6 +18,7 @@ import { helixStatus } from '@adobe/helix-status';
 import cache from './cache/handler.js';
 import code from './code/handler.js';
 import contentproxy from './contentproxy/handler.js';
+import discover from './discover/handler.js';
 import index from './index/handler.js';
 import live from './live/handler.js';
 import { auth, login, logout } from './login/handler.js';
@@ -30,6 +31,7 @@ import status from './status/handler.js';
 import Router from './router/router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
+import { logRequest } from './support/utils.js';
 import catchAll from './wrappers/catch-all.js';
 import { contentEncodeWrapper } from './wrappers/content-encode.js';
 import commonResponseHeaders from './wrappers/response-headers.js';
@@ -59,6 +61,7 @@ const nameSelector = (segs) => {
  */
 export const router = new Router(nameSelector)
   .add('/auth/*', auth)
+  .add('/discover', discover)
   .add('/login', login)
   .add('/logout', logout)
   .add('/profile', profile)
@@ -102,6 +105,17 @@ async function run(request, context) {
     return new Response('', { status: 404 });
   }
   const info = RequestInfo.create(request, variables);
+  if (info.method === 'OPTIONS') {
+    return new Response('', {
+      status: 204,
+      headers: {
+        'access-control-allow-methods': 'GET, HEAD, POST, PUT, OPTIONS, DELETE',
+        'access-control-allow-headers': 'Authorization, x-auth-token, x-content-source-authorization, content-type',
+        'access-control-max-age': '86400',
+      },
+    });
+  }
+
   await context.authenticate(info);
   await context.authorize(info);
 
@@ -110,21 +124,8 @@ async function run(request, context) {
     return new Response('', { status: 403 });
   }
 
-  const { suffix, log } = context;
   const response = await handler(context, info);
-  const admin = {
-    method: info.method,
-    route: info.route,
-    path: info.webPath,
-    suffix,
-    status: response.status,
-  };
-  ['org', 'site'].forEach((key) => {
-    if (info[key]) {
-      admin[key] = info[key];
-    }
-  });
-  log.info('%j', { admin });
+  logRequest(context, info, response);
   return response;
 }
 

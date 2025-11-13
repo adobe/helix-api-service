@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "org": "company",
+      "site": "test",
+      "codeBusId": "company/test",
+      "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/test",
+      "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6e",
+      "url": "https://test.company.com",
+      "routes": [],
+      "originalSite": "company/test",
+      "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/test"
+    },
+    {
+      "org": "company",
+      "site": "testother",
+      "codeBusId": "company/testother",
+      "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/testother",
+      "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6f",
+      "url": "https://testother.company.com",
+      "routes": [],
+      "originalSite": "company/testother",
+      "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/testother"
+    }
+  ],
+  "hostTypes": {
+    "company.sharepoint.com": "sharepoint"
+  }
+}

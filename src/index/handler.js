@@ -15,6 +15,9 @@ import status from './status.js';
 import update from './update.js';
 import { fetchExtendedIndex } from './utils.js';
 
+/**
+ * Allowed methods for that handler
+ */
 const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**

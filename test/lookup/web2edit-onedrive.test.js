@@ -30,12 +30,6 @@ const SITE_1D_CONFIG = {
   },
 };
 
-const ENV = {
-  AZURE_HELIX_SERVICE_CLIENT_ID: 'dummy',
-  AZURE_HELIX_SERVICE_CLIENT_SECRET: 'dummy',
-  AZURE_HELIX_SERVICE_ACQUIRE_METHOD: AcquireMethod.BY_CLIENT_CREDENTIAL,
-};
-
 describe('web2edit OneDrive Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
@@ -53,9 +47,22 @@ describe('web2edit OneDrive Tests', () => {
     nock.done();
   });
 
-  it('looks up a Word document', async () => {
-    const suffix = '/owner/sites/repo/status/page';
+  function setupTest(path = '/page') {
+    const suffix = `/owner/sites/repo/status${path}`;
+    const context = createContext(suffix, {
+      attributes: { config: SITE_1D_CONFIG },
+      data: { editUrl: 'auto' },
+      env: {
+        AZURE_HELIX_SERVICE_CLIENT_ID: 'dummy',
+        AZURE_HELIX_SERVICE_CLIENT_SECRET: 'dummy',
+        AZURE_HELIX_SERVICE_ACQUIRE_METHOD: AcquireMethod.BY_CLIENT_CREDENTIAL,
+      },
+    });
+    const info = createInfo(suffix);
+    return { context, info };
+  }
 
+  it('looks up a Word document', async () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
@@ -63,14 +70,9 @@ describe('web2edit OneDrive Tests', () => {
       .getDocument('/page.docx')
       .getFolder('');
 
-    const result = await web2edit(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        data: { editUrl: 'auto' },
-        env: ENV,
-      }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest();
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       editContentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       editFolders: [{
@@ -89,8 +91,6 @@ describe('web2edit OneDrive Tests', () => {
   });
 
   it('looks up an Excel workbook', async () => {
-    const suffix = '/owner/sites/repo/status/page.json';
-
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
@@ -98,14 +98,9 @@ describe('web2edit OneDrive Tests', () => {
       .getWorkbook('/page.xlsx')
       .getFolder('');
 
-    const result = await web2edit(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        data: { editUrl: 'auto' },
-        env: ENV,
-      }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest('/page.json');
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       editContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       editFolders: [{
@@ -124,8 +119,6 @@ describe('web2edit OneDrive Tests', () => {
   });
 
   it('looks up an MD file', async () => {
-    const suffix = '/owner/sites/repo/status/page';
-
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
@@ -138,14 +131,9 @@ describe('web2edit OneDrive Tests', () => {
       }])
       .getFolder(null);
 
-    const result = await web2edit(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        data: { editUrl: 'auto' },
-        env: ENV,
-      }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest();
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       editContentType: 'application/octet-stream',
       editFolders: [],
@@ -159,8 +147,6 @@ describe('web2edit OneDrive Tests', () => {
   });
 
   it('looks up an MD file that has a last modified date time', async () => {
-    const suffix = '/owner/sites/repo/status/page';
-
     nock.onedrive(SITE_1D_CONFIG.content)
       .user()
       .login()
@@ -174,14 +160,9 @@ describe('web2edit OneDrive Tests', () => {
       }])
       .getFolder(null);
 
-    const result = await web2edit(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        data: { editUrl: 'auto' },
-        env: ENV,
-      }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest();
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       editContentType: 'application/octet-stream',
       editFolders: [],

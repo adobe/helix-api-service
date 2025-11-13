@@ -107,3 +107,18 @@ export async function getUserListPaths(context) {
   }
   return Array.from(paths);
 }
+
+/**
+ * Return the contents of the `.hlx.json` file in a project.
+ *
+ * @param {import('@adobe/helix-shared-storage').Bucket} contentBus content bus bucket
+ * @param {string} contentBusId content bus id
+ * @returns contents of `.hlx.json` or null
+ */
+export async function fetchHlxJson(contentBus, contentBusId) {
+  const buf = await contentBus.get(`${contentBusId}/.hlx.json`);
+  if (!buf) {
+    return null;
+  }
+  return JSON.parse(buf.toString());
+}

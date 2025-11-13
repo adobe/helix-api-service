@@ -15,6 +15,9 @@ import publish from './publish.js';
 import status from './status.js';
 import unpublish from './unpublish.js';
 
+/**
+ * Allowed methods for that handler
+ */
 const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**

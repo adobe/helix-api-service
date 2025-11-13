@@ -13,9 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import {
-  clearAuthCookie,
-  getAuthCookie,
-  setAuthCookie,
+  clearAuthCookie, getAuthCookie, setAuthCookie,
 } from '../../src/auth/cookie.js';
 
 describe('Auth Cookie Test', () => {

@@ -1,0 +1,32 @@
+[
+  {
+    "org": "adobe",
+    "site": "aem-boilerplate",
+    "codeBusId": "adobe/aem-boilerplate",
+    "contentSourceUrl": "https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1",
+    "contentBusId": "76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
+    "routes": [],
+    "originalSite": "adobe/aem-boilerplate",
+    "gdriveId": "1N2zij7EMeS95cIFiRuxfjY0OxllX8my1"
+  },
+  {
+    "org": "alice",
+    "site": "alices-fork",
+    "codeBusId": "alice/alices-fork",
+    "contentSourceUrl": "https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1",
+    "contentBusId": "76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
+    "routes": [],
+    "originalSite": "company/site",
+    "gdriveId": "1N2zij7EMeS95cIFiRuxfjY0OxllX8my1"
+  },
+  {
+    "org": "bob",
+    "site": "bobs-fork",
+    "codeBusId": "bob/bobs-fork",
+    "contentSourceUrl": "https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1",
+    "contentBusId": "76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
+    "routes": [],
+    "originalSite": "adobe/aem-boilerplate",
+    "gdriveId": "1N2zij7EMeS95cIFiRuxfjY0OxllX8my1"
+  }
+]

@@ -12,6 +12,9 @@
 import { Response } from '@adobe/fetch';
 import { LOGIN_PATH, LOGOUT_PATH } from '../auth/support.js';
 
+/**
+ * Allowed methods for that handler
+ */
 const ALLOWED_METHODS = ['GET', 'POST'];
 
 /**

@@ -40,8 +40,6 @@ function createURL(url, query) {
 }
 
 describe('edit2web OneDrive Tests', () => {
-  const suffix = '/owner/sites/repo/status/page';
-
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
@@ -52,6 +50,17 @@ describe('edit2web OneDrive Tests', () => {
   afterEach(() => {
     nock.done();
   });
+
+  const suffix = '/owner/sites/repo/status/page';
+
+  function setupTest() {
+    const context = createContext(suffix, {
+      attributes: { config: SITE_1D_CONFIG },
+      env: ENV,
+    });
+    const info = createInfo(suffix);
+    return { context, info };
+  }
 
   it('resolves web resource path for onedrive document', async () => {
     const editUrl = createURL('https://adobe.sharepoint.com/:w:/r/sites/Site/_layouts/15/Doc.aspx', {
@@ -73,14 +82,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -121,14 +124,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder(null);
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -163,14 +160,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -211,14 +202,9 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       status: 200,
       editName: 'CMO & DX Content to Migrate.xlsx',
@@ -259,14 +245,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -300,14 +280,8 @@ describe('edit2web OneDrive Tests', () => {
       .login()
       .resolve(editUrl.href, { id: null });
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       error: `Handler onedrive could not lookup ${editUrl}.`,
@@ -335,14 +309,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -381,14 +349,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -429,14 +391,9 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       status: 200,
       editName: '_taxonomy.xlsx',
@@ -476,14 +433,9 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
+
     assert.deepStrictEqual(result, {
       status: 200,
       editName: 'some-data-test',
@@ -523,14 +475,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('/My%20Drafts');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -573,14 +519,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -619,14 +559,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       editContentType: 'application/folder',
@@ -658,14 +592,8 @@ describe('edit2web OneDrive Tests', () => {
     nock.onedrive(SITE_1D_CONFIG.content)
       .user();
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       error: `Handler onedrive could not lookup ${editUrl}.`,
@@ -688,14 +616,8 @@ describe('edit2web OneDrive Tests', () => {
       .resolve('')
       .getFolder('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       status: 200,
@@ -735,14 +657,8 @@ describe('edit2web OneDrive Tests', () => {
       })
       .resolve('');
 
-    const result = await edit2web(
-      createContext(suffix, {
-        attributes: { config: SITE_1D_CONFIG },
-        env: ENV,
-      }),
-      createInfo(suffix),
-      editUrl,
-    );
+    const { context, info } = setupTest();
+    const result = await edit2web(context, info, editUrl);
 
     assert.deepStrictEqual(result, {
       error: `Handler onedrive could not lookup ${editUrl}.`,

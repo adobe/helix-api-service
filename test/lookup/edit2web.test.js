@@ -13,10 +13,10 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
+import edit2web from '../../src/lookup/edit2web.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';
-import edit2web from '../../src/lookup/edit2web.js';
 
 describe('edit2web Tests', () => {
   /** @type {import('../utils.js').NockEnv} */

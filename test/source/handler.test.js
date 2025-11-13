@@ -21,7 +21,7 @@ describe('Source Handler Tests', () => {
       get: async (path, meta) => {
         assert.equal(path, 'test/site/hello.html');
         meta.ContentType = 'text/html';
-        meta.timestamp = '946684800000';
+        meta.LastModified = new Date(946684800000);
         meta.ETag = '"some-etag-327"';
         meta.id = 'dc0b68d8-b3ac-4c8a-9205-d78085e55704';
         return '<body>Hello, world!</body>';
@@ -29,24 +29,27 @@ describe('Source Handler Tests', () => {
     };
     const mockStorage = { sourceBus: () => mockBus };
     const context = { attributes: { storage: mockStorage } };
+    const headers = new Headers({ origin: 'https://example.com' });
     const info = {
       method: 'GET',
       org: 'test',
       site: 'site',
       resourcePath: '/hello.html',
+      headers,
     };
-    const result = await sourceHandler(context, info);
-    assert.equal(result.status, 200);
-    assert.equal(await result.text(), '<body>Hello, world!</body>');
-    assert.equal(result.headers.get('Content-Type'), 'text/html');
-    assert.equal(result.headers.get('Content-Length'), '26');
-    assert.equal(result.headers.get('Last-Modified'), 'Sat, 01 Jan 2000 00:00:00 GMT');
-    assert.equal(result.headers.get('ETag'), '"some-etag-327"');
-    assert.equal(result.headers.get('X-da-id'), 'dc0b68d8-b3ac-4c8a-9205-d78085e55704');
-    assert.equal(result.headers.get('Access-Control-Allow-Origin'), '*');
-    assert.equal(result.headers.get('Access-Control-Allow-Headers'), '*');
-    assert.equal(result.headers.get('Access-Control-Allow-Methods'), 'HEAD, GET, PUT, DELETE');
-    assert.equal(result.headers.get('Access-Control-Expose-Headers'), 'X-da-id');
+    const resp = await sourceHandler(context, info);
+    assert.equal(resp.status, 200);
+    assert.equal(await resp.text(), '<body>Hello, world!</body>');
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'text/html',
+      'content-length': '26',
+      'last-modified': 'Sat, 01 Jan 2000 00:00:00 GMT',
+      etag: '"some-etag-327"',
+      'x-da-id': 'dc0b68d8-b3ac-4c8a-9205-d78085e55704',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': 'HEAD, GET, PUT, DELETE',
+      'access-control-expose-headers': 'x-da-id',
+    });
   });
 
   it('handles HEAD requests', async () => {
@@ -56,6 +59,7 @@ describe('Source Handler Tests', () => {
         return {
           $metadata: { httpStatusCode: 200 },
           ContentType: 'text/html',
+          LastModified: new Date(999999999999),
           Metadata: {
             id: '12345',
           },
@@ -69,26 +73,26 @@ describe('Source Handler Tests', () => {
       org: 'test',
       site: 'site',
       resourcePath: '/hellothere.html',
+      headers: new Headers(),
     };
-    const result = await sourceHandler(context, info);
-    assert.equal(result.status, 200);
-    assert.equal(result.headers.get('Content-Type'), 'text/html');
-    assert.equal(result.headers.get('X-da-id'), '12345');
-    assert.equal(result.headers.get('Access-Control-Allow-Origin'), '*');
-    assert.equal(result.headers.get('Access-Control-Allow-Headers'), '*');
-    assert.equal(result.headers.get('Access-Control-Allow-Methods'), 'HEAD, GET, PUT, DELETE');
-    assert.equal(result.headers.get('Access-Control-Expose-Headers'), 'X-da-id');
-    assert.equal(result.headers.get('ETag'), null, 'ETag header should not be set');
-    assert.equal(result.headers.get('Last-Modified'), null, 'Last-Modified header should not be set');
+    const resp = await sourceHandler(context, info);
+    assert.equal(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'text/html',
+      'x-da-id': '12345',
+      'last-modified': 'Sun, 09 Sep 2001 01:46:39 GMT',
+    });
   });
 
   it('handles PUT requests', async () => {
+    let storedId = null;
     const mockBus = {
+      head: async () => null,
       put: async (path, body, mime, meta) => {
+        storedId = meta.id;
         assert.equal(path, 'o/s/a/b/c.html');
         assert.equal(body, '<body><main>Yo!</main></body>');
         assert.equal(mime, 'text/html');
-        assert(meta.timestamp);
         assert(meta.id);
         assert.equal(meta.users, '[{"email":"anonymous"}]');
         return { $metadata: { httpStatusCode: 200 } };
@@ -109,14 +113,11 @@ describe('Source Handler Tests', () => {
       site: 's',
       resourcePath: '/a/b/c.html',
       ext: '.html',
+      headers: new Headers(),
     };
     const result = await sourceHandler(context, info);
     assert.equal(result.status, 201);
-    assert(result.headers.get('X-da-id'), 'X-da-id header should be set');
-    assert.equal(result.headers.get('Access-Control-Allow-Origin'), '*');
-    assert.equal(result.headers.get('Access-Control-Allow-Headers'), '*');
-    assert.equal(result.headers.get('Access-Control-Allow-Methods'), 'HEAD, GET, PUT, DELETE');
-    assert.equal(result.headers.get('Access-Control-Expose-Headers'), 'X-da-id');
+    assert.equal(result.headers.get('X-da-id'), storedId);
   });
 
   // add tests for the 2 error cases (unsupported method and getSource throws an error)
@@ -124,15 +125,17 @@ describe('Source Handler Tests', () => {
     const context = {};
     const info = {
       method: 'POST',
+      headers: new Headers(),
     };
     const result = await sourceHandler(context, info);
     assert.equal(result.status, 405);
   });
 
   it('handles getSource throws an error', async () => {
-    const context = {};
+    const context = { log: { error: () => {} } };
     const info = {
       method: 'GET',
+      headers: new Headers(),
     };
 
     // Throws an error because context.attributes.storage is not set
@@ -149,8 +152,14 @@ describe('Source Handler Tests', () => {
       },
     };
 
-    const context = { attributes: { storage: mockStorage } };
-    const info = { method: 'PUT' };
+    const context = {
+      attributes: { storage: mockStorage },
+      log: { warn: () => {} },
+    };
+    const info = {
+      method: 'PUT',
+      headers: new Headers(),
+    };
 
     // Throws an error because context.attributes.storage is not set
     const result = await sourceHandler(context, info);

@@ -25,7 +25,7 @@ describe('Source GET Tests', () => {
       }
       m.ContentType = 'text/plain';
       m.ETag = '"some-etag-327"';
-      m.timestamp = '12345';
+      m.LastModified = new Date(1763041448536);
       m.id = '999';
       return 'The body';
     };
@@ -44,14 +44,16 @@ describe('Source GET Tests', () => {
       site: 'rest',
       resourcePath: '/toast/jam.html',
     };
-    const result = await getSource({ context, info });
-    assert.equal(result.body, 'The body');
-    assert.equal(result.contentType, 'text/plain');
-    assert.equal(result.contentLength, 8);
-    assert.equal(result.status, 200);
-    assert.equal(result.lastModified, '12345');
-    assert.equal(result.etag, '"some-etag-327"');
-    assert.equal(result.metadata.id, '999');
+    const resp = await getSource({ context, info });
+    assert.equal(await resp.text(), 'The body');
+    assert.equal(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'text/plain',
+      'content-length': '8',
+      etag: '"some-etag-327"',
+      'last-modified': 'Thu, 13 Nov 2025 13:44:08 GMT',
+      'x-da-id': '999',
+    });
   });
 
   it('test getSource with headOnly=true returns metadata', async () => {
@@ -64,8 +66,8 @@ describe('Source GET Tests', () => {
         ContentType: 'text/html',
         ContentLength: 1024,
         ETag: '"abc123"',
+        LastModified: new Date(1666666666666),
         Metadata: {
-          timestamp: '67890',
           id: 'doc-id-456',
         },
       };
@@ -89,15 +91,16 @@ describe('Source GET Tests', () => {
       resourcePath: '/document.html',
     };
 
-    const result = await getSource({ context, info, headOnly: true });
-
-    assert.equal(result.status, 200);
-    assert.equal(result.contentType, 'text/html');
-    assert.equal(result.contentLength, 1024);
-    assert.equal(result.etag, '"abc123"');
-    assert.equal(result.lastModified, '67890');
-    assert.equal(result.metadata.id, 'doc-id-456');
-    assert.equal(result.body, undefined);
+    const resp = await getSource({ context, info, headOnly: true });
+    assert.equal(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'text/html',
+      'content-length': '1024',
+      etag: '"abc123"',
+      'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      'x-da-id': 'doc-id-456',
+    });
+    assert.equal(await resp.text(), '');
   });
 
   it('test getSource with headOnly=true returns 404 when not found', async () => {
@@ -126,15 +129,12 @@ describe('Source GET Tests', () => {
       resourcePath: '/missing.html',
     };
 
-    const result = await getSource({ context, info, headOnly: true });
-
-    assert.equal(result.status, 404);
-    assert.equal(result.body, '');
-    assert.equal(result.contentLength, 0);
+    const resp = await getSource({ context, info, headOnly: true });
+    assert.equal(resp.status, 404);
   });
 
   it('test getSource handles error with httpStatusCode', async () => {
-    const context = { test: 707 };
+    const context = { log: { warn: () => {} } };
 
     const mockGet = async () => {
       const error = new Error('Access denied');
@@ -157,15 +157,12 @@ describe('Source GET Tests', () => {
       resourcePath: '/forbidden.html',
     };
 
-    const result = await getSource({ context, info });
-
-    assert.equal(result.status, 403);
-    assert.equal(result.body, '');
-    assert.equal(result.contentLength, 0);
+    const resp = await getSource({ context, info });
+    assert.equal(resp.status, 403);
   });
 
   it('test getSource handles error without httpStatusCode', async () => {
-    const context = { test: 707 };
+    const context = { log: { error: () => {} } };
 
     const mockGet = async () => {
       throw new Error('Unknown error');
@@ -186,19 +183,16 @@ describe('Source GET Tests', () => {
       resourcePath: '/error.html',
     };
 
-    const result = await getSource({ context, info });
-
-    assert.equal(result.status, 404);
-    assert.equal(result.body, '');
-    assert.equal(result.contentLength, 0);
+    const resp = await getSource({ context, info });
+    assert.equal(resp.status, 500);
   });
 
   it('test getSource with headOnly handles error with httpStatusCode', async () => {
-    const context = { test: 707 };
+    const context = { log: { error: () => {} } };
 
     const mockHead = async () => {
       const error = new Error('Server error');
-      error.$metadata = { httpStatusCode: 500 };
+      error.$metadata = { httpStatusCode: 503 };
       throw error;
     };
 
@@ -217,15 +211,12 @@ describe('Source GET Tests', () => {
       resourcePath: '/error.html',
     };
 
-    const result = await getSource({ context, info, headOnly: true });
-
-    assert.equal(result.status, 500);
-    assert.equal(result.body, '');
-    assert.equal(result.contentLength, 0);
+    const resp = await getSource({ context, info, headOnly: true });
+    assert.equal(resp.status, 503);
   });
 
   it('test getSource with headOnly handles error without httpStatusCode', async () => {
-    const context = { test: 707 };
+    const context = { log: { error: () => {} } };
 
     const mockHead = async () => {
       throw new Error('Generic error');
@@ -246,11 +237,8 @@ describe('Source GET Tests', () => {
       resourcePath: '/error.html',
     };
 
-    const result = await getSource({ context, info, headOnly: true });
-
-    assert.equal(result.status, 404);
-    assert.equal(result.body, '');
-    assert.equal(result.contentLength, 0);
+    const resp = await getSource({ context, info, headOnly: true });
+    assert.equal(resp.status, 500);
   });
 
   it('test getSource with JSON content', async () => {
@@ -258,7 +246,8 @@ describe('Source GET Tests', () => {
 
     const mockGet = async (path, m) => {
       m.ContentType = 'application/json';
-      m.timestamp = '22222';
+      m.ETag = 'myetag';
+      m.LastModified = new Date(1111111111111);
       m.id = 'json-id';
       return '{"name":"test","value":123}';
     };
@@ -278,43 +267,16 @@ describe('Source GET Tests', () => {
       resourcePath: '/data.json',
     };
 
-    const result = await getSource({ context, info });
+    const resp = await getSource({ context, info });
 
-    assert.equal(result.status, 200);
-    assert.equal(result.contentType, 'application/json');
-    assert.equal(result.body, '{"name":"test","value":123}');
-    assert.equal(result.contentLength, 27);
-  });
-
-  it('test getSource with empty body', async () => {
-    const context = {};
-
-    const mockGet = async (path, m) => {
-      m.ContentType = 'text/plain';
-      m.timestamp = '33333';
-      m.id = 'empty-id';
-      return '';
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'org',
-      site: 'site',
-      resourcePath: '/empty.txt',
-    };
-
-    const result = await getSource({ context, info });
-
-    assert.equal(result.status, 200);
-    assert.equal(result.body, '');
-    assert.equal(result.contentLength, 0);
+    assert.equal(resp.status, 200);
+    assert.equal(await resp.text(), '{"name":"test","value":123}');
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+      'content-length': '27',
+      etag: 'myetag',
+      'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
+      'x-da-id': 'json-id',
+    });
   });
 });

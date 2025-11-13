@@ -9,9 +9,9 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response } from '@adobe/fetch';
 import { getSource } from './get.js';
 import { putSource } from './put.js';
+import { createErrorResponse } from '../contentbus/utils.js';
 
 async function handle(context, info) {
   try {
@@ -25,42 +25,26 @@ async function handle(context, info) {
       case 'HEAD':
         return await getSource({ context, info, headOnly: true });
       default:
-        return {
-          body: 'method not allowed',
-          status: 405,
-        };
+        return new Response('method not allowed', { status: 405 });
     }
   } catch (e) {
-    return {
-      body: e.message,
-      status: e.$metadata?.httpStatusCode || 500,
+    const opts = {
+      e,
+      log: context.log,
+      status: e?.$metadata?.httpStatusCode,
     };
-  }
-}
-
-function addHeaderIfSet(headers, header, value) {
-  if (value) {
-    // eslint-disable-next-line no-param-reassign
-    headers[header] = value;
+    return createErrorResponse(opts);
   }
 }
 
 export default async function sourceHandler(context, info) {
   const resp = await handle(context, info);
 
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Methods': 'HEAD, GET, PUT, DELETE',
-    'Access-Control-Expose-Headers': 'X-da-id',
-  };
-  addHeaderIfSet(headers, 'Content-Type', resp.contentType);
-  addHeaderIfSet(headers, 'Content-Length', resp.contentLength);
-  if (resp.lastModified) {
-    headers['Last-Modified'] = new Date(Number(resp.lastModified)).toUTCString();
+  if (info.headers.get('origin')) {
+    resp.headers.set('access-control-allow-headers', '*');
+    resp.headers.set('access-control-allow-methods', 'HEAD, GET, PUT, DELETE');
+    resp.headers.set('access-control-expose-headers', 'x-da-id');
   }
-  addHeaderIfSet(headers, 'ETag', resp.etag);
-  addHeaderIfSet(headers, 'X-da-id', resp.metadata?.id);
 
-  return new Response(resp.body, { status: resp.status, headers });
+  return resp;
 }

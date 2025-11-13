@@ -32,8 +32,8 @@ describe('Source PUT Tests', () => {
         ContentType: 'text/html',
         ContentLength: 100,
         ETag: 'test-etag',
+        LastModified: new Date(999999999999),
         Metadata: {
-          timestamp: '12345',
           id: 'existing-id-123',
         },
       };
@@ -46,7 +46,6 @@ describe('Source PUT Tests', () => {
       assert.equal(contentType, 'text/html');
       assert.equal(metadata.id, 'existing-id-123');
       assert.equal(metadata.users, '[{"email":"anonymous"}]');
-      assert.ok(metadata.timestamp);
       return { $metadata: { httpStatusCode: 200 } };
     };
 
@@ -67,16 +66,16 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info });
+    const resp = await putSource({ context, info });
     assert.ok(headCalled, 'head should have been called');
     assert.ok(putCalled, 'put should have been called');
-    assert.equal(result.status, 201);
-    assert.equal(result.metadata.id, 'existing-id-123');
+    assert.equal(resp.status, 201);
+    assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
   });
 
   it('test putSource with new resource (generates new ID)', async () => {
     const context = {
-      data: { data: 'New content' },
+      data: { data: '{"something":"else"}' },
     };
 
     let generatedId;
@@ -88,13 +87,12 @@ describe('Source PUT Tests', () => {
 
     const mockPut = async (path, body, contentType, metadata) => {
       assert.equal(path, 'myorg/mysite/data/test.json');
-      assert.equal(body, 'New content');
+      assert.equal(body, '{"something":"else"}');
       assert.equal(contentType, 'application/json');
       assert.ok(metadata.id);
       generatedId = metadata.id;
       // Verify UUID format (basic check)
       assert.match(metadata.id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-      assert.ok(metadata.timestamp);
       return { $metadata: { httpStatusCode: 200 } };
     };
 
@@ -115,21 +113,21 @@ describe('Source PUT Tests', () => {
       ext: '.json',
     };
 
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 201);
-    assert.equal(result.metadata.id, generatedId);
+    const resp = await putSource({ context, info });
+    assert.equal(resp.status, 201);
+    assert.equal(resp.headers.get('x-da-id'), generatedId);
   });
 
   it('test putSource with unknown file extension returns 400', async () => {
     const context = {
       data: { data: 'Binary content' },
+      log: { warn: () => {} },
     };
 
     const mockHead = async () => null;
 
-    const mockPut = async (_path, _body, contentType) => {
-      assert.equal(contentType, 'application/octet-stream');
-      return { $metadata: { httpStatusCode: 200 } };
+    const mockPut = async () => {
+      throw new Error('Should not be called');
     };
 
     const bucket = {
@@ -149,14 +147,14 @@ describe('Source PUT Tests', () => {
       ext: '.bin',
     };
 
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 400);
-    assert.ok(result.metadata.id);
+    const resp = await putSource({ context, info });
+    assert.equal(resp.status, 400);
   });
 
   it('test putSource handles bucket.put error with metadata', async () => {
     const context = {
       data: { data: 'Content' },
+      log: { warn: () => {} },
     };
 
     const mockHead = async () => ({
@@ -164,8 +162,8 @@ describe('Source PUT Tests', () => {
       ContentType: 'text/html',
       ContentLength: 100,
       ETag: 'test-etag',
+      LastModified: new Date(),
       Metadata: {
-        timestamp: '12345',
         id: 'test-id',
       },
     });
@@ -193,14 +191,14 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 403);
-    assert.equal(result.metadata.id, 'test-id');
+    const resp = await putSource({ context, info });
+    assert.equal(resp.status, 403);
   });
 
   it('test putSource handles bucket.put error without metadata', async () => {
     const context = {
       data: { data: 'Content' },
+      log: { error: () => {} },
     };
 
     const mockHead = async () => ({
@@ -208,8 +206,8 @@ describe('Source PUT Tests', () => {
       ContentType: 'text/html',
       ContentLength: 100,
       ETag: 'test-etag',
+      LastModified: new Date(),
       Metadata: {
-        timestamp: '12345',
         id: 'test-id-500',
       },
     });
@@ -235,81 +233,8 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 500);
-    assert.equal(result.metadata.id, 'test-id-500');
-  });
-
-  it('test putSource with JSON content type', async () => {
-    const context = {
-      data: { data: '{"key": "value"}' },
-    };
-
-    const mockHead = async () => null;
-
-    const mockPut = async (path, body, contentType) => {
-      assert.equal(path, 'org/site/api/data.json');
-      assert.equal(body, '{"key": "value"}');
-      assert.equal(contentType, 'application/json');
-      return { $metadata: { httpStatusCode: 200 } };
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'org',
-      site: 'site',
-      resourcePath: '/api/data.json',
-      ext: '.json',
-    };
-
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 201);
-    assert.ok(result.metadata.id);
-  });
-
-  it('test putSource timestamp is current', async () => {
-    const context = {
-      data: { data: 'content' },
-    };
-
-    const mockHead = async () => null;
-
-    const beforeTimestamp = Date.now();
-
-    const mockPut = async (_path, _body, _contentType, metadata) => {
-      const timestamp = parseInt(metadata.timestamp, 10);
-      assert.ok(timestamp >= beforeTimestamp);
-      assert.ok(timestamp <= Date.now());
-      return { $metadata: { httpStatusCode: 200 } };
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/test.html',
-      ext: '.html',
-    };
-
-    await putSource({ context, info });
+    const resp = await putSource({ context, info });
+    assert.equal(resp.status, 500);
   });
 
   it('test putSource with matching guid succeeds', async () => {
@@ -325,8 +250,8 @@ describe('Source PUT Tests', () => {
       ContentType: 'text/html',
       ContentLength: 100,
       ETag: 'test-etag',
+      LastModified: new Date(),
       Metadata: {
-        timestamp: '12345',
         id: 'existing-id-123',
       },
     });
@@ -353,9 +278,9 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 204);
-    assert.equal(result.metadata.id, 'existing-id-123');
+    const resp = await putSource({ context, info });
+    assert.equal(resp.status, 204);
+    assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
   });
 
   it('test putSource with mismatched guid returns 409', async () => {
@@ -371,8 +296,8 @@ describe('Source PUT Tests', () => {
       ContentType: 'text/html',
       ContentLength: 100,
       ETag: 'test-etag',
+      LastModified: new Date(),
       Metadata: {
-        timestamp: '12345',
         id: 'existing-id-123',
       },
     });
@@ -398,10 +323,10 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info });
-    assert.equal(result.status, 409);
-    assert.equal(result.metadata.id, 'wrong-id');
-    assert.ok(result.body.includes('ID mismatch'));
+    const resp = await putSource({ context, info });
+    assert.equal(resp.status, 409);
+    const text = await resp.text();
+    assert.ok(text.includes('ID mismatch'));
   });
 
   it('test putSource with guid for new resource uses the provided guid', async () => {
@@ -447,9 +372,9 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const result = await putSource({ context, info });
+    const resp = await putSource({ context, info });
     // When guid is provided for non-existent resource, it uses the provided guid
-    assert.equal(result.status, 201);
-    assert.equal(result.metadata.id, 'provided-id-456');
+    assert.equal(resp.status, 201);
+    assert.equal(resp.headers.get('x-da-id'), 'provided-id-456');
   });
 });

@@ -9,9 +9,28 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { createErrorResponse } from '../contentbus/utils.js';
+
+function getHeaders(meta, length, id) {
+  const headers = {
+    'Content-Type': meta.ContentType,
+    'Last-Modified': meta.LastModified.toUTCString(),
+    'X-da-id': id,
+  };
+  if (length) {
+    headers['Content-Length'] = length;
+  }
+  if (meta.ETag) {
+    headers.ETag = meta.ETag;
+  }
+  return headers;
+}
 
 export async function getSource({ context, info, headOnly = false }) {
+  const { log } = context;
+
   const storage = HelixStorage.fromContext(context);
   const bucket = storage.sourceBus();
 
@@ -22,36 +41,24 @@ export async function getSource({ context, info, headOnly = false }) {
     if (headOnly) {
       const head = await bucket.head(path);
       if (!head) {
-        return { body: '', status: 404, contentLength: 0 };
+        return new Response('', { status: 404 });
       } else {
-        return {
-          status: head.$metadata.httpStatusCode,
-          contentType: head.ContentType,
-          contentLength: head.ContentLength,
-          etag: head.ETag,
-          lastModified: head.Metadata.timestamp,
-          metadata: {
-            id: head.Metadata.id,
-          },
-        };
+        const headers = getHeaders(head, head.ContentLength, head.Metadata.id);
+        return new Response('', { status: head.$metadata.httpStatusCode, headers });
       }
     } else {
       const meta = {};
       const body = await bucket.get(path, meta);
-
-      return {
-        body,
-        status: 200,
-        contentType: meta.ContentType,
-        contentLength: body.length,
-        etag: meta.ETag,
-        lastModified: meta.timestamp,
-        metadata: {
-          id: meta.id,
-        },
-      };
+      if (!body) {
+        return new Response('', { status: 404 });
+      } else {
+        const headers = getHeaders(meta, body.length, meta.id);
+        return new Response(body, { status: 200, headers });
+      }
     }
   } catch (e) {
-    return { body: '', status: e.$metadata?.httpStatusCode || 404, contentLength: 0 };
+    const opts = { e, log };
+    opts.status = e?.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
   }
 }

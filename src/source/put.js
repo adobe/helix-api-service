@@ -9,8 +9,10 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { getSource } from './get.js';
+import { createErrorResponse } from '../contentbus/utils.js';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
@@ -29,19 +31,29 @@ function contentTypeFromExtension(ext) {
 
 function getUsers(context) {
   const profile = context.attributes?.authInfo?.profile;
-  if (!profile) return [{ email: 'anonymous' }];
+  if (!profile) {
+    return [{ email: 'anonymous' }];
+  }
   const user = { email: profile.email };
-  if (profile.user_id) user.user_id = profile.user_id;
+  if (profile.user_id) {
+    user.user_id = profile.user_id;
+  }
   return [user];
 }
 
 export async function putSource({ context, info }) {
+  const { log } = context;
+
   const getResp = await getSource({ context, info, headOnly: true });
-  const assignedId = context.data?.guid;
-  if (assignedId && getResp.metadata?.id && getResp.metadata?.id !== assignedId) {
-    return { body: `ID mismatch: ${assignedId} !== ${getResp.metadata?.id}`, status: 409, metadata: { id: assignedId } };
+  const assignedID = context.data?.guid;
+  const existingID = getResp.headers.get('x-da-id');
+  if (assignedID && existingID && existingID !== assignedID) {
+    return new Response(
+      `ID mismatch: ${assignedID} !== ${getResp.metadata?.id}`,
+      { status: 409 },
+    );
   }
-  const ID = assignedId || getResp.metadata?.id || crypto.randomUUID();
+  const ID = assignedID || existingID || crypto.randomUUID();
 
   const storage = HelixStorage.fromContext(context);
   const bucket = storage.sourceBus();
@@ -54,13 +66,14 @@ export async function putSource({ context, info }) {
   try {
     const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
       id: ID,
-      timestamp: `${Date.now()}`,
       users: JSON.stringify(getUsers(context)),
     });
 
     const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
-    return { status, metadata: { id: ID } };
+    return new Response('', { status, headers: { 'x-da-id': ID } });
   } catch (e) {
-    return { status: e.$metadata?.httpStatusCode || 500, metadata: { id: ID } };
+    const opts = { e, log };
+    opts.status = e?.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
   }
 }

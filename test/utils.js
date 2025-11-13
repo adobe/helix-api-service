@@ -270,7 +270,7 @@ export function createContext(suffix, {
  * @returns {RequestInfo} info
  */
 export function createInfo(suffix, headers = {}) {
-  return RequestInfo.create(new Request('http://localhost/', {
+  return RequestInfo.create(new Request('http://api.aem.live/', {
     headers,
   }), router.match(suffix).variables);
 }

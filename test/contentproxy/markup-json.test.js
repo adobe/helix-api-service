@@ -56,7 +56,7 @@ describe('Markup Integration Tests (JSON)', () => {
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}?${query}`, {
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       headers: {
         'x-request-id': 'rid',
         ...headers,

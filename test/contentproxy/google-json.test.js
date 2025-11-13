@@ -44,7 +44,7 @@ describe('Google JSON Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       headers: {
         'x-request-id': 'rid',
       },

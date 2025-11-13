@@ -37,7 +37,7 @@ describe('Index Handler Tests', () => {
   function setupTest(method = 'POST') {
     const suffix = '/org/sites/site/index/document';
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       method,
       headers: {
         'x-request-id': 'rid',

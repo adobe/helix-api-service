@@ -37,7 +37,7 @@ describe('Preview Info Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/preview${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       headers: {
         'x-request-id': 'rid',
       },

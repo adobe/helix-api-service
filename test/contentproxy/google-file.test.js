@@ -48,7 +48,7 @@ describe('Google File Tests', () => {
 
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const request = new Request('https://localhost/');
+    const request = new Request('https://api.aem.live/');
     const context = {
       pathInfo: { suffix },
       attributes: {

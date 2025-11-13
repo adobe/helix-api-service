@@ -37,7 +37,9 @@ describe('Status Handler Tests', () => {
   it('return 405 with method not allowed', async () => {
     const suffix = '/org/sites/site/status/document';
 
-    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+    const result = await main(new Request('https://api.aem.live/', {
+      method: 'PUT',
+    }), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),

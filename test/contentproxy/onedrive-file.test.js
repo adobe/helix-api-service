@@ -54,7 +54,7 @@ describe('OneDrive Integration Tests (file)', () => {
   function setupTest(path = '/', env = ENV) {
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const request = new Request('https://localhost/');
+    const request = new Request('https://api.aem.live/');
     const context = {
       pathInfo: { suffix },
       attributes: {

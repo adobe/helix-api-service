@@ -44,7 +44,7 @@ describe('Index Update Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/index${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       method: 'POST',
       headers: {
         'x-request-id': 'rid',

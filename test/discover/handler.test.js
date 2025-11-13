@@ -37,7 +37,7 @@ describe('Discover Handler Tests', () => {
   it('return 405 with method not allowed', async () => {
     const suffix = '/discover';
 
-    const response = await main(new Request('https://localhost/', { method: 'PUT' }), {
+    const response = await main(new Request('https://api.aem.live/', { method: 'PUT' }), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),

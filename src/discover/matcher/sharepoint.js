@@ -67,21 +67,18 @@ function stripAccessSpecifiers(pathname) {
  * Matcher that filters inventory entries against known sharepoint sites.
  */
 export default class SharepointMatcher {
-  constructor(context) {
-    this.context = context;
-  }
-
   /**
    * Returns a matcher for document URLs given as `/_layouts/15/Doc.aspx`
    *
+   * @param {import('../support/AdminContext').AdminContext} context context
    * @param {String[]} segs segments to use for site lookup
    * @param {URL} url original URL
    * @param {import('../inventory.js').InventoryEntry} candidate candidate entry
    *        that can be used to determine content bus ID and owner
    * @returns matcher
    */
-  async documentMatcher(segs, url, candidate) {
-    const { attributes, env, log } = this.context;
+  async documentMatcher(context, segs, url, candidate) {
+    const { attributes, env, log } = context;
 
     try {
       const client = await getOneDriveClient({
@@ -114,12 +111,13 @@ export default class SharepointMatcher {
   /**
    * Returns a matcher for the given URL.
    *
+   * @param {import('../support/AdminContext').AdminContext} context context
    * @param {URL} url url to resolve
    * @param {import('../inventory.js').Inventory} inventory inventory
    * @returns resolved URL
    */
-  async getMatcher(url, inventory) {
-    const { log } = this.context;
+  async getMatcher(context, url, inventory) {
+    const { log } = context;
     let { pathname } = url;
     pathname = stripAccessSpecifiers(pathname);
 
@@ -146,7 +144,7 @@ export default class SharepointMatcher {
           return () => false;
         }
       }
-      return this.documentMatcher(segs, url, candidate);
+      return this.documentMatcher(context, segs, url, candidate);
     }
 
     if (ALLITEMS_REGEX.test(pathname)) {
@@ -187,19 +185,36 @@ export default class SharepointMatcher {
    * Find the inventory entries that have the given sharepoint document, spreadsheet
    * or folder in their tree.
    *
+   * @param {import('../support/AdminContext').AdminContext} context context
    * @param {URL} url google document or spreadsheet
    * @param {Inventory} inventory inventory of entries
    */
-  async filter(url, inventory) {
+  async filter(context, url, inventory) {
     const suffix = DEFENDER_DNS_SUFFIXES.find((s) => url.hostname.endsWith(s));
     if (suffix) {
       // eslint-disable-next-line no-param-reassign
       url.hostname = url.hostname.substring(0, url.hostname.length - suffix.length);
     }
-    const matcher = await this.getMatcher(url, inventory);
+    const matcher = await this.getMatcher(context, url, inventory);
     return inventory.entries()
       .filter(({ sharepointSite }) => sharepointSite && matcher(sharepointSite))
       .sort(({ sharepointSite: site1, sharepointSite: site2 }) => site1.length - site2.length);
+  }
+
+  /**
+   * Extract some data from a URL to store in the inventory.
+   *
+   * @param {URL} url url to extract data from
+   * @param {import('../inventory.js').InventoryEntry} entry entry to extract into
+   * @returns object that contains additional entries to store in inventory
+   */
+  async extract(context, url, entry) {
+    let pathname = stripAccessSpecifiers(url.pathname);
+    if (ALLITEMS_REGEX.test(pathname)) {
+      pathname = url.searchParams.get('id');
+    }
+    // eslint-disable-next-line no-param-reassign
+    entry.sharepointSite = new URL(pathname, url).href;
   }
 
   /**
@@ -212,21 +227,5 @@ export default class SharepointMatcher {
   static match(url, inventory) {
     return inventory.getHostType(url.hostname) === 'sharepoint'
       || DEFENDER_DNS_SUFFIXES.some((suffix) => url.hostname.endsWith(suffix));
-  }
-
-  /**
-   * Extract some data from a URL to store in the inventory.
-   *
-   * @param {URL} url url to extract data from
-   * @param entry entry to extract into
-   * @returns object that contains additional entries to store in inventory
-   */
-  static async extract(context, url, entry) {
-    let pathname = stripAccessSpecifiers(url.pathname);
-    if (ALLITEMS_REGEX.test(pathname)) {
-      pathname = url.searchParams.get('id');
-    }
-    // eslint-disable-next-line no-param-reassign
-    entry.sharepointSite = new URL(pathname, url).href;
   }
 }

@@ -21,9 +21,9 @@ import { Inventory } from './inventory.js';
  * @param {string} site repo
  * @returns {Promise<Response>} response
  */
-export async function removeProject(ctx, org, site) {
-  const { log } = ctx;
-  const contentBus = HelixStorage.fromContext(ctx).contentBus();
+export async function removeProject(context, org, site) {
+  const { log } = context;
+  const contentBus = HelixStorage.fromContext(context).contentBus();
 
   const inventory = new Inventory(contentBus, log);
   await inventory.load();

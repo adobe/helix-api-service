@@ -56,7 +56,7 @@ describe('Index Handler Tests', () => {
   }
 
   it('return 405 with method not allowed', async () => {
-    const { request, context } = await setupTest('PUT');
+    const { request, context } = setupTest('PUT');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 405);
@@ -66,7 +66,7 @@ describe('Index Handler Tests', () => {
   it('reports error if index definition is not found', async () => {
     nock.indexConfig(null);
 
-    const { request, context } = await setupTest();
+    const { request, context } = setupTest();
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
@@ -82,7 +82,7 @@ describe('Index Handler Tests', () => {
       .getObject('/preview/.helix/query.yaml')
       .reply(500);
 
-    const { request, context } = await setupTest();
+    const { request, context } = setupTest();
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);

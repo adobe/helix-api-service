@@ -90,12 +90,11 @@ export class AdminContext {
         }
         const { code: { owner, repo } } = config;
         info.withCode(owner, repo);
+
         attributes.config = config;
-      }
-    }
-    if (attributes.orgConfig === undefined) {
-      const { org } = info;
-      if (org) {
+        attributes.orgConfig = null;
+      } else if (org) {
+        attributes.config = null;
         attributes.orgConfig = await loadOrgConfig(this, org);
       }
     }

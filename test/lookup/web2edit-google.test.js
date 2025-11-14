@@ -37,18 +37,28 @@ describe('web2edit Google Tests', () => {
     nock.done();
   });
 
-  it('returns error when google lookup returns no results', async () => {
-    const suffix = '/owner/sites/repo/status/page';
+  const suffix = '/owner/sites/repo/status/page';
 
+  function setupTest(attributes) {
+    const context = createContext(suffix, {
+      attributes,
+      data: {
+        editUrl: 'auto',
+      },
+    });
+    const info = createInfo(suffix);
+    return { context, info };
+  }
+
+  it('returns error when google lookup returns no results', async () => {
     nock.google(SITE_CONFIG.content)
       .user()
       .documents([])
       .files([]);
 
-    const result = await web2edit(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest();
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       error: 'Handler google could not lookup hlx:/owner/repo/page.',
       status: 404,
@@ -56,16 +66,13 @@ describe('web2edit Google Tests', () => {
   });
 
   it('returns error when google lookup rejects', async () => {
-    const suffix = '/owner/sites/repo/status/page';
-
     sandbox.stub(GoogleClient.prototype, 'getItemsFromPath').rejects(new StatusCodeError('boom!', 500));
     nock.google(SITE_CONFIG.content)
       .user();
 
-    const result = await web2edit(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest();
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       error: 'Handler google could not lookup hlx:/owner/repo/page.',
       status: 500,
@@ -73,8 +80,6 @@ describe('web2edit Google Tests', () => {
   });
 
   it('adds a severity if the handler rejects with a `rateLimit`', async () => {
-    const suffix = '/owner/sites/repo/status/page';
-
     const error = new Error('boom!');
     error.status = 429;
     error.rateLimit = 1000;
@@ -83,10 +88,9 @@ describe('web2edit Google Tests', () => {
     nock.google(SITE_CONFIG.content)
       .user();
 
-    const result = await web2edit(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest();
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       error: 'Handler google could not lookup hlx:/owner/repo/page.',
       severity: 'warn',
@@ -106,8 +110,6 @@ describe('web2edit Google Tests', () => {
   };
 
   it('invokes `lookup` for both overlay and base', async () => {
-    const suffix = '/owner/sites/repo/status/page';
-
     nock('https://content.da.live:443')
       .get('/org/site/page')
       .reply(404);
@@ -117,13 +119,11 @@ describe('web2edit Google Tests', () => {
       .documents([])
       .files([]);
 
-    const result = await web2edit(
-      createContext(suffix, {
-        attributes: { config: OVERLAY_CONFIG },
-        data: { editUrl: 'auto' },
-      }),
-      createInfo(suffix),
-    );
+    const { context, info } = setupTest({
+      config: OVERLAY_CONFIG,
+    });
+    const result = await web2edit(context, info);
+
     assert.deepStrictEqual(result, {
       editUrl: 'https://da.live/edit#/org/site/page',
       resourcePath: '/page.md',

@@ -17,8 +17,6 @@ import purge, { PURGE_PREVIEW } from '../../src/cache/purge.js';
 import resolve from '../../src/cache/resolve.js';
 import { createContext, createInfo, Nock } from '../utils.js';
 
-const suffix = '/org/sites/site/cache/query-index.json';
-
 describe('Cloudflare Inner CDN Purge Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
@@ -38,14 +36,24 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
     nock.done();
   });
 
-  const ENV = {
-    HLX_FASTLY_PURGE_TOKEN: '1234',
-    CLOUDFLARE_PURGE_TOKEN: 'token',
-    HLX_CLOUDFLARE_PAGE_ZONE_ID: 'zone1',
-    HLX_PAGE_ZONE_ID: 'zone2',
-    AEM_CLOUDFLARE_PAGE_ZONE_ID: 'zone3',
-    AEM_PAGE_ZONE_ID: 'zone4',
-  };
+  const suffix = '/org/sites/site/cache/query-index.json';
+
+  function setupTest() {
+    const context = createContext(suffix, {
+      env: {
+        HLX_FASTLY_PURGE_TOKEN: '1234',
+        CLOUDFLARE_PURGE_TOKEN: 'token',
+        HLX_CLOUDFLARE_PAGE_ZONE_ID: 'zone1',
+        HLX_PAGE_ZONE_ID: 'zone2',
+        AEM_CLOUDFLARE_PAGE_ZONE_ID: 'zone3',
+        AEM_PAGE_ZONE_ID: 'zone4',
+      },
+    });
+    const info = createInfo(suffix)
+      .withCode('owner', 'repo').withRef('ref');
+
+    return { context, info };
+  }
 
   it('purges page url', async () => {
     nock('https://api.fastly.com')
@@ -93,10 +101,9 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
         };
       });
 
-    const context = createContext(suffix, { env: ENV });
-    const info = createInfo(suffix).withRef('ref');
-
+    const { context, info } = setupTest();
     const result = await purge.hlxPage(context, info, ['/helix-config.json']);
+
     assert.strictEqual(result.status, 200);
   });
 
@@ -146,10 +153,9 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
         };
       });
 
-    const context = createContext(suffix, { env: ENV });
-    const info = createInfo(suffix).withRef('ref');
-
+    const { context, info } = setupTest();
     const result = await purge.hlxPage(context, info, ['/helix-config.json']);
+
     assert.strictEqual(result.status, 502);
   });
 
@@ -187,12 +193,9 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
         };
       });
 
-    const context = createContext(suffix, { env: ENV });
-    const info = createInfo(suffix)
-      .withCode('owner', 'repo')
-      .withRef('ref');
-
+    const { context, info } = setupTest();
     const result = await purge.resource(context, info, PURGE_PREVIEW);
+
     assert.strictEqual(result.status, 200);
   });
 });

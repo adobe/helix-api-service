@@ -22,26 +22,31 @@ describe('Media Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('../../src/support/AdminContext.js').AdminContext} */
+  let context;
+
+  const suffix = '/org/sites/site/media/';
+
   beforeEach(() => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
     nock.orgConfig(ORG_CONFIG);
+
+    context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
+      },
+    };
   });
 
   afterEach(() => {
     nock.done();
   });
 
-  const suffix = '/org/sites/site/media/';
-
   it('sends method not allowed for unsupported method', async () => {
-    const result = await main(new Request('https://api.aem.live/'), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
-    });
+    const result = await main(new Request('https://api.aem.live/'), context);
 
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');
@@ -58,14 +63,13 @@ describe('Media Handler Tests', () => {
       .reply(201);
 
     const buffer = await readFile(resolve(__testdir, 'media/fixtures/sample.svg'));
-    const result = await main(new Request('https://api.aem.live/', {
-      method: 'POST', body: buffer, headers: { 'content-type': 'application/xml' },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
+    const request = new Request('https://api.aem.live/', {
+      method: 'POST',
+      body: buffer,
+      headers: { 'content-type': 'application/xml' },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       meta: {
@@ -89,7 +93,7 @@ describe('Media Handler Tests', () => {
         'content-type': 'image/png',
       });
 
-    const result = await main(new Request('https://api.aem.live/', {
+    const request = new Request('https://api.aem.live/', {
       method: 'POST',
       body: new URLSearchParams({
         url: 'https://www.aem.live/sample.png',
@@ -97,12 +101,8 @@ describe('Media Handler Tests', () => {
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
 
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
@@ -116,17 +116,14 @@ describe('Media Handler Tests', () => {
   });
 
   it('reports a 400 if no media is passed in request body', async () => {
-    const result = await main(new Request('https://api.aem.live/', {
+    const request = new Request('https://api.aem.live/', {
       method: 'POST',
       headers: {
         'content-type': 'image/png',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 400);
     assert.deepStrictEqual(await result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -136,18 +133,15 @@ describe('Media Handler Tests', () => {
   });
 
   it('reports a 400 if no URL is passed in posted form', async () => {
-    const result = await main(new Request('https://admin.hlx.page/', {
+    const request = new Request('https://admin.hlx.page/', {
       method: 'POST',
       body: '',
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 400);
     assert.deepStrictEqual(await result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -157,18 +151,15 @@ describe('Media Handler Tests', () => {
   });
 
   it('reports a 400 if no URL is passed in JSON body', async () => {
-    const result = await main(new Request('https://admin.hlx.page/', {
+    const request = new Request('https://admin.hlx.page/', {
       method: 'POST',
       body: '{}',
       headers: {
         'content-type': 'application/json',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 400);
     assert.deepStrictEqual(await result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -185,14 +176,13 @@ describe('Media Handler Tests', () => {
   </circle>
 </svg>`);
 
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'POST', body: buffer, headers: { 'content-type': 'application/xml' },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
+    const request = new Request('https://admin.hlx.page/', {
+      method: 'POST',
+      body: buffer,
+      headers: { 'content-type': 'application/xml' },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 409);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -206,7 +196,7 @@ describe('Media Handler Tests', () => {
       .get('/sample.png')
       .reply(404);
 
-    const result = await main(new Request('https://api.aem.live/', {
+    const request = new Request('https://api.aem.live/', {
       method: 'POST',
       body: new URLSearchParams({
         url: 'https://www.aem.live/sample.png',
@@ -214,12 +204,9 @@ describe('Media Handler Tests', () => {
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 502);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -233,7 +220,7 @@ describe('Media Handler Tests', () => {
       .get('/sample.png')
       .replyWithError('boohoo!');
 
-    const result = await main(new Request('https://api.aem.live/', {
+    const request = new Request('https://api.aem.live/', {
       method: 'POST',
       body: new URLSearchParams({
         url: 'https://www.aem.live/sample.png',
@@ -241,12 +228,9 @@ describe('Media Handler Tests', () => {
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 502);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -257,18 +241,16 @@ describe('Media Handler Tests', () => {
 
   it('reports a 415 if media type is not supported', async () => {
     const buffer = Buffer.from('Hello world', 'utf-8');
-    const result = await main(new Request('https://api.aem.live/', {
+
+    const request = new Request('https://api.aem.live/', {
       method: 'POST',
       body: buffer,
       headers: {
         'content-type': 'text/plain',
       },
-    }), {
-      pathInfo: { suffix },
-      attributes: {
-        authInfo: new AuthInfo().withRole('media_author').withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 415);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',

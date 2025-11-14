@@ -133,6 +133,7 @@ export function Nock() {
   nocker.s3 = (bucket, prefix) => {
     const scope = nock(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
     scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
+    scope.headObject = (key) => scope.head(key);
     scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
     scope.deleteObject = (key) => scope.delete(key).query({ 'x-id': 'DeleteObject' });
     scope.copyObject = (key) => scope.put(key).query({ 'x-id': 'CopyObject' });
@@ -148,6 +149,8 @@ export function Nock() {
   nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
+
+  nocker.source = () => nocker.s3('helix-source-bus', '');
 
   nocker.siteConfig = (config, { org = 'org', site = 'site' } = {}) => {
     const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);

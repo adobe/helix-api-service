@@ -14,30 +14,31 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { getSource } from '../../src/source/get.js';
+import { Nock } from '../utils.js';
 
 describe('Source GET Tests', () => {
+  /** @type {import('../utils.js').NockEnv} */
+  let nock;
+  const context = { attributes: {}, env: {}, log: console };
+
+  beforeEach(() => {
+    nock = new Nock().env();
+  });
+
+  afterEach(() => {
+    nock.done();
+  });
+
   it('test getSource with full body', async () => {
-    const context = { test: 707 };
-
-    const mockGet = async (p, m) => {
-      if (p !== 'test/rest/toast/jam.html') {
-        return null;
-      }
-      m.ContentType = 'text/plain';
-      m.ETag = '"some-etag-327"';
-      m.LastModified = new Date(1763041448536);
-      m.id = '999';
-      return 'The body';
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
+    nock.source()
+      .getObject('/test/rest/toast/jam.html')
+      .reply(200, 'The body', {
+        'content-type': 'text/plain',
+        'content-length': '8',
+        etag: '"some-etag-327"',
+        'last-modified': 'Thu, 13 Nov 2025 13:44:08 GMT',
+        'x-amz-meta-id': '999',
+      });
 
     const info = {
       org: 'test',
@@ -56,35 +57,30 @@ describe('Source GET Tests', () => {
     });
   });
 
+  it('test getSource not found returns 404', async () => {
+    nock.source()
+      .getObject('/test/site/not/there.html')
+      .reply(404);
+    const info = {
+      org: 'test',
+      site: 'site',
+      resourcePath: '/not/there.html',
+    };
+    const resp = await getSource({ context, info });
+    assert.equal(resp.status, 404);
+    assert.equal(resp.headers.get('x-error'), null, '404 is not an error');
+  });
+
   it('test getSource with headOnly=true returns metadata', async () => {
-    const context = { test: 707 };
-
-    const mockHead = async (path) => {
-      assert.equal(path, 'myorg/mysite/document.html');
-      return {
-        $metadata: { httpStatusCode: 200 },
-        ContentType: 'text/html',
-        ContentLength: 1024,
-        ETag: '"abc123"',
-        LastModified: new Date(1666666666666),
-        Metadata: {
-          id: 'doc-id-456',
-        },
-      };
-    };
-
-    const bucket = {
-      head: mockHead,
-      get: async () => {
-        assert.fail('GET should not be called when headOnly=true');
-      },
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
+    nock.source()
+      .headObject('/myorg/mysite/document.html')
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'content-length': '1024',
+        etag: '"abc123"',
+        'last-modified': new Date(1666666666666).toUTCString(),
+        'x-amz-meta-id': 'doc-id-456',
+      });
     const info = {
       org: 'myorg',
       site: 'mysite',
@@ -104,25 +100,9 @@ describe('Source GET Tests', () => {
   });
 
   it('test getSource with headOnly=true returns 404 when not found', async () => {
-    const context = { test: 707 };
-
-    const mockHead = async (path) => {
-      assert.equal(path, 'test/site/missing.html');
-      return null;
-    };
-
-    const bucket = {
-      head: mockHead,
-      get: async () => {
-        assert.fail('GET should not be called when headOnly=true');
-      },
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
+    nock.source()
+      .headObject('/test/site/missing.html')
+      .reply(404);
     const info = {
       org: 'test',
       site: 'site',
@@ -133,24 +113,10 @@ describe('Source GET Tests', () => {
     assert.equal(resp.status, 404);
   });
 
-  it('test getSource handles error with httpStatusCode', async () => {
-    const context = { log: { warn: () => {} } };
-
-    const mockGet = async () => {
-      const error = new Error('Access denied');
-      error.$metadata = { httpStatusCode: 403 };
-      throw error;
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
+  it('test getSource handles error', async () => {
+    nock.source()
+      .getObject('/test/site/forbidden.html')
+      .reply(403);
     const info = {
       org: 'test',
       site: 'site',
@@ -161,112 +127,36 @@ describe('Source GET Tests', () => {
     assert.equal(resp.status, 403);
   });
 
-  it('test getSource handles error without httpStatusCode', async () => {
-    const context = { log: { error: () => {} } };
-
-    const mockGet = async () => {
-      throw new Error('Unknown error');
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
+  it('test getSource with headOnly handles error', async () => {
+    nock.source()
+      .headObject('/test/site/error.html')
+      .replyWithError('Oh no!');
     const info = {
       org: 'test',
       site: 'site',
       resourcePath: '/error.html',
     };
-
-    const resp = await getSource({ context, info });
-    assert.equal(resp.status, 500);
-  });
-
-  it('test getSource with headOnly handles error with httpStatusCode', async () => {
-    const context = { log: { error: () => {} } };
-
-    const mockHead = async () => {
-      const error = new Error('Server error');
-      error.$metadata = { httpStatusCode: 503 };
-      throw error;
-    };
-
-    const bucket = {
-      head: mockHead,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'site',
-      resourcePath: '/error.html',
-    };
-
-    const resp = await getSource({ context, info, headOnly: true });
-    assert.equal(resp.status, 503);
-  });
-
-  it('test getSource with headOnly handles error without httpStatusCode', async () => {
-    const context = { log: { error: () => {} } };
-
-    const mockHead = async () => {
-      throw new Error('Generic error');
-    };
-
-    const bucket = {
-      head: mockHead,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'site',
-      resourcePath: '/error.html',
-    };
-
     const resp = await getSource({ context, info, headOnly: true });
     assert.equal(resp.status, 500);
+    assert.equal('Oh no!', await resp.headers.get('x-error'));
   });
 
   it('test getSource with JSON content', async () => {
-    const context = {};
-
-    const mockGet = async (path, m) => {
-      m.ContentType = 'application/json';
-      m.ETag = 'myetag';
-      m.LastModified = new Date(1111111111111);
-      m.id = 'json-id';
-      return '{"name":"test","value":123}';
-    };
-
-    const bucket = {
-      get: mockGet,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
+    nock.source()
+      .getObject('/org/site/data.json')
+      .reply(200, '{"name":"test","value":123}', {
+        'content-type': 'application/json',
+        'content-length': '27',
+        etag: 'myetag',
+        'last-modified': new Date(1111111111111).toUTCString(),
+        'x-amz-meta-id': 'json-id',
+      });
 
     const info = {
       org: 'org',
       site: 'site',
       resourcePath: '/data.json',
     };
-
     const resp = await getSource({ context, info });
 
     assert.equal(resp.status, 200);

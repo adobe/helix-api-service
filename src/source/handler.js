@@ -40,7 +40,7 @@ async function handle(context, info) {
 export default async function sourceHandler(context, info) {
   const resp = await handle(context, info);
 
-  if (info.headers.get('origin')) {
+  if (info.headers.origin) {
     resp.headers.set('access-control-allow-headers', '*');
     resp.headers.set('access-control-allow-methods', 'HEAD, GET, PUT, DELETE');
     resp.headers.set('access-control-expose-headers', 'x-da-id');

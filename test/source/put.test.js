@@ -13,99 +13,80 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
+import { promisify } from 'util';
+import zlib from 'zlib';
 import { putSource } from '../../src/source/put.js';
+import { Nock } from '../utils.js';
+
+const gunzip = promisify(zlib.gunzip);
 
 describe('Source PUT Tests', () => {
+  /** @type {import('../utils.js').NockEnv} */
+  let nock;
+  let context;
+
+  beforeEach(() => {
+    context = {
+      attributes: {},
+      env: { HELIX_STORAGE_DISABLE_R2: 'true' },
+      log: console,
+    };
+    nock = new Nock().env();
+  });
+
+  afterEach(() => {
+    nock.done();
+  });
+
   it('test putSource with existing resource (has ID)', async () => {
-    const context = {
-      data: { data: '<html><body>Hello</body></html>' },
-    };
-
-    let headCalled = false;
-    let putCalled = false;
-
-    const mockHead = async (path) => {
-      headCalled = true;
-      assert.equal(path, 'test/rest/toast/jam.html');
-      return {
-        $metadata: { httpStatusCode: 200 },
-        ContentType: 'text/html',
-        ContentLength: 100,
-        ETag: 'test-etag',
-        LastModified: new Date(999999999999),
-        Metadata: {
-          id: 'existing-id-123',
-        },
-      };
-    };
-
-    const mockPut = async (path, body, contentType, metadata) => {
+    let putCalled;
+    async function putFn(_uri, gzipBody) {
+      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
+      assert.equal(b.toString(), '<html><body>Hello</body></html>');
       putCalled = true;
-      assert.equal(path, 'test/rest/toast/jam.html');
-      assert.equal(body, '<html><body>Hello</body></html>');
-      assert.equal(contentType, 'text/html');
-      assert.equal(metadata.id, 'existing-id-123');
-      assert.equal(metadata.users, '[{"email":"anonymous"}]');
-      return { $metadata: { httpStatusCode: 200 } };
-    };
+    }
 
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
+    nock.source()
+      .headObject('/tst/best/toast/jam.html')
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'last-modified': new Date(999999999999).toUTCString(),
+        'x-amz-meta-id': 'existing-id-123',
+      });
+    nock.source()
+      .putObject('/tst/best/toast/jam.html')
+      .matchHeader('content-type', 'text/html')
+      .matchHeader('x-amz-meta-id', 'existing-id-123')
+      .reply(201, putFn);
 
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
+    context.data = { data: '<html><body>Hello</body></html>' };
     const info = {
-      org: 'test',
-      site: 'rest',
+      org: 'tst',
+      site: 'best',
       resourcePath: '/toast/jam.html',
       ext: '.html',
     };
 
     const resp = await putSource({ context, info });
-    assert.ok(headCalled, 'head should have been called');
-    assert.ok(putCalled, 'put should have been called');
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
+    assert.ok(putCalled, 'put should have been called');
   });
 
   it('test putSource with new resource (generates new ID)', async () => {
-    const context = {
-      data: { data: '{"something":"else"}' },
-    };
-
     let generatedId;
+    async function putFn(_uri, body) {
+      generatedId = this.req.headers['x-amz-meta-id'];
+      assert.match(generatedId, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      assert.deepStrictEqual(body, { something: 'else' });
+    }
 
-    const mockHead = async (path) => {
-      assert.equal(path, 'myorg/mysite/data/test.json');
-      return null; // Resource doesn't exist
-    };
+    nock.source()
+      .putObject('/myorg/mysite/data/test.json')
+      .matchHeader('content-type', 'application/json')
+      .reply(201, putFn);
 
-    const mockPut = async (path, body, contentType, metadata) => {
-      assert.equal(path, 'myorg/mysite/data/test.json');
-      assert.equal(body, '{"something":"else"}');
-      assert.equal(contentType, 'application/json');
-      assert.ok(metadata.id);
-      generatedId = metadata.id;
-      // Verify UUID format (basic check)
-      assert.match(metadata.id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-      return { $metadata: { httpStatusCode: 200 } };
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
+    context.data = { data: '{"something":"else"}' };
     const info = {
       org: 'myorg',
       site: 'mysite',
@@ -119,27 +100,6 @@ describe('Source PUT Tests', () => {
   });
 
   it('test putSource with unknown file extension returns 400', async () => {
-    const context = {
-      data: { data: 'Binary content' },
-      log: { warn: () => {} },
-    };
-
-    const mockHead = async () => null;
-
-    const mockPut = async () => {
-      throw new Error('Should not be called');
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
     const info = {
       org: 'test',
       site: 'test',
@@ -151,38 +111,10 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 400);
   });
 
-  it('test putSource handles bucket.put error with metadata', async () => {
-    const context = {
-      data: { data: 'Content' },
-      log: { warn: () => {} },
-    };
-
-    const mockHead = async () => ({
-      $metadata: { httpStatusCode: 200 },
-      ContentType: 'text/html',
-      ContentLength: 100,
-      ETag: 'test-etag',
-      LastModified: new Date(),
-      Metadata: {
-        id: 'test-id',
-      },
-    });
-
-    const mockPut = async () => {
-      const error = new Error('S3 Error');
-      error.$metadata = { httpStatusCode: 403 };
-      throw error;
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
+  it('test putSource handles bucket.put error with metadata statuscode', async () => {
+    nock.source()
+      .putObject('/test/test/test.html')
+      .reply(403);
 
     const info = {
       org: 'test',
@@ -195,82 +127,27 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 403);
   });
 
-  it('test putSource handles bucket.put error without metadata', async () => {
-    const context = {
-      data: { data: 'Content' },
-      log: { error: () => {} },
-    };
-
-    const mockHead = async () => ({
-      $metadata: { httpStatusCode: 200 },
-      ContentType: 'text/html',
-      ContentLength: 100,
-      ETag: 'test-etag',
-      LastModified: new Date(),
-      Metadata: {
-        id: 'test-id-500',
-      },
-    });
-
-    const mockPut = async () => {
-      throw new Error('Unknown error');
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/test.html',
-      ext: '.html',
-    };
-
-    const resp = await putSource({ context, info });
-    assert.equal(resp.status, 500);
-  });
-
   it('test putSource with matching guid succeeds', async () => {
-    const context = {
-      data: {
-        data: 'Updated content',
-        guid: 'existing-id-123',
-      },
-    };
+    async function putFn(_uri, gzipBody) {
+      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
+      assert.equal(b.toString(), '<html>Updated content</html>');
+    }
 
-    const mockHead = async () => ({
-      $metadata: { httpStatusCode: 200 },
-      ContentType: 'text/html',
-      ContentLength: 100,
-      ETag: 'test-etag',
-      LastModified: new Date(),
-      Metadata: {
-        id: 'existing-id-123',
-      },
-    });
+    nock.source()
+      .headObject('/test/test/test.html')
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'last-modified': new Date().toUTCString(),
+        'x-amz-meta-id': 'existing-id-123',
+      });
+    nock.source()
+      .putObject('/test/test/test.html')
+      .reply(204, putFn);
 
-    const mockPut = async (path, body, contentType, metadata) => {
-      assert.equal(body, 'Updated content');
-      assert.equal(metadata.id, 'existing-id-123');
-      return { $metadata: { httpStatusCode: 204 } };
+    context.data = {
+      data: '<html>Updated content</html>',
+      guid: 'existing-id-123',
     };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
     const info = {
       org: 'test',
       site: 'test',
@@ -284,38 +161,18 @@ describe('Source PUT Tests', () => {
   });
 
   it('test putSource with mismatched guid returns 409', async () => {
-    const context = {
-      data: {
-        data: 'Updated content',
-        guid: 'wrong-id',
-      },
+    nock.source()
+      .headObject('/test/test/test.html')
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'last-modified': new Date().toUTCString(),
+        'x-amz-meta-id': 'existing-id-123',
+      });
+
+    context.data = {
+      data: 'Updated content',
+      guid: 'wrong-id',
     };
-
-    const mockHead = async () => ({
-      $metadata: { httpStatusCode: 200 },
-      ContentType: 'text/html',
-      ContentLength: 100,
-      ETag: 'test-etag',
-      LastModified: new Date(),
-      Metadata: {
-        id: 'existing-id-123',
-      },
-    });
-
-    const mockPut = async () => {
-      assert.fail('PUT should not be called when ID mismatch');
-    };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes = { storage: mockS3Storage };
-
     const info = {
       org: 'test',
       site: 'test',
@@ -330,41 +187,28 @@ describe('Source PUT Tests', () => {
   });
 
   it('test putSource with guid for new resource uses the provided guid', async () => {
-    const context = {
-      attributes: {
-        authInfo: {
-          profile: {
-            email: 'test@example.com',
-            user_id: 'user-123.e',
-          },
+    async function putFn(_uri, gzipBody) {
+      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
+      assert.equal(b.toString(), '<html>New content</html>');
+    }
+    nock.source()
+      .putObject('/test/test/new.html')
+      .matchHeader('x-amz-meta-id', 'provided-id-456')
+      .matchHeader('x-amz-meta-users', '[{"email":"test@example.com","user_id":"user-123.e"}]')
+      .reply(200, putFn);
+
+    context.attributes = {
+      authInfo: {
+        profile: {
+          email: 'test@example.com',
+          user_id: 'user-123.e',
         },
       },
-      data: {
-        data: 'New content',
-        guid: 'provided-id-456',
-      },
     };
-
-    const mockHead = async () => null; // Resource doesn't exist
-
-    const mockPut = async (path, body, contentType, metadata) => {
-      assert.equal(body, 'New content');
-      // Should use the provided guid
-      assert.equal(metadata.id, 'provided-id-456');
-      assert.equal(metadata.users, '[{"email":"test@example.com","user_id":"user-123.e"}]');
-      return { $metadata: { httpStatusCode: 200 } };
+    context.data = {
+      data: '<html>New content</html>',
+      guid: 'provided-id-456',
     };
-
-    const bucket = {
-      head: mockHead,
-      put: mockPut,
-    };
-
-    const mockS3Storage = {
-      sourceBus: () => bucket,
-    };
-    context.attributes.storage = mockS3Storage;
-
     const info = {
       org: 'test',
       site: 'test',

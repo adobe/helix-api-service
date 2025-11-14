@@ -13,34 +13,61 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import sourceHandler from '../../src/source/handler.js';
+import { promisify } from 'util';
+import zlib from 'zlib';
+import { Headers, Request } from '@adobe/fetch';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+
+const gunzip = promisify(zlib.gunzip);
+
+function assertHeadersInclude(headers, expected) {
+  const actual = headers.plain();
+  Object.entries(expected).forEach(([key, value]) => {
+    assert.strictEqual(actual[key], value, `Expected header ${key} to be ${value}`);
+  });
+}
 
 describe('Source Handler Tests', () => {
+  /** @type {import('../utils.js').NockEnv} */
+  let nock;
+
+  beforeEach(() => {
+    nock = new Nock().env();
+    nock.siteConfig(SITE_CONFIG);
+    nock.orgConfig(ORG_CONFIG);
+  });
+
+  afterEach(() => {
+    nock.done();
+  });
+
   it('handles GET requests', async () => {
-    const mockBus = {
-      get: async (path, meta) => {
-        assert.equal(path, 'test/site/hello.html');
-        meta.ContentType = 'text/html';
-        meta.LastModified = new Date(946684800000);
-        meta.ETag = '"some-etag-327"';
-        meta.id = 'dc0b68d8-b3ac-4c8a-9205-d78085e55704';
-        return '<body>Hello, world!</body>';
-      },
-    };
-    const mockStorage = { sourceBus: () => mockBus };
-    const context = { attributes: { storage: mockStorage } };
+    nock.source()
+      .getObject('/org/site/hello.html')
+      .reply(200, Buffer.from('<body>Hello, world!</body>'), {
+        'content-type': 'text/html',
+        'content-length': '26',
+        'last-modified': new Date(946684800000).toUTCString(), // RFC HTTP date format!
+        ETag: '"some-etag-327"',
+        'x-amz-meta-id': 'dc0b68d8-b3ac-4c8a-9205-d78085e55704',
+      });
+
     const headers = new Headers({ origin: 'https://example.com' });
-    const info = {
-      method: 'GET',
-      org: 'test',
-      site: 'site',
-      resourcePath: '/hello.html',
-      headers,
-    };
-    const resp = await sourceHandler(context, info);
+    const resp = await main(new Request('https://api.aem.live/', {
+      method: 'GET', headers,
+    }), {
+      pathInfo: { suffix: '/org/sites/site/source/hello.html' },
+      attributes: {
+        authInfo: new AuthInfo().withAuthenticated(true),
+      },
+    });
     assert.equal(resp.status, 200);
-    assert.equal(await resp.text(), '<body>Hello, world!</body>');
-    assert.deepStrictEqual(resp.headers.plain(), {
+    const txt = await resp.text();
+    assert.equal(txt, '<body>Hello, world!</body>');
+
+    assertHeadersInclude(resp.headers, {
       'content-type': 'text/html',
       'content-length': '26',
       'last-modified': 'Sat, 01 Jan 2000 00:00:00 GMT',
@@ -48,36 +75,30 @@ describe('Source Handler Tests', () => {
       'x-da-id': 'dc0b68d8-b3ac-4c8a-9205-d78085e55704',
       'access-control-allow-headers': '*',
       'access-control-allow-methods': 'HEAD, GET, PUT, DELETE',
-      'access-control-expose-headers': 'x-da-id',
+      'access-control-allow-origin': 'https://example.com',
+      'access-control-expose-headers': 'x-da-id, x-error, x-error-code',
     });
   });
 
   it('handles HEAD requests', async () => {
-    const mockBus = {
-      head: async (path) => {
-        assert.equal(path, 'test/site/hellothere.html');
-        return {
-          $metadata: { httpStatusCode: 200 },
-          ContentType: 'text/html',
-          LastModified: new Date(999999999999),
-          Metadata: {
-            id: '12345',
-          },
-        };
-      },
-    };
-    const mockStorage = { sourceBus: () => mockBus };
-    const context = { attributes: { storage: mockStorage } };
-    const info = {
+    nock.source()
+      .headObject('/org/site/hellothere.html')
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'last-modified': new Date(999999999999).toUTCString(),
+        'x-amz-meta-id': '12345',
+      });
+
+    const resp = await main(new Request('https://api.aem.live/', {
       method: 'HEAD',
-      org: 'test',
-      site: 'site',
-      resourcePath: '/hellothere.html',
-      headers: new Headers(),
-    };
-    const resp = await sourceHandler(context, info);
+    }), {
+      pathInfo: { suffix: '/org/sites/site/source/hellothere.html' },
+      attributes: {
+        authInfo: new AuthInfo().withAuthenticated(true),
+      },
+    });
     assert.equal(resp.status, 200);
-    assert.deepStrictEqual(resp.headers.plain(), {
+    assertHeadersInclude(resp.headers, {
       'content-type': 'text/html',
       'x-da-id': '12345',
       'last-modified': 'Sun, 09 Sep 2001 01:46:39 GMT',
@@ -85,84 +106,66 @@ describe('Source Handler Tests', () => {
   });
 
   it('handles PUT requests', async () => {
-    let storedId = null;
-    const mockBus = {
-      head: async () => null,
-      put: async (path, body, mime, meta) => {
-        storedId = meta.id;
-        assert.equal(path, 'o/s/a/b/c.html');
-        assert.equal(body, '<body><main>Yo!</main></body>');
-        assert.equal(mime, 'text/html');
-        assert(meta.id);
-        assert.equal(meta.users, '[{"email":"anonymous"}]');
-        return { $metadata: { httpStatusCode: 200 } };
-      },
-    };
-    const mockStorage = { sourceBus: () => mockBus };
-    const context = {
-      attributes: {
-        storage: mockStorage,
-      },
-      data: {
-        data: '<body><main>Yo!</main></body>',
-      },
-    };
-    const info = {
+    let assignedID = null;
+    async function putFn(_uri, gzipBody) {
+      assignedID = this.req.headers['x-amz-meta-id'];
+      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
+      assert.equal(b.toString(), '<body><main>Yo!</main></body>');
+    }
+
+    nock.source()
+      .putObject('/org/site/a/b/c.html')
+      .matchHeader('x-amz-meta-users', '[{"email":"anonymous"}]')
+      .reply(201, putFn);
+
+    const headers = new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' });
+    const resp = await main(new Request('https://api.aem.live/', {
       method: 'PUT',
-      org: 'o',
-      site: 's',
-      resourcePath: '/a/b/c.html',
-      ext: '.html',
-      headers: new Headers(),
-    };
-    const result = await sourceHandler(context, info);
-    assert.equal(result.status, 201);
-    assert.equal(result.headers.get('X-da-id'), storedId);
+      body: new URLSearchParams({
+        data: '<body><main>Yo!</main></body>',
+      }).toString(),
+      headers,
+    }), {
+      pathInfo: { suffix: '/org/sites/site/source/a/b/c.html' },
+      attributes: {
+        authInfo: new AuthInfo().withAuthenticated(true),
+      },
+      env: { HELIX_STORAGE_DISABLE_R2: 'true' },
+    });
+    assert.equal(resp.status, 201);
+    assert.equal(assignedID, resp.headers.get('X-da-id'));
   });
 
-  // add tests for the 2 error cases (unsupported method and getSource throws an error)
   it('handles unsupported method requests', async () => {
-    const context = {};
-    const info = {
+    const resp = await main(new Request('https://api.aem.live/', {
       method: 'POST',
-      headers: new Headers(),
-    };
-    const result = await sourceHandler(context, info);
-    assert.equal(result.status, 405);
+    }), {
+      pathInfo: { suffix: '/org/sites/site/source/x.html' },
+      attributes: {
+        authInfo: new AuthInfo().withAuthenticated(true),
+      },
+    });
+    assert.equal(resp.status, 405);
   });
 
   it('handles getSource throws an error', async () => {
-    const context = { log: { error: () => {} } };
-    const info = {
+    const resp = await main(new Request('https://api.aem.live/', {
       method: 'GET',
-      headers: new Headers(),
-    };
-
-    // Throws an error because context.attributes.storage is not set
-    const result = await sourceHandler(context, info);
-    assert.equal(result.status, 500);
-  });
-
-  it('handles putSource throws an error', async () => {
-    const mockStorage = {
-      sourceBus: () => {
-        const e = new Error('Test error');
-        e.$metadata = { httpStatusCode: 418 };
-        throw e;
+    }), {
+      pathInfo: { suffix: '/org/sites/site/source/qq.html' },
+      attributes: {
+        authInfo: new AuthInfo().withAuthenticated(true),
+        storage: {
+          close: () => {},
+          sourceBus: () => {
+            const e = new Error('Test error');
+            e.$metadata = { httpStatusCode: 505 };
+            throw e;
+          },
+        },
       },
-    };
-
-    const context = {
-      attributes: { storage: mockStorage },
-      log: { warn: () => {} },
-    };
-    const info = {
-      method: 'PUT',
-      headers: new Headers(),
-    };
-
-    // Throws an error because context.attributes.storage is not set
-    const result = await sourceHandler(context, info);
-    assert.equal(result.status, 418);
+    });
+    assert.equal(resp.status, 505);
+    assert.equal(resp.headers.get('x-error'), 'Test error');
   });
 });

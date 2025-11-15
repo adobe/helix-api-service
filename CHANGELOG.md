@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/adobe/helix-api-service/compare/v1.15.2...v1.16.0) (2025-11-15)
+
+
+### Features
+
+* implement `log` route ([#38](https://github.com/adobe/helix-api-service/issues/38)) ([873a792](https://github.com/adobe/helix-api-service/commit/873a792b65689ce7d330f9864be789968ba723c5))
+
 ## [1.15.2](https://github.com/adobe/helix-api-service/compare/v1.15.1...v1.15.2) (2025-11-15)
 
 

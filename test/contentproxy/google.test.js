@@ -16,7 +16,7 @@ import { Request } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Google Integration Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -27,7 +27,6 @@ describe('Google Integration Tests', () => {
     GoogleClient.setItemCacheOptions({ max: 1000 });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

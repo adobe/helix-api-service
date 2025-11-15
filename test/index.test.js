@@ -60,7 +60,6 @@ describe('Index Tests', () => {
 
   it('succeeds calling code handler', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig().reply(404);
 
     const { request, context } = setupTest('/org/sites/site/code/main/', {
       attributes: {
@@ -74,11 +73,7 @@ describe('Index Tests', () => {
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
-    nock.orgConfig(ORG_CONFIG, { org: 'owner' });
-
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig().reply(404);
 
     const { request, context } = setupTest('/org/sites/site/code/main/src/scripts.js', {
       attributes: {
@@ -122,7 +117,6 @@ describe('Index Tests', () => {
 
   it('succeeds calling status handler with trailing path', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
 
     nock.content()
       .head('/live/document.md')
@@ -178,7 +172,6 @@ describe('Index Tests', () => {
 
   it('fails calling status handler when not authenticated', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
 
     const { request, context } = setupTest('/org/sites/site/status/document', {
       attributes: {

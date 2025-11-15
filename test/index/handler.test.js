@@ -15,9 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import {
-  Nock, SITE_CONFIG, ORG_CONFIG,
-} from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Index Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -27,7 +25,6 @@ describe('Index Handler Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

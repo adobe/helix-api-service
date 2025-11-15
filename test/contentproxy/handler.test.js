@@ -14,7 +14,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('ContentProxy Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -22,8 +22,6 @@ describe('ContentProxy Handler Tests', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

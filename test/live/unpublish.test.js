@@ -20,7 +20,7 @@ import { HANDLERS } from '../../src/lookup/web2edit.js';
 import { main } from '../../src/index.js';
 import { INTERNAL_SITEMAP_INDEX } from '../../src/index/utils.js';
 import purge from '../../src/cache/purge.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Publish Remove Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -48,7 +48,6 @@ describe('Publish Remove Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

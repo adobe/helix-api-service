@@ -21,7 +21,7 @@ import purge from '../../src/cache/purge.js';
 import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { main } from '../../src/index.js';
 import sitemap from '../../src/sitemap/update.js';
-import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Publish Action Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -51,7 +51,6 @@ describe('Publish Action Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

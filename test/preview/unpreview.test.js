@@ -19,7 +19,7 @@ import { HANDLERS } from '../../src/lookup/web2edit.js';
 import { main } from '../../src/index.js';
 import purge from '../../src/cache/purge.js';
 import { REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Preview Remove Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -44,7 +44,6 @@ describe('Preview Remove Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

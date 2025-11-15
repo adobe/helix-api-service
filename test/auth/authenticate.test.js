@@ -77,7 +77,6 @@ describe('Authentication Test', () => {
 
   describe('`getAuthInfo`', () => {
     beforeEach(() => {
-      nock.orgConfig().reply(404);
       nock.siteConfig(SITE_CONFIG);
     });
 
@@ -518,7 +517,6 @@ describe('Authentication Test', () => {
 
   describe('Site API Token', () => {
     async function testApiToken(sub, jti, apiKeyId, audience = ADMIN_CLIENT_ID) {
-      nock.orgConfig().reply(404);
       nock.siteConfig({
         ...SITE_CONFIG,
         access: {
@@ -1019,7 +1017,6 @@ describe('IMS Authentication Test', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig().reply(404);
   });
 
   afterEach(() => {

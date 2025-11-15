@@ -16,7 +16,7 @@ import { Request } from '@adobe/fetch';
 import { AcquireMethod, OneDrive } from '@adobe/helix-onedrive-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 const SITE_1D_CONFIG = {
   ...SITE_CONFIG,
@@ -43,7 +43,6 @@ describe('OneDrive Integration Tests (JSON)', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_1D_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

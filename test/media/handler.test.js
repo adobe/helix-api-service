@@ -16,7 +16,7 @@ import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Media Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -31,7 +31,6 @@ describe('Media Handler Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
 
     context = {
       pathInfo: { suffix },

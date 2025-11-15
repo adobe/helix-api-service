@@ -17,7 +17,7 @@ import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { INTERNAL_SITEMAP_INDEX } from '../../src/index/utils.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Index Update Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -30,7 +30,6 @@ describe('Index Update Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
     nock.sitemapConfig(null);
     nock.sqs('helix-indexer', entries);
   });

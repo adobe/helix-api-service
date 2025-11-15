@@ -12,7 +12,10 @@
 import { Response } from '@adobe/fetch';
 import { getContentBusInfo } from '../contentbus/contentbus.js';
 import { indexPage } from './index-page.js';
-import { sendToQueue } from './utils.js';
+import {
+  getIndexTargets, hasSiteConfig, shouldIndex,
+  containsPath, sendToQueue,
+} from './utils.js';
 
 /**
  * Used for our retry count below.
@@ -80,6 +83,18 @@ async function getRetryParams(context, info) {
  * @returns {Promise<Response>} response
  */
 export default async function update(context, info, index, properties = {}) {
+  const { webPath, resourcePath, ext } = info;
+  if (webPath.startsWith('/.helix/') || !containsPath(index, webPath)) {
+    return new Response('', { status: 204 });
+  }
+
+  const excludes = getIndexTargets(index);
+  const includeOther = hasSiteConfig(index);
+
+  if (!shouldIndex(includeOther, ext) || excludes.includes(resourcePath)) {
+    return new Response('', { status: 204 });
+  }
+
   const retryParams = await getRetryParams(context, info);
   const response = await indexPage(context, info, index, retryParams);
   if (response.status !== 200) {

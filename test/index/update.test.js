@@ -238,11 +238,6 @@ describe('Index Update Tests', () => {
     });
 
     it('ignores resources in `.helix`', async () => {
-      // TODO: should not be required if it won't be indexed
-      nock.content()
-        .head('/live/.helix/config.json')
-        .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
-
       const { request, context } = setupTest('/.helix/config.json');
       const response = await main(request, context);
 

@@ -14,8 +14,7 @@ import { contains, indexResource } from '@adobe/helix-shared-indexer';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
 import { fetchPage } from './fetch-page.js';
 import {
-  getIndexTargets, hasSiteConfig, shouldIndex,
-  getIndexType, getFetchHeaders, containsPath, isSiteConfig,
+  getIndexType, getFetchHeaders, isSiteConfig,
   INTERNAL_SITEMAP_INDEX,
 } from './utils.js';
 
@@ -91,18 +90,7 @@ function indexPageInIndex(path, config, page, log) {
  */
 export async function indexPage(context, info, index, retryParams) {
   const { config: { content: { source } }, log } = context;
-  const { webPath, resourcePath, ext } = info;
-
-  if (webPath.startsWith('/.helix/') || !containsPath(index, webPath)) {
-    return new Response('', { status: 204 });
-  }
-
-  const excludes = getIndexTargets(index);
-  const includeOther = hasSiteConfig(index);
-
-  if (!shouldIndex(includeOther, ext) || excludes.includes(resourcePath)) {
-    return new Response('', { status: 204 });
-  }
+  const { webPath, resourcePath } = info;
 
   const url = info.getLiveUrl();
   const headers = await getFetchHeaders(context, info);

@@ -21,6 +21,7 @@ import contentproxy from './contentproxy/handler.js';
 import discover from './discover/handler.js';
 import index from './index/handler.js';
 import live from './live/handler.js';
+import log from './log/handler.js';
 import { auth, login, logout } from './login/handler.js';
 import media from './media/handler.js';
 import preview from './preview/handler.js';
@@ -81,6 +82,7 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/contentproxy/*', contentproxy)
   .add('/:org/sites/:site/preview/*', preview)
   .add('/:org/sites/:site/live/*', live)
+  .add('/:org/sites/:site/log', log)
   .add('/:org/sites/:site/login', login)
   .add('/:org/sites/:site/media/*', media)
   .add('/:org/sites/:site/code/:ref/*', code)
@@ -89,8 +91,7 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', notImplemented)
-  .add('/:org/sites/:site/jobs', notImplemented)
-  .add('/:org/sites/:site/log', notImplemented);
+  .add('/:org/sites/:site/jobs', notImplemented);
 
 /**
  * Main entry point.

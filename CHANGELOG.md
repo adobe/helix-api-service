@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/adobe/helix-api-service/compare/v1.15.1...v1.15.2) (2025-11-15)
+
+
+### Bug Fixes
+
+* **discover:** reindex all no longer worked ([#37](https://github.com/adobe/helix-api-service/issues/37)) ([827d228](https://github.com/adobe/helix-api-service/commit/827d228abbdd21f20f6b07c8b509fc0e4fd08ec5))
+
 ## [1.15.1](https://github.com/adobe/helix-api-service/compare/v1.15.0...v1.15.1) (2025-11-15)
 
 

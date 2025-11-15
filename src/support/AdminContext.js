@@ -77,7 +77,9 @@ export class AdminContext {
    * @returns {Promise<object>} configuration
    */
   async loadConfig(info) {
-    if (this.attributes.config === undefined) {
+    const { attributes } = this;
+
+    if (attributes.config === undefined) {
       const { org, site } = info;
       if (org && site) {
         const config = await loadSiteConfig(this, org, site);
@@ -86,16 +88,15 @@ export class AdminContext {
         }
         const { code: { owner, repo } } = config;
         info.withCode(owner, repo);
-        this.attributes.config = config;
+
+        attributes.config = config;
+        attributes.orgConfig = null;
+      } else if (org) {
+        attributes.config = null;
+        attributes.orgConfig = await loadOrgConfig(this, org);
       }
     }
-    if (this.attributes.orgConfig === undefined) {
-      const { org } = info;
-      if (org) {
-        this.attributes.orgConfig = await loadOrgConfig(this, org);
-      }
-    }
-    return this.attributes.orgConfig;
+    return attributes.config;
   }
 
   async getRedirects(partition) {

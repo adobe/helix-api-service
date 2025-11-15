@@ -521,9 +521,9 @@ describe('Authentication Test', () => {
       nock.orgConfig().reply(404);
       nock.siteConfig({
         ...SITE_CONFIG,
-        apiKeys: {
-          ZkC1: {
-            id: apiKeyId,
+        access: {
+          admin: {
+            apiKeyId: [apiKeyId],
           },
         },
       });
@@ -622,10 +622,12 @@ describe('Authentication Test', () => {
 
   describe('Org API Token', () => {
     beforeEach(() => {
-      nock.siteConfig(SITE_CONFIG);
+      nock.siteConfig().reply(404);
     });
 
     it('supports api tokens with permissions but on no org/site route', async () => {
+      nock.orgConfig(ORG_CONFIG);
+
       const accessToken = await new SignJWT({
         email: 'helix@adobe.com',
         name: 'Helix Admin',
@@ -661,9 +663,9 @@ describe('Authentication Test', () => {
     it('supports org-wide api token', async () => {
       nock.orgConfig({
         ...ORG_CONFIG,
-        apiKeys: {
-          ZkC1: {
-            id: '1234',
+        access: {
+          admin: {
+            apiKeyId: ['1234'],
           },
         },
       });
@@ -703,9 +705,9 @@ describe('Authentication Test', () => {
     it('rejects org-wide api token missing in config', async () => {
       nock.orgConfig({
         ...ORG_CONFIG,
-        apiKeys: {
-          ZkC1: {
-            id: '5678',
+        access: {
+          admin: {
+            apiKeyId: ['5678'],
           },
         },
       });
@@ -745,9 +747,9 @@ describe('Authentication Test', () => {
     it('rejects org-wide api token missing in config for org access', async () => {
       nock.orgConfig({
         ...ORG_CONFIG,
-        apiKeys: {
-          ZkC1: {
-            id: '5678',
+        access: {
+          admin: {
+            apiKeyId: ['5678'],
           },
         },
       });
@@ -808,7 +810,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/sites/site/config',
+        suffix: '/org/config',
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: 'allowed-jti-123, another-allowed-jti',
         },
@@ -846,7 +848,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/sites/site/config',
+        suffix: '/org/config',
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: 'allowed-jti-123, another-allowed-jti',
         },
@@ -884,7 +886,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/sites/site/config',
+        suffix: '/org/config',
       });
       const authInfo = await context.authenticate(info);
 
@@ -919,7 +921,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/sites/site/config',
+        suffix: '/org/config',
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: '',
         },
@@ -957,7 +959,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/sites/site/config',
+        suffix: '/org/config',
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: ' first-jti , spaced-jti , third-jti ',
         },

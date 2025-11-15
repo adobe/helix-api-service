@@ -16,7 +16,7 @@ import { Request, Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import purge from '../../src/cache/purge.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Cache Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -30,7 +30,6 @@ describe('Cache Handler Tests', () => {
     sandbox = sinon.createSandbox();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

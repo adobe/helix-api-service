@@ -17,7 +17,7 @@ import {
   hasSimpleSitemap, installSimpleSitemap,
 } from '../../src/sitemap/utils.js';
 import {
-  createInfo, createContext, Nock, SITE_CONFIG, ORG_CONFIG,
+  createInfo, createContext, Nock, SITE_CONFIG,
 } from '../utils.js';
 
 const ENV = {
@@ -32,7 +32,6 @@ describe('Sitemap Utils', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

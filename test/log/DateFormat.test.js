@@ -9,12 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
 /* eslint-env mocha */
-/* eslint-disable func-names */
-
 import assert from 'assert';
-
 import DateFormat from '../../src/log/DateFormat.js';
 
 describe('S3 DateFormat tests', () => {

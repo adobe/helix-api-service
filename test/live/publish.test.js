@@ -21,7 +21,7 @@ import purge from '../../src/cache/purge.js';
 import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { main } from '../../src/index.js';
 import sitemap from '../../src/sitemap/update.js';
-import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Publish Action Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -51,7 +51,6 @@ describe('Publish Action Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -340,6 +339,8 @@ describe('Publish Action Tests', () => {
       nock.content()
         .head('/preview/query-index.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+        .head('/live/query-index.json')
+        .reply(404)
         .copyObject('/live/query-index.json')
         .reply(200, new xml2js.Builder().buildObject({
           CopyObjectResult: {
@@ -395,6 +396,8 @@ describe('Publish Action Tests', () => {
       nock.content()
         .head('/preview/sitemap-index.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+        .head('/live/sitemap-index.json')
+        .reply(404)
         .copyObject('/live/sitemap-index.json')
         .reply(200, new xml2js.Builder().buildObject({
           CopyObjectResult: {

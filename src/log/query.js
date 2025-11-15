@@ -72,12 +72,12 @@ export default async function query(context, info) {
     if (next) {
       result.nextToken = encode(next);
       result.links = {
-        next: getNextLinkUrl({
+        next: getNextLinkUrl(info, {
           from: result.from,
           to: result.to,
           limit: limitS,
           nextToken: result.nextToken,
-        }, info),
+        }),
       };
     }
     return new Response(JSON.stringify(result), {

@@ -12,10 +12,11 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import sinon from 'sinon';
+import { Request } from '@adobe/fetch';
 import { AuditLog } from '@adobe/helix-admin-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Log Query Input Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -29,7 +30,6 @@ describe('Log Query Input Tests', () => {
     sandbox = sinon.createSandbox();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -37,7 +37,7 @@ describe('Log Query Input Tests', () => {
     nock.done();
   });
 
-  function setupTest(data, callback) {
+  function setupTest(data) {
     const suffix = '/org/sites/site/log';
     const query = new URLSearchParams(data);
 
@@ -50,211 +50,205 @@ describe('Log Query Input Tests', () => {
         authInfo: AuthInfo.Admin().withAuthenticated(true),
       },
     };
-    if (callback) {
-      sinon.stub(AuditLog, 'createReader').returns({
-        init: () => {},
-        getEntries: (...args) => callback(...args),
-        close: () => {},
-      });
-    }
     return { request, context };
   }
 
-  // TODO: write two (or more) describe sections that
-  // either check invalid input or what `getEntries`
-  // should receive, and what we should get back
+  describe('invalid input', () => {
+    it('sends 400 for bad \'from\'', async () => {
+      const { request, context } = setupTest({
+        from: 'boo',
+        to: 'boo',
+      });
+      const response = await main(request, context);
 
-  it('uses now() for missing \'to\'', async () => {
-    const now = Date.now();
-
-    const { request, context } = setupTest({
-      from: '2023-09-22',
-    }, (after, before) => {
-      assert(before >= now);
-      return { entries: [] };
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': '\'from\' is not a valid date: boo',
+      });
     });
-    const result = await main(request, context);
 
-    assert.strictEqual(result.status, 200);
+    it('sends 400 for bad `to`', async () => {
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        to: 'boo',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': '\'to\' is not a valid date: boo',
+      });
+    });
+
+    it('sends 400 for bad `since`', async () => {
+      const { request, context } = setupTest({
+        since: '5 decades',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': '\'since\' should match a number followed by \'s(econds)\', \'m(inutes)\', \'h(ours)\' or \'d(ays)\': 5 decades',
+      });
+    });
+
+    it('sends 400 for `from` not smaller than `to`', async () => {
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        to: '2023-09-22',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': '\'from\' (2023-09-22) should be smaller than \'to\' (2023-09-22)',
+      });
+    });
+
+    it('sends 400 for `from` not smaller than `to` with default provided for `from`', async () => {
+      const { request, context } = setupTest({
+        to: '2023-09-22',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.match(response.headers.get('x-error'), /'from' \([^)]+\) should be smaller than 'to' \(2023-09-22\)/);
+    });
+
+    it('sends 400 for `from` not smaller than `to` with default provided for `to`', async () => {
+      const nowPlusOneHour = new Date(Date.now() + 60 * 60 * 1000);
+      const { request, context } = setupTest({
+        from: nowPlusOneHour.toISOString(),
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.match(response.headers.get('x-error'), /'from' \([^)]+\) should be smaller than 'to' \([^)]+\)/);
+    });
+
+    it('sends 400 for `since` specified along with `from`', async () => {
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        since: '15m',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': '\'since\' should not be used with either \'from\' or \'to\'',
+      });
+    });
   });
 
-  // it('understands \'since\'', async () => {
-  //   const spans = [
-  //     { since: '1s', value: 1000 },
-  //     { since: '2m', value: 2 * 60 * 1000 },
-  //     { since: '3h', value: 3 * 60 * 60 * 1000 },
-  //     { since: '4d', value: 4 * 24 * 60 * 60 * 1000 },
-  //   ];
+  describe('valid input', () => {
+    let args;
 
-  //   stub = sinon.stub(AuditLog, 'createReader').returns({
-  //     init: () => {},
-  //     getEntries: (after, before) => ({
-  //       entries: [{
-  //         timespan: before - after,
-  //       }],
-  //     }),
-  //     close: () => {},
-  //   });
+    beforeEach(() => {
+      sandbox.stub(AuditLog, 'createReader').returns({
+        init: () => {},
+        getEntries: (after, before, { limit, maxSize }, location) => {
+          args = {
+            after, before, limit, maxSize, location,
+          };
+          return { entries: [], next: { key: 'value' } };
+        },
+        close: () => {},
+      });
+    });
 
-  //   const results = await Promise.all(spans
-  //     .map(async ({ since }) => {
-  //       const res = await query(DEFAULT_CONTEXT({ data: { since } }), createPathInfo('/log/org/*/'));
-  //       return res.json();
-  //     }));
-  //   assert.deepStrictEqual(
-  //     results.map(({ entries }) => entries[0].timespan),
-  //     spans.map(({ value }) => value),
-  //   );
-  // });
+    it('uses now() for missing `to`', async () => {
+      const now = Date.now();
 
-  // it('uses limit if specified', async () => {
-  //   const customLimit = 500;
-  //   stub = sinon.stub(AuditLog, 'createReader').returns({
-  //     init: () => {},
-  //     getEntries: (after, before, { limit }) => {
-  //       assert(limit === customLimit);
-  //       return { entries: [] };
-  //     },
-  //     close: () => {},
-  //   });
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+      });
+      const response = await main(request, context);
 
-  //   await query(DEFAULT_CONTEXT({
-  //     data: {
-  //       from: '2023-09-22', to: '2023-09-23', limit: customLimit,
-  //     },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  // });
+      assert.strictEqual(response.status, 200);
+      assert(args.before >= now);
+    });
 
-  // it('ignores limit if it is invalid', async () => {
-  //   stub = sinon.stub(AuditLog, 'createReader').returns({
-  //     init: () => {},
-  //     getEntries: (after, before, { limit }) => {
-  //       assert(limit === 1000);
-  //       return { entries: [] };
-  //     },
-  //     close: () => {},
-  //   });
+    const spans = [
+      { since: '1s', value: 1000 },
+      { since: '2m', value: 2 * 60 * 1000 },
+      { since: '3h', value: 3 * 60 * 60 * 1000 },
+      { since: '4d', value: 4 * 24 * 60 * 60 * 1000 },
+    ];
 
-  //   await query(DEFAULT_CONTEXT({
-  //     data: {
-  //       from: '2023-09-22', to: '2023-09-23', limit: 9999,
-  //     },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  // });
+    spans.forEach(({ since, value }) => it(`understands \`since\` with ${since}`, async () => {
+      const { request, context } = setupTest({ since });
+      const response = await main(request, context);
 
-  // it('sends 400 for bad \'from\'', async () => {
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { from: 'boo', to: 'boo' },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.deepStrictEqual(res.headers.plain(), {
-  //     'cache-control': 'no-store, private, must-revalidate',
-  //     'content-type': 'text/plain; charset=utf-8',
-  //     'x-error': '\'from\' is not a valid date: boo',
-  //   });
-  // });
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(args.before - args.after, value);
+    }));
 
-  // it('sends 400 for bad \'to\'', async () => {
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { from: '2023-09-22', to: 'boo' },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.deepStrictEqual(res.headers.plain(), {
-  //     'cache-control': 'no-store, private, must-revalidate',
-  //     'content-type': 'text/plain; charset=utf-8',
-  //     'x-error': '\'to\' is not a valid date: boo',
-  //   });
-  // });
+    it('use `limit` if specified', async () => {
+      const customLimit = 500;
 
-  // it('sends 400 for bad \'since\'', async () => {
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { since: '5 decades' },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.deepStrictEqual(res.headers.plain(), {
-  //     'cache-control': 'no-store, private, must-revalidate',
-  //     'content-type': 'text/plain; charset=utf-8',
-  //     'x-error': '\'since\' should match a number followed by \'s(econds)\', \'m(inutes)\', \'h(ours)\' or \'d(ays)\': 5 decades',
-  //   });
-  // });
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        to: '2023-09-23',
+        limit: customLimit,
+      });
+      const response = await main(request, context);
 
-  // it('sends 400 for \'from\' not smaller than \'to\'', async () => {
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { from: '2023-09-22', to: '2023-09-22' },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.deepStrictEqual(res.headers.plain(), {
-  //     'cache-control': 'no-store, private, must-revalidate',
-  //     'content-type': 'text/plain; charset=utf-8',
-  //     'x-error': '\'from\' (2023-09-22) should be smaller than \'to\' (2023-09-22)',
-  //   });
-  // });
+      assert.strictEqual(response.status, 200);
+      assert(args.limit === customLimit);
+    });
 
-  // it('sends 400 for \'from\' not smaller than \'to\' with default provided for \'from\'', async () => {
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { to: '2023-09-22' },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.match(res.headers.get('x-error'), /'from' \([^)]+\) should be smaller than 'to' \(2023-09-22\)/);
-  // });
+    it('ignores `limit` if it is invalid', async () => {
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        to: '2023-09-23',
+        limit: 9999,
+      });
+      const response = await main(request, context);
 
-  // it('sends 400 for \'from\' not smaller than \'to\' with default provided for \'to\'', async () => {
-  //   const nowPlusOneHour = new Date(Date.now() + 60 * 60 * 1000);
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { from: nowPlusOneHour.toISOString() },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.match(res.headers.get('x-error'), /'from' \([^)]+\) should be smaller than 'to' \([^)]+\)/);
-  // });
+      assert.strictEqual(response.status, 200);
+      assert(args.limit === 1000);
+    });
 
-  // it('sends 400 for \'since\' specified along with \'from\'', async () => {
-  //   const res = await query(DEFAULT_CONTEXT({
-  //     data: { from: '2023-09-22', since: '15m' },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   assert.strictEqual(res.status, 400);
-  //   assert.deepStrictEqual(res.headers.plain(), {
-  //     'cache-control': 'no-store, private, must-revalidate',
-  //     'content-type': 'text/plain; charset=utf-8',
-  //     'x-error': '\'since\' should not be used with either \'from\' or \'to\'',
-  //   });
-  // });
+    it('ignores continuation token if it is invalid', async () => {
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        to: '2023-09-23',
+        nextToken: 'boo',
+      });
+      const response = await main(request, context);
 
-  // it('returns a continuation token if there are more pages', async () => {
-  //   stub = sinon.stub(AuditLog, 'createReader').returns({
-  //     init: () => {},
-  //     getEntries: () => ({ entries: [], next: { key: 'value' } }),
-  //     close: () => {},
-  //   });
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(args.location, null);
+    });
 
-  //   const res = await query(DEFAULT_CONTEXT({ data: {} }), createPathInfo('/log/owner/repo/ref/'));
-  //   stub.restore();
+    it('returns a continuation token if there are more pages', async () => {
+      const { request, context } = setupTest({
+        from: '2023-09-22',
+        to: '2023-09-23',
+        nextToken: 'boo',
+      });
+      const response = await main(request, context);
 
-  //   const {
-  //     from, to, nextToken, links,
-  //   } = await res.json();
+      assert.strictEqual(response.status, 200);
+      const {
+        from, to, nextToken, links,
+      } = await response.json();
 
-  //   assert.notStrictEqual(from, undefined);
-  //   assert.notStrictEqual(to, undefined);
+      assert.notStrictEqual(from, undefined);
+      assert.notStrictEqual(to, undefined);
 
-  //   const link = new URL(links.next);
-  //   assert.strictEqual(link.searchParams.get('nextToken'), nextToken);
-  // });
-
-  // it('ignores continuation token if it is invalid', async () => {
-  //   stub = sinon.stub(AuditLog, 'createReader').returns({
-  //     init: () => {},
-  //     getEntries: (before, after, _, location) => {
-  //       assert.strictEqual(location, null);
-  //       return { entries: [] };
-  //     },
-  //     close: () => {},
-  //   });
-
-  //   await query(DEFAULT_CONTEXT({
-  //     data: {
-  //       from: '2023-09-22', to: '2023-09-23', nextToken: 'boo',
-  //     },
-  //   }), createPathInfo('/log/owner/repo/ref/'));
-  //   stub.restore();
-  // });
+      const link = new URL(links.next);
+      assert.strictEqual(link.searchParams.get('nextToken'), nextToken);
+    });
+  });
 });

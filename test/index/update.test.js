@@ -17,7 +17,7 @@ import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { INTERNAL_SITEMAP_INDEX } from '../../src/index/utils.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Index Update Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -30,7 +30,6 @@ describe('Index Update Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
     nock.sitemapConfig(null);
     nock.sqs('helix-indexer', entries);
   });
@@ -239,6 +238,11 @@ describe('Index Update Tests', () => {
     });
 
     it('ignores resources in `.helix`', async () => {
+      // TODO: should not be required if it won't be indexed
+      nock.content()
+        .head('/live/.helix/config.json')
+        .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
+
       const { request, context } = setupTest('/.helix/config.json');
       const response = await main(request, context);
 

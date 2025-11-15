@@ -238,7 +238,7 @@ export async function getSiteAuthToken(context, partition) {
  * @returns {Promise<object|null>}
  */
 export async function getTransientSiteTokenInfo(context, info, email, tokenExpiry) {
-  const { attributes: { config } } = context;
+  const config = await context.loadConfig(info);
 
   // get access config
   const allowPreview = config.access?.preview?.allow ?? [];

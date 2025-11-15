@@ -14,7 +14,7 @@ import assert from 'assert';
 import zlib from 'zlib';
 import sitemap, { rebuildSitemap } from '../../src/sitemap/update.js';
 import {
-  createInfo, createContext, Nock, SITE_CONFIG, ORG_CONFIG,
+  createInfo, createContext, Nock, SITE_CONFIG,
 } from '../utils.js';
 
 const SITEMAP_CONFIG = `
@@ -102,7 +102,6 @@ describe('Sitemap update tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

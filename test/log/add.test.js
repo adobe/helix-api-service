@@ -11,125 +11,169 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
-import crypto from 'crypto';
-import add from '../../src/log/add.js';
-import { DEFAULT_CONTEXT, Nock, createPathInfo } from '../utils.js';
+import { Request } from '@adobe/fetch';
+import { AuthInfo } from '../../src/auth/auth-info.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Log Add Tests', () => {
+  /** @type {import('../utils.js').NockEnv} */
   let nock;
+
   beforeEach(() => {
-    nock = new Nock({ disableAudit: true }).env();
+    nock = new Nock().env();
+
+    nock.siteConfig(SITE_CONFIG);
   });
 
   afterEach(() => {
     nock.done();
   });
 
-  it('sends 400 for missing \'entries\'', async () => {
-    const res = await add(DEFAULT_CONTEXT(), createPathInfo('/log/owner/repo/ref/', 'POST'));
-    assert.strictEqual(res.status, 400);
-    assert.deepStrictEqual(res.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'Adding logs requires an array in \'entries\'',
+  function setupTest(data, authInfo) {
+    const suffix = '/org/sites/site/log';
+    const query = new URLSearchParams(data);
+
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: authInfo ?? AuthInfo.Admin().withAuthenticated(true),
+      },
+      runtime: {
+        accountId: '123456789012',
+        region: 'us-east-1',
+      },
+    };
+    return { request, context };
+  }
+
+  describe('validate input', () => {
+    it('sends 400 for missing `entries`', async () => {
+      const { request, context } = setupTest({});
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Adding logs requires an array in \'entries\'',
+      });
+    });
+
+    it('sends 400 for `entries` that is not an array', async () => {
+      const { request, context } = setupTest({
+        entries: {},
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Adding logs requires an array in \'entries\'',
+      });
+    });
+
+    it('sends 400 for `entries` that is too large', async () => {
+      const { request, context } = setupTest({
+        entries: new Array(20),
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Array in \'entries\' should not contain more than 10 messages',
+      });
     });
   });
 
-  it('sends 400 for \'entries\' that is not an array', async () => {
-    const res = await add(DEFAULT_CONTEXT({
-      data: { entries: {} },
-    }), createPathInfo('/log/owner/repo/ref/', 'POST'));
-    assert.strictEqual(res.status, 400);
-    assert.deepStrictEqual(res.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'Adding logs requires an array in \'entries\'',
+  describe('validates notification sent', () => {
+    const entries = [];
+
+    beforeEach(() => {
+      nock.sqs('helix-audit-logger.fifo', entries);
     });
-  });
 
-  it('sends 400 for \'entries\' that is too large', async () => {
-    const res = await add(DEFAULT_CONTEXT({
-      data: { entries: new Array(20) },
-    }), createPathInfo('/log/owner/repo/ref/', 'POST'));
-    assert.strictEqual(res.status, 400);
-    assert.deepStrictEqual(res.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'Array in \'entries\' should not contain more than 10 messages',
+    afterEach(() => {
+      entries.length = 0;
     });
-  });
 
-  it('sends 400 for adding logs to organization', async () => {
-    const res = await add(DEFAULT_CONTEXT(), createPathInfo('/log/org/*/', 'POST'));
-    assert.strictEqual(res.status, 400);
-    assert.deepStrictEqual(res.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'Adding logs to an organisation is not supported',
-    });
-  });
+    it('sends a notification', async () => {
+      const { request, context } = setupTest({
+        entries: [
+          { message: 'hello world' },
+        ],
+      });
+      const response = await main(request, context);
 
-  it('sends a notification', async () => {
-    nock('https://sqs.us-east-1.amazonaws.com')
-      .post('/')
-      .reply((_, body) => {
-        const { Entries, QueueUrl } = JSON.parse(body);
-        const message = JSON.parse(Entries[0].MessageBody);
-        delete message.updates[0].result.timestamp;
-
-        assert.deepStrictEqual(message, {
-          key: 'owner/repo',
+      assert.strictEqual(response.status, 201);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+      });
+      assert.deepStrictEqual(entries, [{
+        MessageBody: {
+          key: 'org/site',
           updates: [{
-            org: 'owner',
-            site: 'repo',
+            org: 'org',
             owner: 'owner',
+            ref: 'main',
             repo: 'repo',
-            ref: 'ref',
             result: {
+              contentBusId: SITE_CONFIG.content.contentBusId,
               message: 'hello world',
-              contentBusId: 'foo-id',
             },
+            site: 'site',
           }],
-        });
-        assert.strictEqual(QueueUrl, 'https://sqs.us-east-1.amazonaws.com/123456789012/helix-audit-logger.fifo');
-        return [200, JSON.stringify({
-          MessageId: '374cec7b-d0c8-4a2e-ad0b-67be763cf97e',
-          MD5OfMessageBody: crypto.createHash('md5').update(body, 'utf-8').digest().toString('hex'),
-        })];
-      });
-
-    const res = await add(DEFAULT_CONTEXT({
-      data: { entries: [{ message: 'hello world' }] },
-      runtime: { accountId: '123456789012' },
-    }), createPathInfo('/log/owner/repo/ref/', 'POST'));
-    assert.strictEqual(res.status, 201);
-    assert.deepStrictEqual(res.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
+        },
+        MessageGroupId: 'org/site',
+      }]);
     });
-  });
 
-  it('sends a notification with user information', async () => {
-    nock('https://sqs.us-east-1.amazonaws.com')
-      .post('/')
-      .reply((_, body) => {
-        const { Entries } = JSON.parse(body);
-        const message = JSON.parse(Entries[0].MessageBody);
+    it('sends a notification with user information', async () => {
+      const authInfo = AuthInfo.Admin()
+        .withAuthenticated(true)
+        .withProfile({ email: 'bob@example.com' });
 
-        assert.strictEqual(message.updates[0].result.user, 'john@example.com');
-        return [200, JSON.stringify({
-          MessageId: '374cec7b-d0c8-4a2e-ad0b-67be763cf97e',
-          MD5OfMessageBody: crypto.createHash('md5').update(body, 'utf-8').digest().toString('hex'),
-        })];
+      const { request, context } = setupTest({
+        entries: [
+          { message: 'hello world' },
+        ],
+      }, authInfo);
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 201);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
       });
-
-    const res = await add(DEFAULT_CONTEXT({
-      data: { entries: [{ message: 'hello world' }] },
-      runtime: { accountId: '123456789012' },
-      attributes: { authInfo: { resolveEmail: () => 'john@example.com' } },
-    }), createPathInfo('/log/owner/repo/ref/', 'POST'));
-    assert.strictEqual(res.status, 201);
-    assert.deepStrictEqual(res.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
+      assert.deepStrictEqual(entries, [{
+        MessageBody: {
+          key: 'org/site',
+          updates: [{
+            org: 'org',
+            owner: 'owner',
+            ref: 'main',
+            repo: 'repo',
+            result: {
+              contentBusId: SITE_CONFIG.content.contentBusId,
+              message: 'hello world',
+              user: 'bob@example.com',
+            },
+            site: 'site',
+          }],
+        },
+        MessageGroupId: 'org/site',
+      }]);
     });
   });
 });

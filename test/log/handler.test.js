@@ -14,7 +14,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Log Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -24,7 +24,6 @@ describe('Log Handler Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -32,7 +31,7 @@ describe('Log Handler Tests', () => {
   });
 
   function setupTest(method = 'POST') {
-    const suffix = '/org/sites/site/index/document';
+    const suffix = '/org/sites/site/log';
 
     const request = new Request(`https://api.aem.live${suffix}`, {
       method,

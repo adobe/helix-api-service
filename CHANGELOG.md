@@ -1,3 +1,18 @@
+## [1.15.2](https://github.com/adobe/helix-api-service/compare/v1.15.1...v1.15.2) (2025-11-15)
+
+
+### Bug Fixes
+
+* **discover:** reindex all no longer worked ([#37](https://github.com/adobe/helix-api-service/issues/37)) ([827d228](https://github.com/adobe/helix-api-service/commit/827d228abbdd21f20f6b07c8b509fc0e4fd08ec5))
+
+## [1.15.1](https://github.com/adobe/helix-api-service/compare/v1.15.0...v1.15.1) (2025-11-15)
+
+
+### Bug Fixes
+
+* **auth:** config needs to be loaded after `info` has been set ([94f5c07](https://github.com/adobe/helix-api-service/commit/94f5c07cc02a521529282ac78855b15619fdccc2))
+* **auth:** use new `apiKeyId` array ([#33](https://github.com/adobe/helix-api-service/issues/33)) ([b84d607](https://github.com/adobe/helix-api-service/commit/b84d6078dac17772b2fc7a6bc1100cad38ec1b78))
+
 # [1.15.0](https://github.com/adobe/helix-api-service/compare/v1.14.6...v1.15.0) (2025-11-13)
 
 

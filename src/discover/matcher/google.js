@@ -39,8 +39,16 @@ function buildRoots(inventory) {
  * Matcher that filters inventory entries against known google drives.
  */
 export default class GoogleMatcher {
-  constructor(context) {
-    this.context = context;
+  constructor(env) {
+    this.customUserProjects = (env.HLX_CUSTOM_GOOGLE_USERS ?? '').split(',')
+      .map((project) => {
+        const [org, site] = project.trim().split('/');
+        return {
+          org,
+          site,
+          match: (entry) => org === entry.org && (site === '*' || site === entry.site),
+        };
+      });
   }
 
   /**
@@ -50,36 +58,30 @@ export default class GoogleMatcher {
    * @returns {CustomUser[]}
    */
   #getCustomUsers(entries) {
-    const { env } = this.context;
-
-    return (env.HLX_CUSTOM_GOOGLE_USERS ?? '').split(',')
-      .map((project) => {
-        const [org, site] = project.trim().split('/');
-        return { org, site };
-      })
-      .reduce((users, { org, site }) => {
-        // for orgs (i.e. site = '*'), return just the first custom user
-        // adorned project in that org. this avoids doing a lookup with
-        // the same registered user multiple times
-        const entry = entries.find((e) => !!e.customUser
-          && e.org === org && (site === '*' || e.site === site));
-        if (entry) {
-          const { contentBusId } = entry;
-          users.push({ project: `${org}/${entry.site}`, contentBusId });
-        }
-        return users;
-      }, []);
+    return this.customUserProjects.reduce((users, { org, site }) => {
+      // for orgs (i.e. site = '*'), return just the first custom user
+      // adorned project in that org. this avoids doing a lookup with
+      // the same registered user multiple times
+      const entry = entries.find((e) => !!e.customUser
+        && e.org === org && (site === '*' || e.site === site));
+      if (entry) {
+        const { contentBusId } = entry;
+        users.push({ project: `${org}/${entry.site}`, contentBusId });
+      }
+      return users;
+    }, []);
   }
 
   /**
    * Find the inventory entries that have the given google document, spreadsheet
    * or folder in their tree.
    *
+   * @param {import('../support/AdminContext').AdminContext} context context
    * @param {URL} url google document or spreadsheet
    * @param {Inventory} inventory inventory of entries
    */
-  async filter(url, inventory) {
-    const { log } = this.context;
+  async filter(context, url, inventory) {
+    const { log } = context;
 
     const segs = url.pathname.split('/');
     let id = segs.pop();
@@ -117,7 +119,7 @@ export default class GoogleMatcher {
 
       // resolve using the default user
       const roots = buildRoots(entries);
-      let client = await this.context.getGoogleClient();
+      let client = await context.getGoogleClient();
       let hierarchy = await client.getItemsFromId(id, roots);
       if (hierarchy.length) {
         const { id: rootId } = hierarchy[hierarchy.length - 1];
@@ -139,7 +141,7 @@ export default class GoogleMatcher {
         if (!ret) {
           try {
             // eslint-disable-next-line no-await-in-loop
-            client = await this.context.getGoogleClient(contentBusId);
+            client = await context.getGoogleClient(contentBusId);
             // eslint-disable-next-line no-await-in-loop
             hierarchy = await client.getItemsFromId(id, roots);
             if (hierarchy.length) {
@@ -167,6 +169,46 @@ export default class GoogleMatcher {
   }
 
   /**
+   * Extract some data from a URL to store in the inventory.
+   *
+   * @param {import('../support/AdminContext').AdminContext} context context
+   * @param {URL} url url to extract data from
+   * @param {import('../inventory.js').InventoryEntry} entry entry
+   * @returns object that contains additional entries to store in inventory
+   */
+  async extract(context, url, entry) {
+    const match = url.pathname.match(/\/.*\/folders\/([^?/]+)$/);
+    if (!match) {
+      return;
+    }
+
+    // eslint-disable-next-line no-param-reassign
+    [, entry.gdriveId] = match;
+    if (!entry.contentBusId) {
+      return;
+    }
+
+    // do not search for custom users in org/sites that
+    // are not listed in env.HLX_CUSTOM_GOOGLE_USERS
+    if (!this.customUserProjects.some((project) => project.match(entry))) {
+      return;
+    }
+
+    const { code: codeBucket, content: contentBucket } = context.attributes.bucketMap;
+    const plugin = await getCachePlugin({
+      log: context.log,
+      contentBusId: entry.contentBusId,
+      readOnly: true,
+      codeBucket,
+      contentBucket,
+    }, 'google');
+    if (!plugin.key.startsWith('default/.helix-auth/')) {
+      // eslint-disable-next-line no-param-reassign
+      entry.customUser = true;
+    }
+  }
+
+  /**
    * Test whether this class can handle an URL
    *
    * @param {URL} url url to match
@@ -175,35 +217,5 @@ export default class GoogleMatcher {
    */
   static match(url, inventory) {
     return inventory.getHostType(url.hostname) === 'google' || url.hostname.match(/^.*\.google\.com$/);
-  }
-
-  /**
-   * Extract some data from a URL to store in the inventory.
-   *
-   * @param {import('../../index.js').AdminContext} context context
-   * @param {URL} url url to extract data from
-   * @returns object that contains additional entries to store in inventory
-   */
-  static async extract(context, url, entry) {
-    const match = url.pathname.match(/\/.*\/folders\/([^?/]+)$/);
-    if (match) {
-      // eslint-disable-next-line no-param-reassign
-      [, entry.gdriveId] = match;
-      // check for custom user
-      if (entry.contentBusId) {
-        const { code: codeBucket, content: contentBucket } = context.attributes.bucketMap;
-        const plugin = await getCachePlugin({
-          log: context.log,
-          contentBusId: entry.contentBusId,
-          readOnly: true,
-          codeBucket,
-          contentBucket,
-        }, 'google');
-        if (!plugin.key.startsWith('default/.helix-auth/')) {
-          // eslint-disable-next-line no-param-reassign
-          entry.customUser = true;
-        }
-      }
-    }
   }
 }

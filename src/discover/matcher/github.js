@@ -17,11 +17,12 @@ export default class GithubMatcher {
   /**
    * Find the inventory entries that have the given github URL.
    *
+   * @param {import('../support/AdminContext').AdminContext} context context
    * @param {URL} url google document or spreadsheet
    * @param {Inventory} inventory inventory of entries
    */
   // eslint-disable-next-line class-methods-use-this
-  filter(url, inventory) {
+  filter(context, url, inventory) {
     const segs = url.pathname.split('/');
     const [, owner, repo] = segs;
     const codeBusId = `${owner}/${repo}`;

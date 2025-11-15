@@ -139,8 +139,8 @@ export default async function query(context) {
     if (!Matcher) {
       return errorResponse(log, 404, `no matcher found for ${url}`);
     }
-    const matcher = new Matcher(context);
-    entries = await matcher.filter(url, inventory);
+    const matcher = new Matcher(context.env);
+    entries = await matcher.filter(context, url, inventory);
   }
 
   const { originalSites, gdriveIds } = lookupHiddenForks(entries);

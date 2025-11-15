@@ -33,9 +33,10 @@ const MATCHERS = {
  * @param {import('@adobe/helix-shared-storage').Bucket} contentBus content bus ticket
  * @param {string} org org
  * @param {string} site site
+ * @param {object} matchers matchers
  * @returns {Promise<import('./inventory.js').InventoryEntry>}
  */
-async function createEntry(context, contentBus, org, site) {
+async function createEntry(context, contentBus, org, site, matchers) {
   const config = await loadSiteConfig(context, org, site);
   if (!config) {
     return null;
@@ -62,7 +63,7 @@ async function createEntry(context, contentBus, org, site) {
     entry.originalRepository = hlx['original-repository'];
   }
 
-  const matcher = MATCHERS[content.source.type];
+  const matcher = matchers[content.source.type];
   if (matcher) {
     await matcher.extract(context, new URL(entry.contentSourceUrl), entry);
   }
@@ -70,26 +71,26 @@ async function createEntry(context, contentBus, org, site) {
 }
 
 /**
- * Create the complete repository inventory for all owners found in the code bus.
+ * Create the complete repository inventory for all sites found in the config bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('@adobe/helix-shared-storage').Bucket} contentBus content bus bucket
+ * @param {object} matchers matchers
  * @returns {Promise<Inventory>}
  */
-async function createInventory(context, contentBus) {
+async function createInventory(context, contentBus, matchers) {
   const { log } = context;
 
   const inventory = new Inventory(contentBus, log);
 
   const configBus = HelixStorage.fromContext(context).configBus();
-  const orgs = await configBus.listFolders('orgs/');
-  log.info(`Found ${orgs.length} orgs.`);
+  const folders = await configBus.listFolders('orgs/');
+  log.info(`found ${folders.length} folders in /orgs/`);
 
   const sites = [];
-
-  await processQueue(orgs, async (folder) => {
+  await processQueue(folders, async (folder) => {
     const org = folder.split('/')[1];
-    const siteObjects = await configBus.list(`${folder}sites`, true);
+    const siteObjects = await configBus.list(`${folder}sites/`, true);
     for (const { path } of siteObjects) {
       if (path.endsWith('.json')) {
         const site = basename(path, '.json');
@@ -100,10 +101,10 @@ async function createInventory(context, contentBus) {
       }
     }
   }, 64);
-  log.info(`Found ${sites.length} sites`);
+  log.info(`found ${sites.length} sites`);
 
   await processQueue(sites, async ({ org, site }) => {
-    const entry = await createEntry(context, contentBus, org, site);
+    const entry = await createEntry(context, contentBus, org, site, matchers);
     if (entry) {
       inventory.appendEntry(entry);
     }
@@ -120,7 +121,12 @@ async function createInventory(context, contentBus) {
 export async function reindexAll(context) {
   const contentBus = HelixStorage.fromContext(context).contentBus();
 
-  const inventory = await createInventory(context, contentBus);
+  const matchers = Object.fromEntries(
+    Object.entries(MATCHERS)
+      .map(([name, Matcher]) => [name, new Matcher(context.env)]),
+  );
+
+  const inventory = await createInventory(context, contentBus, matchers);
   await inventory.save();
 
   return new Response();
@@ -138,8 +144,12 @@ export async function reindexProject(context, org, site) {
   const { log } = context;
 
   const contentBus = HelixStorage.fromContext(context).contentBus();
+  const matchers = Object.fromEntries(
+    Object.entries(MATCHERS)
+      .map(([name, Matcher]) => [name, new Matcher(context.env)]),
+  );
 
-  const entry = await createEntry(context, contentBus, org, site);
+  const entry = await createEntry(context, contentBus, org, site, matchers);
   if (!entry) {
     return new Response('', {
       status: 404,

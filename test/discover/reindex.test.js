@@ -51,6 +51,7 @@ describe('Discover reindex tests', () => {
 
   function setupTest(org, site, {
     authInfo = new AuthInfo().withRole('index'),
+    env,
   } = {}) {
     const suffix = '/discover';
     const query = new URLSearchParams(Object.entries({ org, site }).filter(([, v]) => !!v));
@@ -72,6 +73,7 @@ describe('Discover reindex tests', () => {
         CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'cloudflare-secret',
         AZURE_HELIX_SERVICE_CLIENT_ID: 'client-id',
         AZURE_HELIX_SERVICE_CLIENT_SECRET: 'client-secret',
+        ...env,
       },
     };
     return { request, context };
@@ -109,28 +111,38 @@ describe('Discover reindex tests', () => {
       .reply(() => [200, new xml2js.Builder().buildObject({
         ListBucketResult: {
           CommonPrefixes: [{
-            Prefix: 'orgs/org/',
+            Prefix: 'orgs/org1/',
+          }, {
+            Prefix: 'orgs/org2/',
           }],
         },
       })])
-      .get('/?delimiter=%2F&list-type=2&prefix=orgs/org/sites')
+      .get('/?delimiter=%2F&list-type=2&prefix=orgs/org1/sites/')
       .reply(() => [200, new xml2js.Builder().buildObject({
         ListBucketResult: {
           KeyCount: 1,
           Contents: [
             {
-              Key: 'orgs/org/sites/site1.json',
+              Key: 'orgs/org1/sites/site1.json',
               LastModified: '2023-10-06T08:05:00.000Z',
             },
+          ],
+        },
+      })])
+      .get('/?delimiter=%2F&list-type=2&prefix=orgs/org2/sites/')
+      .reply(() => [200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          KeyCount: 1,
+          Contents: [
             {
-              Key: 'orgs/org/sites/site2.json',
+              Key: 'orgs/org2/sites/site2.json',
               LastModified: '2023-10-06T08:05:00.000Z',
             },
           ],
         },
       })]);
     nock('https://config.aem.page')
-      .get('/main--site1--org/config.json?scope=admin')
+      .get('/main--site1--org1/config.json?scope=admin')
       .reply(200, {
         content: {
           contentBusId: 1234,
@@ -144,7 +156,7 @@ describe('Discover reindex tests', () => {
           repo: 'repo',
         },
       })
-      .get('/main--site2--org/config.json?scope=admin')
+      .get('/main--site2--org2/config.json?scope=admin')
       .reply(200, {
         content: {
           contentBusId: 5678,
@@ -161,20 +173,22 @@ describe('Discover reindex tests', () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
       .get('/1234/.hlx.json?x-id=GetObject')
       .reply(200, {
-        'original-site': 'org/site1',
+        'original-site': 'org1/site1',
         'original-repq': 'owner/repo',
       })
       .head('/1234/.helix-auth/auth-google-content.json')
       .reply(404)
       .get('/5678/.hlx.json?x-id=GetObject')
       .reply(200, {
-        'original-site': 'org/site2',
+        'original-site': 'org2/site2',
         'original-repq': 'owner/repo',
-      })
-      .head('/5678/.helix-auth/auth-google-content.json')
-      .reply(404);
+      });
 
-    const { request, context } = setupTest('*');
+    const { request, context } = setupTest('*', undefined, {
+      env: {
+        HLX_CUSTOM_GOOGLE_USERS: 'org1/*',
+      },
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
@@ -182,21 +196,21 @@ describe('Discover reindex tests', () => {
       entries: [
         {
           codeBusId: 'owner/repo',
-          contentBusId: 1234,
-          contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
-          gdriveId: '1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
-          org: 'org',
-          originalSite: 'org/site1',
-          site: 'site1',
-        },
-        {
-          codeBusId: 'owner/repo',
           contentBusId: 5678,
           contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my2',
           gdriveId: '1N2zij7EMeS95cIFiRuxfjY0OxllX8my2',
-          org: 'org',
-          originalSite: 'org/site2',
+          org: 'org2',
+          originalSite: 'org2/site2',
           site: 'site2',
+        },
+        {
+          codeBusId: 'owner/repo',
+          contentBusId: 1234,
+          contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
+          gdriveId: '1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
+          org: 'org1',
+          originalSite: 'org1/site1',
+          site: 'site1',
         },
       ],
       hostTypes: {
@@ -232,7 +246,11 @@ describe('Discover reindex tests', () => {
       codeBusId: 'owner/repo',
     }]);
 
-    const { request, context } = setupTest('org', 'site');
+    const { request, context } = setupTest('org', 'site', {
+      env: {
+        HLX_CUSTOM_GOOGLE_USERS: 'org/*',
+      },
+    });
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 201);
@@ -305,9 +323,7 @@ describe('Discover reindex tests', () => {
       .get(`/${SITE_CONFIG.content.contentBusId}/.hlx.json?x-id=GetObject`)
       .reply(200, {
         'original-site': 'org/site',
-      })
-      .head(`/${SITE_CONFIG.content.contentBusId}/.helix-auth/auth-google-content.json`)
-      .reply(404);
+      });
 
     nock.inventory([{
       codeBusId: 'owner/repo',

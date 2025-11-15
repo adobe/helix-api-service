@@ -19,8 +19,8 @@ import getLiveInfo from './info.js';
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export default async function liveStatus(ctx, info) {
-  const live = await getLiveInfo(ctx, info);
+export default async function liveStatus(context, info) {
+  const live = await getLiveInfo(context, info);
 
   // return error if not 404
   if (live.status !== 200 && live.status !== 404) {

@@ -154,6 +154,7 @@ describe('Discover query tests', () => {
       .reply(200, {
         entries: [{
           sharepointSite: 'https://other.sharepoint.com/',
+          codeBusId: 'owner/repo',
         }],
         hostTypes: {
           'other.sharepoint.com': 'sharepoint',
@@ -170,7 +171,8 @@ describe('Discover query tests', () => {
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), [{
-      githubUrl: 'https://github.com/undefined',
+      codeBusId: 'owner/repo',
+      githubUrl: 'https://github.com/owner/repo',
       originalRepository: false,
       originalSite: false,
     }]);

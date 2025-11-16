@@ -38,11 +38,7 @@ export default function commonResponseHeaders(fn) {
       // The Access-Control-Expose-Headers response header allows a server to
       // indicate which response headers should be made available to scripts
       // running in the browser, in response to a cross-origin request.
-      const existing = response.headers.get('access-control-expose-headers');
-      response.headers.set(
-        'access-control-expose-headers',
-        existing ? `${existing}, x-error, x-error-code` : 'x-error, x-error-code',
-      );
+      response.headers.set('access-control-expose-headers', 'x-da-id, x-error, x-error-code');
     }
     return response;
   };

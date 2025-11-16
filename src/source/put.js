@@ -49,7 +49,7 @@ export async function putSource({ context, info }) {
   const existingID = getResp.headers.get('x-da-id');
   if (assignedID && existingID && existingID !== assignedID) {
     return new Response(
-      `ID mismatch: ${assignedID} !== ${getResp.metadata?.id}`,
+      `ID mismatch: ${assignedID} !== ${existingID}`,
       { status: 409 },
     );
   }

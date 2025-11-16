@@ -13,7 +13,7 @@ import { getSource } from './get.js';
 import { putSource } from './put.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
-async function handle(context, info) {
+export default async function handle(context, info) {
   try {
     switch (info.method) {
       case 'GET':
@@ -35,16 +35,4 @@ async function handle(context, info) {
     };
     return createErrorResponse(opts);
   }
-}
-
-export default async function sourceHandler(context, info) {
-  const resp = await handle(context, info);
-
-  if (info.headers.origin) {
-    resp.headers.set('access-control-allow-headers', '*');
-    resp.headers.set('access-control-allow-methods', 'HEAD, GET, PUT, DELETE');
-    resp.headers.set('access-control-expose-headers', 'x-da-id');
-  }
-
-  return resp;
 }

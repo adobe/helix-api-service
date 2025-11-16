@@ -17,42 +17,38 @@ import { Response } from '@adobe/fetch';
 import commonResponseHeaders from '../../src/wrappers/response-headers.js';
 
 describe('Response Headers Tests', () => {
-  it('adds common response headers when origin is present', async () => {
-    const ctx = { log: { error: () => {} } };
+  const context = { log: { error: () => {} } };
+
+  it('test response headers when origin is present', async () => {
     const headers = { origin: 'https://foo.org' };
     const req = new Request('https://example.com', { headers });
     const fn = async () => new Response('Hello, world!', { status: 200 });
 
-    const resp = await commonResponseHeaders(fn)(req, ctx);
+    const resp = await commonResponseHeaders(fn)(req, context);
     assert.equal(resp.status, 200);
     assert.deepStrictEqual(resp.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
       'access-control-allow-origin': 'https://foo.org',
       'access-control-allow-credentials': 'true',
-      'access-control-expose-headers': 'x-error, x-error-code',
+      'access-control-expose-headers': 'x-da-id, x-error, x-error-code',
     });
     assert.equal(resp.headers.get('cache-control'), 'no-store, private, must-revalidate');
   });
 
-  it('adds to existing access-control-expose-headers when origin is present', async () => {
-    const ctx = { log: { error: () => {} } };
-    const reqHeaders = { origin: 'https://foo.org' };
-    const req = new Request('https://example.com', { headers: reqHeaders });
+  it('test response headers when origin is not present', async () => {
+    const req = new Request('https://example.com');
 
     const respHeaders = {
-      'access-control-expose-headers': 'x-foo',
       'cache-control': 'max-age=10800',
     };
     const fn = async () => new Response('Hi there', { status: 201, headers: respHeaders });
-    const resp = await commonResponseHeaders(fn)(req, ctx);
+
+    const resp = await commonResponseHeaders(fn)(req, context);
     assert.equal(resp.status, 201);
     assert.deepStrictEqual(resp.headers.plain(), {
-      'access-control-expose-headers': 'x-foo, x-error, x-error-code',
       'cache-control': 'max-age=10800',
       'content-type': 'text/plain; charset=utf-8',
-      'access-control-allow-origin': 'https://foo.org',
-      'access-control-allow-credentials': 'true',
     });
   });
 });

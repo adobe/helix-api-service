@@ -43,6 +43,17 @@ describe('Source Handler Tests', () => {
     nock.done();
   });
 
+  function setupContext(addProps) {
+    const ctx = { ...addProps };
+
+    if (!ctx.attributes) {
+      ctx.attributes = {};
+    }
+    ctx.attributes.authInfo = new AuthInfo().withAuthenticated(true);
+    ctx.env = { HELIX_STORAGE_DISABLE_R2: 'true' };
+    return ctx;
+  }
+
   it('handles GET requests', async () => {
     nock.source()
       .getObject('/org/site/hello.html')
@@ -57,12 +68,9 @@ describe('Source Handler Tests', () => {
     const headers = new Headers({ origin: 'https://example.com' });
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'GET', headers,
-    }), {
+    }), setupContext({
       pathInfo: { suffix: '/org/sites/site/source/hello.html' },
-      attributes: {
-        authInfo: new AuthInfo().withAuthenticated(true),
-      },
-    });
+    }));
     assert.equal(resp.status, 200);
     const txt = await resp.text();
     assert.equal(txt, '<body>Hello, world!</body>');
@@ -73,8 +81,6 @@ describe('Source Handler Tests', () => {
       'last-modified': 'Sat, 01 Jan 2000 00:00:00 GMT',
       etag: '"some-etag-327"',
       'x-da-id': 'dc0b68d8-b3ac-4c8a-9205-d78085e55704',
-      'access-control-allow-headers': '*',
-      'access-control-allow-methods': 'HEAD, GET, PUT, DELETE',
       'access-control-allow-origin': 'https://example.com',
       'access-control-expose-headers': 'x-da-id, x-error, x-error-code',
     });
@@ -91,12 +97,9 @@ describe('Source Handler Tests', () => {
 
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'HEAD',
-    }), {
+    }), setupContext({
       pathInfo: { suffix: '/org/sites/site/source/hellothere.html' },
-      attributes: {
-        authInfo: new AuthInfo().withAuthenticated(true),
-      },
-    });
+    }));
     assert.equal(resp.status, 200);
     assertHeadersInclude(resp.headers, {
       'content-type': 'text/html',
@@ -125,13 +128,9 @@ describe('Source Handler Tests', () => {
         data: '<body><main>Yo!</main></body>',
       }).toString(),
       headers,
-    }), {
+    }), setupContext({
       pathInfo: { suffix: '/org/sites/site/source/a/b/c.html' },
-      attributes: {
-        authInfo: new AuthInfo().withAuthenticated(true),
-      },
-      env: { HELIX_STORAGE_DISABLE_R2: 'true' },
-    });
+    }));
     assert.equal(resp.status, 201);
     assert.equal(assignedID, resp.headers.get('X-da-id'));
   });
@@ -139,22 +138,18 @@ describe('Source Handler Tests', () => {
   it('handles unsupported method requests', async () => {
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'POST',
-    }), {
+    }), setupContext({
       pathInfo: { suffix: '/org/sites/site/source/x.html' },
-      attributes: {
-        authInfo: new AuthInfo().withAuthenticated(true),
-      },
-    });
+    }));
     assert.equal(resp.status, 405);
   });
 
   it('handles getSource throws an error', async () => {
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'GET',
-    }), {
+    }), setupContext({
       pathInfo: { suffix: '/org/sites/site/source/qq.html' },
       attributes: {
-        authInfo: new AuthInfo().withAuthenticated(true),
         storage: {
           close: () => {},
           sourceBus: () => {
@@ -164,7 +159,7 @@ describe('Source Handler Tests', () => {
           },
         },
       },
-    });
+    }));
     assert.equal(resp.status, 505);
     assert.equal(resp.headers.get('x-error'), 'Test error');
   });

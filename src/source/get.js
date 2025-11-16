@@ -28,7 +28,7 @@ function getHeaders(meta, length, id) {
   return headers;
 }
 
-export async function getSource({ context, info, headOnly = false }) {
+async function accessSource(context, info, headOnly) {
   const { log } = context;
 
   const storage = HelixStorage.fromContext(context);
@@ -61,4 +61,12 @@ export async function getSource({ context, info, headOnly = false }) {
     opts.status = e?.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }
+}
+
+export async function getSource(context, info) {
+  return accessSource(context, info, false);
+}
+
+export async function headSource(context, info) {
+  return accessSource(context, info, true);
 }

@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { getSource } from './get.js';
+import { getSource, headSource } from './get.js';
 import { putSource } from './put.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
@@ -17,13 +17,13 @@ export default async function handle(context, info) {
   try {
     switch (info.method) {
       case 'GET':
-        return await getSource({ context, info });
+        return await getSource(context, info);
       case 'PUT':
-        return await putSource({ context, info });
+        return await putSource(context, info);
       // case 'DELETE':
       //   return deleteSource(context, info);
       case 'HEAD':
-        return await getSource({ context, info, headOnly: true });
+        return await headSource(context, info);
       default:
         return new Response('method not allowed', { status: 405 });
     }

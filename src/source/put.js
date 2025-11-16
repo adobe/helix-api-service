@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { getSource } from './get.js';
+import { headSource } from './get.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
 const CONTENT_TYPES = {
@@ -41,10 +41,10 @@ function getUsers(context) {
   return [user];
 }
 
-export async function putSource({ context, info }) {
+export async function putSource(context, info) {
   const { log } = context;
 
-  const getResp = await getSource({ context, info, headOnly: true });
+  const getResp = await headSource(context, info);
   const assignedID = context.data?.guid;
   const existingID = getResp.headers.get('x-da-id');
   if (assignedID && existingID && existingID !== assignedID) {

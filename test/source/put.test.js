@@ -67,7 +67,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
     assert.ok(putCalled, 'put should have been called');
@@ -94,7 +94,7 @@ describe('Source PUT Tests', () => {
       ext: '.json',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), generatedId);
   });
@@ -107,7 +107,7 @@ describe('Source PUT Tests', () => {
       ext: '.bin',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     assert.equal(resp.status, 400);
   });
 
@@ -123,7 +123,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     assert.equal(resp.status, 403);
   });
 
@@ -155,7 +155,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     assert.equal(resp.status, 204);
     assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
   });
@@ -180,7 +180,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     assert.equal(resp.status, 409);
     const text = await resp.text();
     assert.ok(text.includes('ID mismatch'));
@@ -216,7 +216,7 @@ describe('Source PUT Tests', () => {
       ext: '.html',
     };
 
-    const resp = await putSource({ context, info });
+    const resp = await putSource(context, info);
     // When guid is provided for non-existent resource, it uses the provided guid
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), 'provided-id-456');

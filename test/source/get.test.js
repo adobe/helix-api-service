@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { getSource } from '../../src/source/get.js';
+import { getSource, headSource } from '../../src/source/get.js';
 import { Nock } from '../utils.js';
 
 describe('Source GET Tests', () => {
@@ -45,7 +45,7 @@ describe('Source GET Tests', () => {
       site: 'rest',
       resourcePath: '/toast/jam.html',
     };
-    const resp = await getSource({ context, info });
+    const resp = await getSource(context, info);
     assert.equal(await resp.text(), 'The body');
     assert.equal(resp.status, 200);
     assert.deepStrictEqual(resp.headers.plain(), {
@@ -66,12 +66,12 @@ describe('Source GET Tests', () => {
       site: 'site',
       resourcePath: '/not/there.html',
     };
-    const resp = await getSource({ context, info });
+    const resp = await getSource(context, info);
     assert.equal(resp.status, 404);
     assert.equal(resp.headers.get('x-error'), null, '404 is not an error');
   });
 
-  it('test getSource with headOnly=true returns metadata', async () => {
+  it('test headSource returns metadata', async () => {
     nock.source()
       .headObject('/myorg/mysite/document.html')
       .reply(200, null, {
@@ -87,7 +87,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/document.html',
     };
 
-    const resp = await getSource({ context, info, headOnly: true });
+    const resp = await headSource(context, info);
     assert.equal(resp.status, 200);
     assert.deepStrictEqual(resp.headers.plain(), {
       'content-type': 'text/html',
@@ -99,7 +99,7 @@ describe('Source GET Tests', () => {
     assert.equal(await resp.text(), '');
   });
 
-  it('test getSource with headOnly=true returns 404 when not found', async () => {
+  it('test headSource returns 404 when not found', async () => {
     nock.source()
       .headObject('/test/site/missing.html')
       .reply(404);
@@ -109,7 +109,7 @@ describe('Source GET Tests', () => {
       resourcePath: '/missing.html',
     };
 
-    const resp = await getSource({ context, info, headOnly: true });
+    const resp = await headSource(context, info);
     assert.equal(resp.status, 404);
   });
 
@@ -123,11 +123,11 @@ describe('Source GET Tests', () => {
       resourcePath: '/forbidden.html',
     };
 
-    const resp = await getSource({ context, info });
+    const resp = await getSource(context, info);
     assert.equal(resp.status, 403);
   });
 
-  it('test getSource with headOnly handles error', async () => {
+  it('test headSource handles error', async () => {
     nock.source()
       .headObject('/test/site/error.html')
       .replyWithError('Oh no!');
@@ -136,7 +136,7 @@ describe('Source GET Tests', () => {
       site: 'site',
       resourcePath: '/error.html',
     };
-    const resp = await getSource({ context, info, headOnly: true });
+    const resp = await headSource(context, info);
     assert.equal(resp.status, 500);
     assert.equal('Oh no!', await resp.headers.get('x-error'));
   });
@@ -157,7 +157,7 @@ describe('Source GET Tests', () => {
       site: 'site',
       resourcePath: '/data.json',
     };
-    const resp = await getSource({ context, info });
+    const resp = await getSource(context, info);
 
     assert.equal(resp.status, 200);
     assert.equal(await resp.text(), '{"name":"test","value":123}');

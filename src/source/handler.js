@@ -13,6 +13,13 @@ import { getSource, headSource } from './get.js';
 import { putSource } from './put.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
+/**
+ * Handle source route
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @return {Promise<Response>} response
+ */
 export default async function handle(context, info) {
   try {
     switch (info.method) {

@@ -19,6 +19,13 @@ const CONTENT_TYPES = {
   '.html': 'text/html',
 };
 
+/**
+ * Get the content type from the extension.
+ *
+ * @param {string} ext extension
+ * @return {string} content type
+ * @throws {Error} with $metadata.httpStatusCode 400 if the content type is not found
+ */
 function contentTypeFromExtension(ext) {
   const contentType = CONTENT_TYPES[ext];
   if (contentType) {
@@ -29,6 +36,13 @@ function contentTypeFromExtension(ext) {
   throw e;
 }
 
+/**
+ * Get the users from the context and return an array of objects with email and user_id.
+ * If no users are found, return an array with email 'anonymous'.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @return {Array<{email: string, user_id?: string}>} users
+ */
 function getUsers(context) {
   const profile = context.attributes?.authInfo?.profile;
   if (!profile) {
@@ -41,6 +55,13 @@ function getUsers(context) {
   return [user];
 }
 
+/**
+ * Put into the source bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @return {Promise<Response>} response
+*/
 export async function putSource(context, info) {
   const { log } = context;
 

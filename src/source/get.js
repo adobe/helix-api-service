@@ -13,6 +13,14 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 
+/**
+ * Get the headers for the response.
+ *
+ * @param {*} meta The metadata that contains many of the headers
+ * @param {number} length The content length
+ * @param {string} id The ID to store in the X-da-id header
+ * @return {Object} headers
+ */
 function getHeaders(meta, length, id) {
   const headers = {
     'Content-Type': meta.ContentType,
@@ -28,7 +36,7 @@ function getHeaders(meta, length, id) {
   return headers;
 }
 
-async function accessSource(context, info, headOnly) {
+async function accessSource(context, info, headRequest) {
   const { log } = context;
 
   const storage = HelixStorage.fromContext(context);
@@ -38,7 +46,7 @@ async function accessSource(context, info, headOnly) {
   const path = `${org}/${site}${key}`;
 
   try {
-    if (headOnly) {
+    if (headRequest) {
       const head = await bucket.head(path);
       if (!head) {
         return new Response('', { status: 404 });
@@ -63,10 +71,24 @@ async function accessSource(context, info, headOnly) {
   }
 }
 
+/**
+ * Get from the source bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @return {Promise<Response>} response with the document body and metadata
+ */
 export async function getSource(context, info) {
   return accessSource(context, info, false);
 }
 
+/**
+ * Head request on the source bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @return {Promise<Response>} response with the headers and metadata
+*/
 export async function headSource(context, info) {
   return accessSource(context, info, true);
 }

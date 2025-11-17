@@ -16,9 +16,7 @@ import {
   fetchExtendedSitemap, getDestinations,
   hasSimpleSitemap, installSimpleSitemap,
 } from '../../src/sitemap/utils.js';
-import {
-  createInfo, createContext, Nock, SITE_CONFIG,
-} from '../utils.js';
+import { createInfo, createContext, Nock } from '../utils.js';
 
 const ENV = {
   HELIX_STORAGE_DISABLE_R2: 'true',
@@ -30,8 +28,6 @@ describe('Sitemap Utils', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.siteConfig(SITE_CONFIG);
   });
 
   afterEach(() => {

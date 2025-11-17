@@ -84,7 +84,7 @@ describe('Publish Remove Tests', () => {
     return { request, context };
   }
 
-  describe('no indexing or sitemap configuration', () => {
+  describe('regular operation', () => {
     beforeEach(() => {
       nock.indexConfig(null);
       nock.sitemapConfig(null);
@@ -133,7 +133,9 @@ describe('Publish Remove Tests', () => {
         },
       }]);
     });
+  });
 
+  describe('operation fails', () => {
     it('fails to remove document when source exists', async () => {
       sandbox.stub(web2edit, 'lookup')
         .returns({ editUrl: 'yep, still here!' });
@@ -172,8 +174,6 @@ describe('Publish Remove Tests', () => {
         .returns({ status: 404 });
 
       nock.content()
-        .head('/live/redirects.json')
-        .reply(404)
         .deleteObject('/live/redirects.json')
         .reply(204);
 

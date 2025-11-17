@@ -32,11 +32,12 @@ export class OneDriveNock {
       .optionally(contentBusId === 'default')
       .reply(200)
       .getObject('/.helix-auth/auth-onedrive-content.json')
+      .optionally(true)
       .reply(200, S3CachePlugin.encrypt(contentBusId, JSON.stringify({
         Account: {}, AccessToken: {}, RefreshToken: {}, IdToken: {}, AppMetadata: {},
       })))
       .putObject('/.helix-auth/auth-onedrive-content.json')
-      .optionally()
+      .optionally(true)
       .reply(200);
     return this;
   }

@@ -115,14 +115,6 @@ describe('Preview Action Tests', () => {
     sandbox.stub(contentproxy, 'handle')
       .returns(new Response('', { status: 404 }));
 
-    nock.content()
-      .head('/preview/index.md')
-      .reply(404)
-      .putObject('/preview/index.md')
-      .reply(201)
-      .head('/preview/index.md')
-      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
-
     const { request, context } = setupTest('/');
     const response = await main(request, context);
 
@@ -215,8 +207,6 @@ describe('Preview Action Tests', () => {
     nock.content()
       .head('/preview/redirects.json')
       .reply(404)
-      .getObject('/preview/redirects.json')
-      .reply(404)
       .putObject('/preview/redirects.json')
       .reply(201)
       .head('/preview/redirects.json')
@@ -246,8 +236,6 @@ describe('Preview Action Tests', () => {
     nock.content()
       .head('/preview/metadata.json')
       .reply(404)
-      .getObject('/preview/metadata.json')
-      .reply(404)
       .putObject('/preview/metadata.json')
       .reply(201)
       .head('/preview/metadata.json')
@@ -265,14 +253,8 @@ describe('Preview Action Tests', () => {
       .rejects(new Error());
 
     nock.content()
-      .head('/preview/redirects.json')
-      .reply(404)
       .getObject('/preview/redirects.json')
-      .reply(404)
-      .putObject('/preview/redirects.json')
-      .reply(201)
-      .head('/preview/redirects.json')
-      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+      .reply(404);
 
     const { request, context } = setupTest(REDIRECTS_JSON_PATH);
     const response = await main(request, context);
@@ -301,8 +283,6 @@ describe('Preview Action Tests', () => {
       .putObject(`/${hash}`)
       .reply(201);
     nock.content()
-      .head('/preview/image.png')
-      .reply(404)
       .putObject('/preview/image.png')
       .reply(201, function fn() {
         assert.strictEqual(this.req.headers['x-amz-meta-redirect-location'], `/media_${hash}.png`);

@@ -13,9 +13,7 @@
 import assert from 'assert';
 import zlib from 'zlib';
 import sitemap, { rebuildSitemap } from '../../src/sitemap/update.js';
-import {
-  createInfo, createContext, Nock, SITE_CONFIG,
-} from '../utils.js';
+import { createInfo, createContext, Nock } from '../utils.js';
 
 const SITEMAP_CONFIG = `
 version: 1
@@ -100,8 +98,6 @@ describe('Sitemap update tests', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.siteConfig(SITE_CONFIG);
   });
 
   afterEach(() => {

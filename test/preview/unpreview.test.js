@@ -138,8 +138,6 @@ describe('Preview Remove Tests', () => {
       .returns({ status: 404 });
 
     nock.content()
-      .head('/preview/redirects.json')
-      .reply(404)
       .deleteObject('/preview/redirects.json')
       .reply(204);
 

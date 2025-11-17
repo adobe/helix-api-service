@@ -72,6 +72,7 @@ export async function hasSimpleSitemap(context, info) {
   }
   return attributes.hasSimpleSitemap;
 }
+
 /**
  * Returns a flag indicating whether a simple sitemap was just added to a project.
  *

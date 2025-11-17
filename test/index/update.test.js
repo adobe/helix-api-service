@@ -88,6 +88,7 @@ describe('Index Update Tests', () => {
         .head('/live/sitemap.json')
         .reply(404)
         .head('/live/document.md')
+        .optionally(true)
         .reply(200, '', { 'x-amz-meta-x-source-last-modified': 'Thu, 08 Jul 2021 11:04:16 GMT' });
       nock.indexConfig(INDEX_CONFIG);
     });

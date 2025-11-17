@@ -13,9 +13,7 @@
 import assert from 'assert';
 
 import SitemapLanguage from '../../src/sitemap/language.js';
-import {
-  createContext, Nock, SITE_CONFIG,
-} from '../utils.js';
+import { createContext, Nock } from '../utils.js';
 
 describe('Sitemap Language tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -26,8 +24,6 @@ describe('Sitemap Language tests', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.siteConfig(SITE_CONFIG);
 
     context = createContext('/org/sites/site/sitemap');
   });

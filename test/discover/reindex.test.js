@@ -343,7 +343,6 @@ describe('Discover reindex tests', () => {
 
   it('reindex one project returns 404 when site is not found', async () => {
     nock.siteConfig().reply(404);
-    nock.inventory().reply(404);
 
     const { request, context } = setupTest('org', 'site');
     const response = await main(request, context);

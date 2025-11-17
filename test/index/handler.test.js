@@ -47,6 +47,7 @@ describe('Index Handler Tests', () => {
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
       },
     };
     return { request, context };
@@ -62,6 +63,10 @@ describe('Index Handler Tests', () => {
 
   it('reports error if index definition is not found', async () => {
     nock.indexConfig(null);
+    nock.sitemapConfig(null);
+    nock.content()
+      .head('/live/sitemap.json')
+      .reply(404);
 
     const { request, context } = setupTest();
     const response = await main(request, context);

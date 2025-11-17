@@ -619,13 +619,7 @@ describe('Authentication Test', () => {
   });
 
   describe('Org API Token', () => {
-    beforeEach(() => {
-      nock.siteConfig().reply(404);
-    });
-
     it('supports api tokens with permissions but on no org/site route', async () => {
-      nock.orgConfig(ORG_CONFIG);
-
       const accessToken = await new SignJWT({
         email: 'helix@adobe.com',
         name: 'Helix Admin',

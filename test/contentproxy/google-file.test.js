@@ -51,7 +51,6 @@ describe('Google File Tests', () => {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
-        config,
         googleApiOpts: { retry: false },
       },
       env: {

@@ -16,9 +16,9 @@ import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import purge from '../../src/cache/purge.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
-describe('Cache Handler Tests', () => {
+describe('Sitemap Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
@@ -30,7 +30,6 @@ describe('Cache Handler Tests', () => {
     sandbox = sinon.createSandbox();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -68,16 +67,6 @@ describe('Cache Handler Tests', () => {
     nock.sitemapConfig(null);
     nock.content()
       .head('/live/sitemap.json')
-      .reply(200)
-      .getObject('/live/sitemap.json')
-      .reply(200, {
-        data: [{ path: '/page', lastModified: 1631031300 }],
-      })
-      .getObject('/live/sitemap.xml')
-      .reply(404)
-      .putObject('/live/sitemap.xml')
-      .reply(200)
-      .putObject('/preview/sitemap.xml')
       .reply(200);
 
     const result = await main(new Request(`https://api.aem.live${suffix}`, {

@@ -29,92 +29,94 @@ describe('Index Tests', () => {
     nock.done();
   });
 
-  it('succeeds calling login handler', async () => {
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/login',
-      },
+  function setupTest(suffix, {
+    method, headers, attributes, env,
+  } = {}) {
+    const request = new Request(`https://api.aem.live${suffix}`, {
+      method,
+      headers,
     });
+    const context = {
+      pathInfo: { suffix },
+      attributes,
+      env,
+    };
+    return { request, context };
+  }
+
+  it('succeeds calling login handler', async () => {
+    const { request, context } = setupTest('/login');
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 200);
   });
 
   it('fails calling login handler with suffix', async () => {
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/login/path',
-      },
-    });
-    assert.strictEqual(result.status, 404);
+    const { request, context } = setupTest('/login/path');
+    const result = await main(request, context);
+
     assert.strictEqual(await result.text(), '');
   });
 
   it('succeeds calling code handler', async () => {
-    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
-    nock.orgConfig(ORG_CONFIG, { org: 'owner' });
+    nock.siteConfig(SITE_CONFIG);
 
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/owner/sites/repo/code/main/',
-      },
+    const { request, context } = setupTest('/org/sites/site/code/main/', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');
   });
 
   it('succeeds calling code handler with trailing path', async () => {
-    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
-    nock.orgConfig(ORG_CONFIG, { org: 'owner' });
+    nock.siteConfig(SITE_CONFIG);
 
-    const result = await main(new Request('https://localhost/', {
+    const { request, context } = setupTest('/org/sites/site/code/main/src/scripts.js', {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
       method: 'POST',
       headers: {
         'x-github-token': 'token',
         'x-github-base': 'https://my.github.com',
       },
-    }), {
-      pathInfo: {
-        suffix: '/owner/sites/repo/code/main/src/scripts.js',
-      },
-      attributes: {
-        authInfo: AuthInfo.Default().withAuthenticated(true),
-      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'NYI');
   });
 
   it('fails calling code handler with incomplete match', async () => {
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/owner/sites/repo/code',
-      },
+    const { request, context } = setupTest('/org/sites/site/code', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
 
   it('fails calling status handler without trailing path', async () => {
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/owner/sites/repo/status',
-      },
+    const { request, context } = setupTest('/org/sites/site/status', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
 
   it('succeeds calling status handler with trailing path', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
 
     nock.content()
       .head('/live/document.md')
@@ -126,10 +128,7 @@ describe('Index Tests', () => {
       .getObject('/preview/redirects.json')
       .reply(404);
 
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/org/sites/site/status/document',
-      },
+    const { request, context } = setupTest('/org/sites/site/status/document', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
@@ -137,6 +136,8 @@ describe('Index Tests', () => {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       edit: {},
@@ -171,26 +172,21 @@ describe('Index Tests', () => {
 
   it('fails calling status handler when not authenticated', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
 
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/org/sites/site/status/document',
-      },
+    const { request, context } = setupTest('/org/sites/site/status/document', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(false),
       },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 403);
   });
 
   it('fails calling status handler with missing site config', async () => {
     nock.siteConfig().reply(404);
 
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/org/sites/site/status/document',
-      },
+    const { request, context } = setupTest('/org/sites/site/status/document', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
@@ -198,6 +194,8 @@ describe('Index Tests', () => {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
       },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
   });
@@ -205,14 +203,16 @@ describe('Index Tests', () => {
   it('succeeds calling profiles handler', async () => {
     nock.orgConfig(ORG_CONFIG);
 
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/org/profiles',
-      },
+    const { request, context } = setupTest('/org/profiles', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), '');
   });
@@ -221,16 +221,40 @@ describe('Index Tests', () => {
     nock.orgConfig()
       .reply(404);
 
-    const result = await main(new Request('https://localhost/'), {
-      pathInfo: {
-        suffix: '/org/profiles',
-      },
+    const { request, context } = setupTest('/org/profiles', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+      },
     });
+    const result = await main(request, context);
+
     assert.strictEqual(result.status, 404);
     assert.strictEqual(await result.text(), '');
+  });
+
+  it('sends 204 for OPTIONS request', async () => {
+    const { request, context } = setupTest('/org/sites/site/status/', {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'api.aem.live',
+      },
+    });
+    const result = await main(request, context);
+
+    assert.strictEqual(result.status, 204);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, HEAD, POST, PUT, OPTIONS, DELETE',
+      'access-control-allow-headers': 'Authorization, x-auth-token, x-content-source-authorization, content-type',
+      'access-control-allow-origin': 'api.aem.live',
+      'access-control-max-age': '86400',
+      'access-control-expose-headers': 'x-error, x-error-code',
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+    });
   });
 
   it('verifies extraction of variables', () => {

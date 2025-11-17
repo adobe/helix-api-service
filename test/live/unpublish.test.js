@@ -20,7 +20,7 @@ import { HANDLERS } from '../../src/lookup/web2edit.js';
 import { main } from '../../src/index.js';
 import { INTERNAL_SITEMAP_INDEX } from '../../src/index/utils.js';
 import purge from '../../src/cache/purge.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Publish Remove Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -48,7 +48,6 @@ describe('Publish Remove Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -85,7 +84,7 @@ describe('Publish Remove Tests', () => {
     return { request, context };
   }
 
-  describe('no indexing or sitemap configuration', () => {
+  describe('regular operation', () => {
     beforeEach(() => {
       nock.indexConfig(null);
       nock.sitemapConfig(null);
@@ -134,7 +133,9 @@ describe('Publish Remove Tests', () => {
         },
       }]);
     });
+  });
 
+  describe('operation fails', () => {
     it('fails to remove document when source exists', async () => {
       sandbox.stub(web2edit, 'lookup')
         .returns({ editUrl: 'yep, still here!' });
@@ -173,8 +174,6 @@ describe('Publish Remove Tests', () => {
         .returns({ status: 404 });
 
       nock.content()
-        .head('/live/redirects.json')
-        .reply(404)
         .deleteObject('/live/redirects.json')
         .reply(204);
 

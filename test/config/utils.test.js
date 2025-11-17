@@ -28,30 +28,6 @@ describe('Config Utils Tests', () => {
     nock.done();
   });
 
-  it('adds the config api keys from site config', async () => {
-    nock.siteConfig()
-      .reply(200, {
-        apiKeys: {
-          site: {
-            id: 'site-api-key-id',
-          },
-        },
-      });
-
-    const cfg = await loadSiteConfig(AdminContext.create({
-      pathInfo: {
-        suffix: '/org/sites/site/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }), 'org', 'site');
-
-    assert.deepStrictEqual(cfg.access.admin, {
-      apiKeyId: ['site-api-key-id'],
-    });
-  });
-
   it('return null for non 404 error config response', async () => {
     nock.siteConfig()
       .reply(500);
@@ -83,33 +59,6 @@ describe('Config Utils Tests', () => {
       task,
       /Fetching site config from https:\/\/config.aem.page\/main--site--org\/config.json\?scope=admin failed: boom!/,
     );
-  });
-
-  it('adds the config api keys from org config', async () => {
-    nock.orgConfig()
-      .reply(200, {
-        apiKeys: {
-          org: {
-            id: 'org-api-key-id',
-          },
-          org2: {
-            id: 'org2-api-key-id',
-          },
-        },
-      });
-
-    const cfg = await loadOrgConfig(AdminContext.create({
-      pathInfo: {
-        suffix: '/org/sites/site/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }), 'org', 'site');
-
-    assert.deepStrictEqual(cfg.access.admin, {
-      apiKeyId: ['org-api-key-id', 'org2-api-key-id'],
-    });
   });
 
   it('return null for non 404 error org config response', async () => {

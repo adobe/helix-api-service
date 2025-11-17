@@ -35,8 +35,18 @@ describe('web2edit Markup Tests', () => {
     nock.done();
   });
 
+  function setupTest(path) {
+    const suffix = `/owner/sites/repo/status${path}`;
+    const context = createContext(suffix, {
+      data: {
+        editUrl: 'auto',
+      },
+    });
+    const info = createInfo(suffix);
+    return { context, info };
+  }
+
   it('succeeds to lookup page', async () => {
-    const suffix = '/owner/sites/repo/status/page';
     const source = {
       type: 'markup',
       url: 'https://content.da.live/org/site/',
@@ -46,11 +56,9 @@ describe('web2edit Markup Tests', () => {
       .get('/org/site/page')
       .reply(200);
 
-    const result = await handler.lookup(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
-      createInfo(suffix),
-      source,
-    );
+    const { context, info } = setupTest('/page');
+    const result = await handler.lookup(context, info, source);
+
     assert.deepStrictEqual(result, {
       editUrl: 'https://da.live/edit#/org/site/page',
       resourcePath: '/page.md',
@@ -61,7 +69,6 @@ describe('web2edit Markup Tests', () => {
   });
 
   it('succeeds to lookup page ending with a `/`', async () => {
-    const suffix = '/owner/sites/repo/status/page/';
     const source = {
       type: 'markup',
       url: 'https://content.da.live/org/site/',
@@ -71,11 +78,9 @@ describe('web2edit Markup Tests', () => {
       .get('/org/site/page/')
       .reply(200);
 
-    const result = await handler.lookup(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
-      createInfo(suffix),
-      source,
-    );
+    const { context, info } = setupTest('/page/');
+    const result = await handler.lookup(context, info, source);
+
     assert.deepStrictEqual(result, {
       editUrl: 'https://da.live/edit#/org/site/page/index',
       resourcePath: '/page/index.md',
@@ -86,13 +91,13 @@ describe('web2edit Markup Tests', () => {
   });
 
   it('returns error when `url` does not match', async () => {
-    const suffix = '/owner/sites/repo/status/page';
+    const source = {
+      url: 'https://www.example.com/',
+    };
 
-    const result = await handler.lookup(
-      createContext(suffix, { data: { editUrl: 'auto' } }),
-      createInfo(suffix),
-      { url: 'https://www.example.com/' },
-    );
+    const { context, info } = setupTest('/page');
+    const result = await handler.lookup(context, info, source);
+
     assert.deepStrictEqual(result, {
       error: 'Mountpoint not supported: https://www.example.com/.',
       status: 404,

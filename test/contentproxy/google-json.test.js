@@ -19,7 +19,7 @@ import { GoogleClient } from '@adobe/helix-google-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { sanitizeHtml } from '../../src/contentproxy/google-json.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 import { getFormattedCellsSheet } from './fixtures/formatted-cells-sheet.js';
 import { getFormattedCellsValues } from './fixtures/formatted-cells-values.js';
 import TEST_STRUCTURES_VALUES from './fixtures/structure-values.js';
@@ -34,7 +34,6 @@ describe('Google JSON Tests', () => {
     GoogleClient.setItemCacheOptions({ max: 1000 });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -44,7 +43,7 @@ describe('Google JSON Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       headers: {
         'x-request-id': 'rid',
       },

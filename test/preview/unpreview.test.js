@@ -19,7 +19,7 @@ import { HANDLERS } from '../../src/lookup/web2edit.js';
 import { main } from '../../src/index.js';
 import purge from '../../src/cache/purge.js';
 import { REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Preview Remove Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -44,7 +44,6 @@ describe('Preview Remove Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -56,7 +55,7 @@ describe('Preview Remove Tests', () => {
     const suffix = `/org/sites/site/preview${path}`;
     const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}?${query}`, {
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       method: 'DELETE',
       headers: {
         'x-request-id': 'rid',
@@ -139,8 +138,6 @@ describe('Preview Remove Tests', () => {
       .returns({ status: 404 });
 
     nock.content()
-      .head('/preview/redirects.json')
-      .reply(404)
       .deleteObject('/preview/redirects.json')
       .reply(204);
 

@@ -19,7 +19,7 @@ import { Request } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 const TEST_BYTES = randomBytes(8192);
 
@@ -30,8 +30,6 @@ describe('Google File Tests', () => {
   beforeEach(() => {
     nock = new Nock().env();
     GoogleClient.setItemCacheOptions({ max: 1000 });
-
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -48,12 +46,11 @@ describe('Google File Tests', () => {
 
     const suffix = `/org/sites/site/contentproxy${path}`;
 
-    const request = new Request('https://localhost/');
+    const request = new Request('https://api.aem.live/');
     const context = {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
-        config,
         googleApiOpts: { retry: false },
       },
       env: {

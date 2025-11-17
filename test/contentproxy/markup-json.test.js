@@ -15,7 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 import { validSheet } from './utils.js';
 
 const mountpointUrl = 'https://www.example.com';
@@ -38,8 +38,6 @@ describe('Markup Integration Tests (JSON)', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -56,7 +54,7 @@ describe('Markup Integration Tests (JSON)', () => {
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}?${query}`, {
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       headers: {
         'x-request-id': 'rid',
         ...headers,

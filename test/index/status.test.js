@@ -16,7 +16,7 @@ import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 const INDEX_CONFIG = `
 indices:
@@ -41,7 +41,6 @@ describe('Index Status Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
     nock.sitemapConfig(null);
     nock.content()
       .head('/live/sitemap.json')
@@ -55,7 +54,7 @@ describe('Index Status Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/index${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       headers: {
         'x-request-id': 'rid',
       },

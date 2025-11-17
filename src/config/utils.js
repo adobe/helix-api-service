@@ -11,7 +11,6 @@
  */
 import { AbortError } from '@adobe/fetch';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import { getOrCreateObject } from '../support/utils.js';
 
 /**
  * Load configuration from the config service.
@@ -52,39 +51,14 @@ async function loadConfig(context, url, type) {
   }
 }
 
-/**
- * Add the IDs of the site or org apiKeys from the config to the ones in config all
- */
-function addConfigApiKeys(config) {
-  const apiKeys = Object.values(config.apiKeys || {});
-  if (apiKeys.length) {
-    const access = getOrCreateObject(config, 'access.admin');
-    for (const { id } of apiKeys) {
-      if (!access.apiKeyId) {
-        access.apiKeyId = [id];
-      } else {
-        access.apiKeyId.push(id);
-      }
-    }
-  }
-}
-
 export async function loadSiteConfig(context, org, site) {
   const url = `https://config.aem.page/main--${site}--${org}/config.json?scope=admin`;
-  const siteConfig = await loadConfig(context, url, 'site');
-  if (siteConfig) {
-    addConfigApiKeys(siteConfig);
-  }
-  return siteConfig;
+  return loadConfig(context, url, 'site');
 }
 
 export async function loadOrgConfig(context, org) {
   const url = `https://config.aem.page/${org}/config.json?scope=admin`;
-  const orgConfig = await loadConfig(context, url, 'org');
-  if (orgConfig) {
-    addConfigApiKeys(orgConfig);
-  }
-  return orgConfig;
+  return loadConfig(context, url, 'org');
 }
 
 /**
@@ -106,4 +80,19 @@ export async function getUserListPaths(context) {
     }
   }
   return Array.from(paths);
+}
+
+/**
+ * Return the contents of the `.hlx.json` file in a project.
+ *
+ * @param {import('@adobe/helix-shared-storage').Bucket} contentBus content bus bucket
+ * @param {string} contentBusId content bus id
+ * @returns contents of `.hlx.json` or null
+ */
+export async function fetchHlxJson(contentBus, contentBusId) {
+  const buf = await contentBus.get(`${contentBusId}/.hlx.json`);
+  if (!buf) {
+    return null;
+  }
+  return JSON.parse(buf.toString());
 }

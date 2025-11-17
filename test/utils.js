@@ -10,7 +10,6 @@
  * governing permissions and limitations under the License.
  */
 import assert from 'assert';
-import crypto from 'crypto';
 import nock from 'nock';
 import xml2js from 'xml2js';
 
@@ -20,8 +19,9 @@ import { AuthInfo } from '../src/auth/auth-info.js';
 import { router } from '../src/index.js';
 import { AdminContext } from '../src/support/AdminContext.js';
 import { RequestInfo } from '../src/support/RequestInfo.js';
-import { OneDriveNock } from './nocks/onedrive.js';
 import { GoogleNock } from './nocks/google.js';
+import { OneDriveNock } from './nocks/onedrive.js';
+import { SQSNock } from './nocks/sqs.js';
 
 export const SITE_CONFIG = {
   version: 1,
@@ -131,7 +131,7 @@ export function Nock() {
   };
 
   nocker.s3 = (bucket, prefix) => {
-    const scope = nock(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
+    const scope = nocker(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
     scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
     scope.headObject = (key) => scope.head(key);
     scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
@@ -153,7 +153,7 @@ export function Nock() {
   nocker.source = () => nocker.s3('helix-source-bus', '');
 
   nocker.siteConfig = (config, { org = 'org', site = 'site' } = {}) => {
-    const scope = nock('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);
+    const scope = nocker('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);
     if (config) {
       scope.reply(200, config);
     }
@@ -161,7 +161,7 @@ export function Nock() {
   };
 
   nocker.orgConfig = (config, { org = 'org' } = {}) => {
-    const scope = nock('https://config.aem.page').get(`/${org}/config.json?scope=admin`);
+    const scope = nocker('https://config.aem.page').get(`/${org}/config.json?scope=admin`);
     if (config) {
       scope.reply(200, config);
     }
@@ -203,7 +203,7 @@ export function Nock() {
   };
 
   nocker.inventory = (inventory) => {
-    const scope = nocker.content('default').getObject('/inventory-v2.json');
+    const scope = nocker.content('default').getObject('/inventory.json');
     if (inventory) {
       scope.reply(200, inventory);
     }
@@ -213,28 +213,7 @@ export function Nock() {
   nocker.google = (content) => new GoogleNock(nocker, content);
   nocker.onedrive = (content) => new OneDriveNock(nocker, content);
 
-  nocker.sqs = (queue, entries) => nock('https://sqs.us-east-1.amazonaws.com')
-    .post('/', (body) => {
-      const { QueueUrl = '' } = body;
-      return QueueUrl.split('/').at(-1) === queue;
-    })
-    .reply((_, body) => {
-      const { Entries } = JSON.parse(body);
-      if (entries) {
-        entries.push(...Entries.map(({ MessageAttributes, MessageBody }) => {
-          const messageBody = JSON.parse(MessageBody);
-          delete messageBody.timestamp;
-          return {
-            MessageAttributes,
-            MessageBody: messageBody,
-          };
-        }));
-      }
-      return [200, JSON.stringify({
-        MessageId: '374cec7b-d0c8-4a2e-ad0b-67be763cf97e',
-        MD5OfMessageBody: crypto.createHash('md5').update(body, 'utf-8').digest().toString('hex'),
-      })];
-    });
+  nocker.sqs = (queue, entries) => new SQSNock(nocker, queue, entries);
 
   nock.disableNetConnect();
   return nocker;
@@ -273,7 +252,7 @@ export function createContext(suffix, {
  * @returns {RequestInfo} info
  */
 export function createInfo(suffix, headers = {}) {
-  return RequestInfo.create(new Request('http://localhost/', {
+  return RequestInfo.create(new Request('http://api.aem.live/', {
     headers,
   }), router.match(suffix).variables);
 }

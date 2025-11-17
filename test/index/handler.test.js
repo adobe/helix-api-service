@@ -15,9 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import {
-  Nock, SITE_CONFIG, ORG_CONFIG,
-} from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Index Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -27,7 +25,6 @@ describe('Index Handler Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -37,7 +34,7 @@ describe('Index Handler Tests', () => {
   function setupTest(method = 'POST') {
     const suffix = '/org/sites/site/index/document';
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       method,
       headers: {
         'x-request-id': 'rid',
@@ -50,13 +47,14 @@ describe('Index Handler Tests', () => {
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
       },
     };
     return { request, context };
   }
 
   it('return 405 with method not allowed', async () => {
-    const { request, context } = await setupTest('PUT');
+    const { request, context } = setupTest('PUT');
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 405);
@@ -65,8 +63,12 @@ describe('Index Handler Tests', () => {
 
   it('reports error if index definition is not found', async () => {
     nock.indexConfig(null);
+    nock.sitemapConfig(null);
+    nock.content()
+      .head('/live/sitemap.json')
+      .reply(404);
 
-    const { request, context } = await setupTest();
+    const { request, context } = setupTest();
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);
@@ -82,7 +84,7 @@ describe('Index Handler Tests', () => {
       .getObject('/preview/.helix/query.yaml')
       .reply(500);
 
-    const { request, context } = await setupTest();
+    const { request, context } = setupTest();
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 404);

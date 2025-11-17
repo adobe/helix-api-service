@@ -399,3 +399,28 @@ export function getSingleMessageQueue(region, accountId, component, test) {
 export function getPackedMessageQueue(region, accountId, component, test) {
   return `https://sqs.${region}.amazonaws.com/${accountId}/${test ? 'test' : 'helix'}-${component}.fifo`;
 }
+
+/**
+ * Log request
+ *
+ * @param {import('./AdminContext').AdminContext} context context
+ * @param {import('./RequestInfo').RequestInfo} info request info
+ * @param {import('@adobe/fetch').Response} response response
+ * @returns {void}
+ */
+export function logRequest(context, info, response) {
+  const { suffix, log } = context;
+  const admin = {
+    method: info.method,
+    route: info.route,
+    path: info.webPath,
+    suffix,
+    status: response.status,
+  };
+  ['org', 'site'].forEach((key) => {
+    if (info[key]) {
+      admin[key] = info[key];
+    }
+  });
+  log.info('%j', { admin });
+}

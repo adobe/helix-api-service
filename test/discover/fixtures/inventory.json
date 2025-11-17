@@ -1,0 +1,119 @@
+[
+  {
+    "org": "company",
+    "site": "site",
+    "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/site",
+    "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6d",
+    "codeBusId": "company/site",
+    "url": "https://site.company.com",
+    "routes": [
+      "/page"
+    ],
+    "originalSite": "company/site",
+    "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/site"
+  },
+  {
+    "org": "company-development",
+    "site": "fork",
+    "codeBusId": "company-development/fork",
+    "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/site",
+    "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6d",
+    "url": "https://site.company.com",
+    "routes": [],
+    "originalSite": "company/site",
+    "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/site"
+  },
+  {
+    "org": "company",
+    "site": "subsiteA",
+    "codeBusId": "company/subsiteA",
+    "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA",
+    "contentBusId": "4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c",
+    "url": "https://www.company.com",
+    "routes": [
+      "**/A/**"
+    ],
+    "originalSite": "company/subsiteA",
+    "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/subsiteA"
+  },
+  {
+    "org": "company",
+    "site": "subsiteB",
+    "codeBusId": "company/subsiteB",
+    "contentSourceUrl": "https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1",
+    "contentBusId": "76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
+    "url": "https://www.company.com",
+    "routes": [
+      "**/B/**"
+    ],
+    "originalSite": "company/subsiteB",
+    "originalRepository": "company/subsiteB",
+    "gdriveId": "1N2zij7EMeS95cIFiRuxfjY0OxllX8my1"
+  },
+  {
+    "org": "company",
+    "site": "subsiteC",
+    "codeBusId": "company/subsiteC",
+    "contentSourceUrl": "https://drive.google.com/drive/folders/abczij7EMeS95cIFiRuxfjY0OxllX8my1",
+    "contentBusId": "96c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
+    "url": "https://www.company.com",
+    "originalSite": "company/subsiteC",
+    "originalRepository": "company/subsiteC",
+    "gdriveId": "abczij7EMeS95cIFiRuxfjY0OxllX8my1",
+    "customUser": true
+  },
+  {
+    "org": "tenant",
+    "site": "site",
+    "codeBusId": "tenant/site",
+    "contentSourceUrl": "https://tenant.sharepoint.com/:f:/r/sites/site/Shared%20Documents/website/root?csf=1&web=1&e=rQbhRS",
+    "contentBusId": "76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bc",
+    "url": "https://site.tenant.com",
+    "routes": [],
+    "originalSite": "tenant/site",
+    "originalRepository": "tenant/site",
+    "sharepointSite": "https://tenant.sharepoint.com/sites/site/Shared%20Documents/website/root"
+  },
+  {
+    "org": "company",
+    "site": "test",
+    "codeBusId": "company/test",
+    "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/test",
+    "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6e",
+    "url": "https://test.company.com",
+    "routes": [],
+    "originalSite": "company/test",
+    "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/test/"
+  },
+  {
+    "org": "company",
+    "site": "testother",
+    "codeBusId": "company/testOther",
+    "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/testother",
+    "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6f",
+    "url": "https://testother.company.com",
+    "routes": [],
+    "originalSite": "company/testother",
+    "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/testother"
+  },
+  {
+    "org": "company",
+    "site": "slash",
+    "codeBusId": "company/slash",
+    "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/slash/",
+    "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6f",
+    "url": "https://slash.company.com",
+    "routes": [],
+    "originalSite": "company/slash",
+    "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/slash/"
+  },
+  {
+    "org": "company",
+    "site": "test-my-adobe",
+    "contentSourceUrl": "https://adobe-my.sharepoint.com/personal/dummy_adobe_com/Documents/helix5-repoless-2",
+    "contentBusId": "ad3525843e08c52337ae47c75a5da9540ad20a070e52a75c7202f9c5541",
+    "codeBusId": "company/test-my-adobe",
+    "originalSite": "company/test-my-adobe",
+    "sharepointSite": "https://adobe-my.sharepoint.com/personal/dummy_adobe_com/Documents/helix5-repoless-2"
+  }
+]

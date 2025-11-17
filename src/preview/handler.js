@@ -15,6 +15,9 @@ import preview from './preview.js';
 import status from './status.js';
 import unpreview from './unpreview.js';
 
+/**
+ * Allowed methods for that handler
+ */
 const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**

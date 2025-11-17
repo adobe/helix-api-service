@@ -13,7 +13,7 @@ import { Response } from '@adobe/fetch';
 import { contentProxy } from './index.js';
 
 /**
- * Allowed methods for that handler.
+ * Allowed methods for that handler
  */
 const ALLOWED_METHODS = ['GET'];
 

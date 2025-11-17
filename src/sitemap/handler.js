@@ -14,7 +14,7 @@ import purge, { PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { rebuildSitemap } from './update.js';
 
 /**
- * Allowed methods for that handler.
+ * Allowed methods for that handler
  */
 const ALLOWED_METHODS = ['POST'];
 

@@ -15,9 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import {
-  Nock, SITE_CONFIG, ORG_CONFIG,
-} from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Preview Info Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -27,7 +25,6 @@ describe('Preview Info Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -37,7 +34,7 @@ describe('Preview Info Tests', () => {
   function setupTest(path = '/') {
     const suffix = `/org/sites/site/preview${path}`;
 
-    const request = new Request(`https://localhost${suffix}`, {
+    const request = new Request(`https://api.aem.live${suffix}`, {
       headers: {
         'x-request-id': 'rid',
       },

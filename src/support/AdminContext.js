@@ -15,7 +15,6 @@ import { IndexConfig, SitemapConfig } from '@adobe/helix-shared-config';
 import { parseBucketNames } from '@adobe/helix-shared-storage';
 import { getCachePlugin } from '@adobe/helix-shared-tokencache';
 import { GoogleClient } from '@adobe/helix-google-support';
-import { OneDrive, OneDriveAuth } from '@adobe/helix-onedrive-support';
 import { authorize } from '../auth/authzn.js';
 import { getAuthInfo } from '../auth/support.js';
 import { loadOrgConfig, loadSiteConfig } from '../config/utils.js';
@@ -23,8 +22,7 @@ import fetchRedirects from '../redirects/fetch.js';
 import { StatusCodeError } from './StatusCodeError.js';
 import sourceLock from './source-lock.js';
 import { coerceArray } from './utils.js';
-
-const APP_USER_AGENT = 'NONISV|Adobe|AEMContentSync/1.0';
+import { getOneDriveClient } from './onedrive.js';
 
 export class AdminContext {
   /**
@@ -79,7 +77,9 @@ export class AdminContext {
    * @returns {Promise<object>} configuration
    */
   async loadConfig(info) {
-    if (this.attributes.config === undefined) {
+    const { attributes } = this;
+
+    if (attributes.config === undefined) {
       const { org, site } = info;
       if (org && site) {
         const config = await loadSiteConfig(this, org, site);
@@ -88,16 +88,15 @@ export class AdminContext {
         }
         const { code: { owner, repo } } = config;
         info.withCode(owner, repo);
-        this.attributes.config = config;
+
+        attributes.config = config;
+        attributes.orgConfig = null;
+      } else if (org) {
+        attributes.config = null;
+        attributes.orgConfig = await loadOrgConfig(this, org);
       }
     }
-    if (this.attributes.orgConfig === undefined) {
-      const { org } = info;
-      if (org) {
-        this.attributes.orgConfig = await loadOrgConfig(this, org);
-      }
-    }
-    return this.attributes.orgConfig;
+    return attributes.config;
   }
 
   async getRedirects(partition) {
@@ -219,7 +218,8 @@ export class AdminContext {
     if (!attributes.google) {
       attributes.google = {};
     }
-    if (!attributes.google[contentBusId]) {
+    const key = contentBusId ?? 'default';
+    if (!attributes.google[key]) {
       const { code: codeBucket, content: contentBucket } = attributes.bucketMap;
       const cachePlugin = await getCachePlugin({
         contentBusId,
@@ -228,7 +228,7 @@ export class AdminContext {
         contentBucket,
       }, 'google');
 
-      attributes.google[contentBusId] = await new GoogleClient({
+      attributes.google[key] = await new GoogleClient({
         log,
         clientId: env.GOOGLE_HELIX_SERVICE_CLIENT_ID,
         clientSecret: env.GOOGLE_HELIX_SERVICE_CLIENT_SECRET,
@@ -236,51 +236,33 @@ export class AdminContext {
         googleApiOpts: attributes.googleApiOpts,
       }).init();
     }
-    return attributes.google[contentBusId];
+    return attributes.google[key];
   }
 
   /**
    * Get or create a OneDrive client.
    *
-   * @param {string} org org
-   * @param {string} site site
-   * @param {string} contentBusId content bus id
-   * @param {string} tenant tenant id
-   * @param {object} logFields log fields
+   * @param {import('./RequestInfo').RequestInfo} info request info
    * @returns {Promise<OneDrive>} onedrive client
    */
-  async getOneDriveClient(org, site, {
-    contentBusId, tenant, logFields = {}, checkSourceLock = true,
-  } = {}) {
-    const { attributes, env, log } = this;
+  async getOneDriveClient(info) {
+    const { config: { content: { contentBusId, source } }, attributes } = this;
+    const { org, site, resourcePath } = info;
+
     if (!attributes.onedrive) {
-      if (checkSourceLock) {
-        await sourceLock.assert(this, org, site);
-      }
+      await sourceLock.assert(this, org, site);
 
-      const { code: codeBucket, content: contentBucket } = attributes.bucketMap;
-      const cachePlugin = await getCachePlugin({
-        owner: org,
+      attributes.onedrive = await getOneDriveClient({
+        bucketMap: attributes.bucketMap,
+        org,
         contentBusId,
-        log,
-        codeBucket,
-        contentBucket,
-      }, 'onedrive');
-
-      const auth = new OneDriveAuth({
-        log,
-        clientId: env.AZURE_HELIX_SERVICE_CLIENT_ID,
-        clientSecret: env.AZURE_HELIX_SERVICE_CLIENT_SECRET,
-        cachePlugin,
-        tenant,
-        acquireMethod: env.AZURE_HELIX_SERVICE_ACQUIRE_METHOD,
-        logFields,
-      });
-
-      attributes.onedrive = new OneDrive({
-        userAgent: APP_USER_AGENT,
-        auth,
-        log,
+        tenant: source.tenantId,
+        logFields: {
+          project: `${org}/${site}`,
+          operation: `${info.route} ${resourcePath}`,
+        },
+        env: this.env,
+        log: this.log,
       });
     }
     return attributes.onedrive;

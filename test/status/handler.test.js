@@ -15,9 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import {
-  Nock, SITE_CONFIG, ORG_CONFIG,
-} from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Status Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -27,7 +25,6 @@ describe('Status Handler Tests', () => {
     nock = new Nock().env();
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -37,7 +34,9 @@ describe('Status Handler Tests', () => {
   it('return 405 with method not allowed', async () => {
     const suffix = '/org/sites/site/status/document';
 
-    const result = await main(new Request('https://localhost/', { method: 'PUT' }), {
+    const result = await main(new Request('https://api.aem.live/', {
+      method: 'PUT',
+    }), {
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),

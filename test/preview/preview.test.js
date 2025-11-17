@@ -21,7 +21,7 @@ import { HANDLERS } from '../../src/contentproxy/index.js';
 import { main } from '../../src/index.js';
 import purge from '../../src/cache/purge.js';
 import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Preview Action Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -52,7 +52,6 @@ describe('Preview Action Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -64,7 +63,7 @@ describe('Preview Action Tests', () => {
     const suffix = `/org/sites/site/preview${path}`;
     const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}?${query}`, {
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       method: 'POST',
       headers: {
         'x-request-id': 'rid',
@@ -115,14 +114,6 @@ describe('Preview Action Tests', () => {
   it('reports an error when `contentBusUpdate` returns 404 and no redirect matches', async () => {
     sandbox.stub(contentproxy, 'handle')
       .returns(new Response('', { status: 404 }));
-
-    nock.content()
-      .head('/preview/index.md')
-      .reply(404)
-      .putObject('/preview/index.md')
-      .reply(201)
-      .head('/preview/index.md')
-      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
     const { request, context } = setupTest('/');
     const response = await main(request, context);
@@ -216,8 +207,6 @@ describe('Preview Action Tests', () => {
     nock.content()
       .head('/preview/redirects.json')
       .reply(404)
-      .getObject('/preview/redirects.json')
-      .reply(404)
       .putObject('/preview/redirects.json')
       .reply(201)
       .head('/preview/redirects.json')
@@ -247,8 +236,6 @@ describe('Preview Action Tests', () => {
     nock.content()
       .head('/preview/metadata.json')
       .reply(404)
-      .getObject('/preview/metadata.json')
-      .reply(404)
       .putObject('/preview/metadata.json')
       .reply(201)
       .head('/preview/metadata.json')
@@ -266,14 +253,8 @@ describe('Preview Action Tests', () => {
       .rejects(new Error());
 
     nock.content()
-      .head('/preview/redirects.json')
-      .reply(404)
       .getObject('/preview/redirects.json')
-      .reply(404)
-      .putObject('/preview/redirects.json')
-      .reply(201)
-      .head('/preview/redirects.json')
-      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+      .reply(404);
 
     const { request, context } = setupTest(REDIRECTS_JSON_PATH);
     const response = await main(request, context);
@@ -302,8 +283,6 @@ describe('Preview Action Tests', () => {
       .putObject(`/${hash}`)
       .reply(201);
     nock.content()
-      .head('/preview/image.png')
-      .reply(404)
       .putObject('/preview/image.png')
       .reply(201, function fn() {
         assert.strictEqual(this.req.headers['x-amz-meta-redirect-location'], `/media_${hash}.png`);

@@ -16,7 +16,7 @@ import { Request } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Google Integration Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -27,7 +27,6 @@ describe('Google Integration Tests', () => {
     GoogleClient.setItemCacheOptions({ max: 1000 });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -38,7 +37,7 @@ describe('Google Integration Tests', () => {
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}?${query}`, {
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       headers: {
         'x-request-id': 'rid',
       },

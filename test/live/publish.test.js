@@ -21,7 +21,7 @@ import purge from '../../src/cache/purge.js';
 import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { main } from '../../src/index.js';
 import sitemap from '../../src/sitemap/update.js';
-import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Publish Action Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -51,7 +51,6 @@ describe('Publish Action Tests', () => {
     });
 
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -89,43 +88,7 @@ describe('Publish Action Tests', () => {
     return { request, context };
   }
 
-  describe('no indexing or sitemap configuration', () => {
-    beforeEach(() => {
-      nock.indexConfig(null);
-      nock.sitemapConfig(null);
-      nock.content()
-        .head('/live/sitemap.json')
-        .reply(200, [])
-        .putObject('/live/sitemap.json')
-        .reply(201);
-    });
-
-    it('publish document', async () => {
-      nock.content()
-        .head('/preview/index.md')
-        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
-        .copyObject('/live/index.md')
-        .reply(200, new xml2js.Builder().buildObject({
-          CopyObjectResult: {
-            LastModified: '2021-05-05T08:37:23.000Z',
-            ETag: '"f278c0035a9b4398629613a33abe6451"',
-          },
-        }))
-        .head('/live/index.md')
-        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
-
-      const { request, context } = setupTest('/');
-      const response = await main(request, context);
-
-      assert.strictEqual(response.status, 200);
-      assert.deepStrictEqual(purgeInfos, [
-        { path: '/' },
-        { path: '/index.plain.html' },
-        { key: 'DiyvKbkf2MaZORJJ' },
-        { key: '8lnjgOWBwsoqAQXB' },
-      ]);
-    });
-
+  describe('documents that do not trigger index update', () => {
     it('publish redirects', async () => {
       nock.content()
         .head('/preview/redirects.json')
@@ -166,15 +129,6 @@ describe('Publish Action Tests', () => {
             ETag: '"f278c0035a9b4398629613a33abe6451"',
           },
         }))
-        .getObject('/live/redirects.json')
-        .reply(200, {
-          default: {
-            data: {
-              source: '/from',
-              destination: '/to',
-            },
-          },
-        })
         .head('/live/redirects.json')
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
@@ -186,27 +140,6 @@ describe('Publish Action Tests', () => {
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
-    });
-
-    it('publish metadata', async () => {
-      nock.content()
-        .head('/preview/metadata.json')
-        .reply(200)
-        .copyObject('/live/metadata.json')
-        .reply(200, new xml2js.Builder().buildObject({
-          CopyObjectResult: {
-            LastModified: '2021-05-05T08:37:23.000Z',
-            ETag: '"f278c0035a9b4398629613a33abe6451"',
-          },
-        }))
-        .head('/live/metadata.json')
-        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
-
-      const { request, context } = setupTest(METADATA_JSON_PATH);
-      const response = await main(request, context);
-
-      assert.strictEqual(response.status, 200);
-      assert.deepStrictEqual(surrogates, ['U_NW4adJU7Qazf-I']);
     });
 
     it('reports an error when `contentBusCopy` returns 404', async () => {
@@ -231,6 +164,68 @@ describe('Publish Action Tests', () => {
         'x-error': `source does not exist: helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md`,
       });
     });
+  });
+
+  describe('sitemap, but no indexing configuration', () => {
+    const SITEMAP_CONFIG = `
+    version: 1
+    sitemaps:
+      default:
+        source: /sitemap-index.json
+        destination: /sitemap.xml
+    `;
+
+    beforeEach(() => {
+      nock.indexConfig(null);
+      nock.sitemapConfig(SITEMAP_CONFIG);
+    });
+
+    it('publish document', async () => {
+      nock.content()
+        .head('/preview/index.md')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
+        .copyObject('/live/index.md')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
+        .head('/live/index.md')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+      const { request, context } = setupTest('/');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(purgeInfos, [
+        { path: '/' },
+        { path: '/index.plain.html' },
+        { key: 'DiyvKbkf2MaZORJJ' },
+        { key: '8lnjgOWBwsoqAQXB' },
+      ]);
+    });
+
+    it('publish metadata', async () => {
+      nock.content()
+        .head('/preview/metadata.json')
+        .reply(200)
+        .copyObject('/live/metadata.json')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
+        .head('/live/metadata.json')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+      const { request, context } = setupTest(METADATA_JSON_PATH);
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(surrogates, ['U_NW4adJU7Qazf-I']);
+    });
 
     it('tweaks status when `contentBusCopy` returns 404 and a redirect matches', async () => {
       nock.content()
@@ -243,13 +238,14 @@ describe('Publish Action Tests', () => {
             Message: 'The specified key does not exist.',
           },
         }))
+        .head('/live/index.md')
+        .reply(404)
         .putObject('/live/index.md')
         .reply(201, function fn(uri, body) {
           assert.strictEqual(this.req.headers['x-amz-meta-redirect-location'], '/target');
           assert.strictEqual(body, '/target');
         })
         .head('/live/index.md')
-        .twice()
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
       const { request, context } = setupTest('/', {

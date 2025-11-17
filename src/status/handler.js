@@ -12,7 +12,10 @@
 import { Response } from '@adobe/fetch';
 import status from './status.js';
 
-const ALLOWED_METHODS = ['GET', 'POST'];
+/**
+ * Allowed methods for that handler
+ */
+const ALLOWED_METHODS = ['GET'];
 
 /**
  * Handles status requests.

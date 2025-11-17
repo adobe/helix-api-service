@@ -17,7 +17,7 @@ import { promisify } from 'util';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 const gunzipAsync = promisify(gunzip);
 
@@ -51,8 +51,6 @@ describe('Markup Integration Tests', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -69,7 +67,7 @@ describe('Markup Integration Tests', () => {
     const suffix = `/org/sites/site/contentproxy${path}`;
     const query = new URLSearchParams(data);
 
-    const request = new Request(`https://localhost${suffix}?${query}`, {
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       headers: {
         'x-request-id': 'rid',
         ...headers,

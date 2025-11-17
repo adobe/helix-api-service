@@ -14,9 +14,7 @@ import assert from 'assert';
 
 import SitemapLanguage from '../../src/sitemap/language.js';
 import SitemapOutput from '../../src/sitemap/output.js';
-import {
-  createContext, Nock, SITE_CONFIG, ORG_CONFIG,
-} from '../utils.js';
+import { createContext, Nock } from '../utils.js';
 
 describe('Sitemap Output tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -24,9 +22,6 @@ describe('Sitemap Output tests', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-
-    nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {

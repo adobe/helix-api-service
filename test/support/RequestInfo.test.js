@@ -96,13 +96,13 @@ describe('RequestInfo Tests', () => {
   it('check RequestInfo creation', () => {
     // deny .aspx
     assert.throws(
-      () => RequestInfo.create(new Request('http:/localhost'), { org: 'org', path: '/test.aspx' }),
+      () => RequestInfo.create(new Request('http:/api.aem.live'), { org: 'org', path: '/test.aspx' }),
       new StatusCodeError('', 404),
     );
   });
 
   it('check cookies', () => {
-    const info = RequestInfo.create(new Request('http:/localhost', {
+    const info = RequestInfo.create(new Request('http:/api.aem.live', {
       headers: {
         cookie: 'key1=value1; key2=value2',
       },

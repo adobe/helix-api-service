@@ -13,8 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { main } from '../src/index.js';
-import { table } from '../src/router/table.js';
+import { main, router } from '../src/index.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
 import { AuthInfo } from '../src/auth/auth-info.js';
 
@@ -143,10 +142,10 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(await result.json(), {
       edit: {},
       links: {
-        code: '/org/sites/site/code/main/document',
-        live: '/org/sites/site/live/document',
-        preview: '/org/sites/site/preview/document',
-        status: '/org/sites/site/status/document',
+        code: 'https://api.aem.live/org/sites/site/code/main/document',
+        live: 'https://api.aem.live/org/sites/site/live/document',
+        preview: 'https://api.aem.live/org/sites/site/preview/document',
+        status: 'https://api.aem.live/org/sites/site/status/document',
       },
       live: {
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/document.md`,
@@ -296,7 +295,7 @@ describe('Index Tests', () => {
     }];
 
     entries.forEach((entry) => {
-      const { variables } = table.match(entry.suffix) ?? {};
+      const { variables } = router.match(entry.suffix) ?? {};
       assert.deepStrictEqual(variables, entry.variables);
     });
   });

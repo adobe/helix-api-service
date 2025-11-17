@@ -102,10 +102,10 @@ describe('Status Handler Tests', () => {
         status: 403,
       },
       links: {
-        code: '/org/sites/site/code/main/',
-        live: '/org/sites/site/live/',
-        preview: '/org/sites/site/preview/',
-        status: '/org/sites/site/status/',
+        code: 'https://api.aem.live/org/sites/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
       },
       live: {
         error: 'forbidden',
@@ -180,10 +180,10 @@ describe('Status Handler Tests', () => {
         status: 200,
       },
       links: {
-        code: '/org/sites/site/code/main/folder/page',
-        live: '/org/sites/site/live/folder/page',
-        preview: '/org/sites/site/preview/folder/page',
-        status: '/org/sites/site/status/folder/page',
+        code: 'https://api.aem.live/org/sites/site/code/main/folder/page',
+        live: 'https://api.aem.live/org/sites/site/live/folder/page',
+        preview: 'https://api.aem.live/org/sites/site/preview/folder/page',
+        status: 'https://api.aem.live/org/sites/site/status/folder/page',
       },
       live: {
         url: 'https://main--site--org.aem.live/folder/page',
@@ -265,10 +265,10 @@ describe('Status Handler Tests', () => {
         url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
       },
       links: {
-        code: '/org/sites/site/code/main/',
-        live: '/org/sites/site/live/',
-        preview: '/org/sites/site/preview/',
-        status: '/org/sites/site/status/',
+        code: 'https://api.aem.live/org/sites/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
       },
       live: {
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md`,

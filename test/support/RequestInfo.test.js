@@ -96,7 +96,11 @@ describe('RequestInfo Tests', () => {
   it('check RequestInfo creation', () => {
     // deny .aspx
     assert.throws(
-      () => RequestInfo.create(new Request('http:/api.aem.live'), { org: 'org', path: '/test.aspx' }),
+      () => RequestInfo.create(
+        new Request('http:/api.aem.live'),
+        undefined,
+        { org: 'org', path: '/test.aspx' },
+      ),
       new StatusCodeError('', 404),
     );
   });

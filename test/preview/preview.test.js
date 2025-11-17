@@ -150,10 +150,10 @@ describe('Preview Action Tests', () => {
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
       links: {
-        code: '/org/sites/site/code/main/',
-        live: '/org/sites/site/live/',
-        preview: '/org/sites/site/preview/',
-        status: '/org/sites/site/status/',
+        code: 'https://api.aem.live/org/sites/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
       },
       preview: {
         configRedirectLocation: '/target',

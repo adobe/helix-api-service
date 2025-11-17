@@ -45,11 +45,9 @@ describe('Source PUT Tests', () => {
   }
 
   it('test putSource with existing resource (has ID)', async () => {
-    let putCalled;
     async function putFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
       assert.equal(b.toString(), '<html><body>Hello</body></html>');
-      putCalled = true;
     }
 
     nock.source()
@@ -71,7 +69,6 @@ describe('Source PUT Tests', () => {
     const resp = await putSource(context, createInfo(path));
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
-    assert.ok(putCalled, 'put should have been called');
   });
 
   it('test putSource with new resource (generates new ID)', async () => {
@@ -82,6 +79,9 @@ describe('Source PUT Tests', () => {
       assert.deepStrictEqual(body, { something: 'else' });
     }
 
+    nock.source()
+      .headObject('/myorg/mysite/data/test.json')
+      .reply(404);
     nock.source()
       .putObject('/myorg/mysite/data/test.json')
       .matchHeader('content-type', 'application/json')
@@ -102,6 +102,9 @@ describe('Source PUT Tests', () => {
   });
 
   it('test putSource handles bucket.put error with metadata statuscode', async () => {
+    nock.source()
+      .headObject('/test/test/test.html')
+      .reply(200);
     nock.source()
       .putObject('/test/test/test.html')
       .reply(403);
@@ -169,6 +172,10 @@ describe('Source PUT Tests', () => {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
       assert.equal(b.toString(), '<html>New content</html>');
     }
+
+    nock.source()
+      .headObject('/test/test/new.html')
+      .reply(404);
     nock.source()
       .putObject('/test/test/new.html')
       .matchHeader('x-amz-meta-id', 'provided-id-456')

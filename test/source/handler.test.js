@@ -36,7 +36,6 @@ describe('Source Handler Tests', () => {
   beforeEach(() => {
     nock = new Nock().env();
     nock.siteConfig(SITE_CONFIG);
-    nock.orgConfig(ORG_CONFIG);
   });
 
   afterEach(() => {
@@ -115,6 +114,9 @@ describe('Source Handler Tests', () => {
       assert.equal(b.toString(), '<body><main>Yo!</main></body>');
     }
 
+    nock.source()
+      .headObject('/org/site/a/b/c.html')
+      .reply(200);
     nock.source()
       .putObject('/org/site/a/b/c.html')
       .matchHeader('x-amz-meta-users', '[{"email":"anonymous"}]')

@@ -90,19 +90,13 @@ describe('Source GET Tests', () => {
   });
 
   it('test headSource returns 404 when not found', async () => {
-    let headCalled;
-    function headFn() {
-      headCalled = true;
-    }
-
     nock.source()
       .headObject('/test/site/missing.html')
-      .reply(404, headFn);
+      .reply(404);
     const info = createInfo('/test/sites/site/source/missing.html');
 
     const resp = await headSource(context, info);
     assert.equal(resp.status, 404);
-    assert.ok(headCalled);
   });
 
   it('test getSource handles error', async () => {

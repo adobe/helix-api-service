@@ -74,14 +74,22 @@ export default class Router {
     return null;
   }
 
-  fill(name, variables) {
+  /**
+   * Returns the external path for a route with some variables
+   * to fill in the variable segments traversing.
+   *
+   * @param {string} name route name
+   * @param {Map} variables variables
+   * @returns {string} external path
+   */
+  external(name, variables) {
     /** @type {Node} */
     const route = this.#routes.get(name);
     if (!route) {
       throw new Error(`route not found: ${name}`);
     }
     const segs = [];
-    route.fill(segs, variables);
+    route.external(segs, variables);
     return segs.join('/');
   }
 }

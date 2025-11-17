@@ -313,8 +313,7 @@ export class RequestInfo {
    * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
-   * @param {import('../router/router.js')} router router
-   * @poram
+   * @param {import('../router/router.js').default} router router
    * @param {object} param0 params
    * @param {string} [param0.org] org, optional
    * @param {string} [param0.site] site, optional
@@ -390,7 +389,8 @@ export class RequestInfo {
       ref: this.ref,
     };
     routes.forEach((name) => {
-      links[name] = this.getLinkUrl(this.#router.fill(name, variables));
+      const path = this.#router.external(name, variables);
+      links[name] = this.getLinkUrl(path);
     });
     return links;
   }

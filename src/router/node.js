@@ -131,7 +131,15 @@ export class Node {
     return null;
   }
 
-  fill(segs, variables) {
+  /**
+   * Returns the external path by traversing from a leaf back
+   * to the root.
+   *
+   * @param {string[]} segs path segments to collect
+   * @param {Map} variables variables
+   * @returns {void}
+   */
+  external(segs, variables) {
     const label = this.#label;
 
     switch (this.#type) {
@@ -147,6 +155,6 @@ export class Node {
       default:
         break;
     }
-    this.#parent?.fill(segs, variables);
+    this.#parent?.external(segs, variables);
   }
 }

@@ -14,14 +14,15 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { getSource, headSource } from '../../src/source/get.js';
-import { Nock } from '../utils.js';
+import { createContext, createInfo, Nock } from '../utils.js';
 
 describe('Source GET Tests', () => {
+  let context;
   /** @type {import('../utils.js').NockEnv} */
   let nock;
-  const context = { attributes: {}, env: {}, log: console };
 
   beforeEach(() => {
+    context = createContext();
     nock = new Nock().env();
   });
 
@@ -40,11 +41,7 @@ describe('Source GET Tests', () => {
         'x-amz-meta-id': '999',
       });
 
-    const info = {
-      org: 'test',
-      site: 'rest',
-      resourcePath: '/toast/jam.html',
-    };
+    const info = createInfo('/test/sites/rest/source/toast/jam.html');
     const resp = await getSource(context, info);
     assert.equal(await resp.text(), 'The body');
     assert.equal(resp.status, 200);
@@ -61,11 +58,8 @@ describe('Source GET Tests', () => {
     nock.source()
       .getObject('/test/site/not/there.html')
       .reply(404);
-    const info = {
-      org: 'test',
-      site: 'site',
-      resourcePath: '/not/there.html',
-    };
+
+    const info = createInfo('/test/sites/site/source/not/there.html');
     const resp = await getSource(context, info);
     assert.equal(resp.status, 404);
     assert.equal(resp.headers.get('x-error'), null, '404 is not an error');
@@ -81,11 +75,7 @@ describe('Source GET Tests', () => {
         'last-modified': new Date(1666666666666).toUTCString(),
         'x-amz-meta-id': 'doc-id-456',
       });
-    const info = {
-      org: 'myorg',
-      site: 'mysite',
-      resourcePath: '/document.html',
-    };
+    const info = createInfo('/myorg/sites/mysite/source/document.html');
 
     const resp = await headSource(context, info);
     assert.equal(resp.status, 200);
@@ -100,28 +90,26 @@ describe('Source GET Tests', () => {
   });
 
   it('test headSource returns 404 when not found', async () => {
+    let headCalled;
+    function headFn() {
+      headCalled = true;
+    }
+
     nock.source()
       .headObject('/test/site/missing.html')
-      .reply(404);
-    const info = {
-      org: 'test',
-      site: 'site',
-      resourcePath: '/missing.html',
-    };
+      .reply(404, headFn);
+    const info = createInfo('/test/sites/site/source/missing.html');
 
     const resp = await headSource(context, info);
     assert.equal(resp.status, 404);
+    assert.ok(headCalled);
   });
 
   it('test getSource handles error', async () => {
     nock.source()
       .getObject('/test/site/forbidden.html')
       .reply(403);
-    const info = {
-      org: 'test',
-      site: 'site',
-      resourcePath: '/forbidden.html',
-    };
+    const info = createInfo('/test/sites/site/source/forbidden.html');
 
     const resp = await getSource(context, info);
     assert.equal(resp.status, 403);
@@ -131,11 +119,7 @@ describe('Source GET Tests', () => {
     nock.source()
       .headObject('/test/site/error.html')
       .replyWithError('Oh no!');
-    const info = {
-      org: 'test',
-      site: 'site',
-      resourcePath: '/error.html',
-    };
+    const info = createInfo('/test/sites/site/source/error.html');
     const resp = await headSource(context, info);
     assert.equal(resp.status, 500);
     assert.equal('Oh no!', await resp.headers.get('x-error'));
@@ -152,11 +136,7 @@ describe('Source GET Tests', () => {
         'x-amz-meta-id': 'json-id',
       });
 
-    const info = {
-      org: 'org',
-      site: 'site',
-      resourcePath: '/data.json',
-    };
+    const info = createInfo('/org/sites/site/source/data.json');
     const resp = await getSource(context, info);
 
     assert.equal(resp.status, 200);

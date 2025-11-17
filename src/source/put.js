@@ -32,7 +32,7 @@ function contentTypeFromExtension(ext) {
     return contentType;
   }
   const e = new Error(`Unknown file type: ${ext}`);
-  e.$metadata = { httpStatusCode: 400 };
+  e.$metadata = { httpStatusCode: 415 };
   throw e;
 }
 
@@ -44,7 +44,7 @@ function contentTypeFromExtension(ext) {
  * @return {Array<{email: string, user_id?: string}>} users
  */
 function getUsers(context) {
-  const profile = context.attributes?.authInfo?.profile;
+  const profile = context.attributes.authInfo?.profile;
   if (!profile) {
     return [{ email: 'anonymous' }];
   }

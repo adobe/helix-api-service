@@ -50,19 +50,19 @@ async function accessSource(context, info, headRequest) {
       const head = await bucket.head(path);
       if (!head) {
         return new Response('', { status: 404 });
-      } else {
-        const headers = getHeaders(head, head.ContentLength, head.Metadata.id);
-        return new Response('', { status: head.$metadata.httpStatusCode, headers });
       }
+
+      const headers = getHeaders(head, head.ContentLength, head.Metadata.id);
+      return new Response('', { status: head.$metadata.httpStatusCode, headers });
     } else {
       const meta = {};
       const body = await bucket.get(path, meta);
       if (!body) {
         return new Response('', { status: 404 });
-      } else {
-        const headers = getHeaders(meta, body.length, meta.id);
-        return new Response(body, { status: 200, headers });
       }
+
+      const headers = getHeaders(meta, body.length, meta.id);
+      return new Response(body, { status: 200, headers });
     }
   } catch (e) {
     const opts = { e, log };

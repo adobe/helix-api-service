@@ -16,27 +16,33 @@ import assert from 'assert';
 import { promisify } from 'util';
 import zlib from 'zlib';
 import { putSource } from '../../src/source/put.js';
-import { Nock } from '../utils.js';
+import { createContext, createInfo, Nock } from '../utils.js';
 
 const gunzip = promisify(zlib.gunzip);
 
 describe('Source PUT Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
-  let context;
 
   beforeEach(() => {
-    context = {
-      attributes: {},
-      env: { HELIX_STORAGE_DISABLE_R2: 'true' },
-      log: console,
-    };
     nock = new Nock().env();
   });
 
   afterEach(() => {
     nock.done();
   });
+
+  function setupContext(suffix, {
+    attributes = {}, data = {},
+  } = {}) {
+    return createContext(suffix, {
+      attributes,
+      data,
+      env: {
+        HELIX_STORAGE_DISABLE_R2: 'true',
+      },
+    });
+  }
 
   it('test putSource with existing resource (has ID)', async () => {
     let putCalled;
@@ -59,15 +65,10 @@ describe('Source PUT Tests', () => {
       .matchHeader('x-amz-meta-id', 'existing-id-123')
       .reply(201, putFn);
 
-    context.data = { data: '<html><body>Hello</body></html>' };
-    const info = {
-      org: 'tst',
-      site: 'best',
-      resourcePath: '/toast/jam.html',
-      ext: '.html',
-    };
+    const path = '/tst/sites/best/source/toast/jam.html';
+    const context = setupContext(path, { data: { data: '<html><body>Hello</body></html>' } });
 
-    const resp = await putSource(context, info);
+    const resp = await putSource(context, createInfo(path));
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
     assert.ok(putCalled, 'put should have been called');
@@ -86,29 +87,18 @@ describe('Source PUT Tests', () => {
       .matchHeader('content-type', 'application/json')
       .reply(201, putFn);
 
-    context.data = { data: '{"something":"else"}' };
-    const info = {
-      org: 'myorg',
-      site: 'mysite',
-      resourcePath: '/data/test.json',
-      ext: '.json',
-    };
+    const path = '/myorg/sites/mysite/source/data/test.json';
+    const context = setupContext(path, { data: { data: '{"something":"else"}' } });
 
-    const resp = await putSource(context, info);
+    const resp = await putSource(context, createInfo(path));
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), generatedId);
   });
 
   it('test putSource with unknown file extension returns 400', async () => {
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/file.bin',
-      ext: '.bin',
-    };
-
-    const resp = await putSource(context, info);
-    assert.equal(resp.status, 400);
+    const path = '/test/sites/eest/source/file.bin';
+    const resp = await putSource(setupContext(path), createInfo(path));
+    assert.equal(resp.status, 415);
   });
 
   it('test putSource handles bucket.put error with metadata statuscode', async () => {
@@ -116,14 +106,8 @@ describe('Source PUT Tests', () => {
       .putObject('/test/test/test.html')
       .reply(403);
 
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/test.html',
-      ext: '.html',
-    };
-
-    const resp = await putSource(context, info);
+    const path = '/test/sites/test/source/test.html';
+    const resp = await putSource(setupContext(path), createInfo(path));
     assert.equal(resp.status, 403);
   });
 
@@ -144,18 +128,15 @@ describe('Source PUT Tests', () => {
       .putObject('/test/test/test.html')
       .reply(204, putFn);
 
-    context.data = {
-      data: '<html>Updated content</html>',
-      guid: 'existing-id-123',
-    };
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/test.html',
-      ext: '.html',
-    };
+    const path = '/test/sites/test/source/test.html';
+    const context = setupContext(path, {
+      data: {
+        data: '<html>Updated content</html>',
+        guid: 'existing-id-123',
+      },
+    });
 
-    const resp = await putSource(context, info);
+    const resp = await putSource(context, createInfo(path));
     assert.equal(resp.status, 204);
     assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
   });
@@ -169,18 +150,15 @@ describe('Source PUT Tests', () => {
         'x-amz-meta-id': 'existing-id-123',
       });
 
-    context.data = {
-      data: 'Updated content',
-      guid: 'wrong-id',
-    };
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/test.html',
-      ext: '.html',
-    };
+    const path = '/test/sites/test/source/test.html';
+    const context = setupContext(path, {
+      data: {
+        data: 'Updated content',
+        guid: 'wrong-id',
+      },
+    });
 
-    const resp = await putSource(context, info);
+    const resp = await putSource(context, createInfo(path));
     assert.equal(resp.status, 409);
     const text = await resp.text();
     assert.ok(text.includes('ID mismatch'));
@@ -197,26 +175,23 @@ describe('Source PUT Tests', () => {
       .matchHeader('x-amz-meta-users', '[{"email":"test@example.com","user_id":"user-123.e"}]')
       .reply(200, putFn);
 
-    context.attributes = {
-      authInfo: {
-        profile: {
-          email: 'test@example.com',
-          user_id: 'user-123.e',
+    const path = '/test/sites/test/source/new.html';
+    const context = setupContext(path, {
+      data: {
+        data: '<html>New content</html>',
+        guid: 'provided-id-456',
+      },
+      attributes: {
+        authInfo: {
+          profile: {
+            email: 'test@example.com',
+            user_id: 'user-123.e',
+          },
         },
       },
-    };
-    context.data = {
-      data: '<html>New content</html>',
-      guid: 'provided-id-456',
-    };
-    const info = {
-      org: 'test',
-      site: 'test',
-      resourcePath: '/new.html',
-      ext: '.html',
-    };
+    });
 
-    const resp = await putSource(context, info);
+    const resp = await putSource(context, createInfo(path));
     // When guid is provided for non-existent resource, it uses the provided guid
     assert.equal(resp.status, 201);
     assert.equal(resp.headers.get('x-da-id'), 'provided-id-456');

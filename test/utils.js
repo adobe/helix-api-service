@@ -16,7 +16,7 @@ import xml2js from 'xml2js';
 import { Headers, Request } from '@adobe/fetch';
 
 import { AuthInfo } from '../src/auth/auth-info.js';
-import { router } from '../src/index.js';
+import { table } from '../src/router/table.js';
 import { AdminContext } from '../src/support/AdminContext.js';
 import { RequestInfo } from '../src/support/RequestInfo.js';
 import { GoogleNock } from './nocks/google.js';
@@ -251,5 +251,5 @@ export function createContext(suffix, {
 export function createInfo(suffix, headers = {}) {
   return RequestInfo.create(new Request('http://api.aem.live/', {
     headers,
-  }), router.match(suffix).variables);
+  }), table.match(suffix).variables);
 }

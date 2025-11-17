@@ -257,6 +257,12 @@ describe('Publish Action Tests', () => {
 
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), {
+        links: {
+          code: '/org/sites/site/code/main/',
+          live: '/org/sites/site/live/',
+          preview: '/org/sites/site/preview/',
+          status: '/org/sites/site/status/',
+        },
         live: {
           configRedirectLocation: '/target',
           contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md`,

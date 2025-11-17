@@ -112,7 +112,7 @@ export default async function status(context, info) {
     live: await getLiveInfo(context, info),
     preview: await getPreviewInfo(context, info),
     edit,
-    // TODO links: getAPIUrls(context, info, 'status', 'preview', 'live', 'code'),
+    links: info.getAPIUrls('status', 'preview', 'live', 'code'),
   };
 
   if (authInfo.profile) {

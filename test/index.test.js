@@ -13,7 +13,8 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { main, router } from '../src/index.js';
+import { main } from '../src/index.js';
+import { table } from '../src/router/table.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
 import { AuthInfo } from '../src/auth/auth-info.js';
 
@@ -141,6 +142,12 @@ describe('Index Tests', () => {
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       edit: {},
+      links: {
+        code: '/org/sites/site/code/main/document',
+        live: '/org/sites/site/live/document',
+        preview: '/org/sites/site/preview/document',
+        status: '/org/sites/site/status/document',
+      },
       live: {
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/document.md`,
         contentType: 'text/plain; charset=utf-8',
@@ -289,7 +296,7 @@ describe('Index Tests', () => {
     }];
 
     entries.forEach((entry) => {
-      const { variables } = router.match(entry.suffix) ?? {};
+      const { variables } = table.match(entry.suffix) ?? {};
       assert.deepStrictEqual(variables, entry.variables);
     });
   });

@@ -65,6 +65,12 @@ describe('Preview Info Tests', () => {
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
+      links: {
+        code: '/org/sites/site/code/main/document',
+        live: '/org/sites/site/live/document',
+        preview: '/org/sites/site/preview/document',
+        status: '/org/sites/site/status/document',
+      },
       preview: {
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/document.md`,
         contentType: 'text/plain; charset=utf-8',

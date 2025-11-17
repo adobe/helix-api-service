@@ -13,6 +13,7 @@
 
 import { parse } from 'cookie';
 import { sanitizeName } from '@adobe/helix-shared-string';
+import { table } from '../router/table.js';
 import { StatusCodeError } from './StatusCodeError.js';
 
 /**
@@ -373,6 +374,20 @@ export class RequestInfo {
       });
     }
     return url.href;
+  }
+
+  getAPIUrls(...routes) {
+    const links = {};
+    const variables = {
+      org: this.org,
+      site: this.site,
+      path: this.webPath.slice(1),
+      ref: this.ref,
+    };
+    routes.forEach((name) => {
+      links[name] = table.fill(name, variables);
+    });
+    return links;
   }
 
   toResourcePath() {

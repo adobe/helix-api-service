@@ -31,7 +31,7 @@ export default class Router {
   #routes;
 
   constructor(nameSelector) {
-    this.#root = new Node('', (info, segs) => segs.push(''));
+    this.#root = new Node('');
     this.#nameSelector = nameSelector;
     this.#routes = new Map();
   }
@@ -72,5 +72,16 @@ export default class Router {
       return { handler, variables: Object.fromEntries(variables) };
     }
     return null;
+  }
+
+  fill(name, variables) {
+    /** @type {Node} */
+    const route = this.#routes.get(name);
+    if (!route) {
+      throw new Error(`route not found: ${name}`);
+    }
+    const segs = [];
+    route.fill(segs, variables);
+    return segs.join('/');
   }
 }

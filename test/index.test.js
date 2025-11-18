@@ -141,6 +141,12 @@ describe('Index Tests', () => {
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
       edit: {},
+      links: {
+        code: 'https://api.aem.live/org/sites/site/code/main/document',
+        live: 'https://api.aem.live/org/sites/site/live/document',
+        preview: 'https://api.aem.live/org/sites/site/preview/document',
+        status: 'https://api.aem.live/org/sites/site/status/document',
+      },
       live: {
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/document.md`,
         contentType: 'text/plain; charset=utf-8',

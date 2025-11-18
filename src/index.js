@@ -57,9 +57,6 @@ const nameSelector = (segs) => {
   return literals.join('-');
 };
 
-/**
- * Routing table.
- */
 export const router = new Router(nameSelector)
   .add('/auth/*', auth)
   .add('/discover', discover)
@@ -105,7 +102,7 @@ async function run(request, context) {
   if (!handler) {
     return new Response('', { status: 404 });
   }
-  const info = RequestInfo.create(request, variables);
+  const info = RequestInfo.create(request, router, variables);
   if (info.method === 'OPTIONS') {
     return new Response('', {
       status: 204,

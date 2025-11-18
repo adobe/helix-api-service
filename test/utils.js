@@ -249,7 +249,8 @@ export function createContext(suffix, {
  * @returns {RequestInfo} info
  */
 export function createInfo(suffix, headers = {}) {
+  const { variables } = router.match(suffix);
   return RequestInfo.create(new Request('http://api.aem.live/', {
     headers,
-  }), router.match(suffix).variables);
+  }), router, variables);
 }

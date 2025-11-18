@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/adobe/helix-api-service/compare/v1.16.0...v1.16.1) (2025-11-18)
+
+
+### Bug Fixes
+
+* implement `getAPIUrls` ([#39](https://github.com/adobe/helix-api-service/issues/39)) ([580696c](https://github.com/adobe/helix-api-service/commit/580696ca1c0f68bfa3a64bd5d053b0a1e917c37a))
+
 # [1.16.0](https://github.com/adobe/helix-api-service/compare/v1.15.2...v1.16.0) (2025-11-15)
 
 

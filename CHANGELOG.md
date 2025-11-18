@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/adobe/helix-api-service/compare/v1.16.1...v1.16.2) (2025-11-18)
+
+
+### Bug Fixes
+
+* **auth:** access config is in `config.access` ([504beb1](https://github.com/adobe/helix-api-service/commit/504beb1dc9014b169cca848a3266a4bb25b938ee))
+
 ## [1.16.1](https://github.com/adobe/helix-api-service/compare/v1.16.0...v1.16.1) (2025-11-18)
 
 

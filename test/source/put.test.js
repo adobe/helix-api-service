@@ -104,7 +104,10 @@ describe('Source PUT Tests', () => {
   it('test putSource handles bucket.put error with metadata statuscode', async () => {
     nock.source()
       .headObject('/test/test/test.html')
-      .reply(200);
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'last-modified': new Date().toUTCString(),
+      });
     nock.source()
       .putObject('/test/test/test.html')
       .reply(403);

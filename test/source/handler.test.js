@@ -18,7 +18,7 @@ import zlib from 'zlib';
 import { Headers, Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG, ORG_CONFIG } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 const gunzip = promisify(zlib.gunzip);
 
@@ -116,7 +116,10 @@ describe('Source Handler Tests', () => {
 
     nock.source()
       .headObject('/org/site/a/b/c.html')
-      .reply(200);
+      .reply(200, null, {
+        'content-type': 'text/html',
+        'last-modified': new Date().toUTCString(),
+      });
     nock.source()
       .putObject('/org/site/a/b/c.html')
       .matchHeader('x-amz-meta-users', '[{"email":"anonymous"}]')

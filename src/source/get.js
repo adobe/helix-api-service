@@ -66,7 +66,7 @@ async function accessSource(context, info, headRequest) {
     }
   } catch (e) {
     const opts = { e, log };
-    opts.status = e?.$metadata?.httpStatusCode;
+    opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }
 }

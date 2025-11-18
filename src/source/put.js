@@ -94,7 +94,7 @@ export async function putSource(context, info) {
     return new Response('', { status, headers: { 'x-da-id': ID } });
   } catch (e) {
     const opts = { e, log };
-    opts.status = e?.$metadata?.httpStatusCode;
+    opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }
 }

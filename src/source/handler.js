@@ -38,7 +38,7 @@ export default async function handle(context, info) {
     const opts = {
       e,
       log: context.log,
-      status: e?.$metadata?.httpStatusCode,
+      status: e.$metadata?.httpStatusCode,
     };
     return createErrorResponse(opts);
   }

@@ -50,7 +50,7 @@ describe('Source PUT Tests', () => {
     nock.source()
       .putObject('/tst/best/toast/jam.html')
       .matchHeader('content-type', 'text/html')
-      .matchHeader('x-amz-meta-users', '[{"email":"test@example.com","user_id":"user-123.e"}]')
+      .matchHeader('x-amz-meta-last-modified-by', 'test@example.com')
       .reply(201, putFn);
 
     const path = '/tst/sites/best/source/toast/jam.html';
@@ -80,6 +80,7 @@ describe('Source PUT Tests', () => {
     nock.source()
       .putObject('/myorg/mysite/data/test.json')
       .matchHeader('content-type', 'application/json')
+      .matchHeader('x-amz-meta-last-modified-by', 'anonymous')
       .reply(201, putFn);
 
     const path = '/myorg/sites/mysite/source/data/test.json';

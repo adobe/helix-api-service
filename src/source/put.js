@@ -36,22 +36,16 @@ function contentTypeFromExtension(ext) {
 }
 
 /**
- * Get the users from the context and return an array of objects with email and user_id.
- * If no users are found, return an array with email 'anonymous'.
+ * Get the user from the context and return their email.
+ * If no user is found, return 'anonymous'.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @return {Array<{email: string, user_id?: string}>} users
+ * @return {string} user or 'anonymous'
  */
-function getUsers(context) {
-  const profile = context.attributes.authInfo?.profile;
-  if (!profile) {
-    return [{ email: 'anonymous' }];
-  }
-  const user = { email: profile.email };
-  if (profile.user_id) {
-    user.user_id = profile.user_id;
-  }
-  return [user];
+function getUser(context) {
+  const email = context.attributes.authInfo?.profile?.email;
+
+  return email || 'anonymous';
 }
 
 /**
@@ -74,7 +68,7 @@ export async function putSource(context, info) {
   try {
     const body = await info.buffer();
     const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
-      users: JSON.stringify(getUsers(context)),
+      'Last-Modified-By': getUser(context),
     });
 
     const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;

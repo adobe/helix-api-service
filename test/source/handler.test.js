@@ -108,7 +108,7 @@ describe('Source Handler Tests', () => {
 
     nock.source()
       .putObject('/org/site/a/b/c.html')
-      .matchHeader('x-amz-meta-users', '[{"email":"anonymous"}]')
+      .matchHeader('x-amz-meta-last-modified-by', 'anonymous')
       .reply(201, putFn);
 
     const headers = new Headers({ 'Content-Type': 'text/html' });

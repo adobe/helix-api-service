@@ -9,6 +9,11 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+const NodeType = {
+  LITERAL: 1,
+  VARIABLE: 2,
+  PATH: 3,
+};
 
 /**
  * Node in the router tree, either intermediate or leaf.
@@ -18,6 +23,16 @@ export class Node {
    * Label for this node.
    */
   #label;
+
+  /**
+   * Type of node.
+   */
+  #type;
+
+  /**
+   * Parent for this node.
+   */
+  #parent;
 
   /**
    * Literal children of this node.
@@ -39,27 +54,29 @@ export class Node {
    */
   #route;
 
-  constructor(label) {
+  constructor(label, type = NodeType.LITERAL, parent = undefined) {
     this.#label = label;
+    this.#type = type;
+    this.#parent = parent;
     this.#children = [];
   }
 
   #getOrCreateChild(seg) {
     if (seg === '*') {
       if (!this.#star) {
-        this.#star = new Node(seg);
+        this.#star = new Node(seg, NodeType.PATH, this);
       }
       return this.#star;
     }
     if (seg.startsWith(':')) {
       if (!this.#variable) {
-        this.#variable = new Node(seg.substring(1));
+        this.#variable = new Node(seg.substring(1), NodeType.VARIABLE, this);
       }
       return this.#variable;
     }
     let ret = this.#children.find((child) => child.#label === seg);
     if (!ret) {
-      ret = new Node(seg);
+      ret = new Node(seg, NodeType.LITERAL, this);
       this.#children.push(ret);
     }
     return ret;
@@ -112,5 +129,32 @@ export class Node {
       return this.#star;
     }
     return null;
+  }
+
+  /**
+   * Returns the external path by traversing from a leaf back
+   * to the root.
+   *
+   * @param {string[]} segs path segments to collect
+   * @param {Map} variables variables
+   * @returns {void}
+   */
+  external(segs, variables) {
+    const label = this.#label;
+
+    switch (this.#type) {
+      case NodeType.LITERAL:
+        segs.unshift(label);
+        break;
+      case NodeType.VARIABLE:
+        segs.unshift(variables[label]);
+        break;
+      case NodeType.PATH:
+        segs.unshift(variables.path);
+        break;
+      default:
+        break;
+    }
+    this.#parent?.external(segs, variables);
   }
 }

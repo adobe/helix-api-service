@@ -101,6 +101,12 @@ describe('Status Handler Tests', () => {
       edit: {
         status: 403,
       },
+      links: {
+        code: 'https://api.aem.live/org/sites/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
+      },
       live: {
         error: 'forbidden',
         status: 403,
@@ -153,8 +159,32 @@ describe('Status Handler Tests', () => {
 
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
-      webPath: '/folder/page',
-      resourcePath: '/folder/page.md',
+      edit: {
+        url: 'https://docs.google.com/document/d/1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4/edit',
+        name: 'page',
+        contentType: 'application/vnd.google-apps.document',
+        folders: [
+          {
+            name: 'folder',
+            url: 'https://drive.google.com/drive/u/0/folders/1BHM3lyqi0bEeaBZho8UD328oFsmsisyJ',
+            path: '/folder',
+          },
+          {
+            name: '',
+            url: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+            path: '/',
+          },
+        ],
+        lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
+        sourceLocation: 'gdrive:1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
+        status: 200,
+      },
+      links: {
+        code: 'https://api.aem.live/org/sites/site/code/main/folder/page',
+        live: 'https://api.aem.live/org/sites/site/live/folder/page',
+        preview: 'https://api.aem.live/org/sites/site/preview/folder/page',
+        status: 'https://api.aem.live/org/sites/site/status/folder/page',
+      },
       live: {
         url: 'https://main--site--org.aem.live/folder/page',
         status: 200,
@@ -179,26 +209,8 @@ describe('Status Handler Tests', () => {
           'write',
         ],
       },
-      edit: {
-        url: 'https://docs.google.com/document/d/1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4/edit',
-        name: 'page',
-        contentType: 'application/vnd.google-apps.document',
-        folders: [
-          {
-            name: 'folder',
-            url: 'https://drive.google.com/drive/u/0/folders/1BHM3lyqi0bEeaBZho8UD328oFsmsisyJ',
-            path: '/folder',
-          },
-          {
-            name: '',
-            url: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-            path: '/',
-          },
-        ],
-        lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
-        sourceLocation: 'gdrive:1LSIpJMKoYeVn8-o4c2okZ6x0EwdGKtgOEkaxbnM8nZ4',
-        status: 200,
-      },
+      resourcePath: '/folder/page.md',
+      webPath: '/folder/page',
     });
   });
 
@@ -251,6 +263,12 @@ describe('Status Handler Tests', () => {
         sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
         status: 200,
         url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
+      },
+      links: {
+        code: 'https://api.aem.live/org/sites/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
       },
       live: {
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md`,

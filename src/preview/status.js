@@ -36,7 +36,7 @@ export default async function previewStatus(context, info) {
     webPath: info.webPath,
     resourcePath: info.resourcePath,
     preview,
-    // TODO links: getAPIUrls(context, info, 'status', 'preview', 'live', 'code'),
+    links: info.getAPIUrls('status', 'preview', 'live', 'code'),
   };
 
   return new Response(JSON.stringify(resp, null, 2), {

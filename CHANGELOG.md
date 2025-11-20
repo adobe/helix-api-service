@@ -1,3 +1,31 @@
+## [1.16.4](https://github.com/adobe/helix-api-service/compare/v1.16.3...v1.16.4) (2025-11-19)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#40](https://github.com/adobe/helix-api-service/issues/40)) ([2ef0190](https://github.com/adobe/helix-api-service/commit/2ef01902fa2031732176b785bfbfe5baae2d290f))
+
+## [1.16.3](https://github.com/adobe/helix-api-service/compare/v1.16.2...v1.16.3) (2025-11-19)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#41](https://github.com/adobe/helix-api-service/issues/41)) ([4deccd5](https://github.com/adobe/helix-api-service/commit/4deccd5b282913443d8f27c1c7da1df88e5ed98f))
+
+## [1.16.2](https://github.com/adobe/helix-api-service/compare/v1.16.1...v1.16.2) (2025-11-18)
+
+
+### Bug Fixes
+
+* **auth:** access config is in `config.access` ([504beb1](https://github.com/adobe/helix-api-service/commit/504beb1dc9014b169cca848a3266a4bb25b938ee))
+
+## [1.16.1](https://github.com/adobe/helix-api-service/compare/v1.16.0...v1.16.1) (2025-11-18)
+
+
+### Bug Fixes
+
+* implement `getAPIUrls` ([#39](https://github.com/adobe/helix-api-service/issues/39)) ([580696c](https://github.com/adobe/helix-api-service/commit/580696ca1c0f68bfa3a64bd5d053b0a1e917c37a))
+
 # [1.16.0](https://github.com/adobe/helix-api-service/compare/v1.15.2...v1.16.0) (2025-11-15)
 
 

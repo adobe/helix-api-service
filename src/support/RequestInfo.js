@@ -207,6 +207,8 @@ class PathInfo {
 export class RequestInfo {
   #request;
 
+  #router;
+
   #pathInfo;
 
   #owner;
@@ -215,8 +217,9 @@ export class RequestInfo {
 
   #ref;
 
-  constructor(request, pathInfo) {
+  constructor(request, router, pathInfo) {
     this.#request = request;
+    this.#router = router;
     this.#pathInfo = pathInfo;
   }
 
@@ -310,6 +313,7 @@ export class RequestInfo {
    * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
+   * @param {import('../router/router.js').default} router router
    * @param {object} param0 params
    * @param {string} [param0.org] org, optional
    * @param {string} [param0.site] site, optional
@@ -318,13 +322,13 @@ export class RequestInfo {
    * @param {string} [param0.route] route, optional
    * @returns {RequestInfo}
    */
-  static create(request, {
+  static create(request, router, {
     org, site, path, ref, route,
   } = {}) {
     const httpRequest = new HttpRequest(request);
     const pathInfo = new PathInfo(route, org, site, path);
 
-    return Object.freeze(new RequestInfo(httpRequest, pathInfo).withRef(ref));
+    return Object.freeze(new RequestInfo(httpRequest, router, pathInfo).withRef(ref));
   }
 
   /**
@@ -343,6 +347,7 @@ export class RequestInfo {
   }) {
     const info = new RequestInfo(
       other.#request,
+      other.#router,
       PathInfo.clone(other.#pathInfo, {
         org, site, path, route,
       }),
@@ -373,6 +378,21 @@ export class RequestInfo {
       });
     }
     return url.href;
+  }
+
+  getAPIUrls(...routes) {
+    const links = {};
+    const variables = {
+      org: this.org,
+      site: this.site,
+      path: this.webPath.slice(1),
+      ref: this.ref,
+    };
+    routes.forEach((name) => {
+      const path = this.#router.external(name, variables);
+      links[name] = this.getLinkUrl(path);
+    });
+    return links;
   }
 
   toResourcePath() {

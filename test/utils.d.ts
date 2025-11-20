@@ -51,6 +51,7 @@ declare interface Nock {
   code(ref?: string): S3Nock;
   content(contentBusId?: string): S3Nock;
   media(contentBusId?: string): S3Nock;
+  sqs(queueName: string, entries?: any[]): nock.Scope;
 }
 
 type NockEnv = Nock & typeof nocker;

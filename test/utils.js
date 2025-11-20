@@ -248,13 +248,17 @@ export function createContext(suffix, {
 /**
  * Create a request info based on a suffix.
  *
- * @param {string} suffix
+ * @param {string} suffix the suffix
+ * @param {Headers} headers the headers (defaults to empty)
+ * @param {string} method the http method (defaults to GET)
+ * @param {BodyInit} body the body if any
  * @returns {RequestInfo} info
  */
 export function createInfo(suffix, headers = {}, method = null, body = null) {
+  const { variables } = router.match(suffix);
   return RequestInfo.create(new Request('http://api.aem.live/', {
     headers,
     method,
     body,
-  }), router.match(suffix).variables);
+  }), router, variables);
 }

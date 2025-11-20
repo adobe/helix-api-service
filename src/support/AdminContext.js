@@ -154,7 +154,7 @@ export class AdminContext {
       if (!attributes.accessConfig) {
         attributes.accessConfig = {};
       }
-      const access = config?.data?.access;
+      const access = config?.access;
       if (!access) {
         attributes.accessConfig[partition] = {
           allow: [],

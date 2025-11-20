@@ -149,6 +149,12 @@ describe('Preview Action Tests', () => {
 
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
+      links: {
+        code: 'https://api.aem.live/org/sites/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
+      },
       preview: {
         configRedirectLocation: '/target',
         contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md`,

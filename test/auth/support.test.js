@@ -52,7 +52,7 @@ describe('Support Test', () => {
   }
 
   describe('Site Auth Test', () => {
-    it.skip('creates a valid site auth token', async () => {
+    it.skip('creates a valid site auth token (helix 4)', async () => {
       const keyPair = await generateKeyPair('RS256', { extractable: true });
       const publicJwk = await exportJWK(keyPair.publicKey);
       Object.assign(jwks.keys[0], publicJwk);
@@ -77,7 +77,7 @@ describe('Support Test', () => {
       assert.strictEqual(context.attributes.accessConfig.live.token, token);
     });
 
-    it.skip('creates a valid site auth token', async () => {
+    it('creates a valid site auth token', async () => {
       const { context } = setupTest({
         access: {
           apiKeyId: '1234',
@@ -130,7 +130,7 @@ describe('Support Test', () => {
       });
     });
 
-    it.skip('returns default access config', async () => {
+    it('returns default access config', async () => {
       const { context } = setupTest({
         access: {
           allow: '*@adobe.com',
@@ -143,7 +143,7 @@ describe('Support Test', () => {
       });
     });
 
-    it.skip('can partially overwrite access config', async () => {
+    it('can partially overwrite access config', async () => {
       const { context } = setupTest({
         access: {
           allow: '*@adobe.com',

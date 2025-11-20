@@ -18,14 +18,12 @@ import { createErrorResponse } from '../contentbus/utils.js';
  *
  * @param {*} meta The metadata that contains many of the headers
  * @param {number} length The content length
- * @param {string} id The ID to store in the X-da-id header
  * @return {Object} headers
  */
-function getHeaders(meta, length, id) {
+function getHeaders(meta, length) {
   const headers = {
     'Content-Type': meta.ContentType,
     'Last-Modified': meta.LastModified.toUTCString(),
-    'X-da-id': id,
   };
   if (length) {
     headers['Content-Length'] = length;
@@ -52,7 +50,7 @@ async function accessSource(context, info, headRequest) {
         return new Response('', { status: 404 });
       }
 
-      const headers = getHeaders(head, head.ContentLength, head.Metadata.id);
+      const headers = getHeaders(head, head.ContentLength);
       return new Response('', { status: head.$metadata.httpStatusCode, headers });
     } else {
       const meta = {};
@@ -61,7 +59,7 @@ async function accessSource(context, info, headRequest) {
         return new Response('', { status: 404 });
       }
 
-      const headers = getHeaders(meta, body.length, meta.id);
+      const headers = getHeaders(meta, body.length);
       return new Response(body, { status: 200, headers });
     }
   } catch (e) {

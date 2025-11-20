@@ -251,7 +251,7 @@ describe('Index Tests', () => {
       'access-control-allow-headers': 'Authorization, x-auth-token, x-content-source-authorization, content-type',
       'access-control-allow-origin': 'api.aem.live',
       'access-control-max-age': '86400',
-      'access-control-expose-headers': 'x-da-id, x-error, x-error-code',
+      'access-control-expose-headers': 'x-error, x-error-code',
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
     });

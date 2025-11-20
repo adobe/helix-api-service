@@ -32,165 +32,29 @@ describe('Source PUT Tests', () => {
     nock.done();
   });
 
-  function setupContext(suffix, {
-    attributes = {}, data = {},
-  } = {}) {
+  function setupContext(suffix, { attributes = {} } = {}) {
     return createContext(suffix, {
       attributes,
-      data,
       env: {
         HELIX_STORAGE_DISABLE_R2: 'true',
       },
     });
   }
 
-  it('test putSource with existing resource (has ID)', async () => {
+  it('test putSource HTML with user', async () => {
     async function putFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
       assert.equal(b.toString(), '<html><body>Hello</body></html>');
     }
 
     nock.source()
-      .headObject('/tst/best/toast/jam.html')
-      .reply(200, null, {
-        'content-type': 'text/html',
-        'last-modified': new Date(999999999999).toUTCString(),
-        'x-amz-meta-id': 'existing-id-123',
-      });
-    nock.source()
       .putObject('/tst/best/toast/jam.html')
       .matchHeader('content-type', 'text/html')
-      .matchHeader('x-amz-meta-id', 'existing-id-123')
+      .matchHeader('x-amz-meta-users', '[{"email":"test@example.com","user_id":"user-123.e"}]')
       .reply(201, putFn);
 
     const path = '/tst/sites/best/source/toast/jam.html';
-    const context = setupContext(path, { data: { data: '<html><body>Hello</body></html>' } });
-
-    const resp = await putSource(context, createInfo(path));
-    assert.equal(resp.status, 201);
-    assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
-  });
-
-  it('test putSource with new resource (generates new ID)', async () => {
-    let generatedId;
-    async function putFn(_uri, body) {
-      generatedId = this.req.headers['x-amz-meta-id'];
-      assert.match(generatedId, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-      assert.deepStrictEqual(body, { something: 'else' });
-    }
-
-    nock.source()
-      .headObject('/myorg/mysite/data/test.json')
-      .reply(404);
-    nock.source()
-      .putObject('/myorg/mysite/data/test.json')
-      .matchHeader('content-type', 'application/json')
-      .reply(201, putFn);
-
-    const path = '/myorg/sites/mysite/source/data/test.json';
-    const context = setupContext(path, { data: { data: '{"something":"else"}' } });
-
-    const resp = await putSource(context, createInfo(path));
-    assert.equal(resp.status, 201);
-    assert.equal(resp.headers.get('x-da-id'), generatedId);
-  });
-
-  it('test putSource with unknown file extension returns 400', async () => {
-    const path = '/test/sites/eest/source/file.bin';
-    const resp = await putSource(setupContext(path), createInfo(path));
-    assert.equal(resp.status, 415);
-  });
-
-  it('test putSource handles bucket.put error with metadata statuscode', async () => {
-    nock.source()
-      .headObject('/test/test/test.html')
-      .reply(200, null, {
-        'content-type': 'text/html',
-        'last-modified': new Date().toUTCString(),
-      });
-    nock.source()
-      .putObject('/test/test/test.html')
-      .reply(403);
-
-    const path = '/test/sites/test/source/test.html';
-    const resp = await putSource(setupContext(path), createInfo(path));
-    assert.equal(resp.status, 403);
-  });
-
-  it('test putSource with matching guid succeeds', async () => {
-    async function putFn(_uri, gzipBody) {
-      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<html>Updated content</html>');
-    }
-
-    nock.source()
-      .headObject('/test/test/test.html')
-      .reply(200, null, {
-        'content-type': 'text/html',
-        'last-modified': new Date().toUTCString(),
-        'x-amz-meta-id': 'existing-id-123',
-      });
-    nock.source()
-      .putObject('/test/test/test.html')
-      .reply(204, putFn);
-
-    const path = '/test/sites/test/source/test.html';
     const context = setupContext(path, {
-      data: {
-        data: '<html>Updated content</html>',
-        guid: 'existing-id-123',
-      },
-    });
-
-    const resp = await putSource(context, createInfo(path));
-    assert.equal(resp.status, 204);
-    assert.equal(resp.headers.get('x-da-id'), 'existing-id-123');
-  });
-
-  it('test putSource with mismatched guid returns 409', async () => {
-    nock.source()
-      .headObject('/test/test/test.html')
-      .reply(200, null, {
-        'content-type': 'text/html',
-        'last-modified': new Date().toUTCString(),
-        'x-amz-meta-id': 'existing-id-123',
-      });
-
-    const path = '/test/sites/test/source/test.html';
-    const context = setupContext(path, {
-      data: {
-        data: 'Updated content',
-        guid: 'wrong-id',
-      },
-    });
-
-    const resp = await putSource(context, createInfo(path));
-    assert.equal(resp.status, 409);
-    const text = await resp.text();
-    assert.ok(text.includes('ID mismatch'));
-  });
-
-  it('test putSource with guid for new resource uses the provided guid', async () => {
-    async function putFn(_uri, gzipBody) {
-      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<html>New content</html>');
-    }
-
-    nock.source()
-      .headObject('/test/test/new.html')
-      .reply(404);
-    nock.source()
-      .putObject('/test/test/new.html')
-      .matchHeader('x-amz-meta-id', 'provided-id-456')
-      .matchHeader('x-amz-meta-users', '[{"email":"test@example.com","user_id":"user-123.e"}]')
-      .reply(200, putFn);
-
-    const path = '/test/sites/test/source/new.html';
-    const context = setupContext(path, {
-      data: {
-        data: '<html>New content</html>',
-        guid: 'provided-id-456',
-      },
       attributes: {
         authInfo: {
           profile: {
@@ -201,9 +65,46 @@ describe('Source PUT Tests', () => {
       },
     });
 
-    const resp = await putSource(context, createInfo(path));
-    // When guid is provided for non-existent resource, it uses the provided guid
+    const resp = await putSource(
+      context,
+      createInfo(path, {}, 'PUT', '<html><body>Hello</body></html>'),
+    );
     assert.equal(resp.status, 201);
-    assert.equal(resp.headers.get('x-da-id'), 'provided-id-456');
+  });
+
+  it('test putSource JSON', async () => {
+    async function putFn(_uri, body) {
+      assert.deepStrictEqual(body, { something: 'else' });
+    }
+
+    nock.source()
+      .putObject('/myorg/mysite/data/test.json')
+      .matchHeader('content-type', 'application/json')
+      .reply(201, putFn);
+
+    const path = '/myorg/sites/mysite/source/data/test.json';
+    const context = setupContext(path);
+
+    const resp = await putSource(
+      context,
+      createInfo(path, {}, 'PUT', '{"something":"else"}'),
+    );
+    assert.equal(resp.status, 201);
+  });
+
+  it('test putSource with unknown file extension returns 400', async () => {
+    const path = '/test/sites/eest/source/file.bin';
+    const resp = await putSource(setupContext(path), createInfo(path));
+    assert.equal(resp.status, 415);
+  });
+
+  it('test putSource handles bucket.put error with metadata statuscode', async () => {
+    nock.source()
+      .putObject('/test/test/test.html')
+      .reply(403);
+
+    const path = '/test/sites/test/source/test.html';
+    const resp = await putSource(setupContext(path), createInfo(path));
+    assert.equal(resp.status, 403);
   });
 });

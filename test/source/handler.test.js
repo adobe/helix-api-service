@@ -63,7 +63,6 @@ describe('Source Handler Tests', () => {
         'content-length': '26',
         'last-modified': new Date(946684800000).toUTCString(), // RFC HTTP date format!
         ETag: '"some-etag-327"',
-        'x-amz-meta-id': 'dc0b68d8-b3ac-4c8a-9205-d78085e55704',
       });
 
     const headers = new Headers({ origin: 'https://example.com' });
@@ -80,9 +79,6 @@ describe('Source Handler Tests', () => {
       'content-length': '26',
       'last-modified': 'Sat, 01 Jan 2000 00:00:00 GMT',
       etag: '"some-etag-327"',
-      'x-da-id': 'dc0b68d8-b3ac-4c8a-9205-d78085e55704',
-      'access-control-allow-origin': 'https://example.com',
-      'access-control-expose-headers': 'x-da-id, x-error, x-error-code',
     });
   });
 
@@ -92,7 +88,6 @@ describe('Source Handler Tests', () => {
       .reply(200, null, {
         'content-type': 'text/html',
         'last-modified': new Date(999999999999).toUTCString(),
-        'x-amz-meta-id': '12345',
       });
 
     const resp = await main(new Request('https://api.aem.live/', {
@@ -101,40 +96,28 @@ describe('Source Handler Tests', () => {
     assert.equal(resp.status, 200);
     assertHeadersInclude(resp.headers, {
       'content-type': 'text/html',
-      'x-da-id': '12345',
       'last-modified': 'Sun, 09 Sep 2001 01:46:39 GMT',
     });
   });
 
   it('handles PUT requests', async () => {
-    let assignedID = null;
     async function putFn(_uri, gzipBody) {
-      assignedID = this.req.headers['x-amz-meta-id'];
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
       assert.equal(b.toString(), '<body><main>Yo!</main></body>');
     }
 
     nock.source()
-      .headObject('/org/site/a/b/c.html')
-      .reply(200, null, {
-        'content-type': 'text/html',
-        'last-modified': new Date().toUTCString(),
-      });
-    nock.source()
       .putObject('/org/site/a/b/c.html')
       .matchHeader('x-amz-meta-users', '[{"email":"anonymous"}]')
       .reply(201, putFn);
 
-    const headers = new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' });
+    const headers = new Headers({ 'Content-Type': 'text/html' });
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'PUT',
-      body: new URLSearchParams({
-        data: '<body><main>Yo!</main></body>',
-      }).toString(),
+      body: '<body><main>Yo!</main></body>',
       headers,
     }), setupContext('/org/sites/site/source/a/b/c.html'));
     assert.equal(resp.status, 201);
-    assert.equal(assignedID, resp.headers.get('X-da-id'));
   });
 
   it('handles unsupported method requests', async () => {

@@ -11,7 +11,6 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { headSource } from './get.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
 const CONTENT_TYPES = {
@@ -65,33 +64,21 @@ function getUsers(context) {
 export async function putSource(context, info) {
   const { log } = context;
 
-  const getResp = await headSource(context, info);
-  const assignedID = context.data?.guid;
-  const existingID = getResp.headers.get('x-da-id');
-  if (assignedID && existingID && existingID !== assignedID) {
-    return new Response(
-      `ID mismatch: ${assignedID} !== ${existingID}`,
-      { status: 409 },
-    );
-  }
-  const ID = assignedID || existingID || crypto.randomUUID();
-
   const storage = HelixStorage.fromContext(context);
   const bucket = storage.sourceBus();
 
-  const body = context.data?.data;
   const {
     org, resourcePath: key, site, ext,
   } = info;
   const path = `${org}/${site}${key}`;
   try {
+    const body = await info.buffer();
     const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
-      id: ID,
       users: JSON.stringify(getUsers(context)),
     });
 
     const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
-    return new Response('', { status, headers: { 'x-da-id': ID } });
+    return new Response('', { status });
   } catch (e) {
     const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;

@@ -38,7 +38,6 @@ describe('Source GET Tests', () => {
         'content-length': '8',
         etag: '"some-etag-327"',
         'last-modified': 'Thu, 13 Nov 2025 13:44:08 GMT',
-        'x-amz-meta-id': '999',
       });
 
     const info = createInfo('/test/sites/rest/source/toast/jam.html');
@@ -50,7 +49,6 @@ describe('Source GET Tests', () => {
       'content-length': '8',
       etag: '"some-etag-327"',
       'last-modified': 'Thu, 13 Nov 2025 13:44:08 GMT',
-      'x-da-id': '999',
     });
   });
 
@@ -73,7 +71,6 @@ describe('Source GET Tests', () => {
         'content-length': '1024',
         etag: '"abc123"',
         'last-modified': new Date(1666666666666).toUTCString(),
-        'x-amz-meta-id': 'doc-id-456',
       });
     const info = createInfo('/myorg/sites/mysite/source/document.html');
 
@@ -84,7 +81,6 @@ describe('Source GET Tests', () => {
       'content-length': '1024',
       etag: '"abc123"',
       'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      'x-da-id': 'doc-id-456',
     });
     assert.equal(await resp.text(), '');
   });
@@ -127,7 +123,6 @@ describe('Source GET Tests', () => {
         'content-length': '27',
         etag: 'myetag',
         'last-modified': new Date(1111111111111).toUTCString(),
-        'x-amz-meta-id': 'json-id',
       });
 
     const info = createInfo('/org/sites/site/source/data.json');
@@ -140,7 +135,6 @@ describe('Source GET Tests', () => {
       'content-length': '27',
       etag: 'myetag',
       'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
-      'x-da-id': 'json-id',
     });
   });
 });

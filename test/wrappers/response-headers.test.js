@@ -31,7 +31,7 @@ describe('Response Headers Tests', () => {
       'content-type': 'text/plain; charset=utf-8',
       'access-control-allow-origin': 'https://foo.org',
       'access-control-allow-credentials': 'true',
-      'access-control-expose-headers': 'x-da-id, x-error, x-error-code',
+      'access-control-expose-headers': 'x-error, x-error-code',
     });
     assert.equal(resp.headers.get('cache-control'), 'no-store, private, must-revalidate');
   });

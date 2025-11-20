@@ -87,7 +87,7 @@ describe('Source Handler Tests', () => {
       .headObject('/org/site/hellothere.html')
       .reply(200, null, {
         'content-type': 'text/html',
-        'last-modified': new Date(999999999999).toUTCString(),
+        'last-modified': 'Sun, 09 Sep 2001 01:46:39 GMT',
       });
 
     const resp = await main(new Request('https://api.aem.live/', {

@@ -27,7 +27,7 @@ const DIR_MARKER = 'dir';
  */
 function transformOutput(list) {
   return list.map((item) => {
-    const { key, lastModified, path } = item;
+    const { lastModified, path } = item;
 
     const sp = path.split('.');
     if (sp.length <= 1) {
@@ -37,19 +37,19 @@ function transformOutput(list) {
 
     const ext = sp.pop();
     if (ext === DIR_MARKER) {
-      const dir = key.slice(0, -DIR_MARKER.length - 1);
+      const dirName = sp[0];
       return {
-        path: `/${dir}/`,
+        name: `${dirName}/`,
         'content-type': 'application/folder',
       };
     }
 
     const timestamp = new Date(lastModified);
     const res = {
-      path: `/${key}`,
-      lastModified: timestamp.toISOString(),
+      name: path,
       size: item.contentLength,
       'content-type': item.contentType,
+      'last-modified': timestamp.toISOString(),
     };
     return res;
   }); // TODO filter out null values

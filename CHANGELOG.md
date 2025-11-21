@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/adobe/helix-api-service/compare/v1.16.4...v1.17.0) (2025-11-21)
+
+
+### Features
+
+* add source endpoint with simple get/head/put operations ([#35](https://github.com/adobe/helix-api-service/issues/35)) ([2299c48](https://github.com/adobe/helix-api-service/commit/2299c488cce9b2b7a42759d5b22fb6b4c1885735)), closes [#43](https://github.com/adobe/helix-api-service/issues/43)
+
 ## [1.16.4](https://github.com/adobe/helix-api-service/compare/v1.16.3...v1.16.4) (2025-11-19)
 
 

@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { getPath } from './utils.js';
 
 // A directory is marked by a .dir file
 // This is to allow directories to show up in file listings without
@@ -31,7 +32,7 @@ function transformOutput(list) {
 
     const sp = path.split('.');
     if (sp.length <= 1) {
-      // Files without extensions are not supported
+      // Files without extensions are currently not supported
       return null;
     }
 
@@ -45,14 +46,13 @@ function transformOutput(list) {
     }
 
     const timestamp = new Date(lastModified);
-    const res = {
+    return {
       name: path,
       size: item.contentLength,
       'content-type': item.contentType,
       'last-modified': timestamp.toISOString(),
     };
-    return res;
-  }); // TODO filter out null values
+  }).filter((i) => i);
 }
 
 /**
@@ -70,10 +70,22 @@ export async function accessDirListing(context, info, headRequest) {
   const bucket = storage.sourceBus();
 
   const { org, site, rawPath: key } = info;
-  const path = `${org}/${site}${key}`;
+  const path = getPath(org, site, key);
 
   try {
     const list = await bucket.list(path, { shallow: true });
+    if (list.length === 0 && key.length > 1) {
+      const dirMarker = `${getPath(org, site, key.slice(0, -1))}.${DIR_MARKER}`;
+      const emptyDir = await bucket.head(dirMarker);
+      if (emptyDir?.$metadata?.httpStatusCode === 200) {
+        return new Response(headRequest ? '' : '[]', { status: 200 });
+      }
+      return new Response('', { status: 404 });
+    }
+
+    if (headRequest) {
+      return new Response('', { status: 200 });
+    }
 
     // transform list from input format to output format
     const output = transformOutput(list);

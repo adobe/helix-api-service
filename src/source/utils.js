@@ -9,18 +9,6 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { HelixStorage } from '@adobe/helix-shared-storage';
-
-/**
- * Get the source bus bucket from the context.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @return {HelixStorage.Bucket} bucket
- */
-export function getSourceBucket(context) {
-  const storage = HelixStorage.fromContext(context);
-  return storage.sourceBus();
-}
 
 /**
  * Get the source bus path from the request info.

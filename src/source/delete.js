@@ -10,8 +10,9 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourceBucket, getSourcePath } from './utils.js';
+import { getSourcePath } from './utils.js';
 
 /**
  * Delete from the source bus.
@@ -23,7 +24,7 @@ import { getSourceBucket, getSourcePath } from './utils.js';
 export async function deleteSource(context, info) {
   const { log } = context;
 
-  const bucket = getSourceBucket(context);
+  const bucket = HelixStorage.fromContext(context).sourceBus();
   const path = getSourcePath(info);
 
   try {

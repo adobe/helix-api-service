@@ -87,9 +87,7 @@ export async function accessDirListing(context, info, headRequest) {
       return new Response('', { status: 200 });
     }
 
-    // transform list from input format to output format
     const output = transformOutput(list);
-
     const headers = {
       'Content-Type': 'application/json',
     };

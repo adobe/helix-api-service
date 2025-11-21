@@ -133,6 +133,7 @@ export function Nock() {
   nocker.s3 = (bucket, prefix) => {
     const scope = nocker(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
     scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
+    scope.headObject = (key) => scope.head(key);
     scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
     scope.deleteObject = (key) => scope.delete(key).query({ 'x-id': 'DeleteObject' });
     scope.copyObject = (key) => scope.put(key).query({ 'x-id': 'CopyObject' });
@@ -148,6 +149,8 @@ export function Nock() {
   nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
+
+  nocker.source = () => nocker.s3('helix-source-bus', '');
 
   nocker.siteConfig = (config, { org = 'org', site = 'site' } = {}) => {
     const scope = nocker('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);
@@ -245,12 +248,17 @@ export function createContext(suffix, {
 /**
  * Create a request info based on a suffix.
  *
- * @param {string} suffix
+ * @param {string} suffix the suffix
+ * @param {Headers} headers the headers (defaults to empty)
+ * @param {string} method the http method (defaults to GET)
+ * @param {BodyInit} body the body if any
  * @returns {RequestInfo} info
  */
-export function createInfo(suffix, headers = {}) {
+export function createInfo(suffix, headers = {}, method = null, body = null) {
   const { variables } = router.match(suffix);
   return RequestInfo.create(new Request('http://api.aem.live/', {
     headers,
+    method,
+    body,
   }), router, variables);
 }

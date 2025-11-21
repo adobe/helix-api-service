@@ -65,10 +65,8 @@ describe('Source Handler Tests', () => {
         ETag: '"some-etag-327"',
       });
 
-    const headers = new Headers({ origin: 'https://example.com' });
-
     const resp = await main(new Request('https://api.aem.live/', {
-      method: 'GET', headers,
+      method: 'GET',
     }), setupContext('/org/sites/site/source/hello.html'));
     assert.equal(resp.status, 200);
     const txt = await resp.text();
@@ -154,5 +152,45 @@ describe('Source Handler Tests', () => {
     }));
     assert.equal(resp.status, 505);
     assert.equal(resp.headers.get('x-error'), 'Test error');
+  });
+
+  it('handles GET list folder requests', async () => {
+    const bucketListResult = `
+      <ListBucketResult>
+        <Name>my-bucket</Name>
+        <Prefix>org/site/my/folder/</Prefix>
+        <Marker></Marker>
+        <MaxKeys>1000</MaxKeys>
+        <IsTruncated>false</IsTruncated>
+        <Contents>
+          <Key>org/site/my/folder/mydoc.html</Key>
+          <LastModified>2021-01-01T00:00:00.000Z</LastModified>
+          <ETag>"1234567890"</ETag>
+          <Size>999</Size>
+          <StorageClass>STANDARD</StorageClass>
+        </Contents>;
+        <CommonPrefixes>
+          <Prefix>org/site/my/folder/</Prefix>
+        </CommonPrefixes>
+      </ListBucketResult>`;
+
+    nock.source()
+      .get('/?delimiter=%2F&list-type=2&prefix=org%2Fsite%2Fmy%2Ffolder%2F')
+      .reply(200, Buffer.from(bucketListResult));
+
+    const resp = await main(new Request('https://api.aem.live/', {
+      method: 'GET',
+    }), setupContext('/org/sites/site/source/my/folder/'));
+    assert.equal(resp.status, 200);
+    const json = await resp.json();
+
+    assert.deepStrictEqual(json, [
+      {
+        name: 'mydoc.html',
+        size: 999,
+        'content-type': 'text/html',
+        'last-modified': '2021-01-01T00:00:00.000Z',
+      },
+    ]);
   });
 });

@@ -13,6 +13,7 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { getSourcePath } from './utils.js';
 
 const CONTENT_TYPES = {
@@ -22,6 +23,13 @@ const CONTENT_TYPES = {
 =======
 import { CONTENT_TYPES } from './utils.js';
 >>>>>>> e3c9b68 (feat: support directory listing for source endpoint)
+=======
+
+export const CONTENT_TYPES = {
+  '.json': 'application/json',
+  '.html': 'text/html',
+};
+>>>>>>> 53eee1e (test: initial tests for folder listing)
 
 /**
  * Get the content type from the extension.

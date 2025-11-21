@@ -9,8 +9,27 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { HelixStorage } from '@adobe/helix-shared-storage';
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+/**
+ * Get the source bus bucket from the context.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @return {HelixStorage.Bucket} bucket
+ */
+export function getSourceBucket(context) {
+  const storage = HelixStorage.fromContext(context);
+  return storage.sourceBus();
+}
+
+export function getPath(org, site, key) {
+  return `${org}/${site}${key}`;
+}
+
+>>>>>>> 53eee1e (test: initial tests for folder listing)
 /**
  * Get the source bus path from the request info.
  *
@@ -19,6 +38,7 @@
  */
 export function getSourcePath(info) {
   const { org, site, resourcePath: key } = info;
+<<<<<<< HEAD
   return `${org}/${site}${key}`;
 }
 =======
@@ -27,3 +47,7 @@ export const CONTENT_TYPES = {
   '.html': 'text/html',
 };
 >>>>>>> e3c9b68 (feat: support directory listing for source endpoint)
+=======
+  return getPath(org, site, key);
+}
+>>>>>>> 53eee1e (test: initial tests for folder listing)

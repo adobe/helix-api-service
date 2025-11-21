@@ -120,6 +120,16 @@ describe('Source Handler Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('handles DELETE requests', async () => {
+    nock.source()
+      .deleteObject('/org/site/to/be/deleted.html')
+      .reply(204);
+    const resp = await main(new Request('https://api.aem.live/', {
+      method: 'DELETE',
+    }), setupContext('/org/sites/site/source/to/be/deleted.html'));
+    assert.equal(resp.status, 204);
+  });
+
   it('handles unsupported method requests', async () => {
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'POST',

@@ -10,8 +10,8 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { getSourceBucket, getSourcePath } from './utils.js';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
@@ -58,16 +58,12 @@ function getUser(context) {
 export async function putSource(context, info) {
   const { log } = context;
 
-  const storage = HelixStorage.fromContext(context);
-  const bucket = storage.sourceBus();
+  const bucket = getSourceBucket(context);
+  const path = getSourcePath(info);
 
-  const {
-    org, resourcePath: key, site, ext,
-  } = info;
-  const path = `${org}/${site}${key}`;
   try {
     const body = await info.buffer();
-    const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
+    const resp = await bucket.put(path, body, contentTypeFromExtension(info.ext), {
       'Last-Modified-By': getUser(context),
     });
 

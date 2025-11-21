@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { getSourcePath } from './utils.js';
 
 /**
  * Get the headers for the response.
@@ -37,11 +38,8 @@ function getHeaders(meta, length) {
 async function accessSource(context, info, headRequest) {
   const { log } = context;
 
-  const storage = HelixStorage.fromContext(context);
-  const bucket = storage.sourceBus();
-
-  const { org, site, resourcePath: key } = info;
-  const path = `${org}/${site}${key}`;
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  const path = getSourcePath(info);
 
   try {
     if (headRequest) {

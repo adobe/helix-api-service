@@ -9,38 +9,30 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { deleteSource } from './delete.js';
-import { getSource, headSource } from './get.js';
-import { putSource } from './put.js';
+import { Response } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { getSourcePath } from './utils.js';
 
 /**
- * Handle source route
+ * Delete from the source bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @return {Promise<Response>} response
  */
-export default async function handle(context, info) {
+export async function deleteSource(context, info) {
+  const { log } = context;
+
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  const path = getSourcePath(info);
+
   try {
-    switch (info.method) {
-      case 'GET':
-        return await getSource(context, info);
-      case 'PUT':
-        return await putSource(context, info);
-      case 'HEAD':
-        return await headSource(context, info);
-      case 'DELETE':
-        return await deleteSource(context, info);
-      default:
-        return new Response('method not allowed', { status: 405 });
-    }
+    const resp = await bucket.remove(path);
+    return new Response('', { status: resp.$metadata?.httpStatusCode });
   } catch (e) {
-    const opts = {
-      e,
-      log: context.log,
-      status: e.$metadata?.httpStatusCode,
-    };
+    const opts = { e, log };
+    opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }
 }

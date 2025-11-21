@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { getSourcePath } from './utils.js';
 
 const CONTENT_TYPES = {
   '.json': 'application/json',
@@ -58,16 +59,12 @@ function getUser(context) {
 export async function putSource(context, info) {
   const { log } = context;
 
-  const storage = HelixStorage.fromContext(context);
-  const bucket = storage.sourceBus();
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  const path = getSourcePath(info);
 
-  const {
-    org, resourcePath: key, site, ext,
-  } = info;
-  const path = `${org}/${site}${key}`;
   try {
     const body = await info.buffer();
-    const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
+    const resp = await bucket.put(path, body, contentTypeFromExtension(info.ext), {
       'Last-Modified-By': getUser(context),
     });
 

@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/adobe/helix-api-service/compare/v1.17.0...v1.18.0) (2025-11-24)
+
+
+### Features
+
+* add delete to source endpoint ([#45](https://github.com/adobe/helix-api-service/issues/45)) ([de3e2a3](https://github.com/adobe/helix-api-service/commit/de3e2a35ca4882bf4c148cda619e9a60ea843dd5))
+
 # [1.17.0](https://github.com/adobe/helix-api-service/compare/v1.16.4...v1.17.0) (2025-11-21)
 
 

@@ -15,7 +15,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { getSourcePath } from './utils.js';
 
 const CONTENT_TYPES = {
-  '.dir': 'application/folder',
+  '._dir': 'application/folder',
   '.json': 'application/json',
   '.html': 'text/html',
 };

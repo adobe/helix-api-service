@@ -36,7 +36,7 @@ const BUCKET_LIST_RESULT1 = `
       <Size>32768</Size>
     </Contents>
     <Contents>
-      <Key>org1/site2/a/b/c/subdir.dir</Key>
+      <Key>org1/site2/a/b/c/subdir._dir</Key>
       <LastModified>2001-01-01T01:01:01.001Z</LastModified>
       <Size>327</Size>
     </Contents>
@@ -106,7 +106,7 @@ describe('Source List Tests', () => {
 
   it('test GET folder with no contents', async () => {
     nock.source()
-      .head('/org1/site2/base/sub.dir')
+      .head('/org1/site2/base/sub._dir')
       .reply(200);
 
     nock.source()
@@ -122,7 +122,7 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder with no contents', async () => {
     nock.source()
-      .head('/org1/site2/base/sub.dir')
+      .head('/org1/site2/base/sub._dir')
       .reply(200);
 
     nock.source()
@@ -137,7 +137,7 @@ describe('Source List Tests', () => {
 
   it('test GET folder does not exist', async () => {
     nock.source()
-      .head('/org1/site2/base/sub.dir')
+      .head('/org1/site2/base/sub._dir')
       .reply(404);
 
     nock.source()
@@ -151,7 +151,7 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder does not exist', async () => {
     nock.source()
-      .head('/org1/site2/base/sub.dir')
+      .head('/org1/site2/base/sub._dir')
       .reply(404);
 
     nock.source()
@@ -176,7 +176,7 @@ describe('Source List Tests', () => {
 
   it('test create folder', async () => {
     nock.source()
-      .putObject('/org1/site2/new.dir')
+      .putObject('/org1/site2/new._dir')
       .reply(201);
     const info = createInfo('/org1/sites/site2/source/new/');
     const resp = await postSource(context, info);

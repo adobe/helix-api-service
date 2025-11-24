@@ -15,16 +15,16 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { putSourceFile } from './put.js';
 import { getS3Path } from './utils.js';
 
-// A directory is marked by a .dir file
+// A directory is marked by a marker file.
 // This is to allow directories to show up in file listings without
 // having to do a deep S3 listing.
-const DIR_MARKER = 'dir';
+const DIR_MARKER = '_dir';
 
 /**
  * Convert the directory listing from S3 format to the format expected by the client.
  *
  * @param {import('@aws-sdk/client-s3').ListObjectsV2Output} list
- *   The directory listing as returned by S3
+ *   The directory listing as returned by S3.
  * @returns {Array} The directory listing as returned to the client
  */
 function transformOutput(list) {
@@ -57,7 +57,7 @@ function transformOutput(list) {
 }
 
 /**
- * Create a folder in the source bus, by creating a .dir marker file.
+ * Create a folder in the source bus, by creating a directory marker file.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
@@ -90,7 +90,7 @@ export async function listFolder(context, info, headRequest) {
     const list = await bucket.list(path, { shallow: true });
     if (list.length === 0 && key.length > 1) {
       // The folder could be an empty folder, in which case S3 doesn't report it.
-      // Let's check if there is a file in the parent folder with the .dir extension.
+      // Let's check if there is a file in the parent folder with the ._dir extension.
       const dirMarker = `${getS3Path(org, site, key.slice(0, -1))}.${DIR_MARKER}`;
       const emptyDir = await bucket.head(dirMarker);
 

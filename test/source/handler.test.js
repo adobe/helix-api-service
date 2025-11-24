@@ -196,7 +196,7 @@ describe('Source Handler Tests', () => {
 
   it('handles POST requests to create a folder', async () => {
     nock.source()
-      .putObject('/org/site/my/folder/newfolder.dir')
+      .putObject('/org/site/my/folder/newfolder._dir')
       .reply(201);
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'POST',

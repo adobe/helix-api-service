@@ -130,7 +130,7 @@ describe('Source Handler Tests', () => {
 
   it('handles unsupported method requests', async () => {
     const resp = await main(new Request('https://api.aem.live/', {
-      method: 'POST',
+      method: 'CONNECT',
     }), setupContext('/org/sites/site/source/x.html'));
     assert.equal(resp.status, 405);
   });
@@ -192,5 +192,15 @@ describe('Source Handler Tests', () => {
         'last-modified': '2021-01-01T00:00:00.000Z',
       },
     ]);
+  });
+
+  it('handles POST requests to create a folder', async () => {
+    nock.source()
+      .putObject('/org/site/my/folder/newfolder.dir')
+      .reply(201);
+    const resp = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+    }), setupContext('/org/sites/site/source/my/folder/newfolder/'));
+    assert.equal(resp.status, 201);
   });
 });

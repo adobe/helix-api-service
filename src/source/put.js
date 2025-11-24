@@ -15,6 +15,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { getSourcePath } from './utils.js';
 
 const CONTENT_TYPES = {
+  '.dir': 'application/folder',
   '.json': 'application/json',
   '.html': 'text/html',
 };
@@ -50,21 +51,21 @@ function getUser(context) {
 }
 
 /**
- * Put into the source bus.
+ * Put file based on path and body in the source bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @return {Promise<Response>} response
-*/
-export async function putSource(context, info) {
+ * @param {string} path path to store the file (including extension)
+ * @param {string} ext extension (e.g. '.json')
+ * @param {Buffer} body content body
+ * @returns {Promise<Response>} response
+ */
+export async function putSourceFile(context, path, ext, body) {
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();
-  const path = getSourcePath(info);
 
   try {
-    const body = await info.buffer();
-    const resp = await bucket.put(path, body, contentTypeFromExtension(info.ext), {
+    const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
       'Last-Modified-By': getUser(context),
     });
 
@@ -75,4 +76,17 @@ export async function putSource(context, info) {
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }
+}
+
+/**
+ * Put into the source bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @return {Promise<Response>} response
+*/
+export async function putSource(context, info) {
+  const path = getSourcePath(info);
+  const body = await info.buffer();
+  return putSourceFile(context, path, info.ext, body);
 }

@@ -12,7 +12,8 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getPath } from './utils.js';
+import { putSourceFile } from './put.js';
+import { getS3Path } from './utils.js';
 
 // A directory is marked by a .dir file
 // This is to allow directories to show up in file listings without
@@ -56,6 +57,19 @@ function transformOutput(list) {
 }
 
 /**
+ * Create a folder in the source bus, by creating a .dir marker file.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @return {Promise<Response>} response
+ */
+export async function createFolder(context, info) {
+  const { org, site, rawPath: key } = info;
+  const path = getS3Path(org, site, `${key.slice(0, -1)}.${DIR_MARKER}`);
+  return putSourceFile(context, path, `.${DIR_MARKER}`, '{}');
+}
+
+/**
  * Provide a directory listing from the source bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -63,23 +77,28 @@ function transformOutput(list) {
  * @param {boolean} headRequest true if this is a HEAD request
  * @return {Promise<Response>} response A JSON response with the directory listing
  */
-export async function accessDirListing(context, info, headRequest) {
+export async function listFolder(context, info, headRequest) {
   const { log } = context;
 
-  const storage = HelixStorage.fromContext(context);
-  const bucket = storage.sourceBus();
+  const bucket = HelixStorage.fromContext(context).sourceBus();
 
   const { org, site, rawPath: key } = info;
-  const path = getPath(org, site, key);
+  const path = getS3Path(org, site, key);
 
   try {
+    // Ask S3 for a folder listing
     const list = await bucket.list(path, { shallow: true });
     if (list.length === 0 && key.length > 1) {
-      const dirMarker = `${getPath(org, site, key.slice(0, -1))}.${DIR_MARKER}`;
+      // The folder could be an empty folder, in which case S3 doesn't report it.
+      // Let's check if there is a file in the parent folder with the .dir extension.
+      const dirMarker = `${getS3Path(org, site, key.slice(0, -1))}.${DIR_MARKER}`;
       const emptyDir = await bucket.head(dirMarker);
+
       if (emptyDir?.$metadata?.httpStatusCode === 200) {
+        // If the marker file exists, the folder exists, but it empty.
         return new Response(headRequest ? '' : '[]', { status: 200 });
       }
+      // Folder does not exist.
       return new Response('', { status: 404 });
     }
 

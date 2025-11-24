@@ -11,6 +11,7 @@
  */
 import { deleteSource } from './delete.js';
 import { getSource, headSource } from './get.js';
+import { postSource } from './post.js';
 import { putSource } from './put.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
@@ -26,6 +27,8 @@ export default async function handle(context, info) {
     switch (info.method) {
       case 'GET':
         return await getSource(context, info);
+      case 'POST':
+        return await postSource(context, info);
       case 'PUT':
         return await putSource(context, info);
       case 'HEAD':

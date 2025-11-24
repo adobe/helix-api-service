@@ -14,7 +14,9 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { getSource, headSource } from '../../src/source/get.js';
-import { createContext, createInfo, Nock } from '../utils.js';
+import { postSource } from '../../src/source/post.js';
+import { createInfo, Nock } from '../utils.js';
+import { setupContext } from './testutils.js';
 
 const BUCKET_LIST_RESULT1 = `
   <ListBucketResult>
@@ -54,7 +56,7 @@ describe('Source List Tests', () => {
   let nock;
 
   beforeEach(() => {
-    context = createContext();
+    context = setupContext();
     nock = new Nock().env();
   });
 
@@ -170,5 +172,14 @@ describe('Source List Tests', () => {
     const resp = await getSource(context, info);
     assert.equal(resp.status, 500);
     assert.equal(resp.headers.get('x-error'), 'Oh no!');
+  });
+
+  it('test create folder', async () => {
+    nock.source()
+      .putObject('/org1/site2/new.dir')
+      .reply(201);
+    const info = createInfo('/org1/sites/site2/source/new/');
+    const resp = await postSource(context, info);
+    assert.equal(resp.status, 201);
   });
 });

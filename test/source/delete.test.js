@@ -14,20 +14,13 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { deleteSource } from '../../src/source/delete.js';
-import { createContext, createInfo, Nock } from '../utils.js';
+import { createInfo, Nock } from '../utils.js';
+import { setupContext } from './testutils.js';
 
 describe('Source Delete Tests', () => {
   let context;
   /** @type {import('../utils.js').NockEnv} */
   let nock;
-
-  function setupContext() {
-    return createContext(null, {
-      env: {
-        HELIX_STORAGE_DISABLE_R2: 'true',
-      },
-    });
-  }
 
   beforeEach(() => {
     context = setupContext();

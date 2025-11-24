@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 
+<<<<<<< HEAD
 /**
  * Get the source bus path from the request info.
  *
@@ -20,3 +21,9 @@ export function getSourcePath(info) {
   const { org, site, resourcePath: key } = info;
   return `${org}/${site}${key}`;
 }
+=======
+export const CONTENT_TYPES = {
+  '.json': 'application/json',
+  '.html': 'text/html',
+};
+>>>>>>> e3c9b68 (feat: support directory listing for source endpoint)

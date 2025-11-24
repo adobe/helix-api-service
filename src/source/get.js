@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { accessDirListing } from './list.js';
 import { getSourcePath } from './utils.js';
 
 /**
@@ -36,6 +37,9 @@ function getHeaders(meta, length) {
 }
 
 async function accessSource(context, info, headRequest) {
+  if (info.rawPath.endsWith('/')) {
+    return accessDirListing(context, info, headRequest);
+  }
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();

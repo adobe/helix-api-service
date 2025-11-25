@@ -53,7 +53,8 @@ function transformOutput(list) {
       'content-type': item.contentType,
       'last-modified': timestamp.toISOString(),
     };
-  }).filter((i) => i);
+  }).filter((i) => i)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

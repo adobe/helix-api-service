@@ -26,14 +26,14 @@ const BUCKET_LIST_RESULT1 = `
     <MaxKeys>1000</MaxKeys>
     <IsTruncated>false</IsTruncated>
     <Contents>
-      <Key>org1/site2/a/b/c/d1.html</Key>
-      <LastModified>2021-12-31T01:01:01.001Z</LastModified>
-      <Size>123</Size>
-    </Contents>
-    <Contents>
       <Key>org1/site2/a/b/c/somepdf.pdf</Key>
       <LastModified>2025-01-01T12:34:56.000Z</LastModified>
       <Size>32768</Size>
+    </Contents>
+    <Contents>
+      <Key>org1/site2/a/b/c/d1.html</Key>
+      <LastModified>2021-12-31T01:01:01.001Z</LastModified>
+      <Size>123</Size>
     </Contents>
     <Contents>
       <Key>org1/site2/a/b/c/subdir._dir</Key>

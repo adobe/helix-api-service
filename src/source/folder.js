@@ -105,7 +105,7 @@ export async function listFolder(context, info, headRequest) {
   const path = getS3Path(org, site, key);
 
   try {
-    const list = await bucket.list(path, { shallow: true, prefixes: true });
+    const list = await bucket.list(path, { shallow: true, includePrefixes: true });
 
     // Check the length of the raw filesList. This will include the
     // directory marker files. So a directory with just a marker file

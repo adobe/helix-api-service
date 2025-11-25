@@ -170,12 +170,13 @@ describe('Source Handler Tests', () => {
           <StorageClass>STANDARD</StorageClass>
         </Contents>;
         <CommonPrefixes>
-          <Prefix>org/site/my/folder/</Prefix>
+          <Prefix>org/site/my/folder/subfolder/</Prefix>
         </CommonPrefixes>
       </ListBucketResult>`;
 
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org%2Fsite%2Fmy%2Ffolder%2F')
+      .twice()
       .reply(200, Buffer.from(bucketListResult));
 
     const resp = await main(new Request('https://api.aem.live/', {
@@ -191,12 +192,16 @@ describe('Source Handler Tests', () => {
         'content-type': 'text/html',
         'last-modified': '2021-01-01T00:00:00.000Z',
       },
+      {
+        name: 'subfolder/',
+        'content-type': 'application/folder',
+      },
     ]);
   });
 
   it('handles POST requests to create a folder', async () => {
     nock.source()
-      .putObject('/org/site/my/folder/newfolder._dir')
+      .putObject('/org/site/my/folder/newfolder/newfolder._dir')
       .reply(201);
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'POST',

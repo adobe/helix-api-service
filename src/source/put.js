@@ -12,13 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourcePath } from './utils.js';
-
-const CONTENT_TYPES = {
-  '._dir': 'application/folder',
-  '.json': 'application/json',
-  '.html': 'text/html',
-};
+import { getSourcePath, CONTENT_TYPES } from './utils.js';
 
 /**
  * Get the content type from the extension.

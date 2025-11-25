@@ -13,7 +13,7 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { putSourceFile } from './put.js';
-import { getS3Path } from './utils.js';
+import { getS3Path, CONTENT_TYPES } from './utils.js';
 
 // A directory is marked by a marker file.
 // This is to allow directories to show up in file listings without
@@ -27,23 +27,23 @@ const DIR_MARKER = '_dir';
  *   The directory listing as returned by S3.
  * @returns {Array} The directory listing as returned to the client
  */
-function transformOutput(list) {
+function transformFiles(list) {
   return list.map((item) => {
     const { lastModified, path } = item;
-
     const sp = path.split('.');
-    if (sp.length <= 1) {
-      // Files without extensions are currently not supported
+
+    if (sp.length < 2) {
+      // files without extensions are currently not supported
       return null;
     }
-
     const ext = sp.pop();
     if (ext === DIR_MARKER) {
-      const dirName = sp[0];
-      return {
-        name: `${dirName}/`,
-        'content-type': 'application/folder',
-      };
+      // dir marker files are ignored here
+      return null;
+    }
+    if (!CONTENT_TYPES[`.${ext}`]) {
+      // unknown content type
+      return null;
     }
 
     const timestamp = new Date(lastModified);
@@ -53,8 +53,23 @@ function transformOutput(list) {
       'content-type': item.contentType,
       'last-modified': timestamp.toISOString(),
     };
-  }).filter((i) => i)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  }).filter((i) => i);
+}
+/**
+ * Convert the folder prefix listing from S3 format to the format expected by the client.
+ *
+ * @param {Array<string>} list The folder prefix listing as returned by S3.
+ * @returns {Array} The folder listing as returned to the client
+ */
+function transformFolders(list) {
+  // report only the last name segment of the folder in the name field
+  return list.map((folder) => {
+    const sp = folder.split('/').filter((f) => f);
+    return {
+      name: sp.pop().concat('/'),
+      'content-type': 'application/folder',
+    };
+  });
 }
 
 /**
@@ -66,7 +81,9 @@ function transformOutput(list) {
  */
 export async function createFolder(context, info) {
   const { org, site, rawPath: key } = info;
-  const path = getS3Path(org, site, `${key.slice(0, -1)}.${DIR_MARKER}`);
+
+  const folderName = key.split('/').filter((f) => f).pop();
+  const path = getS3Path(org, site, `${key}${folderName}.${DIR_MARKER}`);
   return putSourceFile(context, path, `.${DIR_MARKER}`, '{}');
 }
 
@@ -87,19 +104,12 @@ export async function listFolder(context, info, headRequest) {
   const path = getS3Path(org, site, key);
 
   try {
-    // Ask S3 for a folder listing
-    const list = await bucket.list(path, { shallow: true });
-    if (list.length === 0 && key.length > 1) {
-      // The folder could be an empty folder, in which case S3 doesn't report it.
-      // Let's check if there is a file in the parent folder with the ._dir extension.
-      const dirMarker = `${getS3Path(org, site, key.slice(0, -1))}.${DIR_MARKER}`;
-      const emptyDir = await bucket.head(dirMarker);
+    const folderList = await bucket.listFolders(path);
+    const fileList = await bucket.list(path, { shallow: true });
 
-      if (emptyDir?.$metadata?.httpStatusCode === 200) {
-        // If the marker file exists, the folder exists, but it empty.
-        return new Response(headRequest ? '' : '[]', { status: 200 });
-      }
-      // Folder does not exist.
+    // Check the length of the raw files and folders. This will include the
+    // directory marker files.
+    if (fileList.length + folderList.length === 0) {
       return new Response('', { status: 404 });
     }
 
@@ -107,7 +117,10 @@ export async function listFolder(context, info, headRequest) {
       return new Response('', { status: 200 });
     }
 
-    const output = transformOutput(list);
+    const folders = transformFolders(folderList);
+    const files = transformFiles(fileList);
+    const output = [...folders, ...files].sort((a, b) => a.name.localeCompare(b.name));
+
     const headers = {
       'Content-Type': 'application/json',
     };

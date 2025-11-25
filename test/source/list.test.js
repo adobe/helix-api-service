@@ -26,7 +26,7 @@ const BUCKET_LIST_RESULT1 = `
     <MaxKeys>1000</MaxKeys>
     <IsTruncated>false</IsTruncated>
     <Contents>
-      <Key>org1/site2/a/b/c/somepdf.pdf</Key>
+      <Key>org1/site2/a/b/c/somejson.json</Key>
       <LastModified>2025-01-01T12:34:56.000Z</LastModified>
       <Size>32768</Size>
     </Contents>
@@ -36,18 +36,32 @@ const BUCKET_LIST_RESULT1 = `
       <Size>123</Size>
     </Contents>
     <Contents>
-      <Key>org1/site2/a/b/c/subdir._dir</Key>
-      <LastModified>2001-01-01T01:01:01.001Z</LastModified>
-      <Size>327</Size>
-    </Contents>
-    <Contents>
       <Key>org1/site2/a/b/c/someunknownfile</Key>
       <LastModified>2001-01-01T01:01:01.001Z</LastModified>
       <Size>88888</Size>
     </Contents>
+    <Contents>
+      <Key>org1/site2/a/b/c/mwahaha.mwa</Key>
+      <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+      <Size>3141592653</Size>
+    </Contents>
     <CommonPrefixes>
-      <Prefix>org1/site2/a/b/c/</Prefix>
+      <Prefix>org1/site2/a/b/c/q/</Prefix>
     </CommonPrefixes>
+  </ListBucketResult>`;
+
+const BUCKET_LIST_RESULT2 = `
+  <ListBucketResult>
+    <Name>my-bucket</Name>
+    <Prefix>org1/site2/some/subfolder/</Prefix>
+    <Marker></Marker>
+    <MaxKeys>1000</MaxKeys>
+    <IsTruncated>false</IsTruncated>
+    <Contents>
+      <Key>org1/site2/some/subfolder/subfolder._dir</Key>
+      <LastModified>2021-12-31T01:01:01.001Z</LastModified>
+      <Size>3</Size>
+    </Contents>
   </ListBucketResult>`;
 
 describe('Source List Tests', () => {
@@ -67,6 +81,7 @@ describe('Source List Tests', () => {
   it('test GET folder', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
+      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT1));
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');
@@ -81,14 +96,14 @@ describe('Source List Tests', () => {
         'last-modified': '2021-12-31T01:01:01.001Z',
       },
       {
-        name: 'somepdf.pdf',
-        size: 32768,
-        'content-type': 'application/pdf',
-        'last-modified': '2025-01-01T12:34:56.000Z',
+        name: 'q/',
+        'content-type': 'application/folder',
       },
       {
-        name: 'subdir/',
-        'content-type': 'application/folder',
+        name: 'somejson.json',
+        size: 32768,
+        'content-type': 'application/json',
+        'last-modified': '2025-01-01T12:34:56.000Z',
       },
     ]);
   });
@@ -96,6 +111,7 @@ describe('Source List Tests', () => {
   it('test HEAD folder', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
+      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT1));
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');
@@ -106,12 +122,9 @@ describe('Source List Tests', () => {
 
   it('test GET folder with no contents', async () => {
     nock.source()
-      .head('/org1/site2/base/sub._dir')
-      .reply(200);
-
-    nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
-      .reply(200);
+      .twice()
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
     const resp = await getSource(context, info);
@@ -122,12 +135,9 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder with no contents', async () => {
     nock.source()
-      .head('/org1/site2/base/sub._dir')
-      .reply(200);
-
-    nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
-      .reply(200);
+      .twice()
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
     const resp = await headSource(context, info);
@@ -137,11 +147,8 @@ describe('Source List Tests', () => {
 
   it('test GET folder does not exist', async () => {
     nock.source()
-      .head('/org1/site2/base/sub._dir')
-      .reply(404);
-
-    nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
+      .twice()
       .reply(200);
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -151,11 +158,8 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder does not exist', async () => {
     nock.source()
-      .head('/org1/site2/base/sub._dir')
-      .reply(404);
-
-    nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
+      .twice()
       .reply(200);
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -176,7 +180,7 @@ describe('Source List Tests', () => {
 
   it('test create folder', async () => {
     nock.source()
-      .putObject('/org1/site2/new._dir')
+      .putObject('/org1/site2/new/new._dir')
       .reply(201);
     const info = createInfo('/org1/sites/site2/source/new/');
     const resp = await postSource(context, info);

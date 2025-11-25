@@ -81,7 +81,6 @@ describe('Source List Tests', () => {
   it('test GET folder', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
-      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT1));
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');
@@ -111,7 +110,6 @@ describe('Source List Tests', () => {
   it('test HEAD folder', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
-      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT1));
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');
@@ -123,7 +121,6 @@ describe('Source List Tests', () => {
   it('test GET folder with no contents', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
-      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -136,7 +133,6 @@ describe('Source List Tests', () => {
   it('test HEAD folder with no contents', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
-      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -148,7 +144,6 @@ describe('Source List Tests', () => {
   it('test GET folder does not exist', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
-      .twice()
       .reply(200);
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -159,7 +154,6 @@ describe('Source List Tests', () => {
   it('test HEAD folder does not exist', async () => {
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
-      .twice()
       .reply(200);
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -185,5 +179,14 @@ describe('Source List Tests', () => {
     const info = createInfo('/org1/sites/site2/source/new/');
     const resp = await postSource(context, info);
     assert.equal(resp.status, 201);
+  });
+
+  it('test create folder with error', async () => {
+    nock.source()
+      .putObject('/org1/site2/new/new._dir')
+      .reply(401);
+    const info = createInfo('/org1/sites/site2/source/new/');
+    const resp = await postSource(context, info);
+    assert.equal(resp.status, 401);
   });
 });

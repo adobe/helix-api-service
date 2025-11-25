@@ -18,7 +18,8 @@ import { getS3Path, CONTENT_TYPES } from './utils.js';
 // A directory is marked by a marker file.
 // This is to allow directories to show up in file listings without
 // having to do a deep S3 listing.
-const DIR_MARKER = '_dir';
+const FOLDER_MARKER = '_dir';
+const FOLDER_CONTENT_TYPE = 'application/folder';
 
 /**
  * Convert the directory listing from S3 format to the format expected by the client.
@@ -27,8 +28,16 @@ const DIR_MARKER = '_dir';
  *   The directory listing as returned by S3.
  * @returns {Array} The directory listing as returned to the client
  */
-function transformFiles(list) {
+function transformList(list) {
   return list.map((item) => {
+    if (item.key.endsWith('/')) {
+      // it's a subfolder
+      return {
+        name: item.path,
+        'content-type': FOLDER_CONTENT_TYPE,
+      };
+    }
+
     const { lastModified, path } = item;
     const sp = path.split('.');
 
@@ -37,7 +46,7 @@ function transformFiles(list) {
       return null;
     }
     const ext = sp.pop();
-    if (ext === DIR_MARKER) {
+    if (ext === FOLDER_MARKER) {
       // dir marker files are ignored here
       return null;
     }
@@ -53,45 +62,37 @@ function transformFiles(list) {
       'content-type': item.contentType,
       'last-modified': timestamp.toISOString(),
     };
-  }).filter((i) => i);
-}
-/**
- * Convert the folder prefix listing from S3 format to the format expected by the client.
- *
- * @param {Array<string>} list The folder prefix listing as returned by S3.
- * @returns {Array} The folder listing as returned to the client
- */
-function transformFolders(list) {
-  // report only the last name segment of the folder in the name field
-  return list.map((folder) => {
-    const sp = folder.split('/').filter((f) => f);
-    return {
-      name: sp.pop().concat('/'),
-      'content-type': 'application/folder',
-    };
-  });
+  }).filter((i) => i)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
  * Create a folder in the source bus, by creating a directory marker file.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {import('../support/RequestInfo.js').RequestInfo} info request info
  * @return {Promise<Response>} response
  */
 export async function createFolder(context, info) {
   const { org, site, rawPath: key } = info;
 
   const folderName = key.split('/').filter((f) => f).pop();
-  const path = getS3Path(org, site, `${key}${folderName}.${DIR_MARKER}`);
-  return putSourceFile(context, path, `.${DIR_MARKER}`, '{}');
+  const path = getS3Path(org, site, `${key}${folderName}.${FOLDER_MARKER}`);
+
+  try {
+    return await putSourceFile(context, path, FOLDER_CONTENT_TYPE, '{}');
+  } catch (e) {
+    const opts = { e, log: context.log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
+  }
 }
 
 /**
  * Provide a directory listing from the source bus.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {import('../support/RequestInfo.js').RequestInfo} info request info
  * @param {boolean} headRequest true if this is a HEAD request
  * @return {Promise<Response>} response A JSON response with the directory listing
  */
@@ -104,12 +105,12 @@ export async function listFolder(context, info, headRequest) {
   const path = getS3Path(org, site, key);
 
   try {
-    const folderList = await bucket.listFolders(path);
-    const fileList = await bucket.list(path, { shallow: true });
+    const list = await bucket.list(path, { shallow: true, prefixes: true });
 
-    // Check the length of the raw files and folders. This will include the
-    // directory marker files.
-    if (fileList.length + folderList.length === 0) {
+    // Check the length of the raw filesList. This will include the
+    // directory marker files. So a directory with just a marker file
+    // is reported as empty, but without anything is reported as not found.
+    if (list.length === 0) {
       return new Response('', { status: 404 });
     }
 
@@ -117,10 +118,7 @@ export async function listFolder(context, info, headRequest) {
       return new Response('', { status: 200 });
     }
 
-    const folders = transformFolders(folderList);
-    const files = transformFiles(fileList);
-    const output = [...folders, ...files].sort((a, b) => a.name.localeCompare(b.name));
-
+    const output = transformList(list);
     const headers = {
       'Content-Type': 'application/json',
     };

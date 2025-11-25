@@ -176,7 +176,6 @@ describe('Source Handler Tests', () => {
 
     nock.source()
       .get('/?delimiter=%2F&list-type=2&prefix=org%2Fsite%2Fmy%2Ffolder%2F')
-      .twice()
       .reply(200, Buffer.from(bucketListResult));
 
     const resp = await main(new Request('https://api.aem.live/', {

@@ -49,27 +49,19 @@ function getUser(context) {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} path path to store the file (including extension)
- * @param {string} ext extension (e.g. '.json')
+ * @param {string} mime the mime type of the file
  * @param {Buffer} body content body
  * @returns {Promise<Response>} response
  */
-export async function putSourceFile(context, path, ext, body) {
-  const { log } = context;
-
+export async function putSourceFile(context, path, mime, body) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
-  try {
-    const resp = await bucket.put(path, body, contentTypeFromExtension(ext), {
-      'Last-Modified-By': getUser(context),
-    });
+  const resp = await bucket.put(path, body, mime, {
+    'Last-Modified-By': getUser(context),
+  });
 
-    const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
-    return new Response('', { status });
-  } catch (e) {
-    const opts = { e, log };
-    opts.status = e.$metadata?.httpStatusCode;
-    return createErrorResponse(opts);
-  }
+  const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
+  return new Response('', { status });
 }
 
 /**
@@ -82,5 +74,12 @@ export async function putSourceFile(context, path, ext, body) {
 export async function putSource(context, info) {
   const path = getSourcePath(info);
   const body = await info.buffer();
-  return putSourceFile(context, path, info.ext, body);
+
+  try {
+    return await putSourceFile(context, path, contentTypeFromExtension(info.ext), body);
+  } catch (e) {
+    const opts = { e, log: context.log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
+  }
 }

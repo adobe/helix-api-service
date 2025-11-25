@@ -14,7 +14,6 @@
  * Known content types for the source bus.
  */
 export const CONTENT_TYPES = {
-  '._dir': 'application/folder',
   '.json': 'application/json',
   '.html': 'text/html',
 };

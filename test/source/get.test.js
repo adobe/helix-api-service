@@ -68,7 +68,6 @@ describe('Source GET Tests', () => {
       .headObject('/myorg/mysite/document.html')
       .reply(200, null, {
         'content-type': 'text/html',
-        'content-length': '1024',
         etag: '"abc123"',
         'last-modified': new Date(1666666666666).toUTCString(),
       });
@@ -78,7 +77,6 @@ describe('Source GET Tests', () => {
     assert.equal(resp.status, 200);
     assert.deepStrictEqual(resp.headers.plain(), {
       'content-type': 'text/html',
-      'content-length': '1024',
       etag: '"abc123"',
       'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
     });

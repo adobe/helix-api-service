@@ -9,34 +9,22 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { createFolder } from './folder.js';
 
 /**
- * Known content types for the source bus.
- */
-export const CONTENT_TYPES = {
-  '.json': 'application/json',
-  '.html': 'text/html',
-};
-
-/**
- * Get the S3 key from the organization, site, and path.
+ * Handle POST requests to the source bus.
  *
- * @param {string} org organization
- * @param {string} site site
- * @param {string} path document path
- * @returns {string} the S3 path
- */
-export function getS3Key(org, site, path) {
-  return `${org}/${site}${path}`;
-}
-
-/**
- * Get the source bus key from the request info.
+ * Posting to a location ending with a slash will create a folder.
  *
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @return {string} the source bus path
+ * @return {Promise<Response>} response
  */
-export function getSourceKey(info) {
-  const { org, site, resourcePath: key } = info;
-  return getS3Key(org, site, key);
+export async function postSource(context, info) {
+  if (info.rawPath.endsWith('/')) {
+    return createFolder(context, info);
+  }
+
+  // TODO: Implement additional POST operations
+  return new Response('', { status: 500 });
 }

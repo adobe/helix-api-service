@@ -16,7 +16,8 @@ import assert from 'assert';
 import { promisify } from 'util';
 import zlib from 'zlib';
 import { putSource } from '../../src/source/put.js';
-import { createContext, createInfo, Nock } from '../utils.js';
+import { createInfo, Nock } from '../utils.js';
+import { setupContext } from './testutils.js';
 
 const gunzip = promisify(zlib.gunzip);
 
@@ -31,15 +32,6 @@ describe('Source PUT Tests', () => {
   afterEach(() => {
     nock.done();
   });
-
-  function setupContext(suffix, { attributes = {} } = {}) {
-    return createContext(suffix, {
-      attributes,
-      env: {
-        HELIX_STORAGE_DISABLE_R2: 'true',
-      },
-    });
-  }
 
   it('test putSource HTML with user', async () => {
     async function putFn(_uri, gzipBody) {

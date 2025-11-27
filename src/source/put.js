@@ -12,12 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourcePath } from './utils.js';
-
-const CONTENT_TYPES = {
-  '.json': 'application/json',
-  '.html': 'text/html',
-};
+import { getSourceKey, CONTENT_TYPES } from './utils.js';
 
 /**
  * Get the content type from the extension.
@@ -50,6 +45,26 @@ function getUser(context) {
 }
 
 /**
+ * Put file based on key and body in the source bus.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} key key to store the file at (including extension)
+ * @param {string} mime the mime type of the file
+ * @param {Buffer} body content body
+ * @returns {Promise<Response>} response
+ */
+export async function putSourceFile(context, key, mime, body) {
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+
+  const resp = await bucket.put(key, body, mime, {
+    'Last-Modified-By': getUser(context),
+  });
+
+  const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
+  return new Response('', { status });
+}
+
+/**
  * Put into the source bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -57,21 +72,13 @@ function getUser(context) {
  * @return {Promise<Response>} response
 */
 export async function putSource(context, info) {
-  const { log } = context;
-
-  const bucket = HelixStorage.fromContext(context).sourceBus();
-  const path = getSourcePath(info);
+  const key = getSourceKey(info);
+  const body = await info.buffer();
 
   try {
-    const body = await info.buffer();
-    const resp = await bucket.put(path, body, contentTypeFromExtension(info.ext), {
-      'Last-Modified-By': getUser(context),
-    });
-
-    const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
-    return new Response('', { status });
+    return await putSourceFile(context, key, contentTypeFromExtension(info.ext), body);
   } catch (e) {
-    const opts = { e, log };
+    const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }

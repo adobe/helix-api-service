@@ -12,7 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourcePath } from './utils.js';
+import { getSourceKey } from './utils.js';
 
 /**
  * Delete from the source bus.
@@ -25,10 +25,10 @@ export async function deleteSource(context, info) {
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();
-  const path = getSourcePath(info);
+  const key = getSourceKey(info);
 
   try {
-    const resp = await bucket.remove(path);
+    const resp = await bucket.remove(key);
     return new Response('', { status: resp.$metadata?.httpStatusCode });
   } catch (e) {
     const opts = { e, log };

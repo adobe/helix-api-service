@@ -19,24 +19,24 @@ export const CONTENT_TYPES = {
 };
 
 /**
- * Get the S3 path from the organization, site, and key.
+ * Get the S3 key from the organization, site, and path.
  *
  * @param {string} org organization
  * @param {string} site site
- * @param {string} key document key
+ * @param {string} path document path
  * @returns {string} the S3 path
  */
-export function getS3Path(org, site, key) {
-  return `${org}/${site}${key}`;
+export function getS3Key(org, site, path) {
+  return `${org}/${site}${path}`;
 }
 
 /**
- * Get the source bus path from the request info.
+ * Get the source bus key from the request info.
  *
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @return {string} the source bus path
  */
-export function getSourcePath(info) {
+export function getSourceKey(info) {
   const { org, site, resourcePath: key } = info;
-  return getS3Path(org, site, key);
+  return getS3Key(org, site, key);
 }

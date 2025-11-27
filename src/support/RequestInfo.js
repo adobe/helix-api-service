@@ -22,7 +22,7 @@ import { StatusCodeError } from './StatusCodeError.js';
  * @param {boolean} [sanitize] whether to sanitize basename
  * @returns {object} containing `basename` and `extension`
  */
-function splitExtension(filename, sanitize) {
+export function splitExtension(filename, sanitize) {
   const transform = sanitize ? sanitizeName : (s) => s;
 
   const idx = filename.lastIndexOf('.');

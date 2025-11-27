@@ -13,7 +13,7 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { listFolder } from './folder.js';
-import { getSourcePath } from './utils.js';
+import { getSourceKey } from './utils.js';
 
 /**
  * Get the headers for the response.
@@ -43,11 +43,11 @@ async function accessSource(context, info, headRequest) {
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();
-  const path = getSourcePath(info);
+  const key = getSourceKey(info);
 
   try {
     if (headRequest) {
-      const head = await bucket.head(path);
+      const head = await bucket.head(key);
       if (!head) {
         return new Response('', { status: 404 });
       }
@@ -56,7 +56,7 @@ async function accessSource(context, info, headRequest) {
       return new Response('', { status: head.$metadata.httpStatusCode, headers });
     } else {
       const meta = {};
-      const body = await bucket.get(path, meta);
+      const body = await bucket.get(key, meta);
       if (!body) {
         return new Response('', { status: 404 });
       }

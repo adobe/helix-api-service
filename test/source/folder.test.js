@@ -58,7 +58,7 @@ const BUCKET_LIST_RESULT2 = `
     <MaxKeys>1000</MaxKeys>
     <IsTruncated>false</IsTruncated>
     <Contents>
-      <Key>org1/site2/some/subfolder/subfolder._dir</Key>
+      <Key>org1/site2/some/subfolder/.props</Key>
       <LastModified>2021-12-31T01:01:01.001Z</LastModified>
       <Size>3</Size>
     </Contents>
@@ -120,10 +120,10 @@ describe('Source List Tests', () => {
 
   it('test GET folder with no contents', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
+      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fsome%2Fsubfolder%2F')
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
-    const info = createInfo('/org1/sites/site2/source/base/sub/');
+    const info = createInfo('/org1/sites/site2/source/some/subfolder/');
     const resp = await getSource(context, info);
     assert.equal(resp.status, 200);
     const json = await resp.json();
@@ -132,10 +132,10 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder with no contents', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
+      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fsome%2Fsubfolder%2F')
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
-    const info = createInfo('/org1/sites/site2/source/base/sub/');
+    const info = createInfo('/org1/sites/site2/source/some/subfolder/');
     const resp = await headSource(context, info);
     assert.equal(resp.status, 200);
     assert.equal(await resp.text(), '');
@@ -174,7 +174,7 @@ describe('Source List Tests', () => {
 
   it('test create folder', async () => {
     nock.source()
-      .putObject('/org1/site2/new/new._dir')
+      .putObject('/org1/site2/new/.props')
       .reply(201);
     const info = createInfo('/org1/sites/site2/source/new/');
     const resp = await postSource(context, info);
@@ -183,7 +183,7 @@ describe('Source List Tests', () => {
 
   it('test create folder with error', async () => {
     nock.source()
-      .putObject('/org1/site2/new/new._dir')
+      .putObject('/org1/site2/new/.props')
       .reply(401);
     const info = createInfo('/org1/sites/site2/source/new/');
     const resp = await postSource(context, info);

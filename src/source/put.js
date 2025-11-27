@@ -12,7 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourcePath, CONTENT_TYPES } from './utils.js';
+import { getSourceKey, CONTENT_TYPES } from './utils.js';
 
 /**
  * Get the content type from the extension.
@@ -45,18 +45,18 @@ function getUser(context) {
 }
 
 /**
- * Put file based on path and body in the source bus.
+ * Put file based on key and body in the source bus.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} path path to store the file (including extension)
+ * @param {string} key key to store the file at (including extension)
  * @param {string} mime the mime type of the file
  * @param {Buffer} body content body
  * @returns {Promise<Response>} response
  */
-export async function putSourceFile(context, path, mime, body) {
+export async function putSourceFile(context, key, mime, body) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
-  const resp = await bucket.put(path, body, mime, {
+  const resp = await bucket.put(key, body, mime, {
     'Last-Modified-By': getUser(context),
   });
 
@@ -72,11 +72,11 @@ export async function putSourceFile(context, path, mime, body) {
  * @return {Promise<Response>} response
 */
 export async function putSource(context, info) {
-  const path = getSourcePath(info);
+  const key = getSourceKey(info);
   const body = await info.buffer();
 
   try {
-    return await putSourceFile(context, path, contentTypeFromExtension(info.ext), body);
+    return await putSourceFile(context, key, contentTypeFromExtension(info.ext), body);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

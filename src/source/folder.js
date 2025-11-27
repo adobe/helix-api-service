@@ -12,13 +12,15 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { splitExtension } from '../support/RequestInfo.js';
 import { putSourceFile } from './put.js';
-import { getS3Path, CONTENT_TYPES } from './utils.js';
+import { getS3Key, CONTENT_TYPES } from './utils.js';
 
-// A directory is marked by a marker file.
-// This is to allow directories to show up in file listings without
-// having to do a deep S3 listing.
-const FOLDER_MARKER = '_dir';
+/**
+ * A folder is marked by a marker file. This allows folder to show up in bucket
+ * listings without having to do a deep S3 listing.
+ */
+const FOLDER_MARKER = '.props';
 const FOLDER_CONTENT_TYPE = 'application/folder';
 
 /**
@@ -39,18 +41,14 @@ function transformList(list) {
     }
 
     const { lastModified, path } = item;
-    const sp = path.split('.');
 
-    if (sp.length < 2) {
-      // files without extensions are currently not supported
+    if (path === FOLDER_MARKER) {
+      // folder marker files are ignored here
       return null;
     }
-    const ext = sp.pop();
-    if (ext === FOLDER_MARKER) {
-      // dir marker files are ignored here
-      return null;
-    }
-    if (!CONTENT_TYPES[`.${ext}`]) {
+
+    const { ext } = splitExtension(path);
+    if (!CONTENT_TYPES[ext]) {
       // unknown content type
       return null;
     }
@@ -62,7 +60,7 @@ function transformList(list) {
       'content-type': item.contentType,
       'last-modified': timestamp.toISOString(),
     };
-  }).filter((i) => i)
+  }).filter((i) => !!i)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -74,13 +72,11 @@ function transformList(list) {
  * @return {Promise<Response>} response
  */
 export async function createFolder(context, info) {
-  const { org, site, rawPath: key } = info;
-
-  const folderName = key.split('/').filter((f) => f).pop();
-  const path = getS3Path(org, site, `${key}${folderName}.${FOLDER_MARKER}`);
+  const { org, site, rawPath: path } = info;
+  const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
 
   try {
-    return await putSourceFile(context, path, FOLDER_CONTENT_TYPE, '{}');
+    return await putSourceFile(context, key, FOLDER_CONTENT_TYPE, '{}');
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
@@ -101,11 +97,11 @@ export async function listFolder(context, info, headRequest) {
 
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
-  const { org, site, rawPath: key } = info;
-  const path = getS3Path(org, site, key);
+  const { org, site, rawPath: path } = info;
+  const key = getS3Key(org, site, path);
 
   try {
-    const list = await bucket.list(path, { shallow: true, includePrefixes: true });
+    const list = await bucket.list(key, { shallow: true, includePrefixes: true });
 
     // Check the length of the raw filesList. This will include the
     // directory marker files. So a directory with just a marker file

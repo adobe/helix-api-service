@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/adobe/helix-api-service/compare/v1.18.3...v1.19.0) (2025-11-27)
+
+
+### Features
+
+* support directory listing for source endpoint ([#47](https://github.com/adobe/helix-api-service/issues/47)) ([26e5b79](https://github.com/adobe/helix-api-service/commit/26e5b79e7344613b21badf48125dbec82ea9fb0d))
+
 ## [1.18.3](https://github.com/adobe/helix-api-service/compare/v1.18.2...v1.18.3) (2025-11-25)
 
 

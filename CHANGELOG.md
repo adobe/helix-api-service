@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/adobe/helix-api-service/compare/v1.19.0...v1.19.1) (2025-11-27)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-shared-body-data to v2.2.2 ([#51](https://github.com/adobe/helix-api-service/issues/51)) ([4a9241a](https://github.com/adobe/helix-api-service/commit/4a9241aabe240d9b6eaa149b63c79b17e273ef10))
+
 # [1.19.0](https://github.com/adobe/helix-api-service/compare/v1.18.3...v1.19.0) (2025-11-27)
 
 

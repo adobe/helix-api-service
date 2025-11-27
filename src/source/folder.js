@@ -11,6 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { sanitizePath } from '@adobe/helix-shared-string';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { splitExtension } from '../support/RequestInfo.js';
 import { putSourceFile } from './put.js';
@@ -65,7 +66,25 @@ function transformList(list) {
 }
 
 /**
+ * Validate a folder path by checking that its name remains the same once
+ * sanitized.
+ *
+ * @param {string} path The folder path, note that it must end with a slash
+ */
+function validateFolderPath(path) {
+  // Remove the trailing slash
+  const folder = path.slice(0, -1);
+
+  if (!path.endsWith('/') || folder !== sanitizePath(folder)) {
+    const e = new Error('Invalid folder path');
+    e.statusCode = 400;
+    throw e;
+  }
+}
+
+/**
  * Create a folder in the source bus, by creating a directory marker file.
+ * The folder name must end with a slash and has to be of sanitized form.
  *
  * @param {import('../support/AdminContext.js').AdminContext} context context
  * @param {import('../support/RequestInfo.js').RequestInfo} info request info
@@ -73,9 +92,11 @@ function transformList(list) {
  */
 export async function createFolder(context, info) {
   const { org, site, rawPath: path } = info;
-  const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
 
   try {
+    validateFolderPath(path);
+    const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
+
     return await putSourceFile(context, key, FOLDER_CONTENT_TYPE, '{}');
   } catch (e) {
     const opts = { e, log: context.log };
@@ -96,11 +117,11 @@ export async function listFolder(context, info, headRequest) {
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();
-
   const { org, site, rawPath: path } = info;
-  const key = getS3Key(org, site, path);
 
   try {
+    validateFolderPath(path);
+    const key = getS3Key(org, site, path);
     const list = await bucket.list(key, { shallow: true, includePrefixes: true });
 
     // Check the length of the raw filesList. This will include the

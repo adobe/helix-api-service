@@ -189,4 +189,16 @@ describe('Source List Tests', () => {
     const resp = await postSource(context, info);
     assert.equal(resp.status, 401);
   });
+
+  it('test that list folder with non-sanitized path returns 400', async () => {
+    const info = createInfo('/org1/sites/site2/source/some/where/uh_huh/');
+    const resp = await getSource(context, info);
+    assert.equal(resp.status, 400);
+  });
+
+  it('test that create folder with non-sanitized path returns 400', async () => {
+    const info = createInfo('/org1/sites/site2/source/NewThing/');
+    const resp = await postSource(context, info);
+    assert.equal(resp.status, 400);
+  });
 });

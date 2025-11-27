@@ -29,7 +29,22 @@ const FOLDER_CONTENT_TYPE = 'application/folder';
  *
  * @param {import('@aws-sdk/client-s3').ListObjectsV2Output} list
  *   The directory listing as returned by S3.
- * @returns {Array} The directory listing as returned to the client
+ * @returns {Array} The directory listing as returned to the client the format
+ * is as follows:
+ * [
+ *   {
+ *     name: 'foldername',
+ *     'content-type': 'application/folder',
+ *   },
+ *   {
+ *     name: 'filename.ext',
+ *     size: 123,
+ *     'content-type': 'application/json',
+ *     'last-modified': '2021-01-01T00:00:00.000Z',
+ *   },
+ * ]
+ * Folders are returned by name only, files have their size, content type and
+ * last modified date reported. The returned array is sorted by name.
  */
 function transformList(list) {
   return list.map((item) => {

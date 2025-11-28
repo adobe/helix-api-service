@@ -1,3 +1,10 @@
+## [1.19.2](https://github.com/adobe/helix-api-service/compare/v1.19.1...v1.19.2) (2025-11-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-shared-storage to v1.10.0 ([#53](https://github.com/adobe/helix-api-service/issues/53)) ([7c38c2b](https://github.com/adobe/helix-api-service/commit/7c38c2b9aa88c7a63f154f56d8ea57e01d146be9))
+
 ## [1.19.1](https://github.com/adobe/helix-api-service/compare/v1.19.0...v1.19.1) (2025-11-27)
 
 

@@ -20,7 +20,7 @@ jobs:
       - name: Use Node.js 20.x
         uses: actions/setup-node@v5
         with:
-          node-version: '22.x'
+          node-version: '24.x'
       - name: setup .npmrc
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
       - run: npm install
@@ -40,7 +40,7 @@ jobs:
       - name: Use Node.js 20.x
         uses: actions/setup-node@v5
         with:
-          node-version: '22.x'
+          node-version: '24.x'
       - name: setup .npmrc
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
       - run: npm install
@@ -76,7 +76,7 @@ jobs:
       - name: Use Node.js 20.x
         uses: actions/setup-node@v5
         with:
-          node-version: '22.x'
+          node-version: '24.x'
       - name: setup .npmrc
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
       - run: npm install

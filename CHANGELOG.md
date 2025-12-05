@@ -1,3 +1,10 @@
+## [1.19.4](https://github.com/adobe/helix-api-service/compare/v1.19.3...v1.19.4) (2025-12-05)
+
+
+### Bug Fixes
+
+* use StatusCodeError for consistent error handling ([#57](https://github.com/adobe/helix-api-service/issues/57)) ([1a194a4](https://github.com/adobe/helix-api-service/commit/1a194a4e6eeae0c6668a79e84496a643286501fd))
+
 ## [1.19.3](https://github.com/adobe/helix-api-service/compare/v1.19.2...v1.19.3) (2025-12-02)
 
 

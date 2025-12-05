@@ -16,6 +16,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { splitExtension } from '../support/RequestInfo.js';
 import { putSourceFile } from './put.js';
 import { getS3Key, CONTENT_TYPES } from './utils.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
  * A folder is marked by a marker file. This allows folder to show up in bucket
@@ -91,9 +92,7 @@ function validateFolderPath(path) {
   const folder = path.slice(0, -1);
 
   if (!path.endsWith('/') || folder !== sanitizePath(folder)) {
-    const e = new Error('Invalid folder path');
-    e.statusCode = 400;
-    throw e;
+    throw new StatusCodeError('Invalid folder path', 400);
   }
 }
 
@@ -112,7 +111,7 @@ export async function createFolder(context, info) {
     validateFolderPath(path);
     const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
 
-    return await putSourceFile(context, key, FOLDER_CONTENT_TYPE, '{}');
+    return await putSourceFile(context, key, 'application/json', '{}');
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

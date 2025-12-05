@@ -80,7 +80,12 @@ describe('Source List Tests', () => {
 
   it('test GET folder', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/c/',
+      })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT1));
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');
@@ -109,7 +114,12 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/c/',
+      })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT1));
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');
@@ -120,7 +130,12 @@ describe('Source List Tests', () => {
 
   it('test GET folder with no contents', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fsome%2Fsubfolder%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/some/subfolder/',
+      })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     const info = createInfo('/org1/sites/site2/source/some/subfolder/');
@@ -132,7 +147,12 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder with no contents', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fsome%2Fsubfolder%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/some/subfolder/',
+      })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     const info = createInfo('/org1/sites/site2/source/some/subfolder/');
@@ -143,7 +163,12 @@ describe('Source List Tests', () => {
 
   it('test GET folder does not exist', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/base/sub/',
+      })
       .reply(200);
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -153,7 +178,12 @@ describe('Source List Tests', () => {
 
   it('test HEAD folder does not exist', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fbase%2Fsub%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/base/sub/',
+      })
       .reply(200);
 
     const info = createInfo('/org1/sites/site2/source/base/sub/');
@@ -163,7 +193,12 @@ describe('Source List Tests', () => {
 
   it('test GET folder with error', async () => {
     nock.source()
-      .get('/?delimiter=%2F&list-type=2&prefix=org1%2Fsite2%2Fa%2Fb%2Fc%2F')
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/c/',
+      })
       .replyWithError('Oh no!');
 
     const info = createInfo('/org1/sites/site2/source/a/b/c/');

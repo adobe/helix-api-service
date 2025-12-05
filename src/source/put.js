@@ -13,6 +13,7 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { getSourceKey, CONTENT_TYPES } from './utils.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
  * Get the content type from the extension.
@@ -26,9 +27,7 @@ function contentTypeFromExtension(ext) {
   if (contentType) {
     return contentType;
   }
-  const e = new Error(`Unknown file type: ${ext}`);
-  e.$metadata = { httpStatusCode: 415 };
-  throw e;
+  throw new StatusCodeError(`Unknown file type: ${ext}`, 415);
 }
 
 /**

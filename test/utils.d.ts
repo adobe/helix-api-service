@@ -18,6 +18,7 @@ declare function nocker(
 
 declare interface S3Nock {
   head(key: string): nock.Scope;
+  deleteObject(key: string): nock.Scope;
   getObject(key: string): nock.Scope;
   putObject(key: string): nock.Scope;
   copyObject(key: string): nock.Scope;

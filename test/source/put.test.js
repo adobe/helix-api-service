@@ -43,6 +43,7 @@ describe('Source PUT Tests', () => {
       .putObject('/tst/best/toast/jam.html')
       .matchHeader('content-type', 'text/html')
       .matchHeader('x-amz-meta-last-modified-by', 'test@example.com')
+      .matchHeader('x-amz-meta-uncompressed-length', '31')
       .reply(201, putFn);
 
     const path = '/tst/sites/best/source/toast/jam.html';

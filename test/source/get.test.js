@@ -71,7 +71,7 @@ describe('Source GET Tests', () => {
         etag: '"abc123"',
         'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
         'content-length': '111',
-        'x-amz-meta-uncompressed-length': '87',
+        'x-amz-meta-uncompressed-length': '587',
       });
     const info = createInfo('/myorg/sites/mysite/source/document.html');
 
@@ -81,7 +81,7 @@ describe('Source GET Tests', () => {
       'content-type': 'text/html',
       etag: '"abc123"',
       'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      'content-length': '87',
+      'content-length': '587',
     });
     assert.equal(await resp.text(), '');
   });

@@ -52,7 +52,8 @@ async function accessSource(context, info, headRequest) {
         return new Response('', { status: 404 });
       }
 
-      const headers = getHeaders(head, 0);
+      const length = head.Metadata?.['uncompressed-length'] || head.ContentLength;
+      const headers = getHeaders(head, length);
       return new Response('', { status: head.$metadata.httpStatusCode, headers });
     } else {
       const meta = {};

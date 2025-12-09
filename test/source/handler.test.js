@@ -20,6 +20,25 @@ import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
+const BUCKET_LIST_RESULT = `
+  <ListBucketResult>
+    <Name>my-bucket</Name>
+    <Prefix>org/site/myfolder/</Prefix>
+    <Marker></Marker>
+    <MaxKeys>1000</MaxKeys>
+    <IsTruncated>false</IsTruncated>
+    <Contents>
+      <Key>org/site/myfolder/sub/abc.pdf</Key>
+      <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+      <Size>32768</Size>
+    </Contents>
+    <Contents>
+      <Key>org/site/myfolder/xyz.html</Key>
+      <LastModified>2021-12-31T01:01:01.001Z</LastModified>
+      <Size>123</Size>
+    </Contents>
+  </ListBucketResult>`;
+
 const gunzip = promisify(zlib.gunzip);
 
 function assertHeadersInclude(headers, expected) {
@@ -125,6 +144,26 @@ describe('Source Handler Tests', () => {
     const resp = await main(new Request('https://api.aem.live/', {
       method: 'DELETE',
     }), setupContext('/org/sites/site/source/to/be/deleted.html'));
+    assert.equal(resp.status, 204);
+  });
+
+  it('handles DELETE requests to delete a folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org/site/myfolder/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+    nock.source()
+      .deleteObject('/org/site/myfolder/sub/abc.pdf')
+      .reply(204);
+    nock.source()
+      .deleteObject('/org/site/myfolder/xyz.html')
+      .reply(204);
+    const resp = await main(new Request('https://api.aem.live/', {
+      method: 'DELETE',
+    }), setupContext('/org/sites/site/source/myfolder/'));
     assert.equal(resp.status, 204);
   });
 

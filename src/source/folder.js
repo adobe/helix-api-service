@@ -120,6 +120,41 @@ export async function createFolder(context, info) {
 }
 
 /**
+ * Delete a folder from the source bus recusively.
+ *
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {import('../support/RequestInfo.js').RequestInfo} info request info
+ * @returns {Promise<Response>} response with status 204 if successful, 404 if
+ * the folder does not exist, or an error response if the folder cannot be deleted.
+ */
+export async function deleteFolder(context, info) {
+  const { log } = context;
+
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  const { org, site, rawPath: path } = info;
+
+  try {
+    validateFolderPath(path);
+    const key = getS3Key(org, site, path);
+
+    const list = await bucket.list(key, { shallow: false });
+    if (list.length === 0) {
+      return new Response('', { status: 404 });
+    }
+
+    const tasks = list.map(async (item) => {
+      await bucket.remove(item.key);
+    });
+    await Promise.all(tasks);
+    return new Response('', { status: 204 });
+  } catch (e) {
+    const opts = { e, log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
+  }
+}
+
+/**
  * Provide a directory listing from the source bus.
  *
  * @param {import('../support/AdminContext.js').AdminContext} context context

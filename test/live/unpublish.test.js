@@ -209,7 +209,7 @@ describe('Publish Remove Tests', () => {
       });
     });
 
-    it('forward a 404 status from `contentBusRemove`', async () => {
+    it('`forward a 404 status from `contentBusRemove``', async () => {
       sandbox.stub(web2edit, 'lookup')
         .returns({ status: 404 });
 
@@ -226,7 +226,7 @@ describe('Publish Remove Tests', () => {
       assert.deepStrictEqual(response.headers.plain(), {
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'text/plain; charset=utf-8',
-        'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md from storage failed: [S3] UnknownError`,
+        'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md from storage failed: [S3] Unknown`,
       });
     });
   });

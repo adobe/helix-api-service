@@ -190,7 +190,7 @@ describe('Preview Remove Tests', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md from storage failed: [S3] UnknownError`,
+      'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md from storage failed: [S3] Unknown`,
     });
   });
 });

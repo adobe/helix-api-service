@@ -69,7 +69,9 @@ describe('Source GET Tests', () => {
       .reply(200, null, {
         'content-type': 'text/html',
         etag: '"abc123"',
-        'last-modified': new Date(1666666666666).toUTCString(),
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+        'content-length': '111',
+        'x-amz-meta-uncompressed-length': '587',
       });
     const info = createInfo('/myorg/sites/mysite/source/document.html');
 
@@ -79,6 +81,29 @@ describe('Source GET Tests', () => {
       'content-type': 'text/html',
       etag: '"abc123"',
       'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      'content-length': '587',
+    });
+    assert.equal(await resp.text(), '');
+  });
+
+  it('test headSource returns metadata with fallback content length', async () => {
+    nock.source()
+      .headObject('/org1/site2/somewhere/sheet.json')
+      .reply(200, null, {
+        'content-type': 'application/json',
+        etag: '"sometag"',
+        'last-modified': 'Tue, 09 Dec 2025 12:34:56 GMT',
+        'content-length': '876',
+      });
+    const info = createInfo('/org1/sites/site2/source/somewhere/sheet.json');
+
+    const resp = await headSource(context, info);
+    assert.equal(resp.status, 200);
+    assert.deepStrictEqual(resp.headers.plain(), {
+      'content-type': 'application/json',
+      etag: '"sometag"',
+      'last-modified': 'Tue, 09 Dec 2025 12:34:56 GMT',
+      'content-length': '876',
     });
     assert.equal(await resp.text(), '');
   });

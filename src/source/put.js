@@ -57,7 +57,8 @@ export async function putSourceFile(context, key, mime, body) {
 
   const resp = await bucket.put(key, body, mime, {
     'Last-Modified-By': getUser(context),
-  });
+    'Uncompressed-Length': String(body.length),
+  }, true);
 
   const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
   return new Response('', { status });

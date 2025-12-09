@@ -1,3 +1,10 @@
+## [1.19.9](https://github.com/adobe/helix-api-service/compare/v1.19.8...v1.19.9) (2025-12-09)
+
+
+### Bug Fixes
+
+* report content length on source endpoint HEAD requests ([#58](https://github.com/adobe/helix-api-service/issues/58)) ([c12921a](https://github.com/adobe/helix-api-service/commit/c12921a3da5187ae4dea3f29fe6db94f4b1b49cd))
+
 ## [1.19.8](https://github.com/adobe/helix-api-service/compare/v1.19.7...v1.19.8) (2025-12-09)
 
 

@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { sanitizePath } from '@adobe/helix-shared-string';
 import { createErrorResponse } from '../contentbus/utils.js';
@@ -142,10 +143,7 @@ export async function deleteFolder(context, info) {
       return new Response('', { status: 404 });
     }
 
-    const tasks = list.map(async (item) => {
-      await bucket.remove(item.key);
-    });
-    await Promise.all(tasks);
+    await processQueue(list, async (item) => bucket.remove(item.key));
     return new Response('', { status: 204 });
   } catch (e) {
     const opts = { e, log };

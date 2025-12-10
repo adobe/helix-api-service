@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { deleteFolder } from './folder.js';
 import { getSourceKey } from './utils.js';
 
 /**
@@ -22,6 +23,9 @@ import { getSourceKey } from './utils.js';
  * @return {Promise<Response>} response
  */
 export async function deleteSource(context, info) {
+  if (info.rawPath.endsWith('/')) {
+    return deleteFolder(context, info);
+  }
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();

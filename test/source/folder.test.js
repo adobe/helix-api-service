@@ -13,6 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
+import { deleteSource } from '../../src/source/delete.js';
 import { getSource, headSource } from '../../src/source/get.js';
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
@@ -61,6 +62,30 @@ const BUCKET_LIST_RESULT2 = `
       <Key>org1/site2/some/subfolder/.props</Key>
       <LastModified>2021-12-31T01:01:01.001Z</LastModified>
       <Size>3</Size>
+    </Contents>
+  </ListBucketResult>`;
+
+const BUCKET_LIST_RESULT3 = `
+  <ListBucketResult>
+    <Name>my-bucket</Name>
+    <Prefix>org1/site2/a/b/</Prefix>
+    <Marker></Marker>
+    <MaxKeys>1000</MaxKeys>
+    <IsTruncated>false</IsTruncated>
+    <Contents>
+      <Key>org1/site2/a/b/c/some.json</Key>
+      <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+      <Size>32768</Size>
+    </Contents>
+    <Contents>
+      <Key>org1/site2/a/b/c/my.pdf</Key>
+      <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+      <Size>111</Size>
+    </Contents>
+    <Contents>
+      <Key>org1/site2/a/b/page.html</Key>
+      <LastModified>2021-12-31T01:01:01.001Z</LastModified>
+      <Size>123</Size>
     </Contents>
   </ListBucketResult>`;
 
@@ -223,6 +248,76 @@ describe('Source List Tests', () => {
     const info = createInfo('/org1/sites/site2/source/new/');
     const resp = await postSource(context, info);
     assert.equal(resp.status, 401);
+  });
+
+  it('test delete folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT3));
+    nock.source()
+      .deleteObject('/org1/site2/a/b/c/some.json')
+      .reply(204);
+    nock.source()
+      .deleteObject('/org1/site2/a/b/c/my.pdf')
+      .reply(204);
+    nock.source()
+      .deleteObject('/org1/site2/a/b/page.html')
+      .reply(204);
+    const info = createInfo('/org1/sites/site2/source/a/b/');
+    const resp = await deleteSource(context, info);
+    assert.equal(resp.status, 204);
+  });
+
+  it('test delete folder not found', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org1/site2/nope/',
+      })
+      .reply(200, Buffer.from('<ListBucketResult><Name>abc</Name></ListBucketResult>'));
+    const info = createInfo('/org1/sites/site2/source/nope/');
+    const resp = await deleteSource(context, info);
+    assert.equal(resp.status, 404);
+  });
+
+  it('test delete folder with file error', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT3));
+    nock.source()
+      .deleteObject('/org1/site2/a/b/c/some.json')
+      .reply(500);
+    nock.source()
+      .deleteObject('/org1/site2/a/b/c/my.pdf')
+      .reply(204);
+    nock.source()
+      .deleteObject('/org1/site2/a/b/page.html')
+      .reply(500);
+    const info = createInfo('/org1/sites/site2/source/a/b/');
+    const resp = await deleteSource(context, info);
+    assert.equal(resp.status, 500);
+  });
+
+  it('test delete folder error', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org1/site2/nope/',
+      })
+      .reply(503);
+    const info = createInfo('/org1/sites/site2/source/nope/');
+    const resp = await deleteSource(context, info);
+    assert.equal(resp.status, 503);
   });
 
   it('test that list folder with non-sanitized path returns 400', async () => {

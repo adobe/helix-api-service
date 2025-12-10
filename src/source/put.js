@@ -12,23 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourceKey, CONTENT_TYPES } from './utils.js';
-import { StatusCodeError } from '../support/StatusCodeError.js';
-
-/**
- * Get the content type from the extension.
- *
- * @param {string} ext extension
- * @return {string} content type
- * @throws {Error} with $metadata.httpStatusCode 400 if the content type is not found
- */
-function contentTypeFromExtension(ext) {
-  const contentType = CONTENT_TYPES[ext];
-  if (contentType) {
-    return contentType;
-  }
-  throw new StatusCodeError(`Unknown file type: ${ext}`, 415);
-}
+import { getSourceKey, contentTypeFromExtension } from './utils.js';
 
 /**
  * Get the user from the context and return their email.

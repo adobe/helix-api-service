@@ -66,7 +66,7 @@ describe('Source PUT Tests', () => {
   });
 
   it('test putSource JSON', async () => {
-    async function putFn(_uri, body) {
+    function putFn(_uri, body) {
       assert.deepStrictEqual(body, { something: 'else' });
     }
 

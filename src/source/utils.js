@@ -14,9 +14,34 @@
  * Known content types for the source bus.
  */
 export const CONTENT_TYPES = {
-  '.json': 'application/json',
+  '.gif': 'image/gif',
   '.html': 'text/html',
+  '.ico': 'image/x-icon',
+  '.jpeg': 'image/jpeg',
+  '.jpg': 'image/jpeg',
+  '.json': 'application/json',
+  '.mp4': 'video/mp4',
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
 };
+
+/**
+ * Get the content type from the extension.
+ *
+ * @param {string} ext extension
+ * @return {string} content type
+ * @throws {Error} with $metadata.httpStatusCode 400 if the content type is not found
+ */
+export function contentTypeFromExtension(ext) {
+  const contentType = CONTENT_TYPES[ext.toLowerCase()];
+  if (contentType) {
+    return contentType;
+  }
+  const e = new Error(`Unknown file type: ${ext}`);
+  e.$metadata = { httpStatusCode: 415 };
+  throw e;
+}
 
 /**
  * Get the S3 key from the organization, site, and path.
@@ -24,7 +49,7 @@ export const CONTENT_TYPES = {
  * @param {string} org organization
  * @param {string} site site
  * @param {string} path document path
- * @returns {string} the S3 path
+ * @returns {string} the S3 key
  */
 export function getS3Key(org, site, path) {
   return `${org}/${site}${path}`;

@@ -9,7 +9,36 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { fromHtml } from 'hast-util-from-html';
+import { createErrorResponse } from '../contentbus/utils.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
 import { createFolder } from './folder.js';
+import { putSourceFile } from './put.js';
+import { contentTypeFromExtension, getSourceKey } from './utils.js';
+
+/**
+ * We
+ */
+const ACCEPTABLE_HTML_ERRORS = [
+  'missing-doctype',
+];
+
+export async function validateHtml(context, info) {
+  function validateHtmlError(message) {
+    const msg = `${message.message} - ${message.note}`;
+    if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
+      context.log.warn(`Ignoring HTML error: ${msg}`);
+      return;
+    }
+    throw new StatusCodeError(msg, 400);
+  }
+
+  const body = await info.buffer();
+  fromHtml(body.toString(), {
+    onerror: validateHtmlError,
+  });
+  return body;
+}
 
 /**
  * Handle POST requests to the source bus.
@@ -24,7 +53,28 @@ export async function postSource(context, info) {
   if (info.rawPath.endsWith('/')) {
     return createFolder(context, info);
   }
+  const { log } = context;
 
-  // TODO: Implement additional POST operations
-  return new Response('', { status: 500 });
+  try {
+    const mime = contentTypeFromExtension(info.ext);
+    let body;
+    switch (mime) {
+      case 'text/html':
+        body = await validateHtml(context, info);
+        break;
+      default:
+        break;
+    }
+
+    const key = getSourceKey(info);
+    if (body) {
+      return putSourceFile(context, key, mime, body);
+    }
+    const buffer = await info.buffer();
+    return putSourceFile(context, key, mime, buffer);
+  } catch (e) {
+    const opts = { e, log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
+  }
 }

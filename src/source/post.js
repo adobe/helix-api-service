@@ -17,12 +17,19 @@ import { putSourceFile } from './put.js';
 import { contentTypeFromExtension, getSourceKey } from './utils.js';
 
 /**
- * We
+ * We consider the following HTML errors to be acceptable and ignore them.
  */
 const ACCEPTABLE_HTML_ERRORS = [
   'missing-doctype',
 ];
 
+/**
+ * Validate the HTML message body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Buffer>} body the message body as buffer
+ */
 export async function validateHtml(context, info) {
   function validateHtmlError(message) {
     const msg = `${message.message} - ${message.note}`;

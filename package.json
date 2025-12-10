@@ -55,7 +55,7 @@
     "@adobe/helix-config": "5.7.0",
     "@adobe/helix-google-support": "4.0.1",
     "@adobe/helix-mediahandler": "2.9.5",
-    "@adobe/helix-onedrive-support": "12.1.4",
+    "@adobe/helix-onedrive-support": "12.1.5",
     "@adobe/helix-shared-body-data": "2.2.2",
     "@adobe/helix-shared-config": "11.1.12",
     "@adobe/helix-shared-indexer": "2.2.6",

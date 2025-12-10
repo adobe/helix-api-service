@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/adobe/helix-api-service/compare/v1.19.10...v1.20.0) (2025-12-10)
+
+
+### Features
+
+* **source:** add delete folder and subtree functionality ([#62](https://github.com/adobe/helix-api-service/issues/62)) ([84f30e7](https://github.com/adobe/helix-api-service/commit/84f30e7311fb679ed6eb126701c8dfbdbc71d1fb))
+
 ## [1.19.10](https://github.com/adobe/helix-api-service/compare/v1.19.9...v1.19.10) (2025-12-10)
 
 

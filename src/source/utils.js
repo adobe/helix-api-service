@@ -62,6 +62,6 @@ export function getS3Key(org, site, path) {
  * @return {string} the source bus path
  */
 export function getSourceKey(info) {
-  const { org, site, resourcePath: key } = info;
-  return getS3Key(org, site, key);
+  const { org, site, resourcePath } = info;
+  return getS3Key(org, site, resourcePath);
 }

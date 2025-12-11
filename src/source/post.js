@@ -11,6 +11,7 @@
  */
 import { fromHtml } from 'hast-util-from-html';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { MEDIA_TYPES } from '../media/validate.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { createFolder } from './folder.js';
 import { putSourceFile } from './put.js';
@@ -48,6 +49,51 @@ export async function validateHtml(context, info) {
 }
 
 /**
+ * Validate the JSON message body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Buffer>} body the message body as buffer
+ */
+export async function validateJson(context, info) {
+  const body = await info.buffer();
+
+  try {
+    JSON.parse(body.toString());
+  } catch (e) {
+    throw new StatusCodeError(`Invalid JSON: ${e.message}`, 400);
+  }
+  return body;
+}
+
+/**
+ * Validate media body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {string} mime media type
+ * @returns {Promise<Buffer>} body the message body as buffer
+ */
+export async function validateMedia(context, info, mime) {
+  const mediaType = MEDIA_TYPES.find((type) => type.mime === mime);
+  if (!mediaType) {
+    throw new StatusCodeError(`Unknown media type: ${mime}`, 400);
+  }
+  const body = await info.buffer();
+  try {
+    await mediaType.validate(context, info.resourcePath, body);
+  } catch (e) {
+    let msg = e.message;
+    if (msg.startsWith('Unable to preview')) {
+      // Change the error message to not mention preview
+      msg = msg.replace('Unable to preview', 'Media not accepted');
+    }
+    throw new StatusCodeError(msg, 400);
+  }
+  return body;
+}
+
+/**
  * Handle POST requests to the source bus.
  *
  * Posting to a location ending with a slash will create a folder.
@@ -69,16 +115,16 @@ export async function postSource(context, info) {
       case 'text/html':
         body = await validateHtml(context, info);
         break;
+      case 'application/json':
+        body = await validateJson(context, info);
+        break;
       default:
+        body = await validateMedia(context, info, mime);
         break;
     }
 
     const key = getSourceKey(info);
-    if (body) {
-      return putSourceFile(context, key, mime, body);
-    }
-    const buffer = await info.buffer();
-    return putSourceFile(context, key, mime, buffer);
+    return putSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;

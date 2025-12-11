@@ -15,7 +15,12 @@
 import assert from 'assert';
 import { promisify } from 'util';
 import zlib from 'zlib';
-import { postSource, validateHtml } from '../../src/source/post.js';
+import {
+  postSource,
+  validateHtml,
+  validateJson,
+  validateMedia,
+} from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
 import { setupContext } from './testutils.js';
 
@@ -49,6 +54,27 @@ describe('Source POST Tests', () => {
       {},
       'POST',
       '<html><body>Hello</body></html>',
+    ));
+    assert.equal(resp.status, 201);
+  });
+
+  it('test postSource JSON', async () => {
+    const json = '{"name":"test","value":123}';
+
+    function postFn(_uri, body) {
+      assert.deepStrictEqual(body, JSON.parse(json));
+    }
+
+    nock.source()
+      .putObject('/t/s/abc.json')
+      .matchHeader('content-type', 'application/json')
+      .reply(201, postFn);
+
+    const resp = await postSource(setupContext(), createInfo(
+      '/t/sites/s/source/abc.json',
+      {},
+      'POST',
+      json,
     ));
     assert.equal(resp.status, 201);
   });
@@ -118,6 +144,82 @@ describe('Source POST Tests', () => {
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Unexpected end of file in tag/);
+    }
+  });
+
+  it('test validateJson success', async () => {
+    const json = '{"name":"test","value":123}';
+    const info = createInfo(
+      '/test/sites/rest/source/toast/jam.json',
+      {},
+      'POST',
+      json,
+    );
+    const body = await validateJson(setupContext(), info);
+    assert.equal(body.toString(), json);
+  });
+
+  it('test validateJson failure', async () => {
+    const json = '{"name":"test","value":123';
+    const info = createInfo(
+      '/test/sites/rest/source/toast/jam.json',
+      {},
+      'POST',
+      json,
+    );
+
+    try {
+      await validateJson(setupContext(), info);
+    } catch (e) {
+      assert.equal(e.statusCode, 400);
+      assert.match(e.message, /Invalid JSON:/);
+    }
+  });
+
+  it('test validateMedia success', async () => {
+    const media = 'someimg';
+    const info = createInfo(
+      '/t/sites/s/source/my.jpg',
+      {},
+      'POST',
+      media,
+    );
+
+    const body = await validateMedia(setupContext(), info, 'image/jpeg');
+    assert.equal(body.toString(), media);
+  });
+
+  it('test validateMedia failure', async () => {
+    const media = 'somemedia';
+    const info = createInfo(
+      '/t/sites/s/source/my.mp4',
+      {},
+      'POST',
+      media,
+    );
+
+    try {
+      await validateMedia(setupContext(), info, 'video/mp4');
+    } catch (e) {
+      assert.equal(e.statusCode, 400);
+      assert.match(e.message, /Media not accepted/);
+    }
+  });
+
+  it('test validateMedia unknown media type', async () => {
+    const media = 'somemedia';
+    const info = createInfo(
+      '/t/sites/s/source/my.file',
+      {},
+      'POST',
+      media,
+    );
+
+    try {
+      await validateMedia(setupContext(), info, 'video/blah');
+    } catch (e) {
+      assert.equal(e.statusCode, 400);
+      assert.match(e.message, /Unknown media type/);
     }
   });
 });

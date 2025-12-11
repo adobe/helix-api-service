@@ -9,10 +9,11 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { updateMarkupSourceInfo } from './utils.js';
+import { HelixStorage } from '@adobe/helix-shared-storage';
+import { html2md } from '@adobe/helix-html2md';
+import { Response } from '@adobe/fetch';
 import { errorResponse } from '../support/utils.js';
 import { error } from './errors.js';
-import { getSource } from '../source/get.js';
 
 /**
  * Retrieves a file from source bus.
@@ -26,16 +27,16 @@ import { getSource } from '../source/get.js';
  * @returns {Promise<Response>} response
  */
 async function handle(ctx, info, opts) {
-  const { config: { content }, log } = ctx;
+  const { config: { content, limits }, log } = ctx;
 
   const source = opts?.source ?? content.source;
   const sourceUrl = new URL(source.url);
-  // extract org and site from url.pathname, format: /<org>/sites/<site>/source
+  // extract org and site from url.pathname, format: https://api.aem.live/<org>/sites/<site>/source
   // e.g. /adobe/sites/foo/source
-  const pathMatch = sourceUrl.pathname.match(/^\/([^/]+)\/sites\/([^/]+)\/source/);
+  const pathMatch = sourceUrl.pathname.match(/^\/([^/]+)\/sites\/([^/]+)\/source$/);
   if (!pathMatch) {
     return errorResponse(log, 400, error(
-      'Invalid source URL: $1',
+      'Source url must be in the format: https://api.aem.live/<org>/sites/<site>/source. Got: $1',
       sourceUrl.href,
     ));
   }
@@ -63,23 +64,31 @@ async function handle(ctx, info, opts) {
   }
 
   // load content from source bus
-  const sourceInfo = {
-    org,
-    site,
-    resourcePath: sourcePath,
-  };
-  const response = await getSource(ctx, sourceInfo);
-  if (!response.ok) {
-    return response;
+  const sourceBus = HelixStorage.fromContext(ctx).sourceBus();
+  const meta = {};
+  const body = await sourceBus.get(`${org}/${site}${sourcePath}`, meta);
+  if (!body) {
+    return new Response('', { status: 404 });
   }
 
   // convert to md
-  // TODO: implement this
-  // const mdResponse = await convertToMd(ctx, info, response);
+  const md = await html2md(body, {
+    mediaHandler: null,
+    log,
+    // url: sourceUrl,
+    org,
+    site,
+    unspreadLists: true,
+    maxImages: limits?.html2md?.maxImages,
+  });
 
-  updateMarkupSourceInfo(info.sourceInfo, response);
-
-  return response;
+  return new Response(md, {
+    status: 200,
+    headers: {
+      'content-type': 'text/markdown',
+      'last-modified': meta.LastModified?.toUTCString(),
+    },
+  });
 }
 
 /**

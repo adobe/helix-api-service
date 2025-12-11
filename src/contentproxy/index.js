@@ -37,7 +37,7 @@ export const HANDLERS = { // exported for testing only
  */
 export function getContentSourceHandler(source) {
   let { type } = source;
-  if (type === source.url?.startsWith('https://api.aem.live/')) {
+  if (source.url?.startsWith('https://api.aem.live/')) {
     type = 'sourcebus';
   }
   return HANDLERS[type];

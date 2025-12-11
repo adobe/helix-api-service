@@ -12,7 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourceKey, contentTypeFromExtension } from './utils.js';
+import { contentTypeFromExtension, getSourceKey, validateUpload } from './utils.js';
 
 /**
  * Get the user from the context and return their email.
@@ -29,6 +29,7 @@ function getUser(context) {
 
 /**
  * Put file based on key and body in the source bus.
+ * The file is assumes already have been validated.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} key key to store the file at (including extension)
@@ -57,10 +58,14 @@ export async function putSourceFile(context, key, mime, body) {
 */
 export async function putSource(context, info) {
   const key = getSourceKey(info);
-  const body = await info.buffer();
 
   try {
-    return await putSourceFile(context, key, contentTypeFromExtension(info.ext), body);
+    const mime = contentTypeFromExtension(info.ext);
+    const body = await validateUpload(context, info, mime);
+
+    // TODO for HTML ensure no embedded images
+
+    return await putSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

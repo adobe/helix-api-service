@@ -9,94 +9,10 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { fromHtml } from 'hast-util-from-html';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { MEDIA_TYPES } from '../media/validate.js';
-import { StatusCodeError } from '../support/StatusCodeError.js';
 import { createFolder } from './folder.js';
 import { putSourceFile } from './put.js';
-import { contentTypeFromExtension, getSourceKey } from './utils.js';
-
-/**
- * We consider the following HTML errors to be acceptable and ignore them.
- */
-const ACCEPTABLE_HTML_ERRORS = [
-  'missing-doctype',
-];
-
-/**
- * Error messages from the media validation often start with this prefix.
- */
-const PREVIEW_ERROR_PREFIX = 'Unable to preview';
-
-/**
- * Validate the HTML message body stored in the request info.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns {Promise<Buffer>} body the message body as buffer
- */
-export async function validateHtml(context, info) {
-  function validateHtmlError(message) {
-    const msg = `${message.message} - ${message.note}`;
-    if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
-      context.log.warn(`Ignoring HTML error: ${msg}`);
-      return;
-    }
-    throw new StatusCodeError(msg, 400);
-  }
-
-  const body = await info.buffer();
-  fromHtml(body.toString(), {
-    onerror: validateHtmlError,
-  });
-  return body;
-}
-
-/**
- * Validate the JSON message body stored in the request info.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns {Promise<Buffer>} body the message body as buffer
- */
-export async function validateJson(context, info) {
-  const body = await info.buffer();
-
-  try {
-    JSON.parse(body.toString());
-  } catch (e) {
-    throw new StatusCodeError(`Invalid JSON: ${e.message}`, 400);
-  }
-  return body;
-}
-
-/**
- * Validate media body stored in the request info.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} mime media type
- * @returns {Promise<Buffer>} body the message body as buffer
- */
-export async function validateMedia(context, info, mime) {
-  const mediaType = MEDIA_TYPES.find((type) => type.mime === mime);
-  if (!mediaType) {
-    throw new StatusCodeError(`Unknown media type: ${mime}`, 400);
-  }
-  const body = await info.buffer();
-  try {
-    await mediaType.validate(context, info.resourcePath, body);
-  } catch (e) {
-    let msg = e.message;
-    if (msg.startsWith(PREVIEW_ERROR_PREFIX)) {
-      // Change the error message to not mention preview
-      msg = msg.replace(PREVIEW_ERROR_PREFIX, 'Media not accepted');
-    }
-    throw new StatusCodeError(msg, 400);
-  }
-  return body;
-}
+import { contentTypeFromExtension, getSourceKey, validateUpload } from './utils.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -111,27 +27,17 @@ export async function postSource(context, info) {
   if (info.rawPath.endsWith('/')) {
     return createFolder(context, info);
   }
-  const { log } = context;
 
   try {
     const mime = contentTypeFromExtension(info.ext);
-    let body;
-    switch (mime) {
-      case 'text/html':
-        body = await validateHtml(context, info);
-        break;
-      case 'application/json':
-        body = await validateJson(context, info);
-        break;
-      default:
-        body = await validateMedia(context, info, mime);
-        break;
-    }
+    const body = await validateUpload(context, info, mime);
+
+    // TODO store embedded images in the media bus
 
     const key = getSourceKey(info);
     return putSourceFile(context, key, mime, body);
   } catch (e) {
-    const opts = { e, log };
+    const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }

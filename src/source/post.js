@@ -25,6 +25,11 @@ const ACCEPTABLE_HTML_ERRORS = [
 ];
 
 /**
+ * Error messages from the media validation often start with this prefix.
+ */
+const PREVIEW_ERROR_PREFIX = 'Unable to preview';
+
+/**
  * Validate the HTML message body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -84,9 +89,9 @@ export async function validateMedia(context, info, mime) {
     await mediaType.validate(context, info.resourcePath, body);
   } catch (e) {
     let msg = e.message;
-    if (msg.startsWith('Unable to preview')) {
+    if (msg.startsWith(PREVIEW_ERROR_PREFIX)) {
       // Change the error message to not mention preview
-      msg = msg.replace('Unable to preview', 'Media not accepted');
+      msg = msg.replace(PREVIEW_ERROR_PREFIX, 'Media not accepted');
     }
     throw new StatusCodeError(msg, 400);
   }

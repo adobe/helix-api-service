@@ -57,14 +57,13 @@ export async function putSourceFile(context, key, mime, body) {
  * @return {Promise<Response>} response
 */
 export async function putSource(context, info) {
-  const key = getSourceKey(info);
-
   try {
     const mime = contentTypeFromExtension(info.ext);
     const body = await validateUpload(context, info, mime);
 
-    // TODO for HTML ensure no embedded images
+    // TODO for HTML ensure no references to external images
 
+    const key = getSourceKey(info);
     return await putSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };

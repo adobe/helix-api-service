@@ -32,7 +32,7 @@ export async function postSource(context, info) {
     const mime = contentTypeFromExtension(info.ext);
     const body = await validateUpload(context, info, mime);
 
-    // TODO store embedded images in the media bus
+    // TODO store images HTML from the outside in the media bus
 
     const key = getSourceKey(info);
     return putSourceFile(context, key, mime, body);

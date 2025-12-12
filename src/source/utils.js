@@ -122,7 +122,7 @@ export async function validateJson(context, info) {
   // TODO check JSON size limit
 
   try {
-    JSON.parse(body.toString());
+    JSON.parse(body);
   } catch (e) {
     throw new StatusCodeError(`Invalid JSON: ${e.message}`, 400);
   }

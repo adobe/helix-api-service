@@ -10,10 +10,15 @@
  * governing permissions and limitations under the License.
  */
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { html2md } from '@adobe/helix-html2md';
+import { MediaHandler, SizeTooLargeException } from '@adobe/helix-mediahandler';
+import { ConstraintsError, html2md, TooManyImagesError } from '@adobe/helix-html2md';
 import { Response } from '@adobe/fetch';
 import { errorResponse } from '../support/utils.js';
 import { error } from './errors.js';
+
+const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
+
+const DEFAULT_MAX_IMAGES = 200;
 
 /**
  * Retrieves a file from source bus.
@@ -54,9 +59,9 @@ async function handle(ctx, info, opts) {
   let sourcePath = info.resourcePath;
   if (info.ext === '.md') {
     sourcePath = `${sourcePath.substring(0, sourcePath.length - '.md'.length)}.html`;
-  } else if (!info.ext) {
-    sourcePath += '.html';
+    /* c8 ignore next 7 */
   } else {
+    // this should never happen, since all resourcePaths are properly mapped before
     return errorResponse(log, 400, error(
       'unexpected file extension: $1',
       info.ext,
@@ -71,24 +76,72 @@ async function handle(ctx, info, opts) {
     return new Response('', { status: 404 });
   }
 
-  // convert to md
-  const md = await html2md(body, {
-    mediaHandler: null,
+  const {
+    MEDIAHANDLER_NOCACHHE: noCache,
+    CLOUDFLARE_ACCOUNT_ID: r2AccountId,
+    CLOUDFLARE_R2_ACCESS_KEY_ID: r2AccessKeyId,
+    CLOUDFLARE_R2_SECRET_ACCESS_KEY: r2SecretAccessKey,
+  } = ctx.env;
+
+  const mediaHandler = new MediaHandler({
+    r2AccountId,
+    r2AccessKeyId,
+    r2SecretAccessKey,
+    bucketId: ctx.attributes.bucketMap.media,
+    owner: org,
+    repo: site,
+    ref: 'main',
+    contentBusId: content.contentBusId,
     log,
-    // url: sourceUrl,
-    org,
-    site,
-    unspreadLists: true,
-    maxImages: limits?.html2md?.maxImages,
+    noCache,
+    fetchTimeout: 5000, // limit image fetches to 5s
+    forceHttp1: true,
+    maxSize: limits?.html2md?.maxImageSize ?? DEFAULT_MAX_IMAGE_SIZE,
   });
 
-  return new Response(md, {
-    status: 200,
-    headers: {
-      'content-type': 'text/markdown',
-      'last-modified': meta.LastModified?.toUTCString(),
-    },
-  });
+  const maxImages = limits?.html2md?.maxImages ?? DEFAULT_MAX_IMAGES;
+  try {
+    // convert to md
+    const md = await html2md(body, {
+      mediaHandler,
+      log,
+      url: sourceUrl.href + sourcePath, // only used for logging
+      org,
+      site,
+      unspreadLists: true,
+      maxImages,
+    });
+
+    return new Response(md, {
+      status: 200,
+      headers: {
+        'content-type': 'text/markdown',
+        'last-modified': meta.LastModified?.toUTCString(),
+      },
+    });
+  } catch (e) {
+    if (e instanceof TooManyImagesError) {
+      return errorResponse(log, 409, error(
+        'Unable to preview \'$1\': Documents has more than $2 images: $3',
+        sourcePath,
+        maxImages,
+        e.message, // todo: include num images in error
+      ));
+    }
+    if (e instanceof SizeTooLargeException) {
+      return errorResponse(log, 409, error(
+        'Unable to preview \'$1\': $2',
+        sourcePath,
+        e.message,
+      ));
+    }
+    /* c8 ignore next 6 */
+    return errorResponse(log, 500, error(
+      'Unable to preview \'$1\': $2',
+      sourcePath,
+      e.message,
+    ));
+  }
 }
 
 /**

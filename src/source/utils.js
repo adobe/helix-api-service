@@ -164,7 +164,7 @@ export async function getValidMedia(context, info, mime) {
  * @param {string} mime media type
  * @returns {Promise<Buffer>} body the message body as buffer
  */
-export async function getValidaPayload(context, info, mime) {
+export async function getValidPayload(context, info, mime) {
   switch (mime) {
     case 'text/html':
       return getValidHtml(context, info);

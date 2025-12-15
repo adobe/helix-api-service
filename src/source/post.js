@@ -12,7 +12,7 @@
 import { createErrorResponse } from '../contentbus/utils.js';
 import { createFolder } from './folder.js';
 import { putSourceFile } from './put.js';
-import { contentTypeFromExtension, getSourceKey, validateUpload } from './utils.js';
+import { contentTypeFromExtension, getSourceKey, getValidaPayload } from './utils.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -30,7 +30,7 @@ export async function postSource(context, info) {
 
   try {
     const mime = contentTypeFromExtension(info.ext);
-    const body = await validateUpload(context, info, mime);
+    const body = await getValidaPayload(context, info, mime);
 
     // TODO store images HTML from the outside in the media bus
 

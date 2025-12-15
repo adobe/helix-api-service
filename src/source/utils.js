@@ -89,7 +89,7 @@ export function getSourceKey(info) {
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Buffer>} body the message body as buffer
  */
-export async function validateHtml(context, info) {
+export async function getValidHtml(context, info) {
   function validateHtmlError(message) {
     const msg = `${message.message} - ${message.note}`;
     if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
@@ -116,7 +116,7 @@ export async function validateHtml(context, info) {
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Buffer>} body the message body as buffer
  */
-export async function validateJson(context, info) {
+export async function getValidJson(context, info) {
   const body = await info.buffer();
 
   // TODO check JSON size limit
@@ -137,7 +137,7 @@ export async function validateJson(context, info) {
  * @param {string} mime media type
  * @returns {Promise<Buffer>} body the message body as buffer
  */
-export async function validateMedia(context, info, mime) {
+export async function getValidMedia(context, info, mime) {
   const mediaType = MEDIA_TYPES.find((type) => type.mime === mime);
   if (!mediaType) {
     throw new StatusCodeError(`Unknown media type: ${mime}`, 400);
@@ -164,13 +164,13 @@ export async function validateMedia(context, info, mime) {
  * @param {string} mime media type
  * @returns {Promise<Buffer>} body the message body as buffer
  */
-export async function validateUpload(context, info, mime) {
+export async function getValidaPayload(context, info, mime) {
   switch (mime) {
     case 'text/html':
-      return validateHtml(context, info);
+      return getValidHtml(context, info);
     case 'application/json':
-      return validateJson(context, info);
+      return getValidJson(context, info);
     default:
-      return validateMedia(context, info, mime);
+      return getValidMedia(context, info, mime);
   }
 }

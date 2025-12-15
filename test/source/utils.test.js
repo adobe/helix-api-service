@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { validateHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import { getValidHtml, getValidJson, getValidMedia } from '../../src/source/utils.js';
 import { createInfo } from '../utils.js';
 import { setupContext } from './testutils.js';
 
@@ -26,7 +26,7 @@ describe('Source Utils Tests', () => {
       'POST',
       html,
     );
-    const body = await validateHtml(setupContext(), info);
+    const body = await getValidHtml(setupContext(), info);
     assert.equal(body.toString(), html);
   });
 
@@ -38,7 +38,7 @@ describe('Source Utils Tests', () => {
       'POST',
       html,
     );
-    const body = await validateHtml(setupContext(), info);
+    const body = await getValidHtml(setupContext(), info);
     assert.equal(body.toString(), html);
   });
 
@@ -52,7 +52,7 @@ describe('Source Utils Tests', () => {
     );
 
     try {
-      await validateHtml(setupContext(), info);
+      await getValidHtml(setupContext(), info);
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Unexpected end of file in tag/);
@@ -67,7 +67,7 @@ describe('Source Utils Tests', () => {
       'POST',
       json,
     );
-    const body = await validateJson(setupContext(), info);
+    const body = await getValidJson(setupContext(), info);
     assert.equal(body.toString(), json);
   });
 
@@ -81,7 +81,7 @@ describe('Source Utils Tests', () => {
     );
 
     try {
-      await validateJson(setupContext(), info);
+      await getValidJson(setupContext(), info);
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Invalid JSON:/);
@@ -97,7 +97,7 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    const body = await validateMedia(setupContext(), info, 'image/jpeg');
+    const body = await getValidMedia(setupContext(), info, 'image/jpeg');
     assert.equal(body.toString(), media);
   });
 
@@ -111,7 +111,7 @@ describe('Source Utils Tests', () => {
     );
 
     try {
-      await validateMedia(setupContext(), info, 'video/mp4');
+      await getValidMedia(setupContext(), info, 'video/mp4');
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Media not accepted/);
@@ -128,7 +128,7 @@ describe('Source Utils Tests', () => {
     );
 
     try {
-      await validateMedia(setupContext(), info, 'video/blah');
+      await getValidMedia(setupContext(), info, 'video/blah');
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Unknown media type/);

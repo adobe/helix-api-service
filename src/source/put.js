@@ -12,7 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { contentTypeFromExtension, getSourceKey, validateUpload } from './utils.js';
+import { contentTypeFromExtension, getSourceKey, getValidaPayload } from './utils.js';
 
 /**
  * Get the user from the context and return their email.
@@ -59,7 +59,7 @@ export async function putSourceFile(context, key, mime, body) {
 export async function putSource(context, info) {
   try {
     const mime = contentTypeFromExtension(info.ext);
-    const body = await validateUpload(context, info, mime);
+    const body = await getValidaPayload(context, info, mime);
 
     // TODO for HTML ensure no references to external images
 

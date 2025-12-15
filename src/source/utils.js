@@ -86,10 +86,9 @@ export function getSourceKey(info) {
  * Validate the HTML message body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns {Promise<Buffer>} body the message body as buffer
+ * @param {Buffer} body the message body as buffer
  */
-export async function getValidHtml(context, info) {
+export async function validateHtml(context, body) {
   function validateHtmlError(message) {
     const msg = `${message.message} - ${message.note}`;
     if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
@@ -99,26 +98,20 @@ export async function getValidHtml(context, info) {
     throw new StatusCodeError(msg, 400);
   }
 
-  const body = await info.buffer();
-
   // TODO Check HTML size limit
 
   fromHtml(body.toString(), {
     onerror: validateHtmlError,
   });
-  return body;
 }
 
 /**
  * Validate the JSON message body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns {Promise<Buffer>} body the message body as buffer
+ * @param {Buffer} body the message body as buffer
  */
-export async function getValidJson(context, info) {
-  const body = await info.buffer();
-
+export async function validateJson(context, body) {
   // TODO check JSON size limit
 
   try {
@@ -126,7 +119,6 @@ export async function getValidJson(context, info) {
   } catch (e) {
     throw new StatusCodeError(`Invalid JSON: ${e.message}`, 400);
   }
-  return body;
 }
 
 /**
@@ -135,14 +127,14 @@ export async function getValidJson(context, info) {
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {string} mime media type
+ * @param {Buffer} body the message body as buffer
  * @returns {Promise<Buffer>} body the message body as buffer
  */
-export async function getValidMedia(context, info, mime) {
+export async function validateMedia(context, info, mime, body) {
   const mediaType = MEDIA_TYPES.find((type) => type.mime === mime);
   if (!mediaType) {
     throw new StatusCodeError(`Unknown media type: ${mime}`, 400);
   }
-  const body = await info.buffer();
   try {
     await mediaType.validate(context, info.resourcePath, body);
   } catch (e) {
@@ -153,7 +145,6 @@ export async function getValidMedia(context, info, mime) {
     }
     throw new StatusCodeError(msg, 400);
   }
-  return body;
 }
 
 /**
@@ -165,12 +156,18 @@ export async function getValidMedia(context, info, mime) {
  * @returns {Promise<Buffer>} body the message body as buffer
  */
 export async function getValidPayload(context, info, mime) {
+  const body = await info.buffer();
+
   switch (mime) {
     case 'text/html':
-      return getValidHtml(context, info);
+      validateHtml(context, body);
+      break;
     case 'application/json':
-      return getValidJson(context, info);
+      validateJson(context, body);
+      break;
     default:
-      return getValidMedia(context, info, mime);
+      validateMedia(context, info, mime, body);
+      break;
   }
+  return body;
 }

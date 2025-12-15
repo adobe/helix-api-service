@@ -13,46 +13,28 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { getValidHtml, getValidJson, getValidMedia } from '../../src/source/utils.js';
+import { validateHtml, validateJson, validateMedia } from '../../src/source/utils.js';
 import { createInfo } from '../utils.js';
 import { setupContext } from './testutils.js';
 
 describe('Source Utils Tests', () => {
   it('test validateHtml success', async () => {
     const html = '<!DOCTYPE html><html><body>Hello</body></html>';
-    const info = createInfo(
-      '/test/sites/rest/source/toast/jam.html',
-      {},
-      'POST',
-      html,
-    );
-    const body = await getValidHtml(setupContext(), info);
-    assert.equal(body.toString(), html);
+    await validateHtml(setupContext(), Buffer.from(html));
+    // No exception should be thrown
   });
 
   it('test validateHtml ignores acceptable HTML errors', async () => {
     const html = '<html><body>Hello</body></html>';
-    const info = createInfo(
-      '/test/sites/rest/source/toast/jam.html',
-      {},
-      'POST',
-      html,
-    );
-    const body = await getValidHtml(setupContext(), info);
-    assert.equal(body.toString(), html);
+    await validateHtml(setupContext(), Buffer.from(html));
+    // No exception should be thrown
   });
 
   it('test validateHtml failure', async () => {
     const html = '<html><body>Hello</body></html';
-    const info = createInfo(
-      '/test/sites/rest/source/toast/jam.html',
-      {},
-      'POST',
-      html,
-    );
 
     try {
-      await getValidHtml(setupContext(), info);
+      await validateHtml(setupContext(), Buffer.from(html));
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Unexpected end of file in tag/);
@@ -61,27 +43,15 @@ describe('Source Utils Tests', () => {
 
   it('test validateJson success', async () => {
     const json = '{"name":"test","value":123}';
-    const info = createInfo(
-      '/test/sites/rest/source/toast/jam.json',
-      {},
-      'POST',
-      json,
-    );
-    const body = await getValidJson(setupContext(), info);
-    assert.equal(body.toString(), json);
+    await validateJson(setupContext(), Buffer.from(json));
+    // No exception should be thrown
   });
 
   it('test validateJson failure', async () => {
     const json = '{"name":"test","value":123';
-    const info = createInfo(
-      '/test/sites/rest/source/toast/jam.json',
-      {},
-      'POST',
-      json,
-    );
 
     try {
-      await getValidJson(setupContext(), info);
+      await validateJson(setupContext(), Buffer.from(json));
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Invalid JSON:/);
@@ -97,8 +67,8 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    const body = await getValidMedia(setupContext(), info, 'image/jpeg');
-    assert.equal(body.toString(), media);
+    await validateMedia(setupContext(), info, 'image/jpeg', Buffer.from(media));
+    // No exception should be thrown
   });
 
   it('test validateMedia failure', async () => {
@@ -111,7 +81,7 @@ describe('Source Utils Tests', () => {
     );
 
     try {
-      await getValidMedia(setupContext(), info, 'video/mp4');
+      await validateMedia(setupContext(), info, 'video/mp4', Buffer.from(media));
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Media not accepted/);
@@ -128,7 +98,7 @@ describe('Source Utils Tests', () => {
     );
 
     try {
-      await getValidMedia(setupContext(), info, 'video/blah');
+      await validateMedia(setupContext(), info, 'video/blah', Buffer.from(media));
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Unknown media type/);

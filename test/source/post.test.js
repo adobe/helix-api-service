@@ -53,6 +53,16 @@ describe('Source POST Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test postSource invalid HTML', async () => {
+    const resp = await postSource(setupContext(), createInfo(
+      '/test/sites/rest/source/toast/jam.html',
+      {},
+      'POST',
+      '<html><body>Hello</bod',
+    ));
+    assert.equal(resp.status, 400);
+  });
+
   it('test postSource JSON', async () => {
     const json = '{"name":"test","value":123}';
 
@@ -74,6 +84,16 @@ describe('Source POST Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test postSource invalid JSON', async () => {
+    const resp = await postSource(setupContext(), createInfo(
+      '/t/sites/s/source/abc.json',
+      {},
+      'POST',
+      '{"name":"test","value":123',
+    ));
+    assert.equal(resp.status, 400);
+  });
+
   it('test postSource PDF', async () => {
     async function postFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
@@ -92,6 +112,16 @@ describe('Source POST Tests', () => {
       'somepdf',
     ));
     assert.equal(resp.status, 201);
+  });
+
+  it('test postSource invalid MP4', async () => {
+    const resp = await postSource(setupContext(), createInfo(
+      '/org-x/sites/site-y/source/my.mp4',
+      {},
+      'POST',
+      'something',
+    ));
+    assert.equal(resp.status, 400);
   });
 
   it('test postSource with unknown file extension returns 415', async () => {

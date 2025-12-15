@@ -84,6 +84,7 @@ describe('Source Utils Tests', () => {
       await validateMedia(setupContext(), info, 'video/mp4', Buffer.from(media));
     } catch (e) {
       assert.equal(e.statusCode, 400);
+      assert(e.message.startsWith('AEM_BACKEND_MP4_PARSING_FAILED:'));
       assert.match(e.message, /Media not accepted/);
     }
   });

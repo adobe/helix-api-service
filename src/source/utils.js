@@ -143,6 +143,9 @@ export async function validateMedia(context, info, mime, body) {
       // Change the error message to not mention preview
       msg = msg.replace(PREVIEW_ERROR_PREFIX, 'Media not accepted');
     }
+    if (e.code) {
+      msg = `${e.code}: ${msg}`;
+    }
     throw new StatusCodeError(msg, 400);
   }
 }
@@ -160,13 +163,13 @@ export async function getValidPayload(context, info, mime) {
 
   switch (mime) {
     case 'text/html':
-      validateHtml(context, body);
+      await validateHtml(context, body);
       break;
     case 'application/json':
-      validateJson(context, body);
+      await validateJson(context, body);
       break;
     default:
-      validateMedia(context, info, mime, body);
+      await validateMedia(context, info, mime, body);
       break;
   }
   return body;

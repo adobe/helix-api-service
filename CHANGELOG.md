@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/adobe/helix-api-service/compare/v1.20.1...v1.21.0) (2025-12-15)
+
+
+### Features
+
+* **source:** add POST handling and support media ([#64](https://github.com/adobe/helix-api-service/issues/64)) ([158f0f1](https://github.com/adobe/helix-api-service/commit/158f0f12de3e2ef3ae067d9a7667ebe4d904c54a)), closes [#43](https://github.com/adobe/helix-api-service/issues/43)
+
 ## [1.20.1](https://github.com/adobe/helix-api-service/compare/v1.20.0...v1.20.1) (2025-12-10)
 
 

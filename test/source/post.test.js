@@ -122,6 +122,8 @@ describe('Source POST Tests', () => {
       'something',
     ));
     assert.equal(resp.status, 400);
+    assert.equal(resp.headers.get('x-error-code'), 'AEM_BACKEND_MP4_PARSING_FAILED');
+    assert.match(resp.headers.get('x-error'), /Unable to parse MP4/);
   });
 
   it('test postSource with unknown file extension returns 415', async () => {

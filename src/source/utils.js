@@ -143,10 +143,8 @@ export async function validateMedia(context, info, mime, body) {
       // Change the error message to not mention preview
       msg = msg.replace(PREVIEW_ERROR_PREFIX, 'Media not accepted');
     }
-    if (e.code) {
-      msg = `${e.code}: ${msg}`;
-    }
-    throw new StatusCodeError(msg, 400);
+
+    throw new StatusCodeError(msg, 400, e.code);
   }
 }
 

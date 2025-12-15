@@ -9,7 +9,10 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { createErrorResponse } from '../contentbus/utils.js';
 import { createFolder } from './folder.js';
+import { putSourceFile } from './put.js';
+import { contentTypeFromExtension, getSourceKey, getValidPayload } from './utils.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -25,6 +28,17 @@ export async function postSource(context, info) {
     return createFolder(context, info);
   }
 
-  // TODO: Implement additional POST operations
-  return new Response('', { status: 500 });
+  try {
+    const mime = contentTypeFromExtension(info.ext);
+    const body = await getValidPayload(context, info, mime);
+
+    // TODO store images HTML from the outside in the media bus
+
+    const key = getSourceKey(info);
+    return putSourceFile(context, key, mime, body);
+  } catch (e) {
+    const opts = { e, log: context.log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
+  }
 }

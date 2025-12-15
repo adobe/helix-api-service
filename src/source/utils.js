@@ -10,13 +10,54 @@
  * governing permissions and limitations under the License.
  */
 
+import { fromHtml } from 'hast-util-from-html';
+import { MEDIA_TYPES } from '../media/validate.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
+
+/**
+ * We consider the following HTML errors to be acceptable and ignore them.
+ */
+const ACCEPTABLE_HTML_ERRORS = [
+  'missing-doctype',
+];
+
 /**
  * Known content types for the source bus.
  */
 export const CONTENT_TYPES = {
-  '.json': 'application/json',
+  '.gif': 'image/gif',
   '.html': 'text/html',
+  '.ico': 'image/x-icon',
+  '.jpeg': 'image/jpeg',
+  '.jpg': 'image/jpeg',
+  '.json': 'application/json',
+  '.mp4': 'video/mp4',
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
 };
+
+/**
+ * Error messages from the media validation often start with this prefix.
+ */
+const PREVIEW_ERROR_PREFIX = 'Unable to preview';
+
+/**
+ * Get the content type from the extension.
+ *
+ * @param {string} ext extension
+ * @return {string} content type
+ * @throws {Error} with $metadata.httpStatusCode 400 if the content type is not found
+ */
+export function contentTypeFromExtension(ext) {
+  const contentType = CONTENT_TYPES[ext.toLowerCase()];
+  if (contentType) {
+    return contentType;
+  }
+  const e = new Error(`Unknown file type: ${ext}`);
+  e.$metadata = { httpStatusCode: 415 };
+  throw e;
+}
 
 /**
  * Get the S3 key from the organization, site, and path.
@@ -24,7 +65,7 @@ export const CONTENT_TYPES = {
  * @param {string} org organization
  * @param {string} site site
  * @param {string} path document path
- * @returns {string} the S3 path
+ * @returns {string} the S3 key
  */
 export function getS3Key(org, site, path) {
   return `${org}/${site}${path}`;
@@ -37,6 +78,97 @@ export function getS3Key(org, site, path) {
  * @return {string} the source bus path
  */
 export function getSourceKey(info) {
-  const { org, site, resourcePath: key } = info;
-  return getS3Key(org, site, key);
+  const { org, site, resourcePath } = info;
+  return getS3Key(org, site, resourcePath);
+}
+
+/**
+ * Validate the HTML message body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {Buffer} body the message body as buffer
+ */
+export async function validateHtml(context, body) {
+  function validateHtmlError(message) {
+    const msg = `${message.message} - ${message.note}`;
+    if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
+      context.log.warn(`Ignoring HTML error: ${msg}`);
+      return;
+    }
+    throw new StatusCodeError(msg, 400);
+  }
+
+  // TODO Check HTML size limit
+
+  fromHtml(body.toString(), {
+    onerror: validateHtmlError,
+  });
+}
+
+/**
+ * Validate the JSON message body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {Buffer} body the message body as buffer
+ */
+export async function validateJson(context, body) {
+  // TODO check JSON size limit
+
+  try {
+    JSON.parse(body);
+  } catch (e) {
+    throw new StatusCodeError(`Invalid JSON: ${e.message}`, 400);
+  }
+}
+
+/**
+ * Validate media body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {string} mime media type
+ * @param {Buffer} body the message body as buffer
+ * @returns {Promise<Buffer>} body the message body as buffer
+ */
+export async function validateMedia(context, info, mime, body) {
+  const mediaType = MEDIA_TYPES.find((type) => type.mime === mime);
+  if (!mediaType) {
+    throw new StatusCodeError(`Unknown media type: ${mime}`, 400);
+  }
+  try {
+    await mediaType.validate(context, info.resourcePath, body);
+  } catch (e) {
+    let msg = e.message;
+    if (msg.startsWith(PREVIEW_ERROR_PREFIX)) {
+      // Change the error message to not mention preview
+      msg = msg.replace(PREVIEW_ERROR_PREFIX, 'Media not accepted');
+    }
+
+    throw new StatusCodeError(msg, 400, e.code);
+  }
+}
+
+/**
+ * Validate the body stored in the request info.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {string} mime media type
+ * @returns {Promise<Buffer>} body the message body as buffer
+ */
+export async function getValidPayload(context, info, mime) {
+  const body = await info.buffer();
+
+  switch (mime) {
+    case 'text/html':
+      await validateHtml(context, body);
+      break;
+    case 'application/json':
+      await validateJson(context, body);
+      break;
+    default:
+      await validateMedia(context, info, mime, body);
+      break;
+  }
+  return body;
 }

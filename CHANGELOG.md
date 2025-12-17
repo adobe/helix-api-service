@@ -1,3 +1,10 @@
+## [1.21.3](https://github.com/adobe/helix-api-service/compare/v1.21.2...v1.21.3) (2025-12-17)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-config to v5.8.0 ([#72](https://github.com/adobe/helix-api-service/issues/72)) ([0e04754](https://github.com/adobe/helix-api-service/commit/0e0475420226de7e0a2d7a60a93b3e347dd3a08d))
+
 ## [1.21.2](https://github.com/adobe/helix-api-service/compare/v1.21.1...v1.21.2) (2025-12-16)
 
 

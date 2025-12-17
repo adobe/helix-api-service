@@ -52,7 +52,7 @@
   "dependencies": {
     "@adobe/fetch": "4.2.3",
     "@adobe/helix-admin-support": "5.0.3",
-    "@adobe/helix-config": "5.7.0",
+    "@adobe/helix-config": "5.8.0",
     "@adobe/helix-google-support": "4.0.1",
     "@adobe/helix-mediahandler": "2.9.5",
     "@adobe/helix-onedrive-support": "12.1.5",

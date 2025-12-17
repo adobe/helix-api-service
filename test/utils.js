@@ -150,7 +150,7 @@ export function Nock() {
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
-  nocker.source = (org = 'org', site = 'site') => nocker.s3('helix-source-bus', `${org}/${site}`);
+  nocker.source = () => nocker.s3('helix-source-bus', '');
 
   nocker.siteConfig = (config, { org = 'org', site = 'site' } = {}) => {
     const scope = nocker('https://config.aem.page').get(`/main--${site}--${org}/config.json?scope=admin`);

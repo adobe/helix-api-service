@@ -110,6 +110,7 @@ async function handle(ctx, info, opts) {
       site,
       unspreadLists: true,
       maxImages,
+      externalImageUrlPrefixes: [`https://main--${site}--${org}.aem.page/`],
     });
 
     return new Response(md, {

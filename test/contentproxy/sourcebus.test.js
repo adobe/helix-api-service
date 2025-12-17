@@ -74,7 +74,7 @@ describe('Source Bus Content Proxy Tests', () => {
 
   it('Retrieves root document from source bus', async () => {
     nock.source()
-      .getObject('/index.html')
+      .getObject('/org/site/index.html')
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/index.html'), {
         'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
         'content-type': 'text/html',
@@ -99,7 +99,7 @@ describe('Source Bus Content Proxy Tests', () => {
 
   it('Retrieves document from source bus', async () => {
     nock.source()
-      .getObject('/welcome.html')
+      .getObject('/org/site/welcome.html')
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/welcome.html'), {
         'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
         'content-type': 'text/html',
@@ -124,7 +124,7 @@ describe('Source Bus Content Proxy Tests', () => {
 
   it('Returns 404 if resource is not found in source bus', async () => {
     nock.source()
-      .getObject('/missing.html')
+      .getObject('/org/site/missing.html')
       .reply(404);
 
     const { request, context } = setupTest('/missing', {
@@ -176,7 +176,7 @@ describe('Source Bus Content Proxy Tests', () => {
 
   it('Retrieves document from source bus with external images', async () => {
     nock.source()
-      .getObject('/gallery.html')
+      .getObject('/org/site/gallery.html')
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/gallery.html'), {
         'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
         'content-type': 'text/html',
@@ -206,9 +206,11 @@ describe('Source Bus Content Proxy Tests', () => {
 
 source bus images.
 
-![][image0] ![][image0]
+![][image0] ![][image0] ![][image1]
 
 [image0]: https://main--site--org.aem.page/media_1c2e2c6c049ccf4b583431e14919687f3a39cc227.png#width=300&height=300
+
+[image1]: https://main--site--org.aem.page/media_2c2e2c6c049ccf4b583431e14919687f3a39cc227.png#width=300&height=300
 `);
     assert.deepStrictEqual(response.headers.plain(), {
       'content-type': 'text/markdown',
@@ -220,7 +222,7 @@ source bus images.
 
   it('Rejects document from source bus too many images', async () => {
     nock.source()
-      .getObject('/gallery.html')
+      .getObject('/org/site/gallery.html')
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/gallery.html'), {
         'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
         'content-type': 'text/html',
@@ -250,7 +252,7 @@ source bus images.
 
   it('Rejects document from source if image is too big', async () => {
     nock.source()
-      .getObject('/gallery.html')
+      .getObject('/org/site/gallery.html')
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/gallery.html'), {
         'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
         'content-type': 'text/html',

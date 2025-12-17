@@ -52,7 +52,7 @@ declare interface Nock {
   code(ref?: string): S3Nock;
   content(contentBusId?: string): S3Nock;
   media(contentBusId?: string): S3Nock;
-  source(org?: string, site?: string): S3Nock;
+  source(): S3Nock;
   sqs(queueName: string, entries?: any[]): nock.Scope;
 }
 

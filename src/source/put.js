@@ -12,23 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { getSourceKey, CONTENT_TYPES } from './utils.js';
-import { StatusCodeError } from '../support/StatusCodeError.js';
-
-/**
- * Get the content type from the extension.
- *
- * @param {string} ext extension
- * @return {string} content type
- * @throws {Error} with $metadata.httpStatusCode 400 if the content type is not found
- */
-function contentTypeFromExtension(ext) {
-  const contentType = CONTENT_TYPES[ext];
-  if (contentType) {
-    return contentType;
-  }
-  throw new StatusCodeError(`Unknown file type: ${ext}`, 415);
-}
+import { contentTypeFromExtension, getSourceKey, getValidPayload } from './utils.js';
 
 /**
  * Get the user from the context and return their email.
@@ -45,6 +29,7 @@ function getUser(context) {
 
 /**
  * Put file based on key and body in the source bus.
+ * The file is assumes already have been validated.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} key key to store the file at (including extension)
@@ -72,11 +57,14 @@ export async function putSourceFile(context, key, mime, body) {
  * @return {Promise<Response>} response
 */
 export async function putSource(context, info) {
-  const key = getSourceKey(info);
-  const body = await info.buffer();
-
   try {
-    return await putSourceFile(context, key, contentTypeFromExtension(info.ext), body);
+    const mime = contentTypeFromExtension(info.ext);
+    const body = await getValidPayload(context, info, mime);
+
+    // TODO for HTML ensure no references to external images
+
+    const key = getSourceKey(info);
+    return await putSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

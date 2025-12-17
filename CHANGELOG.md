@@ -1,3 +1,31 @@
+## [1.21.2](https://github.com/adobe/helix-api-service/compare/v1.21.1...v1.21.2) (2025-12-16)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#68](https://github.com/adobe/helix-api-service/issues/68)) ([7060f8f](https://github.com/adobe/helix-api-service/commit/7060f8f1b1351dfb1c9724424c01bb84972d4b23))
+
+## [1.21.1](https://github.com/adobe/helix-api-service/compare/v1.21.0...v1.21.1) (2025-12-15)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#67](https://github.com/adobe/helix-api-service/issues/67)) ([0ce0ce8](https://github.com/adobe/helix-api-service/commit/0ce0ce8aff8b0c973c43ae696972db2a852d6935))
+
+# [1.21.0](https://github.com/adobe/helix-api-service/compare/v1.20.1...v1.21.0) (2025-12-15)
+
+
+### Features
+
+* **source:** add POST handling and support media ([#64](https://github.com/adobe/helix-api-service/issues/64)) ([158f0f1](https://github.com/adobe/helix-api-service/commit/158f0f12de3e2ef3ae067d9a7667ebe4d904c54a)), closes [#43](https://github.com/adobe/helix-api-service/issues/43)
+
+## [1.20.1](https://github.com/adobe/helix-api-service/compare/v1.20.0...v1.20.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-onedrive-support to v12.1.5 ([#65](https://github.com/adobe/helix-api-service/issues/65)) ([78b7df2](https://github.com/adobe/helix-api-service/commit/78b7df299fd6a032c37b56e6ff91d7af7831f3cd))
+
 # [1.20.0](https://github.com/adobe/helix-api-service/compare/v1.19.10...v1.20.0) (2025-12-10)
 
 

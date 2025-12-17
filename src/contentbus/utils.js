@@ -24,6 +24,8 @@ export function createErrorResponse(opts) {
 
   const status = e?.status || e?.statusCode || opts.status || 500;
   const message = e?.message || msg;
+  const errCodeHeader = (e?.errorCode) ? { 'x-error-code': e.errorCode } : {};
+
   const args = [message];
   if (e) {
     args.push(e);
@@ -35,6 +37,7 @@ export function createErrorResponse(opts) {
     status,
     headers: {
       'x-error': cleanupHeaderValue(message),
+      ...errCodeHeader,
     },
   });
 }

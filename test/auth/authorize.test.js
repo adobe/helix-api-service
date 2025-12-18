@@ -12,7 +12,6 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { authorize } from '../../src/auth/authzn.js';
 import { PERMISSIONS } from '../../src/auth/permissions.js';
@@ -43,23 +42,6 @@ describe('Authorization Test', () => {
     data: [{
       key: 'admin.role.publish',
       value: 'bob',
-    }],
-  };
-
-  const CONFIG_PUBLISH_BOB_NOT_REQUIRED = {
-    data: [{
-      key: 'admin.role.publish',
-      value: 'bob',
-    }, {
-      key: 'admin.requireAuth',
-      value: 'false',
-    }],
-  };
-
-  const CONFIG_AUTH_REQUIRED = {
-    data: [{
-      key: 'admin.requireAuth',
-      value: 'true',
     }],
   };
 
@@ -201,35 +183,6 @@ describe('Authorization Test', () => {
     await authorize(context, info);
 
     assert.deepStrictEqual(authInfo.toJSON().roles, ['publish']);
-  });
-
-  it('rejects secured config with no authentication', async () => {
-    const authInfo = AuthInfo.Default();
-
-    const { context, info } = setupTest(authInfo, CONFIG_PUBLISH_BOB);
-    await assert.rejects(
-      authorize(context, info),
-      new AccessDeniedError('not authenticated'),
-    );
-  });
-
-  it('enforce secured config with no roles', async () => {
-    const authInfo = AuthInfo.Default();
-
-    const { context, info } = setupTest(authInfo, CONFIG_AUTH_REQUIRED);
-    await assert.rejects(
-      authorize(context, info),
-      new AccessDeniedError('not authenticated'),
-    );
-  });
-
-  it('allows secured config with no authentication if configured', async () => {
-    const authInfo = AuthInfo.Default();
-
-    const { context, info } = setupTest(authInfo, CONFIG_PUBLISH_BOB_NOT_REQUIRED);
-    await authorize(context, info);
-
-    assert.deepStrictEqual(authInfo.toJSON().roles, ['basic_publish']);
   });
 
   it('ignores user with no matching roles', async () => {

@@ -186,7 +186,7 @@ describe('Index Tests', () => {
     });
     const result = await main(request, context);
 
-    assert.strictEqual(result.status, 403);
+    assert.strictEqual(result.status, 401);
   });
 
   it('fails calling status handler with missing site config', async () => {

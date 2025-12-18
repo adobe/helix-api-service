@@ -10,7 +10,11 @@
  * governing permissions and limitations under the License.
  */
 
+import { MediaHandler } from '@adobe/helix-mediahandler';
+import processQueue from '@adobe/helix-shared-process-queue';
 import { fromHtml } from 'hast-util-from-html';
+import { toHtml } from 'hast-util-to-html';
+import { visit, CONTINUE } from 'unist-util-visit';
 import { MEDIA_TYPES } from '../media/validate.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
@@ -38,6 +42,16 @@ export const CONTENT_TYPES = {
 };
 
 /**
+ * Default maximum image size for the media bus.
+ */
+const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
+
+/**
+ * Default maximum number of images for the media bus.
+ */
+const DEFAULT_MAX_IMAGES = 200;
+
+/**
  * Error messages from the media validation often start with this prefix.
  */
 const PREVIEW_ERROR_PREFIX = 'Unable to preview';
@@ -57,6 +71,29 @@ export function contentTypeFromExtension(ext) {
   const e = new Error(`Unknown file type: ${ext}`);
   e.$metadata = { httpStatusCode: 415 };
   throw e;
+}
+
+/**
+ * Get the HAST from the body.
+ *
+ * @param {Buffer} body the message body as buffer
+ * @param {Logger} log the logger
+ * @return {Hast} the HAST
+ */
+function getHast(body, log) {
+  function validateHtmlError(message) {
+    const msg = `${message.message} - ${message.note}`;
+    if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
+      log.debug(`Ignoring HTML error: ${msg}`);
+      return;
+    }
+    throw new StatusCodeError(msg, 400);
+  }
+
+  const hast = fromHtml(body.toString(), {
+    onerror: validateHtmlError,
+  });
+  return hast;
 }
 
 /**
@@ -83,26 +120,75 @@ export function getSourceKey(info) {
 }
 
 /**
- * Validate the HTML message body stored in the request info.
+ * Validate the HTML message body.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {Buffer} body the message body as buffer
+ * @param {string[]} keptImageURLPrefixes prefixes of image URLs to keep
+ * @param {MediaHandler} mediaHandler media handler TODO
+ * @returns {Promise<Buffer>} the message body either as a buffer or a string
  */
-export async function validateHtml(context, body) {
-  function validateHtmlError(message) {
-    const msg = `${message.message} - ${message.note}`;
-    if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
-      context.log.warn(`Ignoring HTML error: ${msg}`);
-      return;
-    }
-    throw new StatusCodeError(msg, 400);
-  }
-
+export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHandler) {
   // TODO Check HTML size limit
 
-  fromHtml(body.toString(), {
-    onerror: validateHtmlError,
+  const images = new Map();
+  function register(node) {
+    const url = node.properties.src || '';
+    const keepImageURL = keptImageURLPrefixes.some((prefix) => url.startsWith(prefix));
+    if (keepImageURL) {
+      return;
+    }
+
+    if (images.has(url)) {
+      images.get(url).push(node);
+    } else {
+      images.set(url, [node]);
+    }
+  }
+
+  let bodyNode = null;
+  const hast = getHast(body, context.log);
+  visit(hast, 'element', (node) => {
+    if (node.tagName === 'body') {
+      bodyNode = node;
+    }
+
+    if (node.tagName === 'img') { // TODO handle picture elements too?
+      register(node);
+    }
+    return CONTINUE;
   });
+
+  if (!bodyNode) {
+    throw new StatusCodeError('No body element in HTML', 400);
+  }
+
+  if (!mediaHandler) {
+    // If the media handler is not provided, we validate only and need to reject external images
+    if (images.size > 0) {
+      throw new StatusCodeError('External images are not allowed, use POST to intern them', 400);
+    }
+    return body;
+  }
+
+  if (images.size > DEFAULT_MAX_IMAGES) {
+    throw new StatusCodeError(`Too many images: ${images.size}`, 400);
+  }
+
+  await processQueue(images.entries(), async ([url, nodes]) => {
+    try {
+      const blob = await mediaHandler.getBlob(url /* , TODO what do I need for src? */);
+      nodes.forEach((n) => {
+        // eslint-disable-next-line no-param-reassign
+        n.properties.src = blob.uri || 'about:error';
+      });
+    } catch (e) {
+      context.log.error(`Error getting blob for image: ${url}`, e);
+      throw new StatusCodeError(`Error getting blob for image: ${url}`, 400);
+    }
+  });
+
+  return toHtml(bodyNode);
 }
 
 /**
@@ -148,21 +234,51 @@ export async function validateMedia(context, info, mime, body) {
   }
 }
 
+function getMediaHandler(ctx, info) {
+  const noCache = true; // TODO when to cache?
+  const { log } = ctx;
+
+  return new MediaHandler({
+    bucketId: ctx.attributes.bucketMap.media,
+    owner: info.org,
+    repo: info.site,
+    ref: 'main',
+    contentBusId: ctx.attributes.config.content.contentBusId,
+    log,
+    noCache,
+    fetchTimeout: 5000, // limit image fetches to 5s
+    forceHttp1: true,
+    maxSize: DEFAULT_MAX_IMAGE_SIZE,
+  });
+}
+
+function getKeptImageURLPrefixes(info) {
+  return [
+    `https://main--${info.site}--${info.org}.aem.page/`,
+    `https://main--${info.site}--${info.org}.aem.live/`,
+  ];
+}
+
 /**
  * Validate the body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {string} mime media type
- * @returns {Promise<Buffer>} body the message body as buffer
+ * @returns {Promise<Buffer>} body the message body as buffer or string
  */
-export async function getValidPayload(context, info, mime) {
+export async function getValidPayload(context, info, mime, internImages) {
   const body = await info.buffer();
 
   switch (mime) {
     case 'text/html':
-      await validateHtml(context, body);
-      break;
+      // This may change the HTML (interning the images) so return its result
+      return getValidHtml(
+        context,
+        body,
+        getKeptImageURLPrefixes(info),
+        internImages ? getMediaHandler(context, info) : null,
+      );
     case 'application/json':
       await validateJson(context, body);
       break;

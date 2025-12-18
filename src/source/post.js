@@ -30,7 +30,7 @@ export async function postSource(context, info) {
 
   try {
     const mime = contentTypeFromExtension(info.ext);
-    const body = await getValidPayload(context, info, mime);
+    const body = await getValidPayload(context, info, mime, true);
 
     // TODO store images HTML from the outside in the media bus
 

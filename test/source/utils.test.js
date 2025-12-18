@@ -13,20 +13,20 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { validateHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import { getValidHtml, validateJson, validateMedia } from '../../src/source/utils.js';
 import { createInfo } from '../utils.js';
 import { setupContext } from './testutils.js';
 
 describe('Source Utils Tests', () => {
   it('test validateHtml success', async () => {
     const html = '<!DOCTYPE html><html><body>Hello</body></html>';
-    await validateHtml(setupContext(), Buffer.from(html));
+    await getValidHtml(setupContext(), Buffer.from(html));
     // No exception should be thrown
   });
 
   it('test validateHtml ignores acceptable HTML errors', async () => {
     const html = '<html><body>Hello</body></html>';
-    await validateHtml(setupContext(), Buffer.from(html));
+    await getValidHtml(setupContext(), Buffer.from(html));
     // No exception should be thrown
   });
 
@@ -34,7 +34,7 @@ describe('Source Utils Tests', () => {
     const html = '<html><body>Hello</body></html';
 
     try {
-      await validateHtml(setupContext(), Buffer.from(html));
+      await getValidHtml(setupContext(), Buffer.from(html));
     } catch (e) {
       assert.equal(e.statusCode, 400);
       assert.match(e.message, /Unexpected end of file in tag/);

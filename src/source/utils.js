@@ -79,6 +79,7 @@ export function contentTypeFromExtension(ext) {
  * @param {Buffer} body the message body as buffer
  * @param {Logger} log the logger
  * @return {Hast} the HAST
+ * @throws {StatusCodeError} with statusCode 400 if the HTML is invalid
  */
 function getHast(body, log) {
   function validateHtmlError(message) {
@@ -90,10 +91,9 @@ function getHast(body, log) {
     throw new StatusCodeError(msg, 400);
   }
 
-  const hast = fromHtml(body.toString(), {
+  return fromHtml(body.toString(), {
     onerror: validateHtmlError,
   });
-  return hast;
 }
 
 /**
@@ -120,13 +120,21 @@ export function getSourceKey(info) {
 }
 
 /**
- * Validate the HTML message body.
+ * Validate the HTML message body and intern the images if a media handler is provided.
+ * When interning the images, they are uploaded to the media bus and references to them
+ * are replaced with media bus URLs.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {Buffer} body the message body as buffer
  * @param {string[]} keptImageURLPrefixes prefixes of image URLs to keep
- * @param {MediaHandler} mediaHandler media handler TODO
- * @returns {Promise<Buffer>} the message body either as a buffer or a string
+ * @param {MediaHandler} mediaHandler media handler. If provided, external images are
+ * interned. If not provided, the HTML is not considered valid if it contains external
+ * images.
+ * @returns {Promise<Buffer>} the message body either as a buffer or a string,
+ * potentially altered with links to the interned images.
+ * @throws {StatusCodeError} with statusCode 400 if the HTML is invalid, does not contain
+ * a body element, or contains external images and a media handler is not provided. Also
+ * if the HTML contains too many images an error is thrown.
  */
 export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHandler) {
   // TODO Check HTML size limit
@@ -134,7 +142,14 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
   const images = new Map();
   function register(node) {
     const url = node.properties.src || '';
-    const keepImageURL = keptImageURLPrefixes.some((prefix) => url.startsWith(prefix));
+    const keepImageURL = keptImageURLPrefixes.some((prefix) => {
+      if (typeof prefix === 'string') {
+        return url.startsWith(prefix);
+      }
+      // it's a regex
+      return prefix.test(url);
+    });
+
     if (keepImageURL) {
       return;
     }
@@ -153,7 +168,7 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
       bodyNode = node;
     }
 
-    if (node.tagName === 'img') { // TODO handle picture elements too?
+    if (node.tagName === 'img') { // TODO handle picture elements
       register(node);
     }
     return CONTINUE;
@@ -177,7 +192,7 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
 
   await processQueue(images.entries(), async ([url, nodes]) => {
     try {
-      const blob = await mediaHandler.getBlob(url /* , TODO what do I need for src? */);
+      const blob = await mediaHandler.getBlob(url);
       nodes.forEach((n) => {
         // eslint-disable-next-line no-param-reassign
         n.properties.src = blob.uri || 'about:error';
@@ -252,10 +267,18 @@ function getMediaHandler(ctx, info) {
   });
 }
 
+/** Get the prefixes of image URLs to keep.
+ *
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {string[]} the prefixes of image URLs to keep, either as string or regex
+ */
 function getKeptImageURLPrefixes(info) {
   return [
     `https://main--${info.site}--${info.org}.aem.page/`,
     `https://main--${info.site}--${info.org}.aem.live/`,
+
+    // Allow any host for Dynamic Media Delivery URLs
+    /^https:\/\/[^/]+\/adobe\/dynamicmedia\/deliver\//,
   ];
 }
 

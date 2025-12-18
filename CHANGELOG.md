@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/adobe/helix-api-service/compare/v1.21.3...v1.22.0) (2025-12-18)
+
+
+### Features
+
+* add `sidekick` route ([#73](https://github.com/adobe/helix-api-service/issues/73)) ([37ac36e](https://github.com/adobe/helix-api-service/commit/37ac36e3035ac420d3787c74108ac4e7c9b093a1))
+
 ## [1.21.3](https://github.com/adobe/helix-api-service/compare/v1.21.2...v1.21.3) (2025-12-17)
 
 

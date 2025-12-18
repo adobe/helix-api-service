@@ -9,7 +9,6 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { AccessDeniedError } from './AccessDeniedError.js';
 import { RoleMapping } from './role-mapping.js';
 
 /**
@@ -17,7 +16,6 @@ import { RoleMapping } from './role-mapping.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @throws {AccessDeniedError} if the user is not authorized
  */
 export async function authorize(context) {
   const { log, attributes: { authInfo } } = context;
@@ -47,18 +45,5 @@ export async function authorize(context) {
     );
     authInfo.withRoles(roles);
     log.info(`auth: using roles ${roles} for ${authInfo.authenticated ? '' : 'un'}authenticated user`);
-
-    // enforce authentication
-    if (!authInfo.authenticated) {
-      // if 'auto' configured and roles are defined (backward compat)
-      if (roleMapping.requireAuth === 'auto') {
-        if (roleMapping.hasConfigured) {
-          throw new AccessDeniedError('not authenticated');
-        }
-      // or if auth is enforced
-      } else if (roleMapping.requireAuth !== 'false') {
-        throw new AccessDeniedError('not authenticated');
-      }
-    }
   }
 }

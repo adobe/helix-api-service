@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/adobe/helix-api-service/compare/v1.22.0...v1.22.1) (2025-12-18)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-onedrive-support to v12.1.6 ([#76](https://github.com/adobe/helix-api-service/issues/76)) ([6df8ccb](https://github.com/adobe/helix-api-service/commit/6df8ccbb22a4aeb5177da0f1934178456db86812))
+
 # [1.22.0](https://github.com/adobe/helix-api-service/compare/v1.21.3...v1.22.0) (2025-12-18)
 
 

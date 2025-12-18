@@ -74,7 +74,7 @@ export default async function status(context, info) {
         }
       } else {
         resourcePath = result.resourcePath;
-        webPath = result.path;
+        webPath = result.webPath;
 
         edit.url = result.editUrl;
         edit.name = result.editName;

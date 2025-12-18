@@ -630,6 +630,8 @@ describe('Login Handler Tests', () => {
       const { request, context } = setupTest('/logout', {
         query: {
           extensionId: '1234',
+          org: 'org',
+          site: 'site',
         },
       });
       const result = await main(request, context);

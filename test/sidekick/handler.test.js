@@ -31,9 +31,8 @@ describe('Sidekick Handler Tests', () => {
   function setupTest({
     method = 'GET',
     authInfo = AuthInfo.Default().withAuthenticated(true),
-    path = '/config.json',
   } = {}) {
-    const suffix = `/org/sites/site/sidekick${path}`;
+    const suffix = '/org/sites/site/sidekick';
 
     const request = new Request(`https://api.aem.live${suffix}`, {
       method,
@@ -166,23 +165,6 @@ describe('Sidekick Handler Tests', () => {
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
       'x-error': 'not authorized',
-    });
-  });
-
-  it('GET sends 404 for non config requests', async () => {
-    nock.siteConfig(SITE_CONFIG);
-
-    const { request, context } = setupTest({
-      path: '/tools/foo.json',
-    });
-    const result = await main(request, context);
-
-    assert.strictEqual(result.status, 404);
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'not found',
-      vary: 'Accept-Encoding',
     });
   });
 });

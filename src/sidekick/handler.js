@@ -319,25 +319,17 @@ export default async function sidekickHandler(context, info) {
     });
   }
 
-  if (info.webPath === '/config.json') {
-    authInfo.assertPermissions('code:read');
-    const result = await getConfigJsonResponse(context, info);
-    if (!result.error) {
-      const { sidekick } = result;
-      return new Response(JSON.stringify(sidekick), {
-        headers: {
-          'cache-control': 'no-store, private, must-revalidate',
-          'content-type': 'application/json; charset=utf-8',
-        },
-      });
-    }
-    const { status, msg } = result;
-    return createErrorResponse({ log, status, msg });
+  authInfo.assertPermissions('code:read');
+  const result = await getConfigJsonResponse(context, info);
+  if (!result.error) {
+    const { sidekick } = result;
+    return new Response(JSON.stringify(sidekick), {
+      headers: {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json; charset=utf-8',
+      },
+    });
   }
-
-  return createErrorResponse({
-    log,
-    status: 404,
-    msg: 'not found',
-  });
+  const { status, msg } = result;
+  return createErrorResponse({ log, status, msg });
 }

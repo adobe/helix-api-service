@@ -34,16 +34,22 @@ describe('Source PUT Tests', () => {
   });
 
   it('test putSource HTML with user', async () => {
+    const html = `
+      <body>
+        Hello
+        <img src="https://main--best--tst.aem.live/my-image.jpg">
+      </body>`;
+
     async function putFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<html><body>Hello</body></html>');
+      assert.equal(b.toString(), html);
     }
 
     nock.source()
       .putObject('/tst/best/toast/jam.html')
       .matchHeader('content-type', 'text/html')
       .matchHeader('x-amz-meta-last-modified-by', 'test@example.com')
-      .matchHeader('x-amz-meta-uncompressed-length', '31')
+      .matchHeader('x-amz-meta-uncompressed-length', '107')
       .reply(201, putFn);
 
     const path = '/tst/sites/best/source/toast/jam.html';
@@ -60,9 +66,25 @@ describe('Source PUT Tests', () => {
 
     const resp = await putSource(
       context,
-      createInfo(path, {}, 'PUT', '<html><body>Hello</body></html>'),
+      createInfo(path, {}, 'PUT', html),
     );
     assert.equal(resp.status, 201);
+  });
+
+  it('test putSource HTML with external images is rejected', async () => {
+    const html = `
+      <body>
+        Hello
+        <img src="https://some.where.else/myimg.jpeg">
+      </body>`;
+
+    const path = '/myorg/sites/mysite/source/my-page.html';
+    const resp = await putSource(
+      setupContext(path),
+      createInfo(path, {}, 'PUT', html),
+    );
+    assert.equal(resp.status, 400);
+    assert.match(resp.headers.get('x-error'), /External images are not allowed, use POST to intern them/);
   });
 
   it('test putSource JSON', async () => {

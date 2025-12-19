@@ -77,15 +77,13 @@ export function contentTypeFromExtension(ext) {
  * Get the HAST from the body.
  *
  * @param {Buffer} body the message body as buffer
- * @param {Logger} log the logger
  * @return {Hast} the HAST
  * @throws {StatusCodeError} with statusCode 400 if the HTML is invalid
  */
-function getHast(body, log) {
+function getHast(body) {
   function validateHtmlError(message) {
     const msg = `${message.message} - ${message.note}`;
     if (ACCEPTABLE_HTML_ERRORS.includes(message.ruleId)) {
-      log.debug(`Ignoring HTML error: ${msg}`);
       return;
     }
     throw new StatusCodeError(msg, 400);
@@ -139,9 +137,11 @@ export function getSourceKey(info) {
 export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHandler) {
   // TODO Check HTML size limit
 
+  /* The register() function populates the images map with the nodes that need to be
+     interned. It is called for each img and picture->source element in the HTML. */
   const images = new Map();
-  function register(node) {
-    const url = node.properties.src || '';
+  function register(node, propName) {
+    const url = node.properties[propName] || '';
     const keepImageURL = keptImageURLPrefixes.some((prefix) => {
       if (typeof prefix === 'string') {
         return url.startsWith(prefix);
@@ -155,28 +155,28 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
     }
 
     if (images.has(url)) {
-      images.get(url).push(node);
+      images.get(url).push({ node, propName });
     } else {
-      images.set(url, [node]);
+      images.set(url, [{ node, propName }]);
     }
   }
 
   let bodyNode = null;
-  const hast = getHast(body, context.log);
+  const hast = getHast(body);
   visit(hast, 'element', (node) => {
     if (node.tagName === 'body') {
       bodyNode = node;
     }
 
-    if (node.tagName === 'img') { // TODO handle picture elements
-      register(node);
+    if (node.tagName === 'img') {
+      register(node, 'src');
+    }
+    if (node.tagName === 'picture') {
+      const sources = node.children.filter((child) => child.tagName === 'source');
+      sources.forEach((s) => register(s, 'srcSet')); // note Hast converts srcset to srcSet
     }
     return CONTINUE;
   });
-
-  if (!bodyNode) {
-    throw new StatusCodeError('No body element in HTML', 400);
-  }
 
   if (!mediaHandler) {
     // If the media handler is not provided, we validate only and need to reject external images
@@ -195,7 +195,7 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
       const blob = await mediaHandler.getBlob(url);
       nodes.forEach((n) => {
         // eslint-disable-next-line no-param-reassign
-        n.properties.src = blob.uri || 'about:error';
+        n.node.properties[n.propName] = blob.uri || 'about:error';
       });
     } catch (e) {
       context.log.error(`Error getting blob for image: ${url}`, e);
@@ -203,6 +203,8 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
     }
   });
 
+  /* Only return the body element, note that Hast synthesizes this if it wasn't
+     present in the input HTML. */
   return toHtml(bodyNode);
 }
 
@@ -250,7 +252,7 @@ export async function validateMedia(context, info, mime, body) {
 }
 
 function getMediaHandler(ctx, info) {
-  const noCache = true; // TODO when to cache?
+  const noCache = false;
   const { log } = ctx;
 
   return new MediaHandler({

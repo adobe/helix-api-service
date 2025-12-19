@@ -19,3 +19,7 @@ export function setupContext(suffix, { attributes = {} } = {}) {
     },
   });
 }
+
+export function stripSpaces(str) {
+  return str.replace(/\s+/g, '');
+}

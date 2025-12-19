@@ -17,7 +17,7 @@ import { promisify } from 'util';
 import zlib from 'zlib';
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
-import { setupContext } from './testutils.js';
+import { setupContext, stripSpaces } from './testutils.js';
 
 const gunzip = promisify(zlib.gunzip);
 
@@ -36,7 +36,7 @@ describe('Source POST Tests', () => {
   it('test postSource HTML', async () => {
     async function postFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<html><body>Hello</body></html>');
+      assert.equal(b.toString(), '<body>Hello</body>');
     }
 
     nock.source()
@@ -53,12 +53,62 @@ describe('Source POST Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test postSource HTML with images', async () => {
+    const imageHash = '1df1eef4cd16906957aa9d03ef3e2623e2bebecc2';
+
+    /* The image form example.com should be interned, but the other ones should be
+       left alone as they are in the list of kept image URLs. */
+    const htmlIn = `
+      <body>
+        <img src="https://example.com/image.jpg">
+        <img src="https://main--rest--test.aem.page/img1.jpg">
+        <img src="https://main--rest--test.aem.live/img2.jpg">
+        <img src="https://my.adobe.com/adobe/dynamicmedia/deliver/img3.jpg">
+      </body>`;
+
+    const htmlOut = `
+      <body>
+        <img src="https://main--rest--test.aem.page/media_${imageHash}.jpg">
+        <img src="https://main--rest--test.aem.page/img1.jpg">
+        <img src="https://main--rest--test.aem.live/img2.jpg">
+        <img src="https://my.adobe.com/adobe/dynamicmedia/deliver/img3.jpg">
+      </body>`;
+
+    function imgPutFn(url, body) {
+      assert.equal(body, 'someimg');
+    }
+
+    async function htmlPutFn(url, gzipBody) {
+      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
+      assert.equal(
+        stripSpaces(b.toString()),
+        stripSpaces(htmlOut),
+        'Should have interned the images to media bus',
+      );
+    }
+
+    const scope = new Nock()('https://example.com');
+    scope.get('/image.jpg').reply(200, 'someimg');
+
+    nock.media().headObject(`/${imageHash}`).reply(404); // report it not found
+    nock.media().putObject(`/${imageHash}`).reply(201, imgPutFn);
+    nock.source().putObject('/test/rest/toast/jam.html').reply(201, htmlPutFn);
+
+    const resp = await postSource(setupContext(), createInfo(
+      '/test/sites/rest/source/toast/jam.html',
+      {},
+      'POST',
+      htmlIn,
+    ));
+    assert.equal(resp.status, 201);
+  });
+
   it('test postSource invalid HTML', async () => {
     const resp = await postSource(setupContext(), createInfo(
       '/test/sites/rest/source/toast/jam.html',
       {},
       'POST',
-      '<html><body>Hello</bod',
+      '<body>Hello</bod',
     ));
     assert.equal(resp.status, 400);
   });

@@ -130,11 +130,11 @@ describe('edit2web Google Tests', () => {
       editName: 'page',
       editUrl,
       illegalPath: '/folder-/page',
-      path: '/folder/page',
       resourcePath: '/folder/page.md',
       sourceLastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
       sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
       status: 200,
+      webPath: '/folder/page',
     });
   });
 
@@ -171,11 +171,11 @@ describe('edit2web Google Tests', () => {
       editName: 'folder-',
       editUrl,
       illegalPath: '/folder-',
-      path: '/folder',
       resourcePath: '/folder',
       sourceLastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
       sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
       status: 200,
+      webPath: '/folder',
     });
   });
 

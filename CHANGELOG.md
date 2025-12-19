@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/adobe/helix-api-service/compare/v1.22.2...v1.23.0) (2025-12-19)
+
+
+### Features
+
+* add CSRF sidekick protection ([#77](https://github.com/adobe/helix-api-service/issues/77)) ([64fb9f9](https://github.com/adobe/helix-api-service/commit/64fb9f93cc954f3781c6d6cab7ab8f492cb63a83))
+
 ## [1.22.2](https://github.com/adobe/helix-api-service/compare/v1.22.1...v1.22.2) (2025-12-19)
 
 

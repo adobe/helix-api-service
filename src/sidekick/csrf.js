@@ -148,12 +148,6 @@ export async function sidekickCSRFProtection(context, info) {
   const { org, site } = info;
   const { suffix, method } = info;
 
-  // TODO: no longer required, `info` already contains correct org and site
-  // if (info.route === 'config') {
-  //   // special case for the config route
-  //   [, , org, , site] = info.suffix.split('.')[0].split(/\/+/);
-  // }
-
   const { origin, referer } = headers;
   try {
     if (!origin) {

@@ -75,7 +75,7 @@ describe('Source PUT Tests', () => {
     const html = `
       <body>
         Hello
-        <img src="https://some.where.else/myimg.jpeg">
+        <img src="https://main--somesite--someorg.aem.live/myimg.jpeg">
       </body>`;
 
     const path = '/myorg/sites/mysite/source/my-page.html';

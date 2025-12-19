@@ -38,6 +38,7 @@ import { logRequest } from './support/utils.js';
 import catchAll from './wrappers/catch-all.js';
 import { contentEncodeWrapper } from './wrappers/content-encode.js';
 import commonResponseHeaders from './wrappers/response-headers.js';
+import { sidekickCSRFProtection } from './sidekick/csrf.js';
 
 /**
  * Dummy NYI handler
@@ -125,6 +126,10 @@ async function run(request, context) {
   }
 
   await context.authorize(info);
+
+  if (!['auth', 'login', 'logout'].includes(info.route)) {
+    await sidekickCSRFProtection(context, info);
+  }
 
   const response = await handler(context, info);
   logRequest(context, info, response);

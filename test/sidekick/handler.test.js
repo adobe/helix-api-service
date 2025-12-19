@@ -168,5 +168,3 @@ describe('Sidekick Handler Tests', () => {
     });
   });
 });
-
-// TODO: add tests for CSRF protection

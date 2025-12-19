@@ -10,58 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { createErrorResponse } from '../contentbus/utils.js';
-
-function replaceParams(str, info) {
-  return str
-    .replaceAll('$owner', info.owner)
-    .replaceAll('$repo', info.repo)
-    .replaceAll('$ref', info.ref)
-    .replaceAll('$site', info.site)
-    .replaceAll('$org', info.org);
-}
-
-/**
- * Returns the sidekick config.json response.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @return {Promise<object>}
- */
-async function getConfigJsonResponse(context, info) {
-  const { attributes: { config } } = context;
-
-  const sidekick = config.sidekick ?? {};
-  if (!sidekick.previewHost) {
-    sidekick.previewHost = config.cdn?.preview?.host;
-  }
-  if (!sidekick.previewHost) {
-    sidekick.previewHost = '$ref--$site--$org.aem.page';
-  }
-  if (!sidekick.liveHost) {
-    sidekick.liveHost = config.cdn?.live?.host;
-  }
-  if (!sidekick.liveHost) {
-    sidekick.liveHost = '$ref--$site--$org.aem.live';
-  }
-  if (!sidekick.reviewHost) {
-    sidekick.reviewHost = config.cdn?.review?.host;
-  }
-  if (config.cdn?.prod?.route) {
-    sidekick.routes = config.cdn?.prod?.route;
-  }
-  sidekick.previewHost = replaceParams(sidekick.previewHost, info);
-  sidekick.liveHost = replaceParams(sidekick.liveHost, info);
-  if (sidekick.reviewHost) {
-    sidekick.reviewHost = replaceParams(sidekick.reviewHost, info);
-  }
-  sidekick.contentSourceUrl = config.content.source.url;
-  sidekick.contentSourceType = config.content.source.type;
-  sidekick.host = config.cdn?.prod?.host;
-  sidekick.project = sidekick.project || config.title;
-
-  return { error: false, sidekick };
-}
+import { getConfigJsonResponse } from './utils.js';
 
 /**
  * Handles the sidekick route
@@ -71,7 +20,7 @@ async function getConfigJsonResponse(context, info) {
  * @returns {Promise<Response>} response
  */
 export default async function sidekickHandler(context, info) {
-  const { attributes: { authInfo }, log } = context;
+  const { attributes: { authInfo } } = context;
 
   if (info.method !== 'GET') {
     return new Response('method not allowed', {
@@ -80,16 +29,12 @@ export default async function sidekickHandler(context, info) {
   }
 
   authInfo.assertPermissions('code:read');
-  const result = await getConfigJsonResponse(context, info);
-  if (!result.error) {
-    const { sidekick } = result;
-    return new Response(JSON.stringify(sidekick), {
-      headers: {
-        'cache-control': 'no-store, private, must-revalidate',
-        'content-type': 'application/json; charset=utf-8',
-      },
-    });
-  }
-  const { status, msg } = result;
-  return createErrorResponse({ log, status, msg });
+  const { sidekick } = await getConfigJsonResponse(context, info);
+
+  return new Response(JSON.stringify(sidekick), {
+    headers: {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'application/json; charset=utf-8',
+    },
+  });
 }

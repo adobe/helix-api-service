@@ -1,3 +1,10 @@
+## [1.22.2](https://github.com/adobe/helix-api-service/compare/v1.22.1...v1.22.2) (2025-12-19)
+
+
+### Bug Fixes
+
+* **status:** use result paths from `edit2web` ([#75](https://github.com/adobe/helix-api-service/issues/75)) ([c9da783](https://github.com/adobe/helix-api-service/commit/c9da78325cfc1f80c6b0e8fe6e05ac6b077534dd))
+
 ## [1.22.1](https://github.com/adobe/helix-api-service/compare/v1.22.0...v1.22.1) (2025-12-18)
 
 

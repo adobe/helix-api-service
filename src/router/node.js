@@ -42,7 +42,7 @@ export class Node {
   /**
    * Query parameters for this node.
    */
-  #params;
+  #paramNames;
 
   /**
    * Star node (i.e. `/*`)
@@ -89,7 +89,7 @@ export class Node {
 
   add(segs, query, route) {
     if (segs.length === 0) {
-      this.#params = query?.split(',') ?? undefined;
+      this.#paramNames = query?.split(',') ?? undefined;
       this.#route = route;
       return this;
     }
@@ -104,17 +104,16 @@ export class Node {
   /**
    * Extracts query parameters from the query string and populates the variables map.
    *
-   * @param {string} query query string
-   * @param {Map} variables map to populate with key-value pairs extracted from the query string.
+   * @param {object} params query parameters object, containing keys and values
+   * @param {Map} variables map to populate with key-value pairs extracted from the query string
    * @private
    */
-  #extractParams(query, variables) {
-    if (this.#params && query) {
-      const search = new URLSearchParams(query);
-      this.#params.forEach((param) => {
-        const value = search.get(param);
+  #extractParams(params, variables) {
+    if (this.#paramNames && params) {
+      this.#paramNames.forEach((name) => {
+        const value = params[name];
         if (value) {
-          variables.set(param, value);
+          variables.set(name, value);
         }
       });
     }
@@ -124,13 +123,13 @@ export class Node {
    * Matches a path by traversing a tree of nodes.
    *
    * @param {string[]} segs path segments to match
-   * @param {string} query query string
+   * @param {object} params search object, containing keys and values
    * @param {Map} variables variables extracted while matching
    * @returns {Node} matching node or null
    */
-  match(segs, query, variables) {
+  match(segs, params, variables) {
     if (segs.length === 0) {
-      this.#extractParams(query, variables);
+      this.#extractParams(params, variables);
       return this;
     }
 
@@ -139,14 +138,14 @@ export class Node {
     // find exact match
     const next = this.#children.find((child) => child.#label === seg);
     if (next) {
-      return next.match(segs, query, variables);
+      return next.match(segs, params, variables);
     }
 
     // use variable extracting match (e.g. ':org')
     if (this.#variable) {
       const key = this.#variable.#label;
       variables.set(key, seg);
-      return this.#variable.match(segs, query, variables);
+      return this.#variable.match(segs, params, variables);
     }
 
     // use trailing '*' match
@@ -166,8 +165,8 @@ export class Node {
    * @private
    */
   #appendQuery(segs, variables) {
-    if (this.#params) {
-      const query = this.#params.map((p) => `${p}=${variables[p]}`).join('&');
+    if (this.#paramNames) {
+      const query = this.#paramNames.map((p) => `${p}=${variables[p]}`).join('&');
       segs.unshift(`?${query}`);
     }
   }

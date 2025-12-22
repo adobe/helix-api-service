@@ -55,7 +55,7 @@
     "@adobe/helix-config": "5.8.0",
     "@adobe/helix-google-support": "4.0.1",
     "@adobe/helix-mediahandler": "2.9.5",
-    "@adobe/helix-onedrive-support": "12.1.6",
+    "@adobe/helix-onedrive-support": "12.1.7",
     "@adobe/helix-shared-body-data": "2.2.3",
     "@adobe/helix-shared-config": "11.1.13",
     "@adobe/helix-shared-indexer": "2.2.6",
@@ -84,7 +84,7 @@
   },
   "devDependencies": {
     "@adobe/eslint-config-helix": "3.0.15",
-    "@adobe/helix-deploy": "13.2.3",
+    "@adobe/helix-deploy": "13.2.4",
     "@adobe/helix-universal": "5.3.0",
     "@adobe/helix-universal-devserver": "1.1.144",
     "@adobe/semantic-release-coralogix": "1.1.40",

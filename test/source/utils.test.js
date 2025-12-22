@@ -92,13 +92,8 @@ describe('Source Utils Tests', () => {
       getBlob: () => { throw new Error(); },
     };
 
-    try {
-      await getValidHtml(setupContext(), Buffer.from(htmlIn), [], mockMH);
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.equal(e.message, 'Error getting blob for image: https://example.com/image.jpg');
-    }
+    await assert.rejects(getValidHtml(setupContext(), Buffer.from(htmlIn), [], mockMH),
+      new StatusCodeError('Error getting blob for image: https://example.com/image.jpg', 400));
   });
 
   it('test html validate only with external images fails', async () => {

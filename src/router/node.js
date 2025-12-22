@@ -166,7 +166,13 @@ export class Node {
    */
   #appendQuery(segs, variables) {
     if (this.#paramNames) {
-      const query = this.#paramNames.map((p) => `${p}=${variables[p]}`).join('&');
+      const query = this.#paramNames.reduce((params, name) => {
+        const value = variables[name];
+        if (value) {
+          params.push(`${name}=${variables[name]}`);
+        }
+        return params;
+      }, {}).join('&');
       segs.unshift(`?${query}`);
     }
   }

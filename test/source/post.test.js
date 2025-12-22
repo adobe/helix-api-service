@@ -87,8 +87,9 @@ describe('Source POST Tests', () => {
       );
     }
 
-    const scope = new Nock()('https://example.com');
-    scope.get('/image.jpg').reply(200, 'someimg');
+    nock('https://example.com')
+      .get('/image.jpg')
+      .reply(200, 'someimg');
 
     nock.media().headObject(`/${imageHash}`).reply(404); // report it not found
     nock.media().putObject(`/${imageHash}`).reply(201, imgPutFn);

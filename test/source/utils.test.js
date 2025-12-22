@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { getValidHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { createInfo } from '../utils.js';
 import { setupContext, stripSpaces } from './testutils.js';
 
@@ -33,13 +34,14 @@ describe('Source Utils Tests', () => {
   it('test validateHtml failure', async () => {
     const html = '<html><body>Hello</body></html';
 
-    try {
-      await getValidHtml(setupContext(), Buffer.from(html));
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Unexpected end of file in tag/);
-    }
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(html)),
+      (err) => {
+        assert.equal(err.statusCode, 400);
+        assert.match(err.message, /Unexpected end of file in tag/);
+        return true;
+      },
+    );
   });
 
   it('test handle html media upload', async () => {
@@ -92,8 +94,10 @@ describe('Source Utils Tests', () => {
       getBlob: () => { throw new Error(); },
     };
 
-    await assert.rejects(getValidHtml(setupContext(), Buffer.from(htmlIn), [], mockMH),
-      new StatusCodeError('Error getting blob for image: https://example.com/image.jpg', 400));
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(htmlIn), [], mockMH),
+      new StatusCodeError('Error getting blob for image: https://example.com/image.jpg', 400),
+    );
   });
 
   it('test html validate only with external images fails', async () => {
@@ -102,13 +106,10 @@ describe('Source Utils Tests', () => {
         <img src="https://example.com/image.jpg">
       </body>`;
 
-    try {
-      await getValidHtml(setupContext(), Buffer.from(htmlIn), [], null);
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /External images are not allowed, use POST to intern them/);
-    }
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(htmlIn), [], null),
+      new StatusCodeError('External images are not allowed, use POST to intern them', 400),
+    );
   });
 
   it('test a body element is synthesized if not present in the input HTML', async () => {
@@ -131,13 +132,10 @@ describe('Source Utils Tests', () => {
         ${images}
       </body>`;
 
-    try {
-      await getValidHtml(setupContext(), Buffer.from(htmlIn), [], {});
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Too many images:/);
-    }
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(htmlIn), [], {}),
+      new StatusCodeError('Too many images: 201', 400),
+    );
   });
 
   it('test validateJson success', async () => {
@@ -149,13 +147,14 @@ describe('Source Utils Tests', () => {
   it('test validateJson failure', async () => {
     const json = '{"name":"test","value":123';
 
-    try {
-      await validateJson(setupContext(), Buffer.from(json));
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Invalid JSON:/);
-    }
+    await assert.rejects(
+      validateJson(setupContext(), Buffer.from(json)),
+      (err) => {
+        assert.equal(err.statusCode, 400);
+        assert.match(err.message, /Invalid JSON:/);
+        return true;
+      },
+    );
   });
 
   it('test validateMedia success', async () => {
@@ -180,14 +179,14 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    try {
-      await validateMedia(setupContext(), info, 'video/mp4', Buffer.from(media));
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.equal(e.errorCode, 'AEM_BACKEND_MP4_PARSING_FAILED');
-      assert.match(e.message, /Media not accepted/);
-    }
+    await assert.rejects(
+      validateMedia(setupContext(), info, 'video/mp4', Buffer.from(media)),
+      new StatusCodeError(
+        'Media not accepted \'/my.mp4\': Unable to parse MP4',
+        400,
+        'AEM_BACKEND_MP4_PARSING_FAILED',
+      ),
+    );
   });
 
   it('test validateMedia unknown media type', async () => {
@@ -199,12 +198,9 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    try {
-      await validateMedia(setupContext(), info, 'video/blah', Buffer.from(media));
-      assert.fail('Expected an error to be thrown');
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Unknown media type/);
-    }
+    assert.rejects(
+      validateMedia(setupContext(), info, 'video/blah', Buffer.from(media)),
+      new StatusCodeError('Unknown media type: video/blah', 400),
+    );
   });
 });

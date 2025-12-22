@@ -91,9 +91,15 @@ describe('Source POST Tests', () => {
       .get('/image.jpg')
       .reply(200, 'someimg');
 
-    nock.media().headObject(`/${imageHash}`).reply(404); // report it not found
-    nock.media().putObject(`/${imageHash}`).reply(201, imgPutFn);
-    nock.source().putObject('/test/rest/toast/jam.html').reply(201, htmlPutFn);
+    nock.media()
+      .headObject(`/${imageHash}`)
+      .reply(404); // report it not found
+    nock.media()
+      .putObject(`/${imageHash}`)
+      .reply(201, imgPutFn);
+    nock.source()
+      .putObject('/test/rest/toast/jam.html')
+      .reply(201, htmlPutFn);
 
     const resp = await postSource(setupContext(), createInfo(
       '/test/sites/rest/source/toast/jam.html',

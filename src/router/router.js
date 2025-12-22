@@ -43,10 +43,11 @@ export default class Router {
    * @param {function} handler handler
    */
   add(expr, handler) {
-    const segs = expr.split('/').slice(1);
+    const [path, query] = expr.split('?');
+    const segs = path.split('/').slice(1);
 
     const name = this.#nameSelector(segs);
-    const route = this.#root.add(segs, { name, handler });
+    const route = this.#root.add(segs, query, { name, handler });
     this.#routes.set(name, route);
 
     return this;
@@ -56,14 +57,15 @@ export default class Router {
    * Find handler that should handle a request.
    *
    * @param {string} path path to match
+   * @param {string} query query string
    * @returns {object} containing `handler` and `variables` or `null`
    * @throws {StatusCodeError} if we're unable to find a matching handler
    */
-  match(path) {
+  match(path, query) {
     const segs = path.split('/').slice(1);
 
     const variables = new Map();
-    const match = this.#root.match(segs, variables);
+    const match = this.#root.match(segs, query, variables);
 
     const { route } = match ?? {};
     if (route) {

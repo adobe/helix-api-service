@@ -65,7 +65,7 @@ export const router = new Router(nameSelector)
   .add('/discover', discover)
   .add('/login', login)
   .add('/logout', logout)
-  .add('/profile', profile)
+  .add('/profile?org,site', profile)
   .add('/:org', notImplemented)
   .add('/:org/config', notImplemented)
   .add('/:org/config/access', notImplemented)
@@ -102,7 +102,7 @@ export const router = new Router(nameSelector)
  * @returns {import('@adobe/fetch').Response} response
  */
 async function run(request, context) {
-  const { handler, variables } = router.match(context.suffix) ?? {};
+  const { handler, variables } = router.match(context.suffix, context.data) ?? {};
   if (!handler) {
     return new Response('', { status: 404 });
   }

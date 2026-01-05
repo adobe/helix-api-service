@@ -158,23 +158,24 @@ export class Node {
   }
 
   /**
-   * Appends query parameters to the path segments.
+   * Returns query parameters that should be added to the external path.
    *
-   * @param {string[]} segs path segments to prepend the query string to
    * @param {Object} variables object containing variable values for query parameters.
+   * @returns {string} query string, empty string if no query parameters are present
    * @private
    */
-  #appendQuery(segs, variables) {
+  #getQuery(variables) {
     if (this.#paramNames) {
       const query = this.#paramNames.reduce((params, name) => {
         const value = variables[name];
         if (value) {
-          params.push(`${name}=${variables[name]}`);
+          params.append(name, variables[name]);
         }
         return params;
-      }, {}).join('&');
-      segs.unshift(`?${query}`);
+      }, new URLSearchParams());
+      return `?${query.toString()}`;
     }
+    return '';
   }
 
   /**
@@ -190,8 +191,7 @@ export class Node {
 
     switch (this.#type) {
       case NodeType.LITERAL:
-        this.#appendQuery(segs, variables);
-        segs.unshift(label);
+        segs.unshift(`${label}${this.#getQuery(variables)}`);
         break;
       case NodeType.VARIABLE:
         segs.unshift(variables[label]);

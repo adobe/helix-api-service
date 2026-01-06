@@ -67,8 +67,8 @@
     "@adobe/helix-shared-utils": "3.0.2",
     "@adobe/helix-shared-wrap": "2.0.2",
     "@adobe/helix-status": "10.1.5",
-    "@aws-sdk/client-lambda": "3.952.0",
-    "@aws-sdk/lib-storage": "3.952.0",
+    "@aws-sdk/client-lambda": "3.957.0",
+    "@aws-sdk/lib-storage": "3.957.0",
     "@flighter/a1-notation": "2.2.1",
     "aws4": "1.13.2",
     "cookie": "1.1.1",
@@ -105,7 +105,7 @@
     "nodemon": "3.1.11",
     "semantic-release": "25.0.2",
     "semantic-release-slack-bot": "4.0.2",
-    "sinon": "21.0.0"
+    "sinon": "21.0.1"
   },
   "lint-staged": {
     "*.js": "eslint"

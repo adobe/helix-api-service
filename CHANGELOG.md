@@ -1,3 +1,11 @@
+## [1.23.6](https://github.com/adobe/helix-api-service/compare/v1.23.5...v1.23.6) (2026-01-06)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#88](https://github.com/adobe/helix-api-service/issues/88)) ([bd42a7a](https://github.com/adobe/helix-api-service/commit/bd42a7a7ea386190eb9b3cde68dc99200278d1f7))
+* **deps:** update external fixes ([#87](https://github.com/adobe/helix-api-service/issues/87)) ([b081a03](https://github.com/adobe/helix-api-service/commit/b081a0335a00e09d51de057f3add352bf16e0cdb))
+
 ## [1.23.5](https://github.com/adobe/helix-api-service/compare/v1.23.4...v1.23.5) (2025-12-30)
 
 

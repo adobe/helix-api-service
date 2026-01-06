@@ -81,7 +81,7 @@ export default class Router {
    * to fill in the variable segments traversing.
    *
    * @param {string} name route name
-   * @param {Map} variables variables
+   * @param {Object} variables variables
    * @returns {string} external path
    */
   external(name, variables) {

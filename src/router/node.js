@@ -185,7 +185,7 @@ export class Node {
   /**
    * Returns the external path segment for this node.
    *
-   * @param {Map} variables variables
+   * @param {Object} variables variables
    * @returns {string} external path segment
    */
   external(variables) {

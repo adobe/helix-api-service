@@ -183,12 +183,10 @@ export class Node {
   }
 
   /**
-   * Returns the external path by traversing from a leaf back
-   * to the root.
+   * Returns the external path segment for this node.
    *
-   * @param {string[]} segs path segments to collect
    * @param {Map} variables variables
-   * @returns {void}
+   * @returns {string} external path segment
    */
   external(variables) {
     const label = this.#label;

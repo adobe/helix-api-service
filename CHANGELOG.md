@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/adobe/helix-api-service/compare/v1.23.6...v1.24.0) (2026-01-06)
+
+
+### Features
+
+* allow `org` and `site` in query params ([#78](https://github.com/adobe/helix-api-service/issues/78)) ([2063bfb](https://github.com/adobe/helix-api-service/commit/2063bfb2ad7043d913933b948eeafdafc1fec812))
+
 ## [1.23.6](https://github.com/adobe/helix-api-service/compare/v1.23.5...v1.23.6) (2026-01-06)
 
 

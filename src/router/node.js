@@ -178,6 +178,10 @@ export class Node {
     return '';
   }
 
+  get parent() {
+    return this.#parent;
+  }
+
   /**
    * Returns the external path by traversing from a leaf back
    * to the root.
@@ -186,22 +190,16 @@ export class Node {
    * @param {Map} variables variables
    * @returns {void}
    */
-  external(segs, variables) {
+  external(variables) {
     const label = this.#label;
 
-    switch (this.#type) {
-      case NodeType.LITERAL:
-        segs.unshift(`${label}${this.#getQuery(variables)}`);
-        break;
-      case NodeType.VARIABLE:
-        segs.unshift(variables[label]);
-        break;
-      case NodeType.PATH:
-        segs.unshift(variables.path);
-        break;
-      default:
-        break;
+    if (this.#type === NodeType.LITERAL) {
+      const query = this.#getQuery(variables);
+      return `${label}${query}`;
     }
-    this.#parent?.external(segs, variables);
+    if (this.#type === NodeType.VARIABLE) {
+      return variables[label];
+    }
+    return variables.path;
   }
 }

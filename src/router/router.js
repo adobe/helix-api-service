@@ -90,8 +90,10 @@ export default class Router {
     if (!route) {
       throw new Error(`route not found: ${name}`);
     }
-    const segs = [];
-    route.external(segs, variables);
-    return segs.join('/');
+    const hierarchy = [];
+    for (let node = route; node !== undefined; node = node.parent) {
+      hierarchy.unshift(node);
+    }
+    return hierarchy.map((node) => node.external(variables)).join('/');
   }
 }

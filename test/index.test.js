@@ -299,4 +299,11 @@ describe('Index Tests', () => {
       assert.deepStrictEqual(variables, entry.variables);
     });
   });
+
+  it('uses a bad route name', () => {
+    assert.throws(
+      () => router.external('bad', {}),
+      new Error('route not found: bad'),
+    );
+  });
 });

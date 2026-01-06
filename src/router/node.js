@@ -40,6 +40,11 @@ export class Node {
   #children;
 
   /**
+   * Query parameters for this node.
+   */
+  #paramNames;
+
+  /**
    * Star node (i.e. `/*`)
    */
   #star;
@@ -82,14 +87,14 @@ export class Node {
     return ret;
   }
 
-  add(segs, route) {
+  add(segs, query, route) {
     if (segs.length === 0) {
+      this.#paramNames = query?.split(',') ?? undefined;
       this.#route = route;
       return this;
-    } else {
-      const seg = segs.shift();
-      return this.#getOrCreateChild(seg).add(segs, route);
     }
+    const seg = segs.shift();
+    return this.#getOrCreateChild(seg).add(segs, query, route);
   }
 
   get route() {
@@ -97,29 +102,50 @@ export class Node {
   }
 
   /**
+   * Extracts query parameters from the query string and populates the variables map.
+   *
+   * @param {object} params query parameters object, containing keys and values
+   * @param {Map} variables map to populate with key-value pairs extracted from the query string
+   * @private
+   */
+  #extractParams(params, variables) {
+    if (this.#paramNames && params) {
+      this.#paramNames.forEach((name) => {
+        const value = params[name];
+        if (value) {
+          variables.set(name, value);
+        }
+      });
+    }
+  }
+
+  /**
    * Matches a path by traversing a tree of nodes.
    *
    * @param {string[]} segs path segments to match
+   * @param {object} params search object, containing keys and values
    * @param {Map} variables variables extracted while matching
    * @returns {Node} matching node or null
    */
-  match(segs, variables) {
+  match(segs, params, variables) {
     if (segs.length === 0) {
+      this.#extractParams(params, variables);
       return this;
     }
+
     const seg = segs.shift();
 
     // find exact match
     const next = this.#children.find((child) => child.#label === seg);
     if (next) {
-      return next.match(segs, variables);
+      return next.match(segs, params, variables);
     }
 
     // use variable extracting match (e.g. ':org')
     if (this.#variable) {
       const key = this.#variable.#label;
       variables.set(key, seg);
-      return this.#variable.match(segs, variables);
+      return this.#variable.match(segs, params, variables);
     }
 
     // use trailing '*' match
@@ -132,29 +158,46 @@ export class Node {
   }
 
   /**
-   * Returns the external path by traversing from a leaf back
-   * to the root.
+   * Returns query parameters that should be added to the external path.
    *
-   * @param {string[]} segs path segments to collect
-   * @param {Map} variables variables
-   * @returns {void}
+   * @param {Object} variables object containing variable values for query parameters.
+   * @returns {string} query string, empty string if no query parameters are present
+   * @private
    */
-  external(segs, variables) {
+  #getQuery(variables) {
+    if (this.#paramNames) {
+      const query = this.#paramNames.reduce((params, name) => {
+        const value = variables[name];
+        if (value) {
+          params.append(name, variables[name]);
+        }
+        return params;
+      }, new URLSearchParams());
+      return `?${query.toString()}`;
+    }
+    return '';
+  }
+
+  get parent() {
+    return this.#parent;
+  }
+
+  /**
+   * Returns the external path segment for this node.
+   *
+   * @param {Map} variables variables
+   * @returns {string} external path segment
+   */
+  external(variables) {
     const label = this.#label;
 
-    switch (this.#type) {
-      case NodeType.LITERAL:
-        segs.unshift(label);
-        break;
-      case NodeType.VARIABLE:
-        segs.unshift(variables[label]);
-        break;
-      case NodeType.PATH:
-        segs.unshift(variables.path);
-        break;
-      default:
-        break;
+    if (this.#type === NodeType.LITERAL) {
+      const query = this.#getQuery(variables);
+      return `${label}${query}`;
     }
-    this.#parent?.external(segs, variables);
+    if (this.#type === NodeType.VARIABLE) {
+      return variables[label];
+    }
+    return variables.path;
   }
 }

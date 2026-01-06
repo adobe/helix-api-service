@@ -16,8 +16,8 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import idpAdmin from '../../src/idp-configs/admin.js';
 import idpFakeTestIDP from '../idp-configs/test-idp.js';
-import { main } from '../../src/index.js';
-import { Nock } from '../utils.js';
+import { main, router } from '../../src/index.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Profile Handler Tests', async () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -93,7 +93,66 @@ describe('Profile Handler Tests', async () => {
     });
   });
 
-  it('displays profile', async () => {
+  it('displays profile with origin', async () => {
+    nock.siteConfig(SITE_CONFIG);
+
+    const authToken = await new SignJWT({
+      email: 'test@example.com',
+      name: 'Test User',
+      userId: '112233',
+      extensionId: '1234',
+    })
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuedAt()
+      .setIssuer('https://admin.hlx.page/')
+      .setSubject('*/*')
+      .setAudience('dummy-clientid')
+      .setExpirationTime('2h')
+      .sign(privateKey);
+
+    const result = await main(new Request('https://api.aem.live/profile?org=org&site=site', {
+      method: 'GET',
+      headers: {
+        'x-forwarded-host': 'api.aem.live',
+        host: 'myapi.execute-api.us-east-1.amazonaws.com',
+        cookie: `auth_token=${authToken}`,
+        origin: 'https://main--site--org.aem.live',
+      },
+    }), {
+      pathInfo: {
+        suffix: '/profile',
+      },
+    });
+    assert.strictEqual(result.status, 200);
+    const body = await result.json();
+    delete body.profile.exp;
+    delete body.profile.iat;
+    assert.ok(Math.abs(body.profile.ttl - 7200) < 2);
+    delete body.profile.ttl;
+    assert.deepStrictEqual(body, {
+      profile: {
+        aud: 'dummy-clientid',
+        iss: 'https://admin.hlx.page/',
+        email: 'test@example.com',
+        name: 'Test User',
+        userId: '112233',
+      },
+      links: {
+        logout: 'https://api.aem.live/logout',
+      },
+      status: 200,
+    });
+    assert.deepStrictEqual(result.headers.plain(), {
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-origin': 'https://main--site--org.aem.live',
+      'access-control-expose-headers': 'x-error, x-error-code',
+      'content-type': 'application/json',
+      'cache-control': 'no-store, private, must-revalidate',
+      vary: 'Accept-Encoding',
+    });
+  });
+
+  it('displays profile without origin', async () => {
     const authToken = await new SignJWT({
       email: 'test@example.com',
       name: 'Test User',
@@ -145,55 +204,11 @@ describe('Profile Handler Tests', async () => {
     });
   });
 
-  it('displays profile (with token)', async () => {
-    const authToken = await new SignJWT({
-      email: 'test@example.com',
-      name: 'Test User',
-      userId: '112233',
-    })
-      .setProtectedHeader({ alg: 'RS256' })
-      .setIssuedAt()
-      .setIssuer('https://admin.hlx.page/')
-      .setSubject('*/*')
-      .setAudience('dummy-clientid')
-      .setExpirationTime('2h')
-      .sign(privateKey);
-
-    const result = await main(new Request('https://api.aem.live/', {
-      method: 'GET',
-      headers: {
-        'x-forwarded-host': 'api.aem.live',
-        host: 'myapi.execute-api.us-east-1.amazonaws.com',
-        cookie: `auth_token=${authToken}`,
-      },
-    }), {
-      pathInfo: {
-        suffix: '/profile',
-      },
+  it('verifies external path', () => {
+    const path = router.external('profile', {
+      org: 'org',
+      site: 'site',
     });
-    assert.strictEqual(result.status, 200);
-    const body = await result.json();
-    delete body.profile.exp;
-    delete body.profile.iat;
-    assert.ok(Math.abs(body.profile.ttl - 7200) < 2);
-    delete body.profile.ttl;
-    assert.deepStrictEqual(body, {
-      profile: {
-        aud: 'dummy-clientid',
-        iss: 'https://admin.hlx.page/',
-        email: 'test@example.com',
-        name: 'Test User',
-        userId: '112233',
-      },
-      links: {
-        logout: 'https://api.aem.live/logout',
-      },
-      status: 200,
-    });
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'application/json',
-      'cache-control': 'no-store, private, must-revalidate',
-      vary: 'Accept-Encoding',
-    });
+    assert.strictEqual(path, '/profile?org=org&site=site');
   });
 });

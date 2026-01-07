@@ -15,6 +15,7 @@ import { html2md, TooManyImagesError } from '@adobe/helix-html2md';
 import { Response } from '@adobe/fetch';
 import { handleJSON } from './sourcebus-json.js';
 import { handleFile } from './sourcebus-file.js';
+import { list } from './sourcebus-list.js';
 import { validateSource } from './sourcebus-utils.js';
 import { errorResponse } from '../support/utils.js';
 import { error } from './errors.js';
@@ -141,5 +142,5 @@ export default {
   handle,
   handleJSON,
   handleFile,
-  list: () => { throw new Error('not implemented'); },
+  list,
 };

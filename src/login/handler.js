@@ -33,9 +33,9 @@ import { loadSiteConfig } from '../config/utils.js';
  * @returns {Promise<Response>}
  */
 export async function logout(context, info) {
-  const extensionId = context.data?.extensionId;
-  const { log } = context;
-  const { org, site } = info;
+  const { data, log } = context;
+  const { org, site, extensionId } = data ?? {};
+
   if (extensionId === 'cookie') {
     log.debug('logout: creating html for cookie logout');
     return new Response(createCloseHtml('Logout successful'), {

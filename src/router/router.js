@@ -43,10 +43,11 @@ export default class Router {
    * @param {function} handler handler
    */
   add(expr, handler) {
-    const segs = expr.split('/').slice(1);
+    const [path, query] = expr.split('?');
+    const segs = path.split('/').slice(1);
 
     const name = this.#nameSelector(segs);
-    const route = this.#root.add(segs, { name, handler });
+    const route = this.#root.add(segs, query, { name, handler });
     this.#routes.set(name, route);
 
     return this;
@@ -56,14 +57,15 @@ export default class Router {
    * Find handler that should handle a request.
    *
    * @param {string} path path to match
+   * @param {object} params query parameters object, containing keys and values
    * @returns {object} containing `handler` and `variables` or `null`
    * @throws {StatusCodeError} if we're unable to find a matching handler
    */
-  match(path) {
+  match(path, params) {
     const segs = path.split('/').slice(1);
 
     const variables = new Map();
-    const match = this.#root.match(segs, variables);
+    const match = this.#root.match(segs, params, variables);
 
     const { route } = match ?? {};
     if (route) {
@@ -79,7 +81,7 @@ export default class Router {
    * to fill in the variable segments traversing.
    *
    * @param {string} name route name
-   * @param {Map} variables variables
+   * @param {Object} variables variables
    * @returns {string} external path
    */
   external(name, variables) {
@@ -88,8 +90,10 @@ export default class Router {
     if (!route) {
       throw new Error(`route not found: ${name}`);
     }
-    const segs = [];
-    route.external(segs, variables);
-    return segs.join('/');
+    const hierarchy = [];
+    for (let node = route; node !== undefined; node = node.parent) {
+      hierarchy.unshift(node);
+    }
+    return hierarchy.map((node) => node.external(variables)).join('/');
   }
 }

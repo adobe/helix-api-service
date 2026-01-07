@@ -77,11 +77,11 @@ export default async function edit2web(context, info, editUrl) {
 
     // create webpath
     if (path.endsWith('/index.md')) {
-      result.path = path.substring(0, path.length - '/index.md'.length + 1);
+      result.webPath = path.substring(0, path.length - '/index.md'.length + 1);
     } else if (path.endsWith('.md')) {
-      result.path = path.substring(0, path.length - 3);
+      result.webPath = path.substring(0, path.length - 3);
     } else {
-      result.path = path;
+      result.webPath = path;
     }
 
     return result;

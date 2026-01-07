@@ -26,6 +26,7 @@ import { auth, login, logout } from './login/handler.js';
 import media from './media/handler.js';
 import preview from './preview/handler.js';
 import profile from './profile/handler.js';
+import sidekick from './sidekick/handler.js';
 import sitemap from './sitemap/handler.js';
 import source from './source/handler.js';
 import status from './status/handler.js';
@@ -37,6 +38,7 @@ import { logRequest } from './support/utils.js';
 import catchAll from './wrappers/catch-all.js';
 import { contentEncodeWrapper } from './wrappers/content-encode.js';
 import commonResponseHeaders from './wrappers/response-headers.js';
+import { sidekickCSRFProtection } from './sidekick/csrf.js';
 
 /**
  * Dummy NYI handler
@@ -63,7 +65,7 @@ export const router = new Router(nameSelector)
   .add('/discover', discover)
   .add('/login', login)
   .add('/logout', logout)
-  .add('/profile', profile)
+  .add('/profile?org,site', profile)
   .add('/:org', notImplemented)
   .add('/:org/config', notImplemented)
   .add('/:org/config/access', notImplemented)
@@ -86,6 +88,7 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/code/:ref/*', code)
   .add('/:org/sites/:site/cache/*', cache)
   .add('/:org/sites/:site/index/*', index)
+  .add('/:org/sites/:site/sidekick', sidekick)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', source)
@@ -99,7 +102,7 @@ export const router = new Router(nameSelector)
  * @returns {import('@adobe/fetch').Response} response
  */
 async function run(request, context) {
-  const { handler, variables } = router.match(context.suffix) ?? {};
+  const { handler, variables } = router.match(context.suffix, context.data) ?? {};
   if (!handler) {
     return new Response('', { status: 404 });
   }
@@ -116,11 +119,16 @@ async function run(request, context) {
   }
 
   await context.authenticate(info);
-  await context.authorize(info);
 
   const { attributes: { authInfo } } = context;
   if (info.org && !authInfo.authenticated) {
-    return new Response('', { status: 403 });
+    return new Response('', { status: 401 });
+  }
+
+  await context.authorize(info);
+
+  if (!['auth', 'login', 'logout'].includes(info.route)) {
+    await sidekickCSRFProtection(context, info);
   }
 
   const response = await handler(context, info);

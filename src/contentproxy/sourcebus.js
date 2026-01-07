@@ -11,10 +11,12 @@
  */
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { MediaHandler, SizeTooLargeException } from '@adobe/helix-mediahandler';
-import { ConstraintsError, html2md, TooManyImagesError } from '@adobe/helix-html2md';
+import { html2md, TooManyImagesError } from '@adobe/helix-html2md';
 import { Response } from '@adobe/fetch';
+import { handleJSON } from './sourcebus-json.js';
+import { validateSource } from './sourcebus-utils.js';
 import { errorResponse } from '../support/utils.js';
-import { error } from './errors.js';
+import {error} from "./errors.js";
 
 const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 
@@ -33,28 +35,13 @@ const DEFAULT_MAX_IMAGES = 200;
  */
 async function handle(ctx, info, opts) {
   const { config: { content, limits }, log } = ctx;
-
-  const source = opts?.source ?? content.source;
-  const sourceUrl = new URL(source.url);
-  // extract org and site from url.pathname, format: https://api.aem.live/<org>/sites/<site>/source
-  // e.g. /adobe/sites/foo/source
-  const pathMatch = sourceUrl.pathname.match(/^\/([^/]+)\/sites\/([^/]+)\/source$/);
-  if (!pathMatch) {
-    return errorResponse(log, 400, error(
-      'Source url must be in the format: https://api.aem.live/<org>/sites/<site>/source. Got: $1',
-      sourceUrl.href,
-    ));
+  const {
+    org, site, sourceUrl, error: errorResp,
+  } = await validateSource(ctx, info, opts);
+  if (errorResp) {
+    return errorResp;
   }
-  const [, org, site] = pathMatch; // eslint-disable-line prefer-destructuring
 
-  // for now, only allow source bus from the same org and site
-  if (org !== info.org || site !== info.site) {
-    return errorResponse(log, 400, error(
-      'Source bus is not allowed for org: $1, site: $2',
-      org,
-      site,
-    ));
-  }
   // the source is stored as .html files in the source bus
   let sourcePath = info.resourcePath;
   if (info.ext === '.md') {
@@ -151,7 +138,7 @@ async function handle(ctx, info, opts) {
 export default {
   name: 'sourcebus',
   handle,
-  handleJSON: () => { throw new Error('not implemented'); },
+  handleJSON,
   handleFile: () => { throw new Error('not implemented'); },
   list: () => { throw new Error('not implemented'); },
 };

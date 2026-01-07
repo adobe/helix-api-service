@@ -11,25 +11,10 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { errorResponse } from '../support/utils.js';
-import { assertValidSheetJSON } from './utils.js';
 import { validateSource } from './sourcebus-utils.js';
-import { error } from './errors.js';
-
-function parseSheetJSON(data) {
-  let json;
-  try {
-    json = JSON.parse(data);
-  } catch {
-    throw Error('invalid sheet json; failed to parse');
-  }
-
-  assertValidSheetJSON(json);
-  return json;
-}
 
 /**
- * Fetches a JSON as sheet/multisheet from the source bus
+ * Fetches file data from the source bus
  *
  * @param {import('../support/AdminContext').AdminContext} ctx context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
@@ -39,8 +24,7 @@ function parseSheetJSON(data) {
  * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
-export async function handleJSON(ctx, info, opts) {
-  const { log } = ctx;
+export async function handleFile(ctx, info, opts) {
   const {
     org, site, sourcePath, error: errorResp,
   } = await validateSource(ctx, info, opts);
@@ -56,21 +40,10 @@ export async function handleJSON(ctx, info, opts) {
     return new Response('', { status: 404 });
   }
 
-  let json;
-  try {
-    json = parseSheetJSON(body);
-  } catch (e) {
-    return errorResponse(log, 400, error(
-      'JSON fetched from markup \'$1\' is invalid: $2',
-      sourcePath,
-      e.message,
-    ));
-  }
-
-  return new Response(JSON.stringify(json), {
+  return new Response(body, {
     status: 200,
     headers: {
-      'content-type': 'application/json',
+      'content-type': meta.ContentType,
       'last-modified': meta.LastModified?.toUTCString(),
     },
   });

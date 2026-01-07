@@ -14,9 +14,10 @@ import { MediaHandler, SizeTooLargeException } from '@adobe/helix-mediahandler';
 import { html2md, TooManyImagesError } from '@adobe/helix-html2md';
 import { Response } from '@adobe/fetch';
 import { handleJSON } from './sourcebus-json.js';
+import { handleFile } from './sourcebus-file.js';
 import { validateSource } from './sourcebus-utils.js';
 import { errorResponse } from '../support/utils.js';
-import {error} from "./errors.js";
+import { error } from './errors.js';
 
 const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 
@@ -139,6 +140,6 @@ export default {
   name: 'sourcebus',
   handle,
   handleJSON,
-  handleFile: () => { throw new Error('not implemented'); },
+  handleFile,
   list: () => { throw new Error('not implemented'); },
 };

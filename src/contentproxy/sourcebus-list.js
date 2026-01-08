@@ -13,8 +13,8 @@ import { splitByExtension } from '@adobe/helix-shared-string';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { basename, dirname } from 'path';
 import { Forest } from './Forest.js';
-import { error } from './errors.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import { validateSource } from './sourcebus-utils.js';
 
 export class SourceForest extends Forest {
   constructor(ctx, info) {
@@ -51,7 +51,7 @@ export class SourceForest extends Forest {
         path,
         file: true,
         resourcePath: path,
-        name: basename(path),
+        name,
         ext,
       };
       if (name === 'index.html') {
@@ -82,27 +82,9 @@ export class SourceForest extends Forest {
  */
 export async function list(ctx, info, paths, progressCB) {
   const { config: { content: { source } } } = ctx;
-  const sourceUrl = new URL(source.url);
-
-  // extract org and site from url.pathname, format: https://api.aem.live/<org>/sites/<site>/source
-  // e.g. /adobe/sites/foo/source
-  const pathMatch = sourceUrl.pathname.match(/^\/([^/]+)\/sites\/([^/]+)\/source$/);
-  if (!pathMatch) {
-    const { message } = error(
-      'Source url must be in the format: https://api.aem.live/<org>/sites/<site>/source. Got: $1',
-      sourceUrl.href,
-    );
-    throw new StatusCodeError(message, 400);
-  } else {
-    const [, org, site] = pathMatch; // eslint-disable-line prefer-destructuring
-    if (org !== info.org || site !== info.site) {
-      const { message } = error(
-        'Source bus is not allowed for org: $1, site: $2',
-        info.org,
-        info.site,
-      );
-      throw new StatusCodeError(message, 400);
-    }
+  const { error } = await validateSource(ctx, info);
+  if (error) {
+    throw new StatusCodeError(error.headers.get('x-error'), error.status);
   }
 
   const forest = new SourceForest(ctx, info);

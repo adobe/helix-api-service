@@ -12,21 +12,9 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { errorResponse } from '../support/utils.js';
-import { assertValidSheetJSON } from './utils.js';
+import { parseSheetJSON } from './utils.js';
 import { validateSource } from './sourcebus-utils.js';
 import { error } from './errors.js';
-
-function parseSheetJSON(data) {
-  let json;
-  try {
-    json = JSON.parse(data);
-  } catch {
-    throw Error('invalid sheet json; failed to parse');
-  }
-
-  assertValidSheetJSON(json);
-  return json;
-}
 
 /**
  * Fetches a JSON as sheet/multisheet from the source bus

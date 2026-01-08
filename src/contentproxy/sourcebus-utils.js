@@ -32,7 +32,7 @@ import { error } from './errors.js';
  * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<ValidationResult>} the validation result
  */
-export async function validateSource(ctx, info, opts) {
+export function validateSource(ctx, info, opts) {
   const { config: { content }, log } = ctx;
   const source = opts?.source ?? content.source;
   const sourceUrl = new URL(source.url);
@@ -46,19 +46,18 @@ export async function validateSource(ctx, info, opts) {
 
   // extract org and site from url.pathname, format: https://api.aem.live/<org>/sites/<site>/source
   // e.g. /adobe/sites/foo/source
-  const pathMatch = sourceUrl.pathname.match(/^\/([^/]+)\/sites\/([^/]+)\/source$/);
-  if (!pathMatch) {
-    ret.error = errorResponse(log, 400, error(
-      'Source url must be in the format: https://api.aem.live/<org>/sites/<site>/source. Got: $1',
-      sourceUrl.href,
-    ));
-  } else {
-    const [, org, site] = pathMatch; // eslint-disable-line prefer-destructuring
-    if (org !== info.org || site !== info.site) {
+  const { org, site } = sourceUrl.pathname.match(/^\/(?<org>[^/]+)\/sites\/(?<site>[^/]+)\/source$/)?.groups ?? {};
+  if (org !== info.org || site !== info.site) {
+    if (org && site) {
       ret.error = errorResponse(log, 400, error(
         'Source bus is not allowed for org: $1, site: $2',
         info.org,
         info.site,
+      ));
+    } else {
+      ret.error = errorResponse(log, 400, error(
+        'Source url must be in the format: https://api.aem.live/<org>/sites/<site>/source. Got: $1',
+        sourceUrl.href,
       ));
     }
   }

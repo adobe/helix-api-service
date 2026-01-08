@@ -85,7 +85,7 @@ describe('Sitemap Handler Tests', () => {
     assert.deepStrictEqual(purges, ['/sitemap.xml']);
   });
 
-  it('reports build failure with sitemap', async () => {
+  it('reports build failure with invalid sitemap configuration', async () => {
     nock.sitemapConfig('sitemaps:');
 
     const result = await main(new Request(`https://api.aem.live${suffix}`, {
@@ -102,6 +102,33 @@ describe('Sitemap Handler Tests', () => {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
       'x-error': 'Error fetching sitemap configuration: Invalid sitemap configuration:undefined must be object: type(null, {"type":"object"})data/sitemaps must be object',
+    });
+  });
+
+  it('reports build failure with unexpected problem fetching sitemap configuration', async () => {
+    nock.sitemapConfig(null, {
+      code: 'InternalError',
+      message: 'An unexpected error occurred',
+      status: 500,
+    });
+
+    const result = await main(new Request(`https://api.aem.live${suffix}`, {
+      method: 'POST',
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 502);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'Error fetching sitemap configuration: unable to load sitemap configuration for org/site',
     });
   });
 });

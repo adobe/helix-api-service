@@ -59,8 +59,8 @@ export async function rebuildSitemap(context, info, opts = {}) {
     }
   } catch (e) {
     const msg = `Error fetching sitemap configuration: ${e.message}`;
-    if (e.status) {
-      return errorResponse(log, e.status, msg);
+    if (e.statusCode) {
+      return errorResponse(log, e.statusCode, msg);
     } else {
       // no status indicates the sitemap config is invalid
       return new Response('', {
@@ -238,8 +238,8 @@ const exports = {
       }
     } catch (e) {
       const msg = `Error fetching sitemap configuration: ${e.message}`;
-      if (e.status) {
-        return errorResponse(log, e.status, msg);
+      if (e.statusCode) {
+        return errorResponse(log, e.statusCode, msg);
       } else {
         // no status indicates the sitemap config is invalid
         return new Response('', {

@@ -107,8 +107,8 @@ describe('Sitemap update tests', () => {
   describe('source change tests', () => {
     const suffix = '/org/sites/site/sitemap/';
 
-    function setupTest(sitemapConfig = SITEMAP_CONFIG) {
-      nock.sitemapConfig(sitemapConfig);
+    function setupTest(sitemapConfig = SITEMAP_CONFIG, error = undefined) {
+      nock.sitemapConfig(sitemapConfig, error);
 
       const context = createContext(suffix, { env: ENV });
       const info = createInfo(suffix).withCode('owner', 'repo');
@@ -998,6 +998,34 @@ sitemaps:
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'text/plain; charset=utf-8',
         'x-error': 'No sitemap configuration found for: org/site',
+      });
+    });
+
+    it('reports error with invalid sitemap configuration', async () => {
+      const { context, info } = setupTest('sitemaps:');
+      const response = await sitemap.sourceChanged(context, info);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Error fetching sitemap configuration: Invalid sitemap configuration:undefined must be object: type(null, {"type":"object"})data/sitemaps must be object',
+      });
+    });
+
+    it('reports error when fetching sitemap configuration fails', async () => {
+      const { context, info } = setupTest(null, {
+        code: 'InternalError',
+        message: 'An unexpected error occurred',
+        status: 500,
+      });
+      const response = await sitemap.sourceChanged(context, info);
+
+      assert.strictEqual(response.status, 502);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Error fetching sitemap configuration: unable to load sitemap configuration for org/site',
       });
     });
   });

@@ -198,7 +198,7 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    assert.rejects(
+    await assert.rejects(
       validateMedia(setupContext(), info, 'video/blah', Buffer.from(media)),
       new StatusCodeError('Unknown media type: video/blah', 400),
     );

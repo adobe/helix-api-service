@@ -1,3 +1,109 @@
+# [1.25.0](https://github.com/adobe/helix-api-service/compare/v1.24.2...v1.25.0) (2026-01-08)
+
+
+### Features
+
+* preview from source bus ([#66](https://github.com/adobe/helix-api-service/issues/66)) ([8ea9b57](https://github.com/adobe/helix-api-service/commit/8ea9b57fb16ffd90ffa47c23fd999408eb39709d))
+
+## [1.24.2](https://github.com/adobe/helix-api-service/compare/v1.24.1...v1.24.2) (2026-01-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-config to v5.9.1 ([#91](https://github.com/adobe/helix-api-service/issues/91)) ([0fbc0f9](https://github.com/adobe/helix-api-service/commit/0fbc0f9c8e66b3ee6ac1009438a83191b23368f7))
+
+## [1.24.1](https://github.com/adobe/helix-api-service/compare/v1.24.0...v1.24.1) (2026-01-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-config to v5.9.0 ([#90](https://github.com/adobe/helix-api-service/issues/90)) ([ab3bf86](https://github.com/adobe/helix-api-service/commit/ab3bf8638df1b4fd85f9813820c9f43999eb2aa1))
+
+# [1.24.0](https://github.com/adobe/helix-api-service/compare/v1.23.6...v1.24.0) (2026-01-06)
+
+
+### Features
+
+* allow `org` and `site` in query params ([#78](https://github.com/adobe/helix-api-service/issues/78)) ([2063bfb](https://github.com/adobe/helix-api-service/commit/2063bfb2ad7043d913933b948eeafdafc1fec812))
+
+## [1.23.6](https://github.com/adobe/helix-api-service/compare/v1.23.5...v1.23.6) (2026-01-06)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#88](https://github.com/adobe/helix-api-service/issues/88)) ([bd42a7a](https://github.com/adobe/helix-api-service/commit/bd42a7a7ea386190eb9b3cde68dc99200278d1f7))
+* **deps:** update external fixes ([#87](https://github.com/adobe/helix-api-service/issues/87)) ([b081a03](https://github.com/adobe/helix-api-service/commit/b081a0335a00e09d51de057f3add352bf16e0cdb))
+
+## [1.23.5](https://github.com/adobe/helix-api-service/compare/v1.23.4...v1.23.5) (2025-12-30)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes to v3.952.0 ([#85](https://github.com/adobe/helix-api-service/issues/85)) ([b740af8](https://github.com/adobe/helix-api-service/commit/b740af8d5bcfb2e7c61237df15672b871bc3b501))
+
+## [1.23.4](https://github.com/adobe/helix-api-service/compare/v1.23.3...v1.23.4) (2025-12-29)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#83](https://github.com/adobe/helix-api-service/issues/83)) ([778fcf9](https://github.com/adobe/helix-api-service/commit/778fcf9ec4fc88a07453e00070f320da6024e74c))
+
+## [1.23.3](https://github.com/adobe/helix-api-service/compare/v1.23.2...v1.23.3) (2025-12-23)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes to v3.947.0 ([#82](https://github.com/adobe/helix-api-service/issues/82)) ([0f2a128](https://github.com/adobe/helix-api-service/commit/0f2a128615315673eea2e8cf59416db7c22a874d))
+
+## [1.23.2](https://github.com/adobe/helix-api-service/compare/v1.23.1...v1.23.2) (2025-12-22)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#81](https://github.com/adobe/helix-api-service/issues/81)) ([93b3481](https://github.com/adobe/helix-api-service/commit/93b3481094a7710e6f4af36da0f3d52efcf6aec0))
+
+## [1.23.1](https://github.com/adobe/helix-api-service/compare/v1.23.0...v1.23.1) (2025-12-22)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#79](https://github.com/adobe/helix-api-service/issues/79)) ([65dbdab](https://github.com/adobe/helix-api-service/commit/65dbdab9ce279115f680fe9ef2b6216140b0bd36))
+
+# [1.23.0](https://github.com/adobe/helix-api-service/compare/v1.22.2...v1.23.0) (2025-12-19)
+
+
+### Features
+
+* add CSRF sidekick protection ([#77](https://github.com/adobe/helix-api-service/issues/77)) ([64fb9f9](https://github.com/adobe/helix-api-service/commit/64fb9f93cc954f3781c6d6cab7ab8f492cb63a83))
+
+## [1.22.2](https://github.com/adobe/helix-api-service/compare/v1.22.1...v1.22.2) (2025-12-19)
+
+
+### Bug Fixes
+
+* **status:** use result paths from `edit2web` ([#75](https://github.com/adobe/helix-api-service/issues/75)) ([c9da783](https://github.com/adobe/helix-api-service/commit/c9da78325cfc1f80c6b0e8fe6e05ac6b077534dd))
+
+## [1.22.1](https://github.com/adobe/helix-api-service/compare/v1.22.0...v1.22.1) (2025-12-18)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-onedrive-support to v12.1.6 ([#76](https://github.com/adobe/helix-api-service/issues/76)) ([6df8ccb](https://github.com/adobe/helix-api-service/commit/6df8ccbb22a4aeb5177da0f1934178456db86812))
+
+# [1.22.0](https://github.com/adobe/helix-api-service/compare/v1.21.3...v1.22.0) (2025-12-18)
+
+
+### Features
+
+* add `sidekick` route ([#73](https://github.com/adobe/helix-api-service/issues/73)) ([37ac36e](https://github.com/adobe/helix-api-service/commit/37ac36e3035ac420d3787c74108ac4e7c9b093a1))
+
+## [1.21.3](https://github.com/adobe/helix-api-service/compare/v1.21.2...v1.21.3) (2025-12-17)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-config to v5.8.0 ([#72](https://github.com/adobe/helix-api-service/issues/72)) ([0e04754](https://github.com/adobe/helix-api-service/commit/0e0475420226de7e0a2d7a60a93b3e347dd3a08d))
+
 ## [1.21.2](https://github.com/adobe/helix-api-service/compare/v1.21.1...v1.21.2) (2025-12-16)
 
 

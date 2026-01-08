@@ -116,7 +116,7 @@ export class GoogleForest extends Forest {
  * @param {ProgressCallback} progressCB
  * @returns {Promise<ResourceInfo[]>} the list of resources
  */
-export async function list(context, paths, progressCB) {
+export async function list(context, info, paths, progressCB) {
   const { config: { content: { contentBusId, source } }, log } = context;
 
   const client = await context.getGoogleClient(contentBusId);
@@ -133,7 +133,7 @@ export async function list(context, paths, progressCB) {
       source: {
         name: item.name,
         id: item.id,
-        mimeType: item.mimeType || 'application/octet-stream',
+        contentType: item.mimeType || 'application/octet-stream',
         lastModified: Date.parse(item.modifiedTime),
         size: item.size,
         type: 'gdrive',

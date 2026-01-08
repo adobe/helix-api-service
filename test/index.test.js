@@ -186,7 +186,7 @@ describe('Index Tests', () => {
     });
     const result = await main(request, context);
 
-    assert.strictEqual(result.status, 403);
+    assert.strictEqual(result.status, 401);
   });
 
   it('fails calling status handler with missing site config', async () => {
@@ -298,5 +298,12 @@ describe('Index Tests', () => {
       const { variables } = router.match(entry.suffix) ?? {};
       assert.deepStrictEqual(variables, entry.variables);
     });
+  });
+
+  it('uses a bad route name', () => {
+    assert.throws(
+      () => router.external('bad', {}),
+      new Error('route not found: bad'),
+    );
   });
 });

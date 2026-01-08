@@ -42,6 +42,7 @@ export default async function status(context, info) {
 
   // calculate edit location
   const edit = {};
+  let { resourcePath, webPath } = info;
 
   if (!authInfo.hasPermissions('edit:read')) {
     // if edit url is not auto, it can't be used as information for preview, live and code.
@@ -72,12 +73,8 @@ export default async function status(context, info) {
           return new Response('', { status: result.status, headers });
         }
       } else {
-      /* c8 ignore end */
-        // ensure info is updated
-        // eslint-disable-next-line no-param-reassign
-        // TODO info.resourcePath = result.resourcePath;
-        // eslint-disable-next-line no-param-reassign
-        // TODO info.webPath = result.webPath;
+        resourcePath = result.resourcePath;
+        webPath = result.webPath;
 
         edit.url = result.editUrl;
         edit.name = result.editName;
@@ -107,8 +104,8 @@ export default async function status(context, info) {
   }
 
   const resp = {
-    webPath: info.webPath,
-    resourcePath: info.resourcePath,
+    webPath,
+    resourcePath,
     live: await getLiveInfo(context, info),
     preview: await getPreviewInfo(context, info),
     edit,

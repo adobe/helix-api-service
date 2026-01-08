@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/adobe/helix-api-service/compare/v1.24.2...v1.25.0) (2026-01-08)
+
+
+### Features
+
+* preview from source bus ([#66](https://github.com/adobe/helix-api-service/issues/66)) ([8ea9b57](https://github.com/adobe/helix-api-service/commit/8ea9b57fb16ffd90ffa47c23fd999408eb39709d))
+
 ## [1.24.2](https://github.com/adobe/helix-api-service/compare/v1.24.1...v1.24.2) (2026-01-07)
 
 

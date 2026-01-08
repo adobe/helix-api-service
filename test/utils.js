@@ -185,20 +185,24 @@ export function Nock() {
     }
   };
 
-  nocker.sitemapConfig = (config) => {
+  nocker.sitemapConfig = (config, error = {
+    code: 'NoSuchKey',
+    message: 'The specified key does not exist.',
+    status: 404,
+  }) => {
     const scope = nocker.content()
       .getObject('/preview/.helix/sitemap.yaml');
 
     if (config) {
       scope.reply(200, config);
     } else {
-      const notFound = new xml2js.Builder().buildObject({
+      const errorXml = new xml2js.Builder().buildObject({
         Error: {
-          Code: 'NoSuchKey',
-          Message: 'The specified key does not exist.',
+          Code: error.code,
+          Message: error.message,
         },
       });
-      scope.reply(404, notFound);
+      scope.reply(error.status, errorXml);
     }
   };
 

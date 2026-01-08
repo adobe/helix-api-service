@@ -20,13 +20,13 @@ import { setupContext, stripSpaces } from './testutils.js';
 
 describe('Source Utils Tests', () => {
   it('test validateHtml success', async () => {
-    const html = '<!DOCTYPE html><html><body>Hello</body></html>';
+    const html = '<!DOCTYPE html><html><body><main>Hello</main></body></html>';
     await getValidHtml(setupContext(), Buffer.from(html));
     // No exception should be thrown
   });
 
   it('test validateHtml ignores acceptable HTML errors', async () => {
-    const html = '<html><body>Hello</body></html>';
+    const html = '<html><body><main>Hello</main></body></html>';
     await getValidHtml(setupContext(), Buffer.from(html));
     // No exception should be thrown
   });
@@ -45,8 +45,8 @@ describe('Source Utils Tests', () => {
   });
 
   it('test handle html media upload', async () => {
-    const htmlIn = `
-      <body>
+    const htmlIn = `<body>
+      <main>
         <picture>
           <source srcset="https://example.com/image.jpg">
           <source srcset="https://example.com/image1.jpg" media="(prefers-color-scheme: dark)">
@@ -55,6 +55,7 @@ describe('Source Utils Tests', () => {
         </picture>
         <img src="https://foobar.com/image2.jpg">
         <img src="https://example.com/image.jpg">
+      </main>
       </body>`;
 
     const context = setupContext();
@@ -69,8 +70,8 @@ describe('Source Utils Tests', () => {
 
     const body = await getValidHtml(context, Buffer.from(htmlIn), ['https://foobar.com/'], mockMH);
 
-    const htmlOut = `
-      <body>
+    const htmlOut = `<body>
+      <main>
         <picture>
           <source srcset="https://media.com/1/image.jpg">
           <source srcset="https://media.com/2/image1.jpg" media="(prefers-color-scheme: dark)">
@@ -79,16 +80,16 @@ describe('Source Utils Tests', () => {
         </picture>
         <img src="https://foobar.com/image2.jpg">
         <img src="https://media.com/1/image.jpg">
-      </body>`;
+      </main></body>`;
 
     assert.equal(stripSpaces(body), stripSpaces(htmlOut));
   });
 
   it('test error during media handler processing', async () => {
     const htmlIn = `
-      <body>
+      <body><main>
         <img src="https://example.com/image.jpg">
-      </body>`;
+      </main></body>`;
 
     const mockMH = {
       getBlob: () => { throw new Error(); },
@@ -102,9 +103,9 @@ describe('Source Utils Tests', () => {
 
   it('test html validate only with external images fails', async () => {
     const htmlIn = `
-      <body>
+      <body><main>
         <img src="https://example.com/image.jpg">
-      </body>`;
+      </main></body>`;
 
     await assert.rejects(
       getValidHtml(setupContext(), Buffer.from(htmlIn), [], null),
@@ -113,10 +114,10 @@ describe('Source Utils Tests', () => {
   });
 
   it('test a body element is synthesized if not present in the input HTML', async () => {
-    const htmlIn = '<h1>Hello</h1>';
+    const htmlIn = '<main><h1>Hello</h1></main>';
 
     const htmlOut = await getValidHtml(setupContext(), Buffer.from(htmlIn), [], {});
-    assert.equal(stripSpaces(htmlOut), stripSpaces('<body><h1>Hello</h1></body>'));
+    assert.equal(stripSpaces(htmlOut), stripSpaces('<body><main><h1>Hello</h1></main></body>'));
   });
 
   it('test that a document with too many images is rejected', async () => {
@@ -128,9 +129,9 @@ describe('Source Utils Tests', () => {
     `).join('');
 
     const htmlIn = `
-      <body>
+      <body><main>
         ${images}
-      </body>`;
+      </main></body>`;
 
     await assert.rejects(
       getValidHtml(setupContext(), Buffer.from(htmlIn), [], {}),

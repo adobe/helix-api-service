@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/adobe/helix-api-service/compare/v1.25.1...v1.26.0) (2026-01-08)
+
+
+### Features
+
+* **source:** intern images on POST check internal on PUT ([#74](https://github.com/adobe/helix-api-service/issues/74)) ([7b45695](https://github.com/adobe/helix-api-service/commit/7b45695dda17358fd4a060a08453a8273a5b7759))
+
 ## [1.25.1](https://github.com/adobe/helix-api-service/compare/v1.25.0...v1.25.1) (2026-01-08)
 
 

@@ -1,3 +1,10 @@
+## [1.25.1](https://github.com/adobe/helix-api-service/compare/v1.25.0...v1.25.1) (2026-01-08)
+
+
+### Bug Fixes
+
+* respect index.html ([#92](https://github.com/adobe/helix-api-service/issues/92)) ([2537f3f](https://github.com/adobe/helix-api-service/commit/2537f3f38eaa8aa69fea79f33b78dea77795d1ff))
+
 # [1.25.0](https://github.com/adobe/helix-api-service/compare/v1.24.2...v1.25.0) (2026-01-08)
 
 

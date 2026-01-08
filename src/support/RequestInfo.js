@@ -103,6 +103,14 @@ export function computePaths(path) {
       ext: '.md',
     };
   }
+  // special case: '.index.html'
+  if (filename === 'index.html') {
+    return {
+      webPath: path,
+      resourcePath: path,
+      ext: '.html',
+    };
+  }
 
   const idx = filename.lastIndexOf('.');
   if (idx === 0) {

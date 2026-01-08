@@ -1,0 +1,77 @@
+[
+  {
+    "error": "Unknown: UnknownError",
+    "path": "/blog/*",
+    "status": 500
+  },
+  {
+    "path": "/blog/post1",
+    "status": 404
+  },
+  {
+    "path": "/documents/",
+    "resourcePath": "/documents/index.md",
+    "source": {
+      "name": "index.html",
+      "contentType": "text/html",
+      "lastModified": 1735734896000,
+      "size": 32768,
+      "type": "source"
+    }
+  },
+  {
+    "path": "/documents/document",
+    "resourcePath": "/documents/document.md",
+    "source": {
+      "name": "document.html",
+      "contentType": "text/html",
+      "lastModified": 1735734896000,
+      "size": 32768,
+      "type": "source"
+    }
+  },
+  {
+    "path": "/documents/folder/data.json",
+    "resourcePath": "/documents/folder/data.json",
+    "source": {
+      "name": "data.json",
+      "contentType": "application/json",
+      "lastModified": 1640912461000,
+      "size": 123,
+      "type": "source"
+    }
+  },
+  {
+    "path": "/documents/folder/sample.png",
+    "resourcePath": "/documents/folder/sample.png",
+    "source": {
+      "name": "sample.png",
+      "contentType": "image/png",
+      "lastModified": 1640912461000,
+      "size": 123,
+      "type": "source"
+    }
+  },
+  {
+    "path": "/documents/news/",
+    "resourcePath": "/documents/news/index.md",
+    "source": {
+      "name": "index.html",
+      "contentType": "text/html",
+      "lastModified": 1735734896000,
+      "size": 32768,
+      "type": "source"
+    }
+  },
+  {
+    "path": "/documents/report.pdf",
+    "resourcePath": "/documents/report.pdf",
+    "source": {
+      "name": "report.pdf",
+      "contentType": "application/pdf",
+      "lastModified": 978310861000,
+      "size": 88888,
+      "type": "source"
+    }
+  }
+]

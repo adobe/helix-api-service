@@ -57,8 +57,8 @@ export async function validateSource(ctx, info, opts) {
     if (org !== info.org || site !== info.site) {
       ret.error = errorResponse(log, 400, error(
         'Source bus is not allowed for org: $1, site: $2',
-        org,
-        site,
+        info.org,
+        info.site,
       ));
     }
   }

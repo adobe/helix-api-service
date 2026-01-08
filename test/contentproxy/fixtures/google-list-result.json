@@ -5,7 +5,7 @@
     "source": {
       "name": "index",
       "id": "5HfH4hk3VuCH9PF1BAaL4118Qw1biyEnPcSDXmwcLpzU",
-      "mimeType": "application/vnd.google-apps.document",
+      "contentType": "application/vnd.google-apps.document",
       "lastModified": 1698757554968,
       "size": 1024,
       "type": "gdrive"
@@ -17,7 +17,7 @@
     "source": {
       "name": "document",
       "id": "1HfH4hk3VuCH9PF1BAaL4118Qw1biyEnPcSDXmwcLpzU",
-      "mimeType": "application/vnd.google-apps.document",
+      "contentType": "application/vnd.google-apps.document",
       "lastModified": 1698757554968,
       "size": 1024,
       "type": "gdrive"
@@ -29,7 +29,7 @@
     "source": {
       "name": "Copy of helix-learnings-2022.pdf",
       "id": "1CrsvMdio9WXRS1XzkSUxJi2HZ-tPqCP9",
-      "mimeType": "application/pdf",
+      "contentType": "application/pdf",
       "lastModified": 1698754020000,
       "size": 3232437,
       "type": "gdrive"
@@ -41,7 +41,7 @@
     "source": {
       "name": "document-one",
       "id": "14WWbTHbCbbjlNxinNW-4CXyagpZWsKVAnSC5oyDAhoI",
-      "mimeType": "application/vnd.google-apps.document",
+      "contentType": "application/vnd.google-apps.document",
       "lastModified": 1698757728537,
       "size": 1024,
       "type": "gdrive"
@@ -53,7 +53,7 @@
     "source": {
       "name": "helix-learnings-2022.pdf",
       "id": "1_EKUoWcF9znjp1ZIkHePIzIiUuqM07bj",
-      "mimeType": "application/pdf",
+      "contentType": "application/pdf",
       "lastModified": 1698754020000,
       "size": 3232437,
       "type": "gdrive"
@@ -65,7 +65,7 @@
     "source": {
       "name": "sample.png",
       "id": "1-BljmlemrIiENu2p5hYlPj1i_AlXQxsX",
-      "mimeType": "image/png",
+      "contentType": "image/png",
       "lastModified": 1698754020000,
       "size": 3873,
       "type": "gdrive"
@@ -77,7 +77,7 @@
     "source": {
       "name": "sample.svg",
       "id": "1LwH2LFWRqI6cRRSS-Tl5Nb5imTSjESDl",
-      "mimeType": "image/svg+xml",
+      "contentType": "image/svg+xml",
       "lastModified": 1698754020000,
       "size": 1595,
       "type": "gdrive"
@@ -89,7 +89,7 @@
     "source": {
       "name": "simple phases",
       "id": "1yBOCRhnmw3WKTwW50A5ohk3V18tZ6MdPBcP0CGzSha4",
-      "mimeType": "application/vnd.google-apps.spreadsheet",
+      "contentType": "application/vnd.google-apps.spreadsheet",
       "lastModified": 1698757696990,
       "size": 1024,
       "type": "gdrive"
@@ -101,7 +101,7 @@
     "source": {
       "name": "sample.png",
       "id": "199eVwhIRttJCxGKo-B1IocE4apc3f1NT",
-      "mimeType": "image/png",
+      "contentType": "image/png",
       "lastModified": 1698754020000,
       "size": 3873,
       "type": "gdrive"
@@ -113,7 +113,7 @@
     "source": {
       "name": "sample.svg",
       "id": "1IQB86rZ5LhY7Crrt_lA5CPTvjHiHajwq",
-      "mimeType": "image/svg+xml",
+      "contentType": "image/svg+xml",
       "lastModified": 1698754020000,
       "size": 1595,
       "type": "gdrive"
@@ -125,7 +125,7 @@
     "source": {
       "name": "helix-learnings-2022.pdf",
       "id": "1xkum0nDsiWe1yx-szogxOy6gnePwkf_z",
-      "mimeType": "application/pdf",
+      "contentType": "application/pdf",
       "lastModified": 1698754020000,
       "size": 3232437,
       "type": "gdrive"
@@ -141,7 +141,7 @@
     "source": {
       "name": "sample.png",
       "id": "1vFvxScNLJDrleRZy-z25pYefRlcNKvFR",
-      "mimeType": "application/octet-stream",
+      "contentType": "application/octet-stream",
       "lastModified": 1698754020000,
       "size": 3873,
       "type": "gdrive"
@@ -153,7 +153,7 @@
     "source": {
       "name": "sample.svg",
       "id": "1JmSbTnOXM1t2zJiuokp3EBUtXMVreVOM",
-      "mimeType": "image/svg+xml",
+      "contentType": "image/svg+xml",
       "lastModified": 1698754020000,
       "size": 1595,
       "type": "gdrive"
@@ -165,7 +165,7 @@
     "source": {
       "name": "test",
       "id": "1FREVtyDzwkxCD0l_PFAM5yg5AoJWnyeMY6T1Nm8KTwg",
-      "mimeType": "application/vnd.google-apps.document",
+      "contentType": "application/vnd.google-apps.document",
       "lastModified": 1698757587061,
       "size": 1024,
       "type": "gdrive"
@@ -177,7 +177,7 @@
     "source": {
       "name": "unsafe.svg",
       "id": "1YvrkuFYscNdR87hTvt1V6X-gh4loCJPB",
-      "mimeType": "image/svg+xml",
+      "contentType": "image/svg+xml",
       "lastModified": 1698754020000,
       "size": 1632,
       "type": "gdrive"

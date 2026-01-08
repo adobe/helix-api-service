@@ -170,7 +170,7 @@ describe('Source Bus Content Proxy Tests', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'Source bus is not allowed for org: org, site: another',
+      'x-error': 'Source bus is not allowed for org: org, site: site',
     });
   });
 

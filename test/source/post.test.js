@@ -53,6 +53,26 @@ describe('Source POST Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test postSource index HTML', async () => {
+    async function postFn(_uri, gzipBody) {
+      const b = await gunzip(Buffer.from(gzipBody, 'hex'));
+      assert.equal(b.toString(), '<body>Hello</body>');
+    }
+
+    nock.source()
+      .putObject('/test/rest/toast/index.html')
+      .matchHeader('content-type', 'text/html')
+      .reply(201, postFn);
+
+    const resp = await postSource(setupContext(), createInfo(
+      '/test/sites/rest/source/toast/index.html',
+      {},
+      'POST',
+      '<html><body>Hello</body></html>',
+    ));
+    assert.equal(resp.status, 201);
+  });
+
   it('test postSource HTML with images', async () => {
     const imageHash = '1df1eef4cd16906957aa9d03ef3e2623e2bebecc2';
 

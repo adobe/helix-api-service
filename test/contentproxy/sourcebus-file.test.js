@@ -66,7 +66,7 @@ describe('Source Bus Content Proxy Tests (JSON)', () => {
       runtime: { region: 'us-east-1' },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
-        MEDIAHANDLER_NOCACHHE: 'true',
+        MEDIAHANDLER_NOCACHE: 'true',
       },
     };
     return { request, context };

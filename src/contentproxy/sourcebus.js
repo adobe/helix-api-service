@@ -66,7 +66,7 @@ async function handle(ctx, info, opts) {
   }
 
   const {
-    MEDIAHANDLER_NOCACHHE: noCache,
+    MEDIAHANDLER_NOCACHE: noCache,
     CLOUDFLARE_ACCOUNT_ID: r2AccountId,
     CLOUDFLARE_R2_ACCESS_KEY_ID: r2AccessKeyId,
     CLOUDFLARE_R2_SECRET_ACCESS_KEY: r2SecretAccessKey,

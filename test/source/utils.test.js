@@ -13,32 +13,129 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { validateHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import { getValidHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { createInfo } from '../utils.js';
-import { setupContext } from './testutils.js';
+import { setupContext, stripSpaces } from './testutils.js';
 
 describe('Source Utils Tests', () => {
   it('test validateHtml success', async () => {
     const html = '<!DOCTYPE html><html><body>Hello</body></html>';
-    await validateHtml(setupContext(), Buffer.from(html));
+    await getValidHtml(setupContext(), Buffer.from(html));
     // No exception should be thrown
   });
 
   it('test validateHtml ignores acceptable HTML errors', async () => {
     const html = '<html><body>Hello</body></html>';
-    await validateHtml(setupContext(), Buffer.from(html));
+    await getValidHtml(setupContext(), Buffer.from(html));
     // No exception should be thrown
   });
 
   it('test validateHtml failure', async () => {
     const html = '<html><body>Hello</body></html';
 
-    try {
-      await validateHtml(setupContext(), Buffer.from(html));
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Unexpected end of file in tag/);
-    }
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(html)),
+      (err) => {
+        assert.equal(err.statusCode, 400);
+        assert.match(err.message, /Unexpected end of file in tag/);
+        return true;
+      },
+    );
+  });
+
+  it('test handle html media upload', async () => {
+    const htmlIn = `
+      <body>
+        <picture>
+          <source srcset="https://example.com/image.jpg">
+          <source srcset="https://example.com/image1.jpg" media="(prefers-color-scheme: dark)">
+          <source srcset="https://example.com/image.jpg" media="(min-width: 600px)">
+          <img src="https://example.com/image.jpg" loading="lazy">
+        </picture>
+        <img src="https://foobar.com/image2.jpg">
+        <img src="https://example.com/image.jpg">
+      </body>`;
+
+    const context = setupContext();
+    let counter = 0;
+    const mockMH = {
+      getBlob: async (url) => {
+        counter += 1;
+        const u = new URL(url);
+        return { uri: `https://media.com/${counter}${u.pathname}` };
+      },
+    };
+
+    const body = await getValidHtml(context, Buffer.from(htmlIn), ['https://foobar.com/'], mockMH);
+
+    const htmlOut = `
+      <body>
+        <picture>
+          <source srcset="https://media.com/1/image.jpg">
+          <source srcset="https://media.com/2/image1.jpg" media="(prefers-color-scheme: dark)">
+          <source srcset="https://media.com/1/image.jpg" media="(min-width: 600px)">
+          <img src="https://media.com/1/image.jpg" loading="lazy">
+        </picture>
+        <img src="https://foobar.com/image2.jpg">
+        <img src="https://media.com/1/image.jpg">
+      </body>`;
+
+    assert.equal(stripSpaces(body), stripSpaces(htmlOut));
+  });
+
+  it('test error during media handler processing', async () => {
+    const htmlIn = `
+      <body>
+        <img src="https://example.com/image.jpg">
+      </body>`;
+
+    const mockMH = {
+      getBlob: () => { throw new Error(); },
+    };
+
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(htmlIn), [], mockMH),
+      new StatusCodeError('Error getting blob for image: https://example.com/image.jpg', 400),
+    );
+  });
+
+  it('test html validate only with external images fails', async () => {
+    const htmlIn = `
+      <body>
+        <img src="https://example.com/image.jpg">
+      </body>`;
+
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(htmlIn), [], null),
+      new StatusCodeError('External images are not allowed, use POST to intern them', 400),
+    );
+  });
+
+  it('test a body element is synthesized if not present in the input HTML', async () => {
+    const htmlIn = '<h1>Hello</h1>';
+
+    const htmlOut = await getValidHtml(setupContext(), Buffer.from(htmlIn), [], {});
+    assert.equal(stripSpaces(htmlOut), stripSpaces('<body><h1>Hello</h1></body>'));
+  });
+
+  it('test that a document with too many images is rejected', async () => {
+    const tooManyImages = 201;
+
+    // create a html document with too many images
+    const images = Array.from({ length: tooManyImages }, (_, index) => `
+      <img src="https://example.com/image${index}.jpg">
+    `).join('');
+
+    const htmlIn = `
+      <body>
+        ${images}
+      </body>`;
+
+    await assert.rejects(
+      getValidHtml(setupContext(), Buffer.from(htmlIn), [], {}),
+      new StatusCodeError('Too many images: 201', 400),
+    );
   });
 
   it('test validateJson success', async () => {
@@ -50,12 +147,14 @@ describe('Source Utils Tests', () => {
   it('test validateJson failure', async () => {
     const json = '{"name":"test","value":123';
 
-    try {
-      await validateJson(setupContext(), Buffer.from(json));
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Invalid JSON:/);
-    }
+    await assert.rejects(
+      validateJson(setupContext(), Buffer.from(json)),
+      (err) => {
+        assert.equal(err.statusCode, 400);
+        assert.match(err.message, /Invalid JSON:/);
+        return true;
+      },
+    );
   });
 
   it('test validateMedia success', async () => {
@@ -80,13 +179,14 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    try {
-      await validateMedia(setupContext(), info, 'video/mp4', Buffer.from(media));
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.equal(e.errorCode, 'AEM_BACKEND_MP4_PARSING_FAILED');
-      assert.match(e.message, /Media not accepted/);
-    }
+    await assert.rejects(
+      validateMedia(setupContext(), info, 'video/mp4', Buffer.from(media)),
+      new StatusCodeError(
+        'Media not accepted \'/my.mp4\': Unable to parse MP4',
+        400,
+        'AEM_BACKEND_MP4_PARSING_FAILED',
+      ),
+    );
   });
 
   it('test validateMedia unknown media type', async () => {
@@ -98,11 +198,9 @@ describe('Source Utils Tests', () => {
       media,
     );
 
-    try {
-      await validateMedia(setupContext(), info, 'video/blah', Buffer.from(media));
-    } catch (e) {
-      assert.equal(e.statusCode, 400);
-      assert.match(e.message, /Unknown media type/);
-    }
+    await assert.rejects(
+      validateMedia(setupContext(), info, 'video/blah', Buffer.from(media)),
+      new StatusCodeError('Unknown media type: video/blah', 400),
+    );
   });
 });

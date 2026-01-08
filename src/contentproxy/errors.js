@@ -59,6 +59,10 @@ const errors = [
     template: 'Unable to preview \'$1\': Documents larger than 100mb not supported: $2',
   },
   {
+    code: 'AEM_BACKEND_TOO_MANY_IMAGES',
+    template: 'Unable to preview \'$1\': Documents has more than $2 images: $3',
+  },
+  {
     code: 'AEM_BACKEND_RESOURCE_TOO_BIG',
     template: 'Files larger than 500mb are not supported: $1',
   },

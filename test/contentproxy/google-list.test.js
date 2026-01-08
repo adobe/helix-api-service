@@ -84,8 +84,8 @@ describe('Google Integration Tests (list)', () => {
         'content-type': 'application/json',
       });
 
-    const { context } = setupTest('/');
-    const result = await list(context, ['/documents/*', '/documents/not-found']);
+    const { context, info } = setupTest('/');
+    const result = await list(context, info, ['/documents/*', '/documents/not-found']);
 
     assert.deepStrictEqual(result, JSON.parse(await readFile(specPath('google-list-result.json'))));
   });
@@ -95,8 +95,8 @@ describe('Google Integration Tests (list)', () => {
       .user()
       .folders([]);
 
-    const { context } = setupTest('/');
-    const result = await list(context, ['/documents/*']);
+    const { context, info } = setupTest('/');
+    const result = await list(context, info, ['/documents/*']);
 
     assert.deepStrictEqual(result, []);
   });

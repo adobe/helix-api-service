@@ -90,11 +90,21 @@ export /* abstract */ class Forest {
       const folderPath = path.substring(0, idx);
       let items = folders[folderPath];
       if (!items) {
-        // eslint-disable-next-line no-await-in-loop
-        items = await this.listFolder(rootItem, '', folderPath);
-        if (!items) {
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          items = await this.listFolder(rootItem, '', folderPath);
+          if (!items) {
+            const infoPath = `${folderPath}/*`;
+            itemList.set(infoPath, { status: 404, path: infoPath });
+            items = [];
+          }
+        } catch (e) {
           const infoPath = `${folderPath}/*`;
-          itemList.set(infoPath, { status: 404, path: infoPath });
+          itemList.set(infoPath, {
+            status: e.$metadata.httpStatusCode ?? 500,
+            path: infoPath,
+            error: String(e),
+          });
           items = [];
         }
         folders[folderPath] = items;

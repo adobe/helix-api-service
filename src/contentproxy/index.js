@@ -17,6 +17,7 @@ import { error } from './errors.js';
 import google from './google.js';
 import markup from './markup.js';
 import onedrive from './onedrive.js';
+import sourcebus from './sourcebus.js';
 
 /**
  * @type {import('./contentproxy').ContentSourceHandler[]}
@@ -25,6 +26,7 @@ export const HANDLERS = { // exported for testing only
   google,
   onedrive,
   markup,
+  sourcebus,
 };
 
 /**
@@ -34,7 +36,11 @@ export const HANDLERS = { // exported for testing only
  * @return {import('./contentproxy').ContentSourceHandler} handler
  */
 export function getContentSourceHandler(source) {
-  return HANDLERS[source.type];
+  let { type } = source;
+  if (source.url?.startsWith('https://api.aem.live/')) {
+    type = 'sourcebus';
+  }
+  return HANDLERS[type];
 }
 
 /**

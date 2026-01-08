@@ -260,3 +260,22 @@ export function addLastModified(headers, value) {
   }
   return headers;
 }
+
+/**
+ * Parses a JSON string and validates it as a sheet JSON.
+ * Throws an error if parsing fails or the JSON is invalid.
+ *
+ * @param {string} data - The JSON string to parse.
+ * @returns {object} The validated sheet JSON object.
+ */
+export function parseSheetJSON(data) {
+  let json;
+  try {
+    json = JSON.parse(data);
+  } catch {
+    throw Error('invalid sheet json; failed to parse');
+  }
+
+  assertValidSheetJSON(json);
+  return json;
+}

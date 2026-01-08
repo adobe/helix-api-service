@@ -13,22 +13,13 @@ import { AbortError, Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { errorResponse } from '../support/utils.js';
 import {
-  getContentSourceHeaders, assertValidSheetJSON, computeSourceUrl,
-  updateMarkupSourceInfo, addLastModified,
+  addLastModified,
+  computeSourceUrl,
+  getContentSourceHeaders,
+  parseSheetJSON,
+  updateMarkupSourceInfo,
 } from './utils.js';
 import { error } from './errors.js';
-
-function parseSheetJSON(data) {
-  let json;
-  try {
-    json = JSON.parse(data);
-  } catch {
-    throw Error('invalid sheet json; failed to parse');
-  }
-
-  assertValidSheetJSON(json);
-  return json;
-}
 
 /**
  * Fetch timeout for markup source.

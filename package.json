@@ -54,6 +54,7 @@
     "@adobe/helix-admin-support": "5.0.3",
     "@adobe/helix-config": "5.9.1",
     "@adobe/helix-google-support": "4.0.1",
+    "@adobe/helix-html2md": "1.1.0",
     "@adobe/helix-mediahandler": "2.9.5",
     "@adobe/helix-onedrive-support": "12.1.7",
     "@adobe/helix-shared-body-data": "2.2.3",

@@ -30,7 +30,7 @@ describe('Index Tests', () => {
   });
 
   function setupTest(suffix, {
-    method, headers, attributes, env,
+    method, headers, attributes, env, invocation,
   } = {}) {
     const request = new Request(`https://api.aem.live${suffix}`, {
       method,
@@ -40,6 +40,7 @@ describe('Index Tests', () => {
       pathInfo: { suffix },
       attributes,
       env,
+      invocation,
     };
     return { request, context };
   }
@@ -260,6 +261,38 @@ describe('Index Tests', () => {
       'access-control-expose-headers': 'x-error, x-error-code',
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
+    });
+  });
+
+  it('accepts roles in event payload to authorize', async () => {
+    nock.siteConfig(SITE_CONFIG);
+
+    const { request, context } = setupTest('/org/sites/site/media/', {
+      method: 'POST',
+      headers: {
+        origin: 'api.aem.live',
+      },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+      invocation: {
+        event: {
+          user: 'user@example.com',
+          roles: ['ops'],
+        },
+      },
+    });
+
+    const result = await main(request, context);
+
+    assert.strictEqual(result.status, 400);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-origin': 'api.aem.live',
+      'access-control-expose-headers': 'x-error, x-error-code',
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+      'x-error': 'missing media in request body',
     });
   });
 

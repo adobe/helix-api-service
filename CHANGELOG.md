@@ -1,3 +1,10 @@
+## [1.26.1](https://github.com/adobe/helix-api-service/compare/v1.26.0...v1.26.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **sitemap:** check correct status code property ([#94](https://github.com/adobe/helix-api-service/issues/94)) ([4e5d284](https://github.com/adobe/helix-api-service/commit/4e5d28491a9380814c7c53f809bde9382d22cbb6))
+
 # [1.26.0](https://github.com/adobe/helix-api-service/compare/v1.25.1...v1.26.0) (2026-01-08)
 
 

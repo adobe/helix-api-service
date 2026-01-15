@@ -63,7 +63,7 @@ export default async function status(context, info) {
       }
       /* c8 ignore start */
       if (result.error) {
-        if (result.status !== 404 || editUrl !== 'auto') {
+        if ((result.status !== 404 && result.status !== 405) || editUrl !== 'auto') {
           const headers = {
             'x-error': cleanupHeaderValue(result.error),
           };

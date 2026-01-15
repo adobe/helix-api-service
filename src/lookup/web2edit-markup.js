@@ -40,7 +40,7 @@ async function lookup(context, info, source) {
     };
   }
   return {
-    status: 404,
+    status: 405,
     error: `Mountpoint not supported: ${source.url}.`,
   };
 }

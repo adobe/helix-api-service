@@ -77,6 +77,7 @@ export default async function web2edit(context, info) {
 
   const results = [];
 
+  // return the first successful result
   for (const source of sources) {
     // eslint-disable-next-line no-await-in-loop
     const result = await lookup(context, info, source);
@@ -84,6 +85,10 @@ export default async function web2edit(context, info) {
       return result;
     }
     results.push(result);
+  }
+  // return base result if the overlay result is 405 (not supported)
+  if (sources.length === 2 && results[0].status === 405) {
+    return results[1];
   }
   // return overlay result, even if it failed.
   return results[0];

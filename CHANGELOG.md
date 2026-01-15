@@ -1,3 +1,10 @@
+## [1.26.4](https://github.com/adobe/helix-api-service/compare/v1.26.3...v1.26.4) (2026-01-15)
+
+
+### Bug Fixes
+
+* port changes from admin ([#101](https://github.com/adobe/helix-api-service/issues/101)) ([688418d](https://github.com/adobe/helix-api-service/commit/688418d06841041f55d53156088efb10417c162f))
+
 ## [1.26.3](https://github.com/adobe/helix-api-service/compare/v1.26.2...v1.26.3) (2026-01-14)
 
 

@@ -108,8 +108,13 @@ export async function login(context, info) {
       });
     }
 
+    let requestedIdp;
+    if (data?.idp) {
+      requestedIdp = IDPS.find(({ name }) => name === data.idp);
+    }
+
     if (isDAMountpoint(config.content?.overlay)) {
-      return redirectToLogin(context, info, idpAdobe, opts);
+      return redirectToLogin(context, info, requestedIdp ?? idpAdobe, opts);
     }
 
     // for sharepoint sources, try to detect the tenant
@@ -127,11 +132,8 @@ export async function login(context, info) {
       }
     }
 
-    if (data?.idp) {
-      const idp = IDPS.find(({ name }) => name === data.idp);
-      if (idp) {
-        return redirectToLogin(context, info, idp, opts);
-      }
+    if (requestedIdp) {
+      return redirectToLogin(context, info, requestedIdp, opts);
     }
     for (const idp of IDPS) {
       if (idp.mountType === source.type) {

@@ -175,9 +175,6 @@ export async function decodeImsToken(context, idp, idToken) {
     throw new errors.JWTExpired('"expires_in" claim timestamp check failed', 'expires_in', 'check_failed');
   }
 
-  // map user_id to email
-  payload.email = payload.user_id;
-
   // set default role for IMS users to publish instead of basic_publish
   if (scopes.includes('aem.backend.all')) {
     payload.defaultRole = 'publish';
@@ -186,7 +183,7 @@ export async function decodeImsToken(context, idp, idToken) {
   }
 
   // delete from information not needed in the profile
-  ['id', 'type', 'as_id', 'ctp', 'pac', 'rtid', 'moi', 'rtea', 'user_id', 'fg', 'aa_id'].forEach((prop) => delete payload[prop]);
+  ['id', 'type', 'as_id', 'ctp', 'pac', 'rtid', 'moi', 'rtea', 'fg', 'aa_id'].forEach((prop) => delete payload[prop]);
 
   log.info(`decoded access_token from ${payload.as}/${payload.client_id} and validated payload.`);
   return payload;
@@ -233,11 +230,11 @@ export async function getSiteAuthToken(context, partition) {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} email email for which the token is generated
+ * @param {Array[string]} ids email(s) for which the token is generated
  * @param {number} tokenExpiry token expiry duration in millis
  * @returns {Promise<object|null>}
  */
-export async function getTransientSiteTokenInfo(context, info, email, tokenExpiry) {
+export async function getTransientSiteTokenInfo(context, info, ids, tokenExpiry) {
   const config = await context.loadConfig(info);
 
   // get access config
@@ -265,7 +262,7 @@ export async function getTransientSiteTokenInfo(context, info, email, tokenExpir
       roleMapping.add('site_live', user);
     }
 
-    const roles = roleMapping.getRolesForUser(email);
+    const roles = roleMapping.getRolesForUser(...ids);
     const authInfo = AuthInfo.Default()
       .withRoles(roles);
 
@@ -292,7 +289,7 @@ export async function getTransientSiteTokenInfo(context, info, email, tokenExpir
         kid: privateKey.kid,
       })
       .setAudience(`${info.site}--${info.org}.${domain}`)
-      .setSubject(email)
+      .setSubject(ids[0])
       .setExpirationTime(Math.floor(siteTokenExpiry / 1000))
       .sign(privateKey);
 
@@ -335,7 +332,7 @@ export async function getAuthInfo(context, info) {
       const idp = await detectTokenIDP(token);
       if (idp.ims) {
         const profile = await decodeImsToken(context, idp, token);
-        if (!profile.email) {
+        if (!profile.email && !profile.user_id && !profile.preferred_username) {
           log.warn('auth: ims token invalid: missing user id');
           return AuthInfo.Default();
         }

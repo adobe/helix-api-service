@@ -133,11 +133,11 @@ async function createExtensionResponse(context, info, idp, extensionId, {
   const fetch = context.getFetch();
 
   let siteTokenInfo = null;
-  const email = payload.email || payload.user_id || payload.preferred_username;
-  if (!email) {
+  const ids = [payload.email, payload.user_id, payload.preferred_username].filter((user) => !!user);
+  if (!ids.length) {
     log.warn(`Decoded id token from ${iss} does not contain email: ${JSON.stringify(payload, 0, 2)}`);
   } else {
-    siteTokenInfo = await getTransientSiteTokenInfo(context, info, email);
+    siteTokenInfo = await getTransientSiteTokenInfo(context, info, ids);
   }
 
   // fetch profile picture for microsoft
@@ -210,12 +210,12 @@ async function createAEMCLILoginInfoResponse(context, info, {
 
   let siteTokenInfo = null;
 
-  const email = payload.email || payload.user_id || payload.preferred_username;
-  if (!email) {
+  const ids = [payload.email, payload.user_id, payload.preferred_username].filter((user) => !!user);
+  if (!ids.length) {
     log.warn(`${clientId}: Decoded id token from ${iss} does not contain email: ${JSON.stringify(payload, 0, 2)}`);
     return new Response('', { status: 401 });
   } else {
-    siteTokenInfo = await getTransientSiteTokenInfo(context, info, email);
+    siteTokenInfo = await getTransientSiteTokenInfo(context, info, ids);
   }
 
   return sendAEMCLILoginInfoResponse(

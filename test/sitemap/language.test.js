@@ -51,8 +51,8 @@ describe('Sitemap Language tests', () => {
       extension: '.html',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/path3', { loc: 'https://www.example.com/en/path3/more.html', path: '/en/path3/more' }],
     ]);
   });
@@ -75,8 +75,8 @@ describe('Sitemap Language tests', () => {
       alternate: '{path}/more',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/en/path3', { loc: 'https://www.example.com/en/path3/more', path: '/en/path3/more' }],
     ]);
   });
@@ -99,8 +99,8 @@ describe('Sitemap Language tests', () => {
       alternate: '/en/{path}',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/path2', { loc: 'https://www.example.com/en/path2', path: '/en/path2' }],
       ['/path3/more', { loc: 'https://www.example.com/en/path3/more', path: '/en/path3/more' }],
     ]);
@@ -123,8 +123,8 @@ describe('Sitemap Language tests', () => {
       alternate: '{path}',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['path1', { loc: 'https://www.example.compath1', path: 'path1' }],
       ['/path2', { loc: 'https://www.example.com/path2', path: '/path2' }],
     ]);
@@ -146,8 +146,8 @@ describe('Sitemap Language tests', () => {
       hreflang: 'en',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/path2', { loc: 'https://www.example.com/path2', path: '/path2' }],
     ]);
   });
@@ -169,8 +169,8 @@ describe('Sitemap Language tests', () => {
       hreflang: 'en',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/welcome', { loc: 'https://www.example.com/de/willkommen', path: '/de/willkommen' }],
       ['/about', { loc: 'https://www.example.com/de/ueber', path: '/de/ueber' }],
       ['/de/nur-hier', { loc: 'https://www.example.com/de/nur-hier', path: '/de/nur-hier' }],
@@ -215,8 +215,8 @@ describe('Sitemap Language tests', () => {
       alternate: '/de/{path}',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/page1', { loc: 'https://www.origin.com/de/page1', path: '/de/page1' }],
       ['/page3', { loc: 'https://www.origin.com/de/page3', path: '/de/page3' }],
     ]);
@@ -299,8 +299,8 @@ describe('Sitemap Language tests', () => {
       alternate: '/it/{path}',
     }).init(context);
 
-    const { canonicals } = language;
-    assert.deepStrictEqual([...canonicals], [
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], [
       ['/page1', { loc: 'https://www.origin.com/it/page1.html', path: '/it/page1.html' }],
       ['/page2', { loc: 'https://www.origin.com/it/page2.aspx', path: '/it/page2.aspx' }],
       ['/page3', { loc: 'https://www.origin.com/it/page3', path: '/it/page3' }],
@@ -475,7 +475,32 @@ describe('Sitemap Language tests', () => {
     });
     await part2.init(context);
 
-    assert.deepStrictEqual([...part1.canonicals.keys()], ['/path1', '/path2']);
-    assert.deepStrictEqual([...part2.canonicals.keys()], ['/path3']);
+    assert.deepStrictEqual([...part1.slugs.keys()], ['/path1', '/path2']);
+    assert.deepStrictEqual([...part2.slugs.keys()], ['/path3']);
+  });
+
+  it('sitemap with a non-matching canonical', async () => {
+    nock.content()
+      .getObject('/live/query-index.json')
+      .reply(200, JSON.stringify({
+        data: [
+          { path: '/au/path1.html', lastModified: 1631031300 },
+          { path: '/au/path2.html', lastModified: 1631031301, canonical: 'https://www.origin.com/en/path2.html' },
+          { path: '/au/path3.html', lastModified: 1631031301, canonical: '' },
+        ],
+      }));
+
+    const language = new SitemapLanguage({
+      origin: 'https://www.origin.com',
+      source: '/query-index.json',
+      hreflang: 'en-AU',
+      alternate: '/au/{path}.html',
+    });
+    await language.init(context);
+
+    assert.deepStrictEqual(language.urls().map((url) => url.toString()), [
+      'https://www.origin.com/au/path1.html',
+      'https://www.origin.com/au/path3.html',
+    ]);
   });
 });

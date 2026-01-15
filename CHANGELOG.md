@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/adobe/helix-api-service/compare/v1.26.4...v1.27.0) (2026-01-15)
+
+
+### Features
+
+* fetch IMS profile for bearer tokens ([#99](https://github.com/adobe/helix-api-service/issues/99)) ([48d4d1a](https://github.com/adobe/helix-api-service/commit/48d4d1aa3892130ddc635bb4331495862d67e6a7))
+
 ## [1.26.4](https://github.com/adobe/helix-api-service/compare/v1.26.3...v1.26.4) (2026-01-15)
 
 

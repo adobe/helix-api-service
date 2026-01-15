@@ -331,7 +331,7 @@ describe('Support Test', () => {
           },
         },
       });
-      assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
+      assert.strictEqual(await getTransientSiteTokenInfo(context, info, ['test@example.com']), null);
     });
 
     it.skip('returns null if there is an exception during role resolution', async () => {
@@ -351,7 +351,7 @@ describe('Support Test', () => {
           },
         },
       });
-      assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
+      assert.strictEqual(await getTransientSiteTokenInfo(context, info, ['test@example.com']), null);
     });
   });
 });

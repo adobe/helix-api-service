@@ -1045,6 +1045,44 @@ describe('IMS Authentication Test', () => {
   }
 
   it('supports the ims backend token (stage)', async () => {
+    nock('https://ims-na1-stg1.adobelogin.com')
+      .get('/ims/profile/v1')
+      .reply(404);
+    const { authInfo, accessToken } = await testIMSToken();
+    assert.deepStrictEqual(authInfo.profile, {
+      as: 'ims-na1-stg1',
+      client_id: 'foobar-client',
+      user_id: 'helix@adobe.com',
+      expires_in: '86400000',
+      defaultRole: 'publish',
+      scope: 'aem.backend.all,openid,AdobeID',
+    });
+    assert.strictEqual(authInfo.imsToken, accessToken);
+  });
+
+  it('supports the ims backend token and fetches ims profile', async () => {
+    nock('https://ims-na1-stg1.adobelogin.com')
+      .get('/ims/profile/v1')
+      .reply(200, {
+        email: 'test@adobe.com',
+      });
+    const { authInfo, accessToken } = await testIMSToken();
+    assert.deepStrictEqual(authInfo.profile, {
+      as: 'ims-na1-stg1',
+      client_id: 'foobar-client',
+      user_id: 'helix@adobe.com',
+      expires_in: '86400000',
+      defaultRole: 'publish',
+      email: 'test@adobe.com',
+      scope: 'aem.backend.all,openid,AdobeID',
+    });
+    assert.strictEqual(authInfo.imsToken, accessToken);
+  });
+
+  it('supports the ims backend token with failed fetch from ims profile', async () => {
+    nock('https://ims-na1-stg1.adobelogin.com')
+      .get('/ims/profile/v1')
+      .replyWithError('boom!');
     const { authInfo, accessToken } = await testIMSToken();
     assert.deepStrictEqual(authInfo.profile, {
       as: 'ims-na1-stg1',
@@ -1058,6 +1096,9 @@ describe('IMS Authentication Test', () => {
   });
 
   it('supports the ims backend token with user defined roles (stage)', async () => {
+    nock('https://ims-na1-stg1.adobelogin.com')
+      .get('/ims/profile/v1')
+      .reply(404);
     const { authInfo, accessToken } = await testIMSToken({
       roles: ['developer'],
     });
@@ -1074,6 +1115,9 @@ describe('IMS Authentication Test', () => {
   });
 
   it('supports the ims frontend token (stage)', async () => {
+    nock('https://ims-na1-stg1.adobelogin.com')
+      .get('/ims/profile/v1')
+      .reply(404);
     const { authInfo, accessToken } = await testIMSToken({
       scope: 'aem.frontend.all,openid,AdobeID',
     });
@@ -1088,6 +1132,9 @@ describe('IMS Authentication Test', () => {
   });
 
   it('supports the ims cm-repo-service token (stage)', async () => {
+    nock('https://ims-na1-stg1.adobelogin.com')
+      .get('/ims/profile/v1')
+      .reply(404);
     const { authInfo } = await testIMSToken({
       scope: 'read_pc.dma_tartan,system,read_pc.dma_aem_ams,openid,AdobeID,additional_info.projectedProductContext,acp.core.pipeline',
       client_id: 'cm-repo-service',

@@ -17,6 +17,7 @@ export default {
   // todo: fetch from discovery document
   discovery: {
     issuer: 'https://ims-na1-stg1.adobelogin.com',
+    profile_endpoint: 'https://ims-na1-stg1.adobelogin.com/ims/profile/v1',
     authorization_endpoint: 'https://ims-na1-stg1.adobelogin.com/ims/authorize/v2',
     token_endpoint: 'https://ims-na1-stg1.adobelogin.com/ims/token/v3',
     userinfo_endpoint: 'https://ims-na1-stg1.adobelogin.com/ims/userinfo/v2',

@@ -139,11 +139,11 @@ export default class SitemapBuilder {
         current.addSelfAlternates();
       }
 
-      for (const [canon, { path, loc }] of [...current.canonicals]) {
+      for (const [slug, { path, loc }] of [...current.slugs]) {
         // find all alternates in members following
         for (let j = i + 1; j < this._languages.length; j += 1) {
           const alt = this._languages[j];
-          const alternateLoc = alt.getAlternateLocation(canon, path);
+          const alternateLoc = alt.getAlternateLocation(slug, path);
           if (alternateLoc) {
             // found an alternate, add to that tree and to ours
             alt.addAlternate(alternateLoc, current.hreflangs, loc);
@@ -151,7 +151,7 @@ export default class SitemapBuilder {
           }
         }
         if (this._default) {
-          const defaultLoc = this._default.getAlternateLocation(canon);
+          const defaultLoc = this._default.getAlternateLocation(slug);
           if (defaultLoc) {
             // found a default entry, add to this tree
             current.addAlternate(loc, ['x-default'], defaultLoc);

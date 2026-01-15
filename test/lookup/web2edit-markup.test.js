@@ -100,7 +100,7 @@ describe('web2edit Markup Tests', () => {
 
     assert.deepStrictEqual(result, {
       error: 'Mountpoint not supported: https://www.example.com/.',
-      status: 404,
+      status: 405,
     });
   });
 });

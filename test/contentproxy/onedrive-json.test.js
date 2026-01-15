@@ -385,7 +385,7 @@ describe('OneDrive Integration Tests (JSON)', () => {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
       'retry-after': '233',
-      'x-error': 'Unable to fetch \'/redirects.json\' from \'onedrive\': We\'re sorry. We ran into a problem completing your request.',
+      'x-error': 'Unable to fetch \'/redirects.json\' from \'onedrive\': (429) - We\'re sorry. We ran into a problem completing your request.',
       'x-error-code': 'AEM_BACKEND_FETCH_FAILED',
       'x-severity': 'warn',
     });
@@ -413,7 +413,7 @@ describe('OneDrive Integration Tests (JSON)', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'Unable to fetch \'/redirects.json\' from \'onedrive\': We\'re sorry. We couldn\'t finish what you asked us to do because it was taking too long.',
+      'x-error': 'Unable to fetch \'/redirects.json\' from \'onedrive\': (429) - We\'re sorry. We couldn\'t finish what you asked us to do because it was taking too long.',
       'x-error-code': 'AEM_BACKEND_FETCH_FAILED',
       'x-severity': 'warn',
     });
@@ -472,7 +472,7 @@ describe('OneDrive Integration Tests (JSON)', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'Unable to fetch \'/redirects.json\' from \'onedrive\': We\'re sorry, but something went wrong with this file.',
+      'x-error': 'Unable to fetch \'/redirects.json\' from \'onedrive\': (501) - We\'re sorry, but something went wrong with this file.',
       'x-error-code': 'AEM_BACKEND_FETCH_FAILED',
       'x-severity': 'warn',
     });

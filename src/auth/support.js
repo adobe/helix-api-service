@@ -257,7 +257,7 @@ export async function getSiteAuthToken(context, partition) {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {Array[string]} ids email(s) for which the token is generated
+ * @param {string[]} ids email(s) for which the token is generated
  * @param {number} tokenExpiry token expiry duration in millis
  * @returns {Promise<object|null>}
  */

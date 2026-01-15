@@ -190,6 +190,33 @@ export async function decodeImsToken(context, idp, idToken) {
 }
 
 /**
+ * Fetches the IMS profile for the given IDP and token.
+ *
+ * @param {AdminContext} ctx - The universal context.
+ * @param {IDPConfig} idp - The identity provider configuration.
+ * @param {string} token - The access token to fetch the profile.
+ * @returns {Promise<object|undefined>} The IMS profile object or `undefined` if fetching fails.
+ */
+async function fetchImsProfile(ctx, idp, token) {
+  const fetch = ctx.getFetch();
+  try {
+    const res = await fetch(idp.discovery.profile_endpoint, {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      ctx.log.warn(`Failed to fetch profile from ${idp.discovery.profile_endpoint}: ${res.status}`);
+    }
+  } catch (e) {
+    ctx.log.error(`Error while fetching ims profile from ${idp.discovery.profile_endpoint}`, e);
+  }
+  return undefined;
+}
+
+/**
  * find the idp that issued the token. currently only supports IMS tokens that have the idp
  * name in the `as` claim. defaults to the 'microsoft' idp.
  *
@@ -335,6 +362,12 @@ export async function getAuthInfo(context, info) {
         if (!profile.email && !profile.user_id && !profile.preferred_username) {
           log.warn('auth: ims token invalid: missing user id');
           return AuthInfo.Default();
+        }
+        if (!profile.email) {
+          const imsProfile = await fetchImsProfile(context, idp, token);
+          if (imsProfile?.email) {
+            profile.email = imsProfile.email;
+          }
         }
         log.info(`auth: ims token valid for user: '${profile.email}'`);
         return AuthInfo.Default()

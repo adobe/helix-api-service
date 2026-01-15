@@ -303,7 +303,9 @@ export default class SitemapLanguage {
    */
   _getSlug(path) {
     const alternate = this._alternate ?? '/{path}';
-
+    if (!alternate.includes('{path}')) {
+      return null;
+    }
     const [prefix, suffix] = alternate.split('{path}');
     const i0 = path.indexOf(prefix);
     const i1 = path.lastIndexOf(suffix);

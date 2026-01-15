@@ -130,6 +130,27 @@ describe('Sitemap Language tests', () => {
     ]);
   });
 
+  it('alternate without {path} placeholder', async () => {
+    nock.content()
+      .getObject('/live/en/query-index.json')
+      .reply(200, {
+        data: [
+          { path: 'path1' },
+          { path: '/path2' },
+        ],
+      });
+
+    const language = await new SitemapLanguage({
+      origin: 'https://www.example.com',
+      source: '/en/query-index.json',
+      hreflang: 'en',
+      alternate: '/',
+    }).init(context);
+
+    const { slugs } = language;
+    assert.deepStrictEqual([...slugs], []);
+  });
+
   it('alternate missing, defaults to /{path}', async () => {
     nock.content()
       .getObject('/live/en/query-index.json')

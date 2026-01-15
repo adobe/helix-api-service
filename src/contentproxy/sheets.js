@@ -120,7 +120,7 @@ export default async function extract(tabular, hdrs, log) {
       'Unable to fetch \'$1\' from \'$2\': $3',
       tabular.getResource(),
       tabular.getProviderName(),
-      e.message,
+      `(${code}) - ${e.message}`,
     ), { headers });
   }
 }

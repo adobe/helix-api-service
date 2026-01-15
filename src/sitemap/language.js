@@ -91,6 +91,7 @@ export default class SitemapLanguage {
    * @param {number} fetchTimeout fetch timeout
    */
   async init(context, fetchTimeout) {
+    const { log } = context;
     if (this._sitemap) {
       return this;
     }
@@ -102,45 +103,43 @@ export default class SitemapLanguage {
       throw new StatusCodeError(`Some entries in ${this._source} do not have a 'path' property`, 400);
     }
 
-    this._urls = new Map(data.map(
-      (record) => {
-        const url = SitemapURL.fromData(this._origin, this._lastmod, record, this._extension);
-        return [url.location, url];
-      },
-    ));
-
-    this._sitemap = new Map(data.map(
-      ({ path, lastModified }) => {
-        const loc = this._extension && !path.endsWith('/')
-          ? `${this._origin}${path}${this._extension}`
-          : `${this._origin}${path}`;
-        const value = {
-          alternates: [],
-        };
-        if (this._lastmod && lastModified !== undefined) {
-          const date = dayjs.utc(new Date(lastModified * 1000)); // Ensure UTC is used
-          if (date.isValid()) {
-            value.lastmod = date.format(this._lastmod);
-          }
-        }
-        return [loc, value];
-      },
-    ));
-
+    this._urls = new Map();
+    this._sitemap = new Map();
     this._unmatched = new Map();
-    this._canonicals = new Map();
+    this._slugs = new Map();
 
-    for (const { path, 'primary-language-url': primaryLanguageUrl } of data) {
+    data.forEach((record) => {
+      const { canonical } = record;
+      const url = SitemapURL.fromData(this._origin, this._lastmod, record, this._extension);
+      if (canonical && canonical !== url.location) {
+        log.info(`ignoring: ${url.location}, as it has a different canonical`);
+        return;
+      }
+      this._urls.set(url.location, url);
+
+      const { path, lastModified } = record;
       const loc = this._extension && !path.endsWith('/')
         ? `${this._origin}${path}${this._extension}`
         : `${this._origin}${path}`;
-      const canonical = this._getCanonicalPath(primaryLanguageUrl || path);
-      if (canonical) {
-        this._canonicals.set(canonical, { path, loc });
+      const value = {
+        alternates: [],
+      };
+      if (this._lastmod && lastModified !== undefined) {
+        const date = dayjs.utc(new Date(lastModified * 1000)); // Ensure UTC is used
+        if (date.isValid()) {
+          value.lastmod = date.format(this._lastmod);
+        }
+      }
+      this._sitemap.set(loc, value);
+
+      const { 'primary-language-url': primaryLanguageUrl } = record;
+      const slug = this._getSlug(primaryLanguageUrl || path);
+      if (slug) {
+        this._slugs.set(slug, { path, loc });
       } else if (primaryLanguageUrl) {
         this._unmatched.set(primaryLanguageUrl, { path, loc });
       }
-    }
+    });
     return this;
   }
 
@@ -273,12 +272,12 @@ export default class SitemapLanguage {
   }
 
   /**
-   * Return all canonical paths and their full locations of this sitemap.
+   * Return all slugs and their full locations in this sitemap.
    *
-   * @returns {Map<string, string>} mapping canonicals and their locations
+   * @returns {Map<string, string>} mapping slugs and their locations
    */
-  get canonicals() {
-    return this._canonicals;
+  get slugs() {
+    return this._slugs;
   }
 
   /**
@@ -296,46 +295,48 @@ export default class SitemapLanguage {
   }
 
   /**
-   * Given an absolute path for some language, returns the canonical path, where the language
+   * Given an absolute path for some language, returns the slug, where the language
    * related part was removed. If the path is not in language relative notation, null is returned.
    *
    * @param {string} path path
-   * @returns canonical path or null
+   * @returns slug or null
    */
-  _getCanonicalPath(path) {
+  _getSlug(path) {
     const alternate = this._alternate ?? '/{path}';
-
+    if (!alternate.includes('{path}')) {
+      return null;
+    }
     const [prefix, suffix] = alternate.split('{path}');
     const i0 = path.indexOf(prefix);
     const i1 = path.lastIndexOf(suffix);
     if (!(i0 === 0 && i1 === path.length - suffix.length)) {
       return null;
     }
-    let canonical = path.substring(prefix.length, i1);
+    let slug = path.substring(prefix.length, i1);
     if (this._external) {
-      const segs = canonical.split('/');
+      const segs = slug.split('/');
       const [basename] = segs[segs.length - 1].split('.');
-      canonical = [...segs.slice(0, -1), basename].join('/');
+      slug = [...segs.slice(0, -1), basename].join('/');
     }
-    if (path.startsWith('/') && !canonical.startsWith('/')) {
-      canonical = `/${canonical}`;
+    if (path.startsWith('/') && !slug.startsWith('/')) {
+      slug = `/${slug}`;
     }
-    return canonical;
+    return slug;
   }
 
   /**
-   * Given a canonical path, checks whether this sitemap contains that path as well, and returns
+   * Given a slug, checks whether this sitemap contains that path as well, and returns
    * the full location, otherwise returns null.
-   * @param {string} canonical canonical path
+   * @param {string} slug slug
    * @param {string} path internal resource path
    * @returns alternate location or null
    */
-  getAlternateLocation(canonical, path) {
-    let entry = this._canonicals.get(canonical);
+  getAlternateLocation(slug, path) {
+    let entry = this._slugs.get(slug);
     if (!entry) {
       entry = this._unmatched.get(path);
       if (entry) {
-        this._canonicals.set(canonical, entry);
+        this._slugs.set(slug, entry);
       }
     }
     return entry?.loc;

@@ -1049,7 +1049,7 @@ describe('IMS Authentication Test', () => {
     assert.deepStrictEqual(authInfo.profile, {
       as: 'ims-na1-stg1',
       client_id: 'foobar-client',
-      email: 'helix@adobe.com',
+      user_id: 'helix@adobe.com',
       expires_in: '86400000',
       defaultRole: 'publish',
       scope: 'aem.backend.all,openid,AdobeID',
@@ -1064,7 +1064,7 @@ describe('IMS Authentication Test', () => {
     assert.deepStrictEqual(authInfo.profile, {
       as: 'ims-na1-stg1',
       client_id: 'foobar-client',
-      email: 'helix@adobe.com',
+      user_id: 'helix@adobe.com',
       expires_in: '86400000',
       roles: ['developer'],
       defaultRole: 'publish',
@@ -1080,7 +1080,7 @@ describe('IMS Authentication Test', () => {
     assert.deepStrictEqual(authInfo.profile, {
       as: 'ims-na1-stg1',
       client_id: 'foobar-client',
-      email: 'helix@adobe.com',
+      user_id: 'helix@adobe.com',
       expires_in: '86400000',
       scope: 'aem.frontend.all,openid,AdobeID',
     });
@@ -1095,7 +1095,7 @@ describe('IMS Authentication Test', () => {
     assert.deepStrictEqual(authInfo.profile, {
       as: 'ims-na1-stg1',
       client_id: 'cm-repo-service',
-      email: 'helix@adobe.com',
+      user_id: 'helix@adobe.com',
       expires_in: '86400000',
       roles: [
         'develop',

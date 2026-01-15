@@ -215,7 +215,7 @@ describe('Support Test', () => {
         },
       });
 
-      const ret = await getTransientSiteTokenInfo(context, info, 'test@example.com');
+      const ret = await getTransientSiteTokenInfo(context, info, ['test@example.com']);
       assert.ok(ret.siteToken.startsWith('hlxtst_'));
       const jwt = await jwtVerify(ret.siteToken.substring(7), localJWKS);
       assert.strictEqual(jwt.payload.aud, 'site--org.aem.page');
@@ -241,7 +241,7 @@ describe('Support Test', () => {
         },
       });
 
-      const ret = await getTransientSiteTokenInfo(context, info, 'helix@adobe.com', OneHour);
+      const ret = await getTransientSiteTokenInfo(context, info, ['helix@adobe.com'], OneHour);
       assert.ok(ret.siteToken.startsWith('hlxtst_'));
       const jwt = await jwtVerify(ret.siteToken.substring(7), localJWKS);
       assert.strictEqual(jwt.payload.aud, 'site--org.aem.page');
@@ -264,7 +264,7 @@ describe('Support Test', () => {
         },
       });
 
-      const ret = await getTransientSiteTokenInfo(context, info, 'bob@example.com');
+      const ret = await getTransientSiteTokenInfo(context, info, ['bob@example.com']);
       assert.ok(ret.siteToken.startsWith('hlxtst_'));
       const jwt = await jwtVerify(ret.siteToken.substring(7), localJWKS);
       assert.strictEqual(jwt.payload.aud, 'site--org.aem.live');
@@ -290,7 +290,7 @@ describe('Support Test', () => {
         },
       });
 
-      const ret = await getTransientSiteTokenInfo(context, info, 'helix@adobe.com', OneHour);
+      const ret = await getTransientSiteTokenInfo(context, info, ['helix@adobe.com'], OneHour);
       assert.ok(ret.siteToken.startsWith('hlxtst_'));
       const jwt = await jwtVerify(ret.siteToken.substring(7), localJWKS);
       assert.strictEqual(jwt.payload.aud, 'site--org.aem.page');
@@ -311,7 +311,7 @@ describe('Support Test', () => {
           },
         },
       });
-      assert.strictEqual(await getTransientSiteTokenInfo(context, info, 'test@example.com'), null);
+      assert.strictEqual(await getTransientSiteTokenInfo(context, info, ['test@example.com']), null);
     });
 
     it.skip('returns null if there is an error during role resolution', async () => {

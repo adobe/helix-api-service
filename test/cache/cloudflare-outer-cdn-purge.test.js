@@ -39,10 +39,8 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
   const ENV = {
     HLX_FASTLY_PURGE_TOKEN: '1234',
     CLOUDFLARE_PURGE_TOKEN: 'token',
-    HLX_CLOUDFLARE_LIVE_ZONE_ID: 'zone1',
-    HLX_LIVE_ZONE_ID: 'zone2',
-    AEM_CLOUDFLARE_LIVE_ZONE_ID: 'zone3',
-    AEM_LIVE_ZONE_ID: 'zone4',
+    AEM_CLOUDFLARE_LIVE_ZONE_ID: 'zone1',
+    AEM_LIVE_ZONE_ID: 'zone2',
   };
 
   it('purges Cloudflare live zones by url', async () => {
@@ -52,14 +50,12 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
 
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     nock('https://api.cloudflare.com')
       // cloudflare live
-      .intercept(/^\/client\/v4\/zones\/zone[1-4]\/purge_cache$/, 'POST')
-      .times(4)
+      .intercept(/^\/client\/v4\/zones\/zone[1-2]\/purge_cache$/, 'POST')
+      .times(2)
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
@@ -83,16 +79,13 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
   it('handles error from purging Cloudflare live cdn by url', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     nock('https://api.cloudflare.com')
       // cloudflare live
       .intercept(/^\/client\/v4\/zones\/zone1\/purge_cache$/, 'POST')
       .reply(500)
-      .intercept(/^\/client\/v4\/zones\/zone[2-4]\/purge_cache$/, 'POST')
-      .times(3)
+      .intercept(/^\/client\/v4\/zones\/zone2\/purge_cache$/, 'POST')
       .reply(200, {
         result: { id: '1234' },
         success: true,
@@ -115,17 +108,6 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
 
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'gkhFlQmxUslocIjx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -139,8 +121,8 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       });
     nock('https://api.cloudflare.com')
       // cloudflare live
-      .intercept(/^\/client\/v4\/zones\/zone[1-4]\/purge_cache$/, 'POST')
-      .times(4)
+      .intercept(/^\/client\/v4\/zones\/zone[1-2]\/purge_cache$/, 'POST')
+      .times(2)
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
@@ -168,17 +150,6 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
 
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'gkhFlQmxUslocIjx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -195,8 +166,7 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       // cloudflare live
       .intercept(/^\/client\/v4\/zones\/zone1\/purge_cache$/, 'POST')
       .reply(500)
-      .intercept(/^\/client\/v4\/zones\/zone[2-4]\/purge_cache$/, 'POST')
-      .times(3)
+      .intercept(/^\/client\/v4\/zones\/zone2\/purge_cache$/, 'POST')
       .reply(200, {
         result: { id: '1234' },
         success: true,

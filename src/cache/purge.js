@@ -32,19 +32,15 @@ export const PURGE_PREVIEW = 2;
 export const PURGE_CONFIG = 4;
 export const PURGE_PREVIEW_AND_LIVE = PURGE_PREVIEW | PURGE_LIVE;
 
-const HLX_LIVE_SERVICE_ID = '1PluOUd9jqp1prQ8PHd85n'; // hlx.live
 const AEM_LIVE_SERVICE_ID = 'In8SInYz3UQGjyG0GPZM42'; // aem.live
 
 const LIVE_PURGE_CONFIG = {
   owner: '*',
   repo: '*',
   services: [
-    HLX_LIVE_SERVICE_ID,
     AEM_LIVE_SERVICE_ID,
   ],
   domains: [
-    '{ref}--{repo}--{owner}.hlx.live',
-    '{ref}--{repo}--{owner}.hlx-fastly.live',
     '{ref}--{site}--{org}.aem.live',
     '{ref}--{site}--{org}.aem-fastly.live',
   ],
@@ -80,7 +76,6 @@ const CONFIG_PURGE_CONFIG = {
 
 // service names for logging
 const SERVICE_NAMES = {
-  [HLX_LIVE_SERVICE_ID]: 'hlx.live',
   [AEM_LIVE_SERVICE_ID]: 'aem.(live|page)',
   [CONFIG_AEM_PAGE_SERVICE_ID]: 'config.aem.page',
 };
@@ -273,7 +268,7 @@ async function purgeProductionCDNConfig(context, info, ref, contentBusId, errRes
 }
 
 /**
- * Purges the dual-stack Cloudflare zones *.(aem|hlx)(-cloudflare)?.(live|page)
+ * Purges the dual-stack Cloudflare zones *.(aem)(-cloudflare)?.(live|page)
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
@@ -290,13 +285,11 @@ async function purgeCloudflareZones(context, info, { keys, paths }, scope) {
 
   // purge cloudflare outer cdn
   const {
-    owner, repo, org, site, ref,
+    org, site, ref,
   } = info;
 
   const {
     CLOUDFLARE_PURGE_TOKEN,
-    HLX_LIVE_ZONE_ID,
-    HLX_CLOUDFLARE_LIVE_ZONE_ID,
     AEM_LIVE_ZONE_ID,
     AEM_PAGE_ZONE_ID,
     AEM_CLOUDFLARE_LIVE_ZONE_ID,
@@ -311,40 +304,6 @@ async function purgeCloudflareZones(context, info, { keys, paths }, scope) {
 
   if (scope & PURGE_LIVE) {
     // live
-    // only purge if the hostname resolves to a cloudflare zone
-    if (await resolve.isCloudflareZone(context, `main--${site}--${org}.hlx.live`)) {
-      if (HLX_CLOUDFLARE_LIVE_ZONE_ID) {
-        // *.hlx-cloudflare.live
-        cfgs.push({
-          cdn: {
-            prod: {
-              type: 'cloudflare',
-              plan: 'enterprise',
-              host: `${ref}--${site}--${org}.hlx-cloudflare.live`,
-              zoneId: HLX_CLOUDFLARE_LIVE_ZONE_ID,
-              apiToken: CLOUDFLARE_PURGE_TOKEN,
-            },
-          },
-          prefix: `${ref}--${repo}--${owner}`,
-        });
-      }
-      if (HLX_LIVE_ZONE_ID) {
-        // *.hlx.live
-        cfgs.push({
-          cdn: {
-            prod: {
-              type: 'cloudflare',
-              plan: 'enterprise',
-              host: `${ref}--${site}--${org}.hlx.live`,
-              zoneId: HLX_LIVE_ZONE_ID,
-              apiToken: CLOUDFLARE_PURGE_TOKEN,
-            },
-          },
-          prefix: `${ref}--${repo}--${owner}`,
-        });
-      }
-    }
-
     // only purge if the hostname resolves to a cloudflare zone
     if (await resolve.isCloudflareZone(context, `main--${site}--${org}.aem.live`)) {
       if (AEM_CLOUDFLARE_LIVE_ZONE_ID) {
@@ -951,124 +910,6 @@ const purge = {
     }
 
     return purge.perform(context, info, purgeInfos, scope, info.ref);
-  },
-
-  /**
-   * Special purge function for resources on hlx.page
-   * (i.e. /helix-config.json)
-   *
-   * @param {import('../support/AdminContext').AdminContext} context context
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
-   * @returns {Promise<Response>}
-   */
-  hlxPage: async (context, info, paths) => {
-    const { log } = context;
-    const { org, site, ref } = info;
-    const fetch = context.getFetch();
-
-    // purge fastly: hlx.page, hlx-fastly.page
-
-    const { env: { HLX_FASTLY_PURGE_TOKEN: fastlyKey } } = context;
-    const hosts = [
-      `${ref}--${site}--${org}.hlx.page`,
-      `${ref}--${site}--${org}.hlx-fastly.page`,
-    ];
-    let result = await processQueue(cartesian(hosts, paths), async ([host, path]) => {
-      // eslint-disable-next-line no-plusplus
-      const id = context.nextRequestId();
-      const url = `https://api.fastly.com/purge/${host}${path}`;
-      log.info(`[${id}] [fastly] sending url purge to ${url}`);
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          accept: 'application/json',
-          'fastly-key': fastlyKey,
-        },
-      });
-      const msg = await response.text();
-      if (response.ok) {
-        log.info(`[${id}] [fastly] response: ${response.status}: ${msg}`);
-      } else {
-        const level = logLevelForStatusCode(response.status);
-        log[level](`[${id}] [fastly] response: ${response.status}: ${msg}`);
-      }
-      return response.status;
-    }, 32);
-
-    if (result.some((status) => status >= 300)) {
-      // sort result status descending (so we get the most serious errors first)
-      result.sort((a, b) => b - a);
-      return new Response('[fastly] error from helix-purge', {
-        status: propagateStatusCode(result[0]),
-      });
-    }
-
-    // purge cloudflare
-
-    // only purge if the hlx.live hostname resolves to a cloudflare zone
-    if (!await resolve.isCloudflareZone(context, `main--${site}--${org}.hlx.live`)) {
-      return new Response('', {
-        status: 200,
-      });
-    }
-
-    const {
-      CLOUDFLARE_PURGE_TOKEN: token,
-      HLX_PAGE_ZONE_ID, // hlx.page
-      HLX_CLOUDFLARE_PAGE_ZONE_ID, // hlx-cloudflare.page
-    } = context.env;
-
-    /* c8 ignore next 5 */
-    if (!token) {
-      return new Response('', {
-        status: 200,
-      });
-    }
-
-    // the cloudflare inner cdn uses special cache keys for paths
-    const prefixedPaths = paths.map((p) => `${ref}--${site}--${org}${p}`);
-    const zoneIds = [];
-    if (HLX_PAGE_ZONE_ID) {
-      zoneIds.push(HLX_PAGE_ZONE_ID);
-    }
-    if (HLX_CLOUDFLARE_PAGE_ZONE_ID) {
-      zoneIds.push(HLX_CLOUDFLARE_PAGE_ZONE_ID);
-    }
-
-    result = await processQueue(zoneIds, async (zoneId) => {
-      // eslint-disable-next-line no-plusplus
-      const id = context.nextRequestId();
-      const url = `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`;
-      const headers = { Authorization: `Bearer ${token}` };
-      const method = 'POST';
-      const body = { tags: prefixedPaths };
-
-      log.info(`[${id}] [cloudflare] purging ${prefixedPaths} on zone ${zoneId}`);
-
-      const resp = await fetch(url, { method, headers, body });
-      const msg = await resp.text();
-
-      if (resp.ok && JSON.parse(msg).success === true) {
-        log.info(`[${id}] [cloudflare] purge succeeded: ${msg}`);
-      } else {
-        const level = logLevelForStatusCode(resp.status);
-        log[level](`[${id}] [cloudflare] purge failed: ${resp.status} - ${msg}`);
-        log[level](`[${id}] [cloudflare] purge body was: ${JSON.stringify(body, 0, 2)}`);
-      }
-      return resp.status;
-    }, 32);
-
-    if (result.some((status) => status >= 300)) {
-      // sort result status descending (so we get the most serious errors first)
-      result.sort((a, b) => b - a);
-      return new Response('[cloudflare] error from helix-purge', {
-        status: propagateStatusCode(result[0]),
-      });
-    }
-
-    return new Response('', {
-      status: 200,
-    });
   },
 };
 

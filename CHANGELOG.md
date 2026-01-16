@@ -1,3 +1,10 @@
+## [1.27.1](https://github.com/adobe/helix-api-service/compare/v1.27.0...v1.27.1) (2026-01-16)
+
+
+### Bug Fixes
+
+* **cache:** remove helix 4 push invalidation ([#102](https://github.com/adobe/helix-api-service/issues/102)) ([a58b08c](https://github.com/adobe/helix-api-service/commit/a58b08ca7e39e1f85f0b8e0b4864f3e6e24f5229))
+
 # [1.27.0](https://github.com/adobe/helix-api-service/compare/v1.26.4...v1.27.0) (2026-01-15)
 
 

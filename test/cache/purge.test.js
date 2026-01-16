@@ -65,17 +65,6 @@ describe('Purge Tests', () => {
 
     it('purges live url', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'DiyvKbkf2MaZORJJ',
-              '8lnjgOWBwsoqAQXB',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -95,18 +84,6 @@ describe('Purge Tests', () => {
 
     it('purges preview and live url', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'DiyvKbkf2MaZORJJ',
-              'p_DiyvKbkf2MaZORJJ',
-              '8lnjgOWBwsoqAQXB',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -127,16 +104,6 @@ describe('Purge Tests', () => {
 
     it('purges live url with html extension', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'ti4OdwTK6sZH0Pbn',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -153,55 +120,8 @@ describe('Purge Tests', () => {
       assert.strictEqual(result.status, 200);
     });
 
-    it('purges page url', async () => {
-      nock('https://api.fastly.com')
-        .post('/purge/main--site--org.hlx.page/helix-config.json')
-        .reply(function f() {
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
-        .post('/purge/main--site--org.hlx-fastly.page/helix-config.json')
-        .reply(function f() {
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        });
-
-      const { context, info } = setupTest();
-      const result = await purge.hlxPage(context, info, ['/helix-config.json']);
-      assert.strictEqual(result.status, 200);
-    });
-
-    it('purges page url can fail', async () => {
-      nock('https://api.fastly.com')
-        .post('/purge/main--site--org.hlx.page/helix-config.json')
-        .reply(function f() {
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [404];
-        })
-        .post('/purge/main--site--org.hlx-fastly.page/helix-config.json')
-        .reply(function f() {
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        });
-
-      const { context, info } = setupTest();
-      const result = await purge.hlxPage(context, info, ['/helix-config.json']);
-      assert.strictEqual(result.status, 404);
-    });
-
     it('purges live url for xml', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'sby9rtkIBtNieA0T',
-              'PjItaMe-aiYUBcYB',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -221,8 +141,6 @@ describe('Purge Tests', () => {
 
     it('handles error from purge', async () => {
       nock('https://api.fastly.com')
-        .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-        .reply(500, 'guru!')
         .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
         .reply(500, 'guru!');
 
@@ -233,19 +151,6 @@ describe('Purge Tests', () => {
 
     it('purges redirect paths', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              's9Ws5y-QiKnatGn1',
-              '5elsUSGxLK7160mA',
-              'w6eiqRHzt4pOEey5',
-              '0l_ve8MRySIx4HxF',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -299,17 +204,6 @@ describe('Purge Tests', () => {
 
     it('purges json', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'lAKEj4mgHHLiyxX6',
-              'fhy7zxoNym_6JoRo',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -348,12 +242,6 @@ describe('Purge Tests', () => {
 
     it('does not send more than 256 in one post', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .twice()
-        .reply((uri, body) => {
-          assert.strictEqual(body.surrogate_keys.length, 256);
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .twice()
         .reply((uri, body) => {
@@ -373,10 +261,8 @@ describe('Purge Tests', () => {
 
     it('handles error', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(500)
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(200);
+        .reply(500);
 
       const { context, info } = setupTest();
       const result = await purge.resource(context, info, PURGE_LIVE);
@@ -385,16 +271,6 @@ describe('Purge Tests', () => {
 
     it('purges head.html', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'main--repo--owner_head',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -413,27 +289,6 @@ describe('Purge Tests', () => {
 
     it('purges metadata.json', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'U_NW4adJU7Qazf-I',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              `${SITE_CONFIG.content.contentBusId}_metadata`,
-              '0BbXqRmqgStJ7irR',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -473,27 +328,6 @@ describe('Purge Tests', () => {
 
     it('purges also metadata-*.json (helix 5)', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'U_NW4adJU7Qazf-I',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              `${SITE_CONFIG.content.contentBusId}_metadata`,
-              '8DD0pNaE1hdJrCU3',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -537,17 +371,6 @@ describe('Purge Tests', () => {
 
     it('purges folder mapped metadata.json', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'MsueC3kn41CeYvWZ_metadata',
-              'zPyegZLNQrXm7f6_',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -621,18 +444,6 @@ describe('Purge Tests', () => {
     it('purges resources and head', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'APp_02UP-uX20z4B',
-              'B6aQUMMo1SOKwKDk',
-              'main--repo--owner_head',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -672,18 +483,6 @@ describe('Purge Tests', () => {
         org: 'org', site: 'other', codeBusId: 'owner/repo', cdnId: 'fastly:5678',
       }]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'APp_02UP-uX20z4B',
-              'B6aQUMMo1SOKwKDk',
-              'main--repo--owner_head',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -737,18 +536,6 @@ describe('Purge Tests', () => {
     it('purges all code if more than 10 paths', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'main--repo--owner_code',
-              'main--repo--owner_head',
-              'main--repo--owner_404',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -795,18 +582,6 @@ describe('Purge Tests', () => {
     it('purges 404 and head for fstab.yaml', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'rIZtZQmdBVsFiL76',
-              'main--repo--owner_head',
-              'main--repo--owner_404',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -842,16 +617,6 @@ describe('Purge Tests', () => {
     it('purges json', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              '_pmFJSnfG-oXpmb6',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -882,16 +647,6 @@ describe('Purge Tests', () => {
 
     it('purges sitemap', async () => {
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'sby9rtkIBtNieA0T',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -923,18 +678,6 @@ describe('Purge Tests', () => {
     it('does not purge BYO on non-main branch', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(function f(uri, body) {
-          assert.deepStrictEqual(body, {
-            surrogate_keys: [
-              'wj_bTKTmN15y7Ytr',
-              'efbFuvT8UH_4lweb',
-              'ref--repo--owner_head',
-            ],
-          });
-          assert.strictEqual(this.req.headers['fastly-key'], '1234');
-          return [200];
-        })
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
@@ -978,10 +721,8 @@ describe('Purge Tests', () => {
     it('handles error from surrogate purge', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(500)
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(200)
+        .reply(500)
         .post('/service/123456abc/purge')
         .reply(200);
 
@@ -996,8 +737,6 @@ describe('Purge Tests', () => {
     it('handles error from url purge', async () => {
       nock.inventory([]);
       nock('https://api.fastly.com')
-        .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-        .reply(200)
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(500)
         .post('/service/123456abc/purge')
@@ -1013,11 +752,9 @@ describe('Purge Tests', () => {
 
     it('handles error from url purge (coverage)', async () => {
       nock('https://api.fastly.com')
-        .post('/purge/main--repo--owner.hlx.live/styles.js')
-        .reply(500)
-        .post(/^\/purge\/main--(site--org|repo--owner).(?:aem|hlx)(?:-fastly)?\.(?:live|page)\/styles\.js$/)
-        .times(3)
-        .reply(200);
+        .post(/^\/purge\/main--(site--org|repo--owner).aem(?:-fastly)?\.(?:live|page)\/styles\.js$/)
+        .times(2)
+        .reply(500);
       nock('https://demo.helix3.page')
         .intercept('/styles.js', 'PURGE')
         .reply(200);

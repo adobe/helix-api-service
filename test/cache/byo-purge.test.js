@@ -220,8 +220,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from invalid configuration', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
 
@@ -233,8 +231,6 @@ describe('BYO CDN Purge Tests', () => {
   it('ignores purge with no cdn.type', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
 
@@ -246,8 +242,6 @@ describe('BYO CDN Purge Tests', () => {
   it('ignores purge with invalid purge client config', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
 
@@ -259,17 +253,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Akamai production url', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
-            '8lnjgOWBwsoqAQXB',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -308,8 +291,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Akamai production url purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     // production
@@ -325,8 +306,8 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Akamai production url (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
 
     // production
@@ -355,8 +336,8 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Akamai production url purge (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://abcdefgh.luna.akamaiapis.net')
@@ -371,17 +352,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Akamai production surrogate keys', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'lAKEj4mgHHLiyxX6',
-            'fhy7zxoNym_6JoRo',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -421,16 +391,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Akamai production surrogate keys purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'main--repo--owner_head',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -453,17 +413,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Cloudflare production url (enterprise)', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
-            '8lnjgOWBwsoqAQXB',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -502,8 +451,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Cloudflare production url purge (enterprise)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     // production
@@ -519,8 +466,8 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Cloudflare production url (enterprise) (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://api.cloudflare.com')
@@ -548,8 +495,8 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Cloudflare production url purge (enterprise) (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://api.cloudflare.com')
@@ -564,17 +511,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Cloudflare production surrogate keys (enterprise)', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -613,17 +549,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Cloudflare production surrogate keys purge (enterprise)', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -648,17 +573,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles failure from Cloudflare production surrogate keys purge (enterprise)', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -688,17 +602,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Fastly production url', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
-            '8lnjgOWBwsoqAQXB',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -732,8 +635,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Fastly production url purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     // production
@@ -758,8 +659,8 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Fastly production url (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://demo.helix3.page')
@@ -774,8 +675,8 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Fastly production url purge (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://demo.helix3.page')
@@ -790,17 +691,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Fastly production surrogate keys', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -834,17 +724,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Fastly production surrogate keys purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -869,17 +748,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Cloudfront production url', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
-            '8lnjgOWBwsoqAQXB',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -907,16 +775,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Cloudfront production url with special characters', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            '5ufrCpX0uu5ELNnu',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -943,8 +801,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Cloudfront production url purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     // production
@@ -961,17 +817,6 @@ describe('BYO CDN Purge Tests', () => {
   it.skip('purging Cloudfront production media url purges all query param variants', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'go_33lQsczpzxqXm',
-            'GWJidHlvlxAK1445',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -1007,17 +852,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purging Cloudfront production query-index purges single path', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -1045,27 +879,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purging Cloudfront production surrogate keys triggers purge all', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'U_NW4adJU7Qazf-I',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            `${SITE_CONFIG.content.contentBusId}_metadata`,
-            '0BbXqRmqgStJ7irR',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -1114,17 +927,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Adobe-managed (Fastly) production url', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
-            '8lnjgOWBwsoqAQXB',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -1153,17 +955,6 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Adobe-managed (Fastly) production with envId', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
-            '8lnjgOWBwsoqAQXB',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
@@ -1191,8 +982,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Adobe-managed (Fastly) production url purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept('/service/1PluOUd9jqp1prQ8PHd85n/purge', 'POST')
-      .reply(200, { status: 'ok', id: '12345' })
       .intercept('/service/In8SInYz3UQGjyG0GPZM42/purge', 'POST')
       .reply(200, { status: 'ok', id: '12345' });
     // production
@@ -1212,8 +1001,8 @@ describe('BYO CDN Purge Tests', () => {
   it('purges Adobe-managed (Fastly) production url (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://purgeproxy.adobeaemcloud.com')
@@ -1228,8 +1017,8 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Adobe-managed (Fastly) production url purge (coverage)', async () => {
     // live
     nock('https://api.fastly.com')
-      .intercept(/^\/purge\/main--(repo--owner|site--org).(?:aem|hlx)(?:-fastly)?\.live\/$/, 'POST')
-      .times(4)
+      .intercept(/^\/purge\/main--(repo--owner|site--org).aem(?:-fastly)?\.live\/$/, 'POST')
+      .times(2)
       .reply(200, { status: 'ok', id: '12345' });
     // production
     nock('https://purgeproxy.adobeaemcloud.com')
@@ -1244,17 +1033,6 @@ describe('BYO CDN Purge Tests', () => {
   it('handles error from Adobe-managed (Fastly) production surrogate keys purge', async () => {
     // live
     nock('https://api.fastly.com')
-      .post('/service/1PluOUd9jqp1prQ8PHd85n/purge')
-      .reply(function f(uri, body) {
-        assert.deepStrictEqual(body, {
-          surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
-            'wljKxsUcFS6-GGCx',
-          ],
-        });
-        assert.strictEqual(this.req.headers['fastly-key'], '1234');
-        return [200];
-      })
       .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {

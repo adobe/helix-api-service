@@ -10,8 +10,8 @@
  * governing permissions and limitations under the License.
  */
 import { createErrorResponse } from '../contentbus/utils.js';
-import { checkConditionals } from './put.js';
 import { createFolder } from './folder.js';
+import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
   getSourceKey,

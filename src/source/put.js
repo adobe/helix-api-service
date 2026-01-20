@@ -9,50 +9,14 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response } from '@adobe/fetch';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { headSource } from './get.js';
+import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
   getSourceKey,
   getValidPayload,
   storeSourceFile,
 } from './utils.js';
-
-export async function checkConditionals(context, info) {
-  const ifMatch = info.headers['if-match'] || null;
-
-  let ifNoneMatch = null;
-  if (!ifMatch) {
-    // If both ifMatch and ifNoneMatch are present, prioritize ifMatch as per RFC 7232
-    ifNoneMatch = info.headers['if-none-match'] || null;
-  }
-
-  if (ifMatch || ifNoneMatch) {
-    const head = await headSource(context, info);
-    const etag = head.headers.get('etag');
-
-    if (ifMatch) {
-      if (ifMatch === '*') {
-        if (head.status === 404) {
-          return new Response('', { status: 412 });
-        }
-      } else if (ifMatch !== etag) {
-        return new Response('', { status: 412 });
-      }
-    } else if (ifNoneMatch) {
-      if (ifNoneMatch === '*') {
-        if (head.status !== 404) {
-          return new Response('', { status: 412 });
-        }
-      } else if (ifNoneMatch === etag) {
-        return new Response('', { status: 412 });
-      }
-    }
-  }
-
-  return null;
-}
 
 /**
  * Put into the source bus.

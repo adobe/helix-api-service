@@ -11,20 +11,19 @@
  */
 import { Response } from '@adobe/fetch';
 import processQueue from '@adobe/helix-shared-process-queue';
-import { sanitizePath } from '@adobe/helix-shared-string';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { sanitizePath } from '@adobe/helix-shared-string';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { splitExtension } from '../support/RequestInfo.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import { getS3Key, CONTENT_TYPES, storeSourceFile } from './utils.js';
-
-const FOLDER_CONTENT_TYPE = 'application/folder';
+import { getS3Key, storeSourceFile, CONTENT_TYPES } from './utils.js';
 
 /**
  * A folder is marked by a marker file. This allows folder to show up in bucket
  * listings without having to do a deep S3 listing.
  */
 const FOLDER_MARKER = '.props';
+const FOLDER_CONTENT_TYPE = 'application/folder';
 
 /**
  * Convert the directory listing from S3 format to the format expected by the client.

@@ -36,8 +36,10 @@ describe('Source PUT Tests', () => {
   it('test putSource HTML with user', async () => {
     const html = `
       <body>
-        Hello
-        <img src="https://main--best--tst.aem.live/my-image.jpg">
+        <main>
+          Hello
+          <img src="https://main--best--tst.aem.live/my-image.jpg">
+        </main>
       </body>`;
 
     async function putFn(_uri, gzipBody) {
@@ -49,7 +51,6 @@ describe('Source PUT Tests', () => {
       .putObject('/tst/best/toast/jam.html')
       .matchHeader('content-type', 'text/html')
       .matchHeader('x-amz-meta-last-modified-by', 'test@example.com')
-      .matchHeader('x-amz-meta-uncompressed-length', '107')
       .reply(201, putFn);
 
     const path = '/tst/sites/best/source/toast/jam.html';
@@ -103,10 +104,10 @@ describe('Source PUT Tests', () => {
 
   it('test putSource HTML with external images is rejected', async () => {
     const html = `
-      <body>
+      <body><main>
         Hello
         <img src="https://main--somesite--someorg.aem.live/myimg.jpeg">
-      </body>`;
+      </main></body>`;
 
     const path = '/myorg/sites/mysite/source/my-page.html';
     const resp = await putSource(
@@ -150,7 +151,7 @@ describe('Source PUT Tests', () => {
       .reply(403);
 
     const path = '/test/sites/test/source/test.html';
-    const resp = await putSource(setupContext(path), createInfo(path));
+    const resp = await putSource(setupContext(path), createInfo(path, {}, 'PUT', '<main></main>'));
     assert.equal(resp.status, 403);
   });
 });

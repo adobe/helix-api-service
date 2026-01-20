@@ -36,7 +36,7 @@ describe('Source POST Tests', () => {
   it('test postSource HTML', async () => {
     async function postFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<body>Hello</body>');
+      assert.equal(b.toString(), '<body><main>Hello</main></body>');
     }
 
     nock.source()
@@ -48,7 +48,7 @@ describe('Source POST Tests', () => {
       '/test/sites/rest/source/toast/jam.html',
       {},
       'POST',
-      '<html><body>Hello</body></html>',
+      '<html><body><main>Hello</main></body></html>',
     ));
     assert.equal(resp.status, 201);
   });
@@ -56,7 +56,7 @@ describe('Source POST Tests', () => {
   it('test postSource index HTML', async () => {
     async function postFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<body>Hello</body>');
+      assert.equal(b.toString(), '<body><main>Hello</main></body>');
     }
 
     nock.source()
@@ -68,7 +68,7 @@ describe('Source POST Tests', () => {
       '/test/sites/rest/source/toast/index.html',
       {},
       'POST',
-      '<html><body>Hello</body></html>',
+      '<html><body><main>Hello</main></body></html>',
     ));
     assert.equal(resp.status, 201);
   });
@@ -79,20 +79,20 @@ describe('Source POST Tests', () => {
     /* The image form example.com should be interned, but the other ones should be
        left alone as they are in the list of kept image URLs. */
     const htmlIn = `
-      <body>
+      <body><main>
         <img src="https://example.com/image.jpg">
         <img src="https://main--rest--test.aem.page/img1.jpg">
         <img src="https://main--rest--test.aem.live/img2.jpg">
         <img src="https://my.adobe.com/adobe/dynamicmedia/deliver/img3.jpg">
-      </body>`;
+      </main></body>`;
 
     const htmlOut = `
-      <body>
+      <body><main>
         <img src="https://main--rest--test.aem.page/media_${imageHash}.jpg">
         <img src="https://main--rest--test.aem.page/img1.jpg">
         <img src="https://main--rest--test.aem.live/img2.jpg">
         <img src="https://my.adobe.com/adobe/dynamicmedia/deliver/img3.jpg">
-      </body>`;
+      </main></body>`;
 
     function imgPutFn(url, body) {
       assert.equal(body, 'someimg');
@@ -138,6 +138,24 @@ describe('Source POST Tests', () => {
       '<body>Hello</bod',
     ));
     assert.equal(resp.status, 400);
+    assert.deepStrictEqual(Object.fromEntries(resp.headers), {
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'Unexpected end of file in tag - Unexpected end of file. Expected `>` to close the tag',
+    });
+  });
+
+  it('test postSource invalid HTML structure', async () => {
+    const resp = await postSource(setupContext(), createInfo(
+      '/test/sites/rest/source/toast/jam.html',
+      {},
+      'POST',
+      '<body>Hello</bod>',
+    ));
+    assert.equal(resp.status, 400);
+    assert.deepStrictEqual(Object.fromEntries(resp.headers), {
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'HTML does no contain a <main> element',
+    });
   });
 
   it('test postSource HTML with If-None-Match condition', async () => {

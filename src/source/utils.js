@@ -19,6 +19,7 @@ import { toHtml } from 'hast-util-to-html';
 import { visit, CONTINUE } from 'unist-util-visit';
 import { MEDIA_TYPES } from '../media/validate.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import {select} from "hast-util-select";
 
 /**
  * We consider the following HTML errors to be acceptable and ignore them.
@@ -165,6 +166,12 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
 
   let bodyNode = null;
   const hast = getHast(body);
+
+  const main = select('main', hast);
+  if (!main) {
+    throw new StatusCodeError('HTML does no contain a <main> element', 400);
+  }
+
   visit(hast, 'element', (node) => {
     if (node.tagName === 'body') {
       bodyNode = node;

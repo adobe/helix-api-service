@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/adobe/helix-api-service/compare/v1.27.2...v1.28.0) (2026-01-20)
+
+
+### Features
+
+* **source:** enforce <main> in html body ([#93](https://github.com/adobe/helix-api-service/issues/93)) ([7151f61](https://github.com/adobe/helix-api-service/commit/7151f6103002bb2725f39f93fbf5984e3f3d51cc))
+
 ## [1.27.2](https://github.com/adobe/helix-api-service/compare/v1.27.1...v1.27.2) (2026-01-20)
 
 

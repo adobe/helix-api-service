@@ -12,6 +12,7 @@
 
 import { MediaHandler } from '@adobe/helix-mediahandler';
 import processQueue from '@adobe/helix-shared-process-queue';
+import { sanitizePath } from '@adobe/helix-shared-string';
 import { fromHtml } from 'hast-util-from-html';
 import { toHtml } from 'hast-util-to-html';
 import { visit, CONTINUE } from 'unist-util-visit';
@@ -50,6 +51,12 @@ const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
  * Default maximum number of images for the media bus.
  */
 const DEFAULT_MAX_IMAGES = 200;
+
+/**
+ * A folder is marked by a marker file. This allows folder to show up in bucket
+ * listings without having to do a deep S3 listing.
+ */
+export const FOLDER_MARKER = '.props';
 
 /**
  * Error messages from the media validation often start with this prefix.
@@ -206,6 +213,21 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
   /* Only return the body element, note that Hast synthesizes this if it wasn't
      present in the input HTML. */
   return toHtml(bodyNode);
+}
+
+/**
+ * Validate a folder path by checking that its name remains the same once
+ * sanitized.
+ *
+ * @param {string} path The folder path, note that it must end with a slash
+ */
+export function validateFolderPath(path) {
+  // Remove the trailing slash
+  const folder = path.slice(0, -1);
+
+  if (!path.endsWith('/') || folder !== sanitizePath(folder)) {
+    throw new StatusCodeError('Invalid folder path', 400);
+  }
 }
 
 /**

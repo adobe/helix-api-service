@@ -12,18 +12,15 @@
 import { Response } from '@adobe/fetch';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { sanitizePath } from '@adobe/helix-shared-string';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { splitExtension } from '../support/RequestInfo.js';
-import { putSourceFile } from './put.js';
-import { getS3Key, CONTENT_TYPES } from './utils.js';
-import { StatusCodeError } from '../support/StatusCodeError.js';
+import {
+  getS3Key,
+  CONTENT_TYPES,
+  FOLDER_MARKER,
+  validateFolderPath,
+} from './utils.js';
 
-/**
- * A folder is marked by a marker file. This allows folder to show up in bucket
- * listings without having to do a deep S3 listing.
- */
-const FOLDER_MARKER = '.props';
 const FOLDER_CONTENT_TYPE = 'application/folder';
 
 /**
@@ -80,44 +77,6 @@ function transformList(list) {
     };
   }).filter((i) => !!i)
     .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/**
- * Validate a folder path by checking that its name remains the same once
- * sanitized.
- *
- * @param {string} path The folder path, note that it must end with a slash
- */
-function validateFolderPath(path) {
-  // Remove the trailing slash
-  const folder = path.slice(0, -1);
-
-  if (!path.endsWith('/') || folder !== sanitizePath(folder)) {
-    throw new StatusCodeError('Invalid folder path', 400);
-  }
-}
-
-/**
- * Create a folder in the source bus, by creating a directory marker file.
- * The folder name must end with a slash and has to be of sanitized form.
- *
- * @param {import('../support/AdminContext.js').AdminContext} context context
- * @param {import('../support/RequestInfo.js').RequestInfo} info request info
- * @return {Promise<Response>} response
- */
-export async function createFolder(context, info) {
-  const { org, site, rawPath: path } = info;
-
-  try {
-    validateFolderPath(path);
-    const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
-
-    return await putSourceFile(context, key, 'application/json', '{}');
-  } catch (e) {
-    const opts = { e, log: context.log };
-    opts.status = e.$metadata?.httpStatusCode;
-    return createErrorResponse(opts);
-  }
 }
 
 /**

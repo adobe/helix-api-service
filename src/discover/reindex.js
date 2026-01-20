@@ -212,18 +212,56 @@ export async function projectChanged(context, oldConfig, newConfig, org, site) {
 }
 
 /**
+ * Sets the original site information in the content bus metadata.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} org organization name
+ * @param {string} site site name
+ * @returns {Promise<string>} previous organization and site name if changed.
+ */
+export async function setOriginalSite(context, org, site) {
+  const config = await loadSiteConfig(context, org, site);
+  const contentBusId = config?.content?.contentBusId;
+  if (contentBusId) {
+    const contentBus = HelixStorage.fromContext(context).contentBus();
+    const infoKey = `${contentBusId}/.hlx.json`;
+    const buf = await contentBus.get(infoKey);
+    const meta = buf ? JSON.parse(buf) : {};
+    const oldSite = meta['original-site'];
+    const newSite = `${org}/${site}`;
+    if (oldSite !== newSite) {
+      meta['original-site'] = newSite;
+      await contentBus.put(infoKey, Buffer.from(JSON.stringify(meta, null, 2)), 'application/json', meta, false);
+      context.log.info(`[discover] claimed original-site of ${newSite} (was: ${oldSite})`);
+      return oldSite;
+    }
+  }
+  /* c8 ignore next */
+  return '';
+}
+
+/**
  * Reindex one or all projects.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @returns {Promise<Response>} response
  */
 export default async function reindex(context) {
-  const { data: { org, site } } = context;
-  if (org === '*') {
+  const { attributes: { authInfo }, data } = context;
+  if (data.org === '*') {
     return reindexAll(context);
   }
-  if (org && site) {
-    return reindexProject(context, org, site);
+  if (data.org && data.site) {
+    if (String(data.claimOriginalSite) === 'true') {
+      // only allow the devops to change the original-site
+      authInfo.assertPermissions('discover:ops');
+      const oldSite = await setOriginalSite(context, data.org, data.site);
+      if (oldSite) {
+        const [org, site] = oldSite.split('/');
+        await reindexProject(context, org, site);
+      }
+    }
+    return reindexProject(context, data.org, data.site);
   }
   return new Response('', {
     status: 400,

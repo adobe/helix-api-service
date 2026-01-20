@@ -41,6 +41,7 @@ PERMISSIONS.all = [
   'discover:read',
   'discover:write',
   'discover:list',
+  'discover:ops',
   'snapshot:read',
   'snapshot:write',
   'snapshot:delete',

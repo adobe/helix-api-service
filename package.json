@@ -1,6 +1,6 @@
 {
   "name": "@adobe/helix-api-service",
-  "version": "1.27.2",
+  "version": "1.28.0",
   "private": true,
   "description": "Helix Admin API Service",
   "main": "src/index.js",

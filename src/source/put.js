@@ -12,6 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { headSource } from './get.js';
 import { contentTypeFromExtension, getSourceKey, getValidPayload } from './utils.js';
 
 /**
@@ -49,6 +50,41 @@ export async function putSourceFile(context, key, mime, body) {
   return new Response('', { status });
 }
 
+async function checkConditionals(context, info) {
+  const ifMatch = info.headers['if-match'] || null;
+
+  let ifNoneMatch = null;
+  if (!ifMatch) {
+    // If both ifMatch and ifNoneMatch are present, prioritize ifMatch as per RFC 7232
+    ifNoneMatch = info.headers['if-none-match'] || null;
+  }
+
+  if (ifMatch || ifNoneMatch) {
+    const head = await headSource(context, info);
+    const etag = head.headers.get('etag');
+
+    if (ifMatch) {
+      if (ifMatch === '*') {
+        if (head.status === 404) {
+          return new Response('', { status: 412 });
+        }
+      } else if (ifMatch !== etag) {
+        return new Response('', { status: 412 });
+      }
+    } else if (ifNoneMatch) {
+      if (ifNoneMatch === '*') {
+        if (head.status !== 404) {
+          return new Response('', { status: 412 });
+        }
+      } else if (ifNoneMatch === etag) {
+        return new Response('', { status: 412 });
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * Put into the source bus.
  *
@@ -61,9 +97,13 @@ export async function putSource(context, info) {
     const mime = contentTypeFromExtension(info.ext);
     const body = await getValidPayload(context, info, mime);
 
-    // TODO for HTML ensure no references to external images
-
     const key = getSourceKey(info);
+
+    const condFailedResp = await checkConditionals(context, info);
+    if (condFailedResp) {
+      return condFailedResp;
+    }
+
     return await putSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };

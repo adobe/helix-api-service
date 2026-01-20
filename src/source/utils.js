@@ -12,7 +12,7 @@
 
 import { MediaHandler } from '@adobe/helix-mediahandler';
 import processQueue from '@adobe/helix-shared-process-queue';
-import { sanitizePath } from '@adobe/helix-shared-string';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { fromHtml } from 'hast-util-from-html';
 import { toHtml } from 'hast-util-to-html';
 import { visit, CONTINUE } from 'unist-util-visit';
@@ -51,12 +51,6 @@ const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
  * Default maximum number of images for the media bus.
  */
 const DEFAULT_MAX_IMAGES = 200;
-
-/**
- * A folder is marked by a marker file. This allows folder to show up in bucket
- * listings without having to do a deep S3 listing.
- */
-export const FOLDER_MARKER = '.props';
 
 /**
  * Error messages from the media validation often start with this prefix.
@@ -216,21 +210,6 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
 }
 
 /**
- * Validate a folder path by checking that its name remains the same once
- * sanitized.
- *
- * @param {string} path The folder path, note that it must end with a slash
- */
-export function validateFolderPath(path) {
-  // Remove the trailing slash
-  const folder = path.slice(0, -1);
-
-  if (!path.endsWith('/') || folder !== sanitizePath(folder)) {
-    throw new StatusCodeError('Invalid folder path', 400);
-  }
-}
-
-/**
  * Validate the JSON message body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -334,4 +313,39 @@ export async function getValidPayload(context, info, mime, internImages) {
       break;
   }
   return body;
+}
+
+/**
+ * Get the user from the context and return their email.
+ * If no user is found, return 'anonymous'.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @return {string} user or 'anonymous'
+ */
+function getUser(context) {
+  const email = context.attributes.authInfo?.profile?.email;
+
+  return email || 'anonymous';
+}
+
+/**
+ * Store file based on key and body in the source bus.
+ * The file is assumes already have been validated.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} key key to store the file at (including extension)
+ * @param {string} mime the mime type of the file
+ * @param {Buffer} body content body
+ * @returns {Promise<Response>} response
+ */
+export async function storeSourceFile(context, key, mime, body) {
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+
+  const resp = await bucket.put(key, body, mime, {
+    'Last-Modified-By': getUser(context),
+    'Uncompressed-Length': String(body.length),
+  }, true);
+
+  const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
+  return new Response('', { status });
 }

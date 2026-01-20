@@ -10,38 +10,14 @@
  * governing permissions and limitations under the License.
  */
 import { createErrorResponse } from '../contentbus/utils.js';
-import { checkConditionals, putSourceFile } from './put.js';
+import { checkConditionals } from './put.js';
+import { createFolder } from './folder.js';
 import {
   contentTypeFromExtension,
-  FOLDER_MARKER,
-  getS3Key,
   getSourceKey,
   getValidPayload,
-  validateFolderPath,
+  storeSourceFile,
 } from './utils.js';
-
-/**
- * Create a folder in the source bus, by creating a directory marker file.
- * The folder name must end with a slash and has to be of sanitized form.
- *
- * @param {import('../support/AdminContext.js').AdminContext} context context
- * @param {import('../support/RequestInfo.js').RequestInfo} info request info
- * @return {Promise<Response>} response
- */
-export async function createFolder(context, info) {
-  const { org, site, rawPath: path } = info;
-
-  try {
-    validateFolderPath(path);
-    const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
-
-    return await putSourceFile(context, key, 'application/json', '{}');
-  } catch (e) {
-    const opts = { e, log: context.log };
-    opts.status = e.$metadata?.httpStatusCode;
-    return createErrorResponse(opts);
-  }
-}
 
 /**
  * Handle POST requests to the source bus.
@@ -67,7 +43,7 @@ export async function postSource(context, info) {
     const body = await getValidPayload(context, info, mime, true);
 
     const key = getSourceKey(info);
-    return putSourceFile(context, key, mime, body);
+    return storeSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

@@ -50,7 +50,7 @@ export async function putSourceFile(context, key, mime, body) {
   return new Response('', { status });
 }
 
-async function checkConditionals(context, info) {
+export async function checkConditionals(context, info) {
   const ifMatch = info.headers['if-match'] || null;
 
   let ifNoneMatch = null;
@@ -94,16 +94,15 @@ async function checkConditionals(context, info) {
 */
 export async function putSource(context, info) {
   try {
-    const mime = contentTypeFromExtension(info.ext);
-    const body = await getValidPayload(context, info, mime);
-
-    const key = getSourceKey(info);
-
     const condFailedResp = await checkConditionals(context, info);
     if (condFailedResp) {
       return condFailedResp;
     }
 
+    const mime = contentTypeFromExtension(info.ext);
+    const body = await getValidPayload(context, info, mime);
+
+    const key = getSourceKey(info);
     return await putSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };

@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { createErrorResponse } from '../contentbus/utils.js';
-import { putSourceFile } from './put.js';
+import { checkConditionals, putSourceFile } from './put.js';
 import {
   contentTypeFromExtension,
   FOLDER_MARKER,
@@ -58,10 +58,13 @@ export async function postSource(context, info) {
   }
 
   try {
+    const condFailedResp = await checkConditionals(context, info);
+    if (condFailedResp) {
+      return condFailedResp;
+    }
+
     const mime = contentTypeFromExtension(info.ext);
     const body = await getValidPayload(context, info, mime, true);
-
-    // TODO store images HTML from the outside in the media bus
 
     const key = getSourceKey(info);
     return putSourceFile(context, key, mime, body);

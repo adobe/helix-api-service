@@ -71,6 +71,36 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test putSource HTML with If-None-Match condition', async () => {
+    const html = '<body><main>Hello</main></body>';
+
+    nock.source()
+      .headObject('/myorg/mysite/my-page.html')
+      .reply(404);
+    nock.source()
+      .putObject('/myorg/mysite/my-page.html')
+      .matchHeader('content-type', 'text/html')
+      .reply(201);
+
+    const path = '/myorg/sites/mysite/source/my-page.html';
+    const info = createInfo(path, { 'If-None-Match': '*' }, 'PUT', html);
+    const resp = await putSource(setupContext(path), info);
+    assert.equal(resp.status, 201);
+  });
+
+  it('test putSource HTML with failing If-Match condition', async () => {
+    const html = '<body><main>Hello</main></body>';
+
+    nock.source()
+      .headObject('/myorg/mysite/my-page.html')
+      .reply(404);
+
+    const path = '/myorg/sites/mysite/source/my-page.html';
+    const info = createInfo(path, { 'If-Match': '*' }, 'PUT', html);
+    const resp = await putSource(setupContext(path), info);
+    assert.equal(resp.status, 412);
+  });
+
   it('test putSource HTML with external images is rejected', async () => {
     const html = `
       <body>

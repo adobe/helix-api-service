@@ -140,6 +140,42 @@ describe('Source POST Tests', () => {
     assert.equal(resp.status, 400);
   });
 
+  it('test postSource HTML with If-None-Match condition', async () => {
+    const html = '<body><main>Hello</main></body>';
+
+    nock.source()
+      .headObject('/myorg/mysite/my-page.html')
+      .reply(200, null, {
+        etag: '"yeehaa"',
+        'last-modified': 'Tue, 29 Oct 2024 02:57:46 GMT',
+      });
+    nock.source()
+      .putObject('/myorg/mysite/my-page.html')
+      .matchHeader('content-type', 'text/html')
+      .reply(201);
+
+    const path = '/myorg/sites/mysite/source/my-page.html';
+    const info = createInfo(path, { 'If-Match': '"yeehaa"' }, 'PUT', html);
+    const resp = await postSource(setupContext(path), info);
+    assert.equal(resp.status, 201);
+  });
+
+  it('test postSource HTML with failing If-None-Match condition', async () => {
+    const html = '<body><main>Hello</main></body>';
+
+    nock.source()
+      .headObject('/myorg/mysite/my-page.html')
+      .reply(200, null, {
+        etag: '"yeehaa"',
+        'last-modified': 'Tue, 29 Oct 2024 02:57:46 GMT',
+      });
+
+    const path = '/myorg/sites/mysite/source/my-page.html';
+    const info = createInfo(path, { 'If-None-Match': '*' }, 'PUT', html);
+    const resp = await postSource(setupContext(path), info);
+    assert.equal(resp.status, 412);
+  });
+
   it('test postSource JSON', async () => {
     const json = '{"name":"test","value":123}';
 

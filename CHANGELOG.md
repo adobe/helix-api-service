@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/adobe/helix-api-service/compare/v1.28.0...v1.29.0) (2026-01-21)
+
+
+### Features
+
+* **discover:** add api to get and set the original site ([#107](https://github.com/adobe/helix-api-service/issues/107)) ([20715a7](https://github.com/adobe/helix-api-service/commit/20715a751137195152fb97a7f9dfcd58108cfbde))
+
 # [1.28.0](https://github.com/adobe/helix-api-service/compare/v1.27.2...v1.28.0) (2026-01-20)
 
 

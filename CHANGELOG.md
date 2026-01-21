@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/adobe/helix-api-service/compare/v1.29.0...v1.30.0) (2026-01-21)
+
+
+### Features
+
+* **source:** support If-Match and If-None-Match headers on PUT and POST ([#106](https://github.com/adobe/helix-api-service/issues/106)) ([4f8f7ef](https://github.com/adobe/helix-api-service/commit/4f8f7ef0523de4424af735add1f398fe4896356f))
+
 # [1.29.0](https://github.com/adobe/helix-api-service/compare/v1.28.0...v1.29.0) (2026-01-21)
 
 

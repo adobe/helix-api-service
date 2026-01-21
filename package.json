@@ -51,7 +51,7 @@
   "homepage": "https://github.com/adobe/helix-api-service#readme",
   "dependencies": {
     "@adobe/fetch": "4.2.3",
-    "@adobe/helix-admin-support": "5.0.3",
+    "@adobe/helix-admin-support": "5.1.0",
     "@adobe/helix-config": "5.9.1",
     "@adobe/helix-google-support": "4.0.1",
     "@adobe/helix-html2md": "1.1.0",

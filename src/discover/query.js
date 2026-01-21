@@ -104,6 +104,31 @@ function addLegacyInformation(entry) {
 }
 
 /**
+ * View a single inventory entry by organization and site.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} org - The organization name.
+ * @param {string} site - The site name.
+ * @returns {Promise<Response>} - Response object with the entry data or an error.
+ */
+export async function viewEntry(context, org, site) {
+  const { log } = context;
+
+  const inventory = new Inventory(HelixStorage.fromContext(context).contentBus(), log);
+  await inventory.load();
+
+  const entry = inventory.findEntry(org, site);
+  if (!entry) {
+    return errorResponse(log, 404, `no entry for ${org}/${site}`);
+  }
+  return new Response(JSON.stringify(entry), {
+    status: 200,
+    headers: {
+      'content-type': 'application/json',
+    },
+  });
+}
+/**
  * Query owner, repo and content bus ID for some project.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -112,7 +137,12 @@ function addLegacyInformation(entry) {
 export default async function query(context) {
   const { attributes: { authInfo }, data: { url: urlString }, log } = context;
   if (!urlString) {
-    return errorResponse(log, 400, 'discover requires a `url` parameter');
+    const { data: { org, site } } = context;
+    if (!(org && site)) {
+      return errorResponse(log, 400, 'discover requires `url` or `org` and `site`');
+    }
+    authInfo.assertPermissions('discover:ops');
+    return viewEntry(context, org, site);
   }
 
   let url;
@@ -124,7 +154,6 @@ export default async function query(context) {
     } catch (e) {
       return errorResponse(log, 400, `URL is malformed: ${urlString}: ${e.message}`);
     }
-    authInfo.assertPermissions('discover:peek');
   }
 
   const inventory = new Inventory(HelixStorage.fromContext(context).contentBus(), log);

@@ -36,11 +36,6 @@ describe('Discover reindex tests', () => {
         inventory = body;
         return [201];
       });
-
-    nock('https://helix-content-bus.cloudflare-account.r2.cloudflarestorage.com')
-      .put('/default/inventory.json?x-id=PutObject')
-      .optionally(true)
-      .reply(201);
   });
 
   afterEach(() => {
@@ -51,10 +46,13 @@ describe('Discover reindex tests', () => {
 
   function setupTest(org, site, {
     authInfo = new AuthInfo().withRole('index'),
+    claimOriginalSite,
     env,
   } = {}) {
     const suffix = '/discover';
-    const query = new URLSearchParams(Object.entries({ org, site }).filter(([, v]) => !!v));
+    const query = new URLSearchParams(Object.entries({
+      org, site, claimOriginalSite,
+    }).filter(([, v]) => !!v));
 
     const request = new Request(`https://api.aem.live${suffix}?${query}`, {
       method: 'POST',
@@ -73,6 +71,7 @@ describe('Discover reindex tests', () => {
         CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'cloudflare-secret',
         AZURE_HELIX_SERVICE_CLIENT_ID: 'client-id',
         AZURE_HELIX_SERVICE_CLIENT_SECRET: 'client-secret',
+        HELIX_STORAGE_DISABLE_R2: 'true',
         ...env,
       },
     };
@@ -268,6 +267,131 @@ describe('Discover reindex tests', () => {
           site: 'site',
         },
       ],
+      hostTypes: {
+        'drive.google.com': 'google',
+      },
+    });
+  });
+
+  it('reindex one project can claim the original site', async () => {
+    nock.siteConfig()
+      .twice()
+      .reply(200, SITE_CONFIG);
+    nock.content()
+      .getObject('/.hlx.json')
+      .reply(404)
+      .putObject('/.hlx.json')
+      .reply(200, (uri, body) => {
+        assert.deepStrictEqual(body, {
+          'original-site': 'org/site',
+        });
+        return [200];
+      })
+      .getObject('/.hlx.json')
+      .reply(200, {
+        'original-site': 'org/site',
+      });
+    nock.inventory()
+      .reply(200, {
+        entries: [],
+        hostTypes: {},
+      });
+
+    const { request, context } = setupTest('org', 'site', {
+      authInfo: new AuthInfo().withRole('ops').withAuthenticated(true),
+      claimOriginalSite: true,
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 201);
+    assert.deepStrictEqual(inventory, {
+      entries: [{
+        codeBusId: 'owner/repo',
+        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+        contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        originalSite: 'org/site',
+        org: 'org',
+        site: 'site',
+      }],
+      hostTypes: {
+        'drive.google.com': 'google',
+      },
+    });
+  });
+
+  it('reindex one project can claim the original site and reindexes the old site', async () => {
+    nock.siteConfig()
+      .twice()
+      .reply(200, SITE_CONFIG);
+    nock.siteConfig(SITE_CONFIG, { org: 'org', site: 'old-site' });
+
+    nock.content()
+      .getObject('/.hlx.json')
+      .reply(200, {
+        'original-site': 'org/old-site',
+      })
+      .putObject('/.hlx.json')
+      .reply(200, (uri, body) => {
+        assert.deepStrictEqual(body, {
+          'original-site': 'org/site',
+        });
+        return [200];
+      })
+      .getObject('/.hlx.json')
+      .twice()
+      .reply(200, {
+        'original-site': 'org/site',
+      });
+    nock.inventory()
+      .reply(200, {
+        entries: [{
+          codeBusId: 'owner/repo',
+          contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+          contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          originalSite: 'org/old-site',
+          org: 'org',
+          site: 'old-site',
+        }],
+        hostTypes: {
+          'drive.google.com': 'google',
+        },
+      });
+    nock.content('default')
+      .getObject('/inventory.json')
+      .reply(() => [200, inventory])
+      .putObject('/inventory.json')
+      .reply((_, body) => {
+        inventory = body;
+        return [201];
+      });
+
+    const { request, context } = setupTest('org', 'site', {
+      authInfo: new AuthInfo().withRole('ops').withAuthenticated(true),
+      claimOriginalSite: true,
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 201);
+    assert.deepStrictEqual(inventory, {
+      entries: [{
+        codeBusId: 'owner/repo',
+        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+        contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        originalSite: 'org/site',
+        org: 'org',
+        site: 'old-site',
+      }, {
+        codeBusId: 'owner/repo',
+        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+        contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        originalSite: 'org/site',
+        org: 'org',
+        site: 'site',
+      }],
       hostTypes: {
         'drive.google.com': 'google',
       },

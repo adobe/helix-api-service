@@ -33,10 +33,10 @@ describe('Discover query tests', () => {
 
   function setupTest(url, {
     authInfo = new AuthInfo().withRole('index').withAuthenticated(true),
-    env,
+    org, site, env,
   } = {}) {
     const suffix = '/discover';
-    const query = new URLSearchParams(Object.entries({ url }).filter(([, v]) => !!v));
+    const query = new URLSearchParams(Object.entries({ url, org, site }).filter(([, v]) => !!v));
 
     const request = new Request(`https://api.aem.live${suffix}?${query}`);
 
@@ -70,7 +70,7 @@ describe('Discover query tests', () => {
     assert.deepStrictEqual(response.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'discover requires a `url` parameter',
+      'x-error': 'discover requires `url` or `org` and `site`',
     });
   });
 
@@ -290,6 +290,7 @@ describe('Discover query tests', () => {
   describe('with large inventory', () => {
     beforeEach(async () => {
       nock.inventory()
+        .optionally(true)
         .replyWithFile(200, path.resolve(__testdir, 'discover', 'fixtures', 'inventory.json'));
     });
 
@@ -431,6 +432,56 @@ describe('Discover query tests', () => {
         ],
         url: 'https://site.company.com',
       }]);
+    });
+
+    it('returns correct single entry', async () => {
+      const { request, context } = setupTest(null, {
+        authInfo: new AuthInfo().withPermissions(['discover:ops']).withAuthenticated(true),
+        org: 'company',
+        site: 'site',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        codeBusId: 'company/site',
+        contentBusId: '9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c6d',
+        contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/site',
+        org: 'company',
+        originalSite: 'company/site',
+        routes: [
+          '/page',
+        ],
+        sharepointSite: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/site',
+        site: 'site',
+        url: 'https://site.company.com',
+      });
+    });
+
+    it('asserts ops permissions for single entry', async () => {
+      const { request, context } = setupTest(null, {
+        org: 'company',
+        site: 'site',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 403);
+    });
+
+    it('returns 404 for single entry', async () => {
+      const { request, context } = setupTest(null, {
+        authInfo: new AuthInfo().withPermissions(['discover:ops']).withAuthenticated(true),
+        org: 'company',
+        site: 'site-missing',
+      });
+      const response = await main(request, context);
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        vary: 'Accept-Encoding',
+        'x-error': 'no entry for company/site-missing',
+      });
     });
 
     it('returns correct entry for google document', async () => {

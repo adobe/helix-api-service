@@ -15,9 +15,8 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { sanitizePath } from '@adobe/helix-shared-string';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { splitExtension } from '../support/RequestInfo.js';
-import { putSourceFile } from './put.js';
-import { getS3Key, CONTENT_TYPES } from './utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import { getS3Key, storeSourceFile, CONTENT_TYPES } from './utils.js';
 
 /**
  * A folder is marked by a marker file. This allows folder to show up in bucket
@@ -112,7 +111,7 @@ export async function createFolder(context, info) {
     validateFolderPath(path);
     const key = getS3Key(org, site, `${path}${FOLDER_MARKER}`);
 
-    return await putSourceFile(context, key, 'application/json', '{}');
+    return await storeSourceFile(context, key, 'application/json', '{}');
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

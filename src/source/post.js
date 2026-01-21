@@ -11,8 +11,13 @@
  */
 import { createErrorResponse } from '../contentbus/utils.js';
 import { createFolder } from './folder.js';
-import { putSourceFile } from './put.js';
-import { contentTypeFromExtension, getSourceKey, getValidPayload } from './utils.js';
+import { checkConditionals } from './header-utils.js';
+import {
+  contentTypeFromExtension,
+  getSourceKey,
+  getValidPayload,
+  storeSourceFile,
+} from './utils.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -29,13 +34,16 @@ export async function postSource(context, info) {
   }
 
   try {
+    const condFailedResp = await checkConditionals(context, info);
+    if (condFailedResp) {
+      return condFailedResp;
+    }
+
     const mime = contentTypeFromExtension(info.ext);
     const body = await getValidPayload(context, info, mime, true);
 
-    // TODO store images HTML from the outside in the media bus
-
     const key = getSourceKey(info);
-    return putSourceFile(context, key, mime, body);
+    return storeSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

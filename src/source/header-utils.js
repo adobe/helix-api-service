@@ -22,34 +22,25 @@ import { headSource } from './get.js';
  * @returns {Promise<Response|null>} null if the condition is met, otherwise an error response
  */
 export async function checkConditionals(context, info) {
-  const ifMatch = info.headers['if-match'] || null;
+  const ifMatch = info.headers['if-match'];
+  // If both ifMatch and ifNoneMatch are present, prioritize ifMatch as per RFC 7232
+  const ifNoneMatch = ifMatch ? null : info.headers['if-none-match'];
+  const conditional = ifMatch || ifNoneMatch;
 
-  let ifNoneMatch = null;
-  if (!ifMatch) {
-    // If both ifMatch and ifNoneMatch are present, prioritize ifMatch as per RFC 7232
-    ifNoneMatch = info.headers['if-none-match'] || null;
-  }
-
-  if (ifMatch || ifNoneMatch) {
+  if (conditional) {
     const head = await headSource(context, info);
     const etag = head.headers.get('etag');
 
-    if (ifMatch) {
-      if (ifMatch === '*') {
-        if (head.status === 404) {
-          return new Response('', { status: 412 });
-        }
-      } else if (ifMatch !== etag) {
-        return new Response('', { status: 412 });
-      }
-    } else if (ifNoneMatch) {
-      if (ifNoneMatch === '*') {
-        if (head.status !== 404) {
-          return new Response('', { status: 412 });
-        }
-      } else if (ifNoneMatch === etag) {
-        return new Response('', { status: 412 });
-      }
+    const resourceExists = head.status !== 404;
+    const isMatchStar = conditional === '*';
+    const isEtagMatch = conditional === etag;
+
+    // Check the condition for the If-Match case
+    const condFailed = isMatchStar ? !resourceExists : !isEtagMatch;
+
+    // If the case is If-None-Match, negate the result of condFailed
+    if ((ifMatch && condFailed) || (ifNoneMatch && !condFailed)) {
+      return new Response('', { status: 412 });
     }
   }
 

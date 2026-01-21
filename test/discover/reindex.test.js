@@ -31,7 +31,7 @@ describe('Discover reindex tests', () => {
 
     nock.content('default')
       .putObject('/inventory.json')
-      .persist()
+      .optionally(true)
       .reply((_, body) => {
         inventory = body;
         return [201];
@@ -358,9 +358,13 @@ describe('Discover reindex tests', () => {
           'drive.google.com': 'google',
         },
       });
-    nock.inventory()
-      .reply(200, () => {
-        return [200, inventory];
+    nock.content('default')
+      .getObject('/inventory.json')
+      .reply(() => [200, inventory])
+      .putObject('/inventory.json')
+      .reply((_, body) => {
+        inventory = body;
+        return [201];
       });
 
     const { request, context } = setupTest('org', 'site', {

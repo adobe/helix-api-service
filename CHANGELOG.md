@@ -1,3 +1,10 @@
+## [1.30.1](https://github.com/adobe/helix-api-service/compare/v1.30.0...v1.30.1) (2026-01-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-admin-support to v5.1.0 ([#108](https://github.com/adobe/helix-api-service/issues/108)) ([3bf1d33](https://github.com/adobe/helix-api-service/commit/3bf1d336b74f3c76a8eb8a0cd0078abfc38dc506))
+
 # [1.30.0](https://github.com/adobe/helix-api-service/compare/v1.29.0...v1.30.0) (2026-01-21)
 
 

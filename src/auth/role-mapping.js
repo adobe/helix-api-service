@@ -60,7 +60,7 @@ export class RoleMapping {
     if (!config) {
       return null;
     }
-    return RoleMapping.create(config?.access?.admin, defaultRole);
+    return RoleMapping.create(config.access?.admin, defaultRole);
   }
 
   constructor() {

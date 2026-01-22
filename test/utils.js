@@ -207,7 +207,7 @@ export function Nock() {
   };
 
   nocker.inventory = (inventory) => {
-    const scope = nocker.content('default').getObject('/inventory.json');
+    const scope = nocker.content('default').getObject('/inventory-v2.json');
     if (inventory) {
       scope.reply(200, inventory);
     }

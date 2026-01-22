@@ -34,7 +34,7 @@ import { isDeepStrictEqual } from 'util';
 /**
  * Inventory path in content bus.
  */
-const INVENTORY_PATH = '/default/inventory.json';
+const INVENTORY_PATH = '/default/inventory-v2.json';
 
 /**
  * Simple inventory class

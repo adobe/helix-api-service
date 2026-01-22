@@ -30,7 +30,7 @@ describe('Discover reindex tests', () => {
     nock = new Nock().env();
 
     nock.content('default')
-      .putObject('/inventory.json')
+      .putObject('/inventory-v2.json')
       .optionally(true)
       .reply((_, body) => {
         inventory = body;
@@ -359,9 +359,9 @@ describe('Discover reindex tests', () => {
         },
       });
     nock.content('default')
-      .getObject('/inventory.json')
+      .getObject('/inventory-v2.json')
       .reply(() => [200, inventory])
-      .putObject('/inventory.json')
+      .putObject('/inventory-v2.json')
       .reply((_, body) => {
         inventory = body;
         return [201];

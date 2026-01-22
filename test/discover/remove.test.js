@@ -29,7 +29,7 @@ describe('Discover remove tests', () => {
     nock = new Nock().env();
 
     nock.content('default')
-      .putObject('/inventory.json')
+      .putObject('/inventory-v2.json')
       .optionally(true)
       .reply((_, body) => {
         inventory = body;
@@ -73,14 +73,14 @@ describe('Discover remove tests', () => {
 
   beforeEach(() => {
     nock.content('default')
-      .putObject('/inventory.json')
+      .putObject('/inventory-v2.json')
       .optionally(true)
       .reply((_, body) => {
         inventory = body;
         return [201];
       });
     nock('https://helix-content-bus.cloudflare-account.r2.cloudflarestorage.com')
-      .put('/default/inventory.json?x-id=PutObject')
+      .put('/default/inventory-v2.json?x-id=PutObject')
       .optionally(true)
       .reply(201);
   });

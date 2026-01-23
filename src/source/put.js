@@ -9,14 +9,45 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { Response } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
+import { router } from '../index.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
   getSourceKey,
+  getS3Key,
   getValidPayload,
   storeSourceFile,
 } from './utils.js';
+
+async function copySource(context, info) {
+  const { source } = context.data;
+
+  try {
+    const { variables: srcVars } = router.match(source, { source });
+    const srcKey = getS3Key(srcVars.org, srcVars.site, srcVars.path);
+    const bucket = HelixStorage.fromContext(context).sourceBus();
+
+    if (info.rawPath.endsWith('/')) {
+      // copy a folder
+      if (!srcKey.endsWith('/')) {
+        return createErrorResponse({ status: 400, msg: 'Source is not a folder', log: context.log });
+      }
+
+      const destKey = getS3Key(info.org, info.site, info.rawPath);
+      await bucket.copyDeep(srcKey, destKey);
+    } else {
+      // copy a single resource
+      const destKey = getSourceKey(info);
+      await bucket.copy(srcKey, destKey);
+    }
+    return new Response('', { status: 200 });
+  } catch (e) {
+    return createErrorResponse({ e, log: context.log });
+  }
+}
 
 /**
  * Put into the source bus.
@@ -26,6 +57,10 @@ import {
  * @return {Promise<Response>} response
 */
 export async function putSource(context, info) {
+  if (context.data.source) {
+    return copySource(context, info);
+  }
+
   try {
     const condFailedResp = await checkConditionals(context, info);
     if (condFailedResp) {

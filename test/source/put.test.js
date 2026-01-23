@@ -173,15 +173,57 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 200);
   });
 
+  const BUCKET_LIST_RESULT = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>org1/site2/a/b/c/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+      <Contents>
+        <Key>org1/site2/a/b/c/somejson.json</Key>
+        <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+        <Size>32768</Size>
+      </Contents>
+      <Contents>
+        <Key>org1/site2/a/b/c/d1.html</Key>
+        <LastModified>2021-12-31T01:01:01.001Z</LastModified>
+        <Size>123</Size>
+      </Contents>
+      <Contents>
+        <Key>org1/site2/a/b/c/d/d2.html</Key>
+        <LastModified>2001-01-01T01:01:01.001Z</LastModified>
+        <Size>88888</Size>
+      </Contents>
+      <CommonPrefixes>
+        <Prefix>org1/site2/a/b/c/q/</Prefix>
+      </CommonPrefixes>
+    </ListBucketResult>`;
+
   it('test putSource copies a folder', async () => {
     nock.source()
-      .copyObject('/testorg/testsite/dest/')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/testorg/testsite/src.htmlblahs')
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/c/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+    nock.source()
+      .copyObject('/org1/site2/dest/somejson.json')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/somejson.json')
+      .reply(200);
+    nock.source()
+      .copyObject('/org1/site2/dest/d1.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/d1.html')
+      .reply(200);
+    nock.source()
+      .copyObject('/org1/site2/dest/d/d2.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/d/d2.html')
       .reply(200);
 
-    const path = '/testorg/sites/testsite/source/dest/';
+    const path = '/org1/sites/site2/source/dest/';
     const ctx = setupContext(path);
-    ctx.data.source = '/source/';
+    ctx.data.source = '/a/b/c/';
     const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
     assert.equal(resp.status, 200);
   });

@@ -154,4 +154,16 @@ describe('Source PUT Tests', () => {
     const resp = await putSource(setupContext(path), createInfo(path, {}, 'PUT', '<main></main>'));
     assert.equal(resp.status, 403);
   });
+
+  it('test putSource copies a file', async () => {
+    nock.source()
+      .copyObject('/testorg/testsite/dst.html')
+      .reply(201);
+
+    const path = '/testorg/sites/testsite/source/dst.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/testorg/sites/testsite/source/src.html';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT', '<main></main>'));
+    assert.equal(resp.status, 201);
+  });
 });

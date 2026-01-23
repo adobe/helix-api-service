@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { promisify } from 'util';
+import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { putSource } from '../../src/source/put.js';
 import { createInfo, Nock } from '../utils.js';
@@ -158,12 +159,30 @@ describe('Source PUT Tests', () => {
   it('test putSource copies a file', async () => {
     nock.source()
       .copyObject('/testorg/testsite/dst.html')
-      .reply(201);
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/testorg/testsite/src.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      }));
 
     const path = '/testorg/sites/testsite/source/dst.html';
     const ctx = setupContext(path);
-    ctx.data.source = '/testorg/sites/testsite/source/src.html';
-    const resp = await putSource(ctx, createInfo(path, {}, 'PUT', '<main></main>'));
-    assert.equal(resp.status, 201);
+    ctx.data.source = '/src.html';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 200);
+  });
+
+  it('test putSource copies a folder', async () => {
+    nock.source()
+      .copyObject('/testorg/testsite/dest/')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/testorg/testsite/src.htmlblahs')
+      .reply(200);
+
+    const path = '/testorg/sites/testsite/source/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/source/';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 200);
   });
 });

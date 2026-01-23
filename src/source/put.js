@@ -26,8 +26,7 @@ async function copySource(context, info) {
   const { source } = context.data;
 
   try {
-    const { variables: srcVars } = router.match(source, { source });
-    const srcKey = getS3Key(srcVars.org, srcVars.site, srcVars.path);
+    const srcKey = getS3Key(info.org, info.site, source);
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
     if (info.rawPath.endsWith('/')) {

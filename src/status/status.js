@@ -17,6 +17,7 @@ import getLiveInfo from '../live/info.js';
 import getPreviewInfo from '../preview/info.js';
 import web2edit from '../lookup/web2edit.js';
 import edit2web from '../lookup/edit2web.js';
+import { RequestInfo } from '../support/RequestInfo.js';
 
 /**
  * Handles GET status.
@@ -42,6 +43,7 @@ export default async function status(context, info) {
 
   // calculate edit location
   const edit = {};
+  let localinfo = info;
   let { resourcePath, webPath } = info;
 
   if (!authInfo.hasPermissions('edit:read')) {
@@ -73,6 +75,7 @@ export default async function status(context, info) {
           return new Response('', { status: result.status, headers });
         }
       } else {
+        localinfo = RequestInfo.clone(info, { path: result.webPath });
         resourcePath = result.resourcePath;
         webPath = result.webPath;
 
@@ -106,17 +109,17 @@ export default async function status(context, info) {
   const resp = {
     webPath,
     resourcePath,
-    live: await getLiveInfo(context, info),
-    preview: await getPreviewInfo(context, info),
+    live: await getLiveInfo(context, localinfo),
+    preview: await getPreviewInfo(context, localinfo),
     edit,
-    links: info.getAPIUrls('status', 'preview', 'live', 'code'),
+    links: localinfo.getAPIUrls('status', 'preview', 'live', 'code'),
   };
 
   if (authInfo.profile) {
     resp.profile = authInfo.profile;
   }
   if (authInfo.authenticated) {
-    info.getLinkUrl(LOGOUT_PATH);
+    localinfo.getLinkUrl(LOGOUT_PATH);
   }
 
   return new Response(JSON.stringify(resp, null, 2), {

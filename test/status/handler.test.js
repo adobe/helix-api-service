@@ -214,7 +214,7 @@ describe('Status Handler Tests', () => {
     });
   });
 
-  it('calls `web2edit` when `editUrl` is not `auto`', async () => {
+  it('calls `edit2web` when `editUrl` is not `auto`', async () => {
     const suffix = '/org/sites/site/status/';
     const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
 

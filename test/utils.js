@@ -131,12 +131,49 @@ export function Nock() {
   };
 
   nocker.s3 = (bucket, prefix) => {
-    const scope = nocker(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
-    scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
-    scope.headObject = (key) => scope.head(key);
-    scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
-    scope.deleteObject = (key) => scope.delete(key).query({ 'x-id': 'DeleteObject' });
-    scope.copyObject = (key) => scope.put(key).query({ 'x-id': 'CopyObject' });
+    const scope = nocker(`https://${bucket}.s3.us-east-1.amazonaws.com`);
+    scope.getObject = (key) => scope.get(`/${prefix}${key}`).query({ 'x-id': 'GetObject' });
+    scope.headObject = (key) => scope.head(`/${prefix}${key}`);
+    scope.putObject = (key) => scope.put(`/${prefix}${key}`).query({ 'x-id': 'PutObject' });
+    scope.deleteObject = (key) => scope.delete(`/${prefix}${key}`).query({ 'x-id': 'DeleteObject' });
+    scope.copyObject = (key) => scope.put(`/${prefix}${key}`).query({ 'x-id': 'CopyObject' });
+    scope.listObjects = (folder, keys) => scope
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: `${prefix}${folder}`,
+      })
+      .reply(() => [200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          Name: bucket,
+          Prefix: prefix,
+          KeyCount: keys.length,
+          Contents: keys.map((entry) => ({
+            ...entry,
+            Key: `${prefix}${folder}${entry.Key}`,
+          })),
+        },
+      })]);
+
+    scope.listFolders = (folder, folders) => scope
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: `${prefix}${folder}`,
+      })
+      .reply(() => [200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          Name: bucket,
+          Prefix: prefix,
+          KeyCount: folders.length,
+          CommonPrefixes: folders.map((entry) => ({
+            Prefix: `${prefix}${folder}${entry}/`,
+          })),
+        },
+      })]);
+
     return scope;
   };
 
@@ -233,7 +270,11 @@ export function createContext(suffix, {
       HELIX_STORAGE_MAX_ATTEMPTS: '1',
       ...env,
     },
-    runtime: { region: 'us-east-1' },
+    runtime: { region: 'us-east-1', accountId: 'account-id' },
+    func: { fqn: 'helix-api-service' },
+    invocation: {
+      id: 'invocation-id',
+    },
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),

@@ -48,7 +48,7 @@ describe('Markup File Tests', () => {
 
   function setupTest(path = '/', {
     config = SITE_MUP_CONFIG(), data,
-    headers = { 'x-content-source-authorization': 'Bearer dummy-access-token' },
+    headers = { X_CONTENT_SOURCE_AUTH: 'Bearer dummy-access-token' },
     authInfo = AuthInfo.Default().withAuthenticated(true),
   } = {}) {
     nock.siteConfig(config);
@@ -124,7 +124,7 @@ describe('Markup File Tests', () => {
 
     const { request, context } = setupTest('/bar.pdf', {
       headers: {
-        'x-content-source-authorization': 'Basic 1234',
+        X_CONTENT_SOURCE_AUTH: 'Basic 1234',
         'x-content-source-location': '/Bar.pdf',
       },
     });

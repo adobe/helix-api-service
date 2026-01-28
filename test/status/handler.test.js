@@ -214,7 +214,7 @@ describe('Status Handler Tests', () => {
     });
   });
 
-  it('calls `web2edit` when `editUrl` is not `auto`', async () => {
+  it('calls `edit2web` when `editUrl` is not `auto`', async () => {
     const suffix = '/org/sites/site/status/';
     const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
 
@@ -222,7 +222,7 @@ describe('Status Handler Tests', () => {
       .user()
       .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.document',
-        name: 'index',
+        name: 'page',
         parents: [SITE_CONFIG.content.source.id],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
@@ -235,10 +235,10 @@ describe('Status Handler Tests', () => {
 
     // getContentBusInfo (preview/live)
     nock.content()
-      .head('/preview/index.md')
+      .head('/preview/page.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
-      .head('/live/index.md')
-      .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+      .head('/live/page.md')
+      .reply(404);
 
     const result = await main(new Request(`https://api.aem.live/?editUrl=${editUrl}`), {
       pathInfo: { suffix },
@@ -259,31 +259,28 @@ describe('Status Handler Tests', () => {
           },
         ],
         lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
-        name: 'index',
+        name: 'page',
         sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
         status: 200,
         url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
       },
       links: {
-        code: 'https://api.aem.live/org/sites/site/code/main/',
-        live: 'https://api.aem.live/org/sites/site/live/',
-        preview: 'https://api.aem.live/org/sites/site/preview/',
-        status: 'https://api.aem.live/org/sites/site/status/',
+        code: 'https://api.aem.live/org/sites/site/code/main/page',
+        live: 'https://api.aem.live/org/sites/site/live/page',
+        preview: 'https://api.aem.live/org/sites/site/preview/page',
+        status: 'https://api.aem.live/org/sites/site/status/page',
       },
       live: {
-        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md`,
-        contentType: 'text/plain; charset=utf-8',
-        lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/page.md`,
         permissions: [
           'read',
           'write',
         ],
-        sourceLocation: 'google:*',
-        status: 200,
-        url: 'https://main--site--org.aem.live/',
+        status: 404,
+        url: 'https://main--site--org.aem.live/page',
       },
       preview: {
-        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md`,
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/page.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
@@ -292,10 +289,10 @@ describe('Status Handler Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--site--org.aem.page/',
+        url: 'https://main--site--org.aem.page/page',
       },
-      resourcePath: '/index.md',
-      webPath: '/',
+      resourcePath: '/page.md',
+      webPath: '/page',
     });
   });
 });

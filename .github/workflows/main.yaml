@@ -24,7 +24,7 @@ jobs:
       - name: setup .npmrc
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
       - run: npm install
-
+      - run: npm run lint
       - run: npm test
       - uses: codecov/codecov-action@v5
         with:

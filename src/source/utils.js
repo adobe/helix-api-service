@@ -15,11 +15,11 @@ import { MediaHandler } from '@adobe/helix-mediahandler';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { fromHtml } from 'hast-util-from-html';
+import { select } from 'hast-util-select';
 import { toHtml } from 'hast-util-to-html';
 import { visit, CONTINUE } from 'unist-util-visit';
 import { MEDIA_TYPES } from '../media/validate.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import {select} from "hast-util-select";
 
 /**
  * We consider the following HTML errors to be acceptable and ignore them.

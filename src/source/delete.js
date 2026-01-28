@@ -13,7 +13,7 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { deleteFolder } from './folder.js';
-import { getSourceKey } from './utils.js';
+import { getS3KeyFromInfo } from './utils.js';
 
 /**
  * Delete from the source bus.
@@ -29,7 +29,7 @@ export async function deleteSource(context, info) {
   const { log } = context;
 
   const bucket = HelixStorage.fromContext(context).sourceBus();
-  const key = getSourceKey(info);
+  const key = getS3KeyFromInfo(info);
 
   try {
     const resp = await bucket.remove(key);

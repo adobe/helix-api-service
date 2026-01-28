@@ -14,7 +14,7 @@ import { createFolder } from './folder.js';
 import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
-  getSourceKey,
+  getS3KeyFromInfo,
   getValidPayload,
   storeSourceFile,
 } from './utils.js';
@@ -42,7 +42,7 @@ export async function postSource(context, info) {
     const mime = contentTypeFromExtension(info.ext);
     const body = await getValidPayload(context, info, mime, true);
 
-    const key = getSourceKey(info);
+    const key = getS3KeyFromInfo(info);
     return storeSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };

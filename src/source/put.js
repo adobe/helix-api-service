@@ -15,7 +15,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
-  getSourceKey,
+  getS3KeyFromInfo,
   getS3Key,
   getValidPayload,
   storeSourceFile,
@@ -51,7 +51,7 @@ async function copySource(context, info) {
         return createErrorResponse({ status: 400, msg: 'Source is not a file', log: context.log });
       }
 
-      const destKey = getSourceKey(info);
+      const destKey = getS3KeyFromInfo(info);
       await bucket.copy(srcKey, destKey);
       copied = [{ src: srcKey, dst: destKey }];
     }
@@ -85,7 +85,7 @@ export async function putSource(context, info) {
     const mime = contentTypeFromExtension(info.ext);
     const body = await getValidPayload(context, info, mime);
 
-    const key = getSourceKey(info);
+    const key = getS3KeyFromInfo(info);
     return await storeSourceFile(context, key, mime, body);
   } catch (e) {
     const opts = { e, log: context.log };

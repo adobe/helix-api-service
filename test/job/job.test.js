@@ -86,9 +86,9 @@ describe('Job Tests', () => {
         .post('/', (body) => {
           const { QueueUrl = '' } = body;
           if (version === 'ci') {
-            return QueueUrl.endsWith('/helix-admin-jobs-ci.fifo');
+            return QueueUrl.endsWith('/helix-api-service-jobs-ci.fifo');
           }
-          return QueueUrl.endsWith('/helix-admin-jobs.fifo');
+          return QueueUrl.endsWith('/helix-api-service-jobs.fifo');
         })
         .reply((_, body) => {
           // eslint-disable-next-line no-param-reassign
@@ -112,7 +112,7 @@ describe('Job Tests', () => {
                 ],
               },
               MessageGroupId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/test',
-              QueueUrl: `https://sqs.us-east-1.amazonaws.com/account-id/helix-admin-jobs${version === 'ci' ? '-ci' : ''}.fifo`,
+              QueueUrl: `https://sqs.us-east-1.amazonaws.com/account-id/helix-api-service-jobs${version === 'ci' ? '-ci' : ''}.fifo`,
             },
           );
           return [200, JSON.stringify({
@@ -222,16 +222,13 @@ describe('Job Tests', () => {
   });
 
   it('Creates a new job (forceSync)', async () => {
-    const ctx = createContext({
-      runtime: {
-        accountId: '1234',
-      },
+    const ctx = createContext('/org/sites/site/jobs/test', {
       data: {
         forceSync: true,
       },
     });
     ctx.attributes.authInfo = AuthInfo.Admin().withAuthToken('foo-token');
-    const result = await Job.create(ctx, createInfo(), 'test', {
+    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test'), 'test', {
       roles: ['author'],
     });
 
@@ -253,15 +250,15 @@ describe('Job Tests', () => {
   it('Creates a new job and includes x-content-source-authorization header', async () => {
     const jobs = [];
     let jobName;
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', []);
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [])
+      .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(200, {
         topic: 'test',
         jobs,
       })
       // PUT the new job state to incoming directory
-      .put(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .put(/\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .reply((uri) => {
         const match = uri.match(/job-([^?]+)\.json/);
         if (match) {
@@ -270,20 +267,24 @@ describe('Job Tests', () => {
         return [200];
       });
 
-    const ctx = createContext();
-    const info = createInfo();
-    info.headers = {
-      X_CONTENT_SOURCE_AUTH: 'foo-token',
-    };
+    const ctx = createContext('/org/sites/site/jobs/test', {
+      env: {
+        CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'fake-secret',
+      },
+    });
+    const info = createInfo('/org/sites/site/jobs/test', {
+      'x-content-source-authorization': 'foo-token',
+    });
     nock('https://sqs.us-east-1.amazonaws.com')
       .post('/', (body) => {
         const { QueueUrl = '' } = body;
-        return QueueUrl.endsWith('/helix-admin-jobs.fifo');
+        return QueueUrl.endsWith('/helix-api-service-jobs.fifo');
       })
       .reply((_, body) => {
         // eslint-disable-next-line no-param-reassign
         body = JSON.parse(body);
         const md5 = crypto.createHash('md5').update(body.MessageBody, 'utf-8').digest().toString('hex');
+        // eslint-disable-next-line no-param-reassign
         body.MessageBody = JSON.parse(body.MessageBody);
         const auth = body.MessageBody.headers['x-content-source-authorization-encrypted'];
         assert.strictEqual(decryptToken(ctx, auth), 'foo-token');
@@ -293,17 +294,17 @@ describe('Job Tests', () => {
             MessageBody: {
               body: '',
               headers: {
-                'x-invocation-id': 'invocation',
+                'x-invocation-id': 'invocation-id',
                 'x-content-source-authorization-encrypted': auth,
               },
               method: 'RUN',
-              path: `/job/org/site/ref/test/${jobName}`,
+              path: `/org/sites/site/jobs/test/${jobName}`,
               roles: [
                 'author',
               ],
             },
-            MessageGroupId: 'foo-id/test',
-            QueueUrl: 'https://sqs.us-east-1.amazonaws.com/123456789012/helix-admin-jobs.fifo',
+            MessageGroupId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/test',
+            QueueUrl: 'https://sqs.us-east-1.amazonaws.com/account-id/helix-api-service-jobs.fifo',
           },
         );
         return [200, JSON.stringify({
@@ -393,12 +394,12 @@ describe('Job Tests', () => {
   });
 
   it('Creates a new job for the first time', async () => {
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(404)
       // PUT the new job state to incoming directory
-      .put(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .put(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .reply(200);
     nock('https://sqs.us-east-1.amazonaws.com')
       .post('/')
@@ -420,35 +421,35 @@ describe('Job Tests', () => {
 
   it('Create invokes directly in development server', async () => {
     process.env.HLX_DEV_SERVER_HOST = 'http://localhost:3000';
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .twice()
       .reply(404)
       // Check for stop file in incoming directory
-      .get(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop\.json/)
+      .get(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop\.json/)
       .reply(404)
       // PUT the job state to incoming directory multiple times during execution
-      .put(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .put(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .times(3)
       .reply(200)
       // Move operation: GET from incoming (for move), PUT to completed, DELETE from incoming
-      .get(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .get(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .reply(200, '{}')
-      .put(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/job-(.*)\.json/)
+      .put(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/job-(.*)\.json/)
       .reply(200)
-      .delete(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .delete(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .reply(200)
       // Update history file with completed job
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(200)
       // Delete stop file from incoming
-      .delete(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop\.json/)
+      .delete(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop\.json/)
       .reply(404)
       // Load state after completion
-      .get(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .get(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .reply(404)
-      .get(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/job-(.*)\.json/)
+      .get(/\/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f\/preview\/\.helix\/admin-jobs\/test\/job-(.*)\.json/)
       .reply(200, '{}');
 
     let testJob;
@@ -472,7 +473,7 @@ describe('Job Tests', () => {
   });
 
   it('Rejects a 5th job for the same topic (maxQueued = 4)', async () => {
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', [
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
       { Key: 'job-1.json' },
       { Key: 'job-2.json' },
       { Key: 'job-3.json' },
@@ -488,12 +489,12 @@ describe('Job Tests', () => {
 
   it('stop puts a stop-file', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-123-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-123-stop.json?x-id=GetObject')
       .twice()
       .reply(404)
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-123-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-123-stop.json?x-id=GetObject')
       .reply(200)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-123-stop.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-123-stop.json?x-id=PutObject')
       .reply(200);
 
     const job = await createJob(createContext(), createInfo(), 'test', 'job-123');
@@ -508,7 +509,7 @@ describe('Job Tests', () => {
 
   it('stop ignored if stop-file already present', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/undefined-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/undefined-stop.json?x-id=GetObject')
       .reply(200);
 
     const job = await createJob(createContext(), createInfo(), 'test');
@@ -536,7 +537,7 @@ describe('Job Tests', () => {
 
   it('checkStopped returns false', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/undefined-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/undefined-stop.json?x-id=GetObject')
       .reply(404);
 
     const job = await createJob(createContext(), createInfo(), 'test');
@@ -548,7 +549,7 @@ describe('Job Tests', () => {
 
   it('checkStopped returns true', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/undefined-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/undefined-stop.json?x-id=GetObject')
       .reply(200);
 
     const job = await createJob(createContext(), createInfo(), 'test');
@@ -566,39 +567,39 @@ describe('Job Tests', () => {
 
   it('invoke calls run', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
       .reply(404)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'stopped');
         return [200];
       })
       // move
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
       .reply(200)
-      .put('/foo-id/preview/.helix/admin-jobs/test/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/job-42.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=DeleteObject')
       .reply(200)
 
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'job-42' }],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -636,39 +637,39 @@ describe('Job Tests', () => {
 
   it('invoke completes with audit entry containing job topic', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name-stop.json?x-id=GetObject')
       .reply(404)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'stopped');
         return [200];
       })
       // move
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=GetObject')
       .reply(200)
-      .put('/foo-id/preview/.helix/admin-jobs/test/my-job-name.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/my-job-name.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name.json?x-id=DeleteObject')
       .reply(200)
 
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'my-job-name' }],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/my-job-name-stop.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/my-job-name-stop.json?x-id=DeleteObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -722,7 +723,7 @@ describe('Job Tests', () => {
       ref: 'ref',
       result: {
         timestamp: 0,
-        contentBusId: 'foo-id',
+        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
         duration: 1,
         status: 200,
         method: 'DELETE',
@@ -740,7 +741,7 @@ describe('Job Tests', () => {
       ref: 'ref',
       result: {
         job: 'test/my-job-name',
-        contentBusId: 'foo-id',
+        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
         status: 200,
         method: 'POST',
         path: '/',
@@ -752,39 +753,39 @@ describe('Job Tests', () => {
     nock.audit();
 
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
       .reply(404)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'stopped');
         return [200];
       })
       // move
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
       .reply(200)
-      .put('/foo-id/preview/.helix/admin-jobs/test/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/job-42.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=DeleteObject')
       .reply(200)
 
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'job-42' }],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -819,7 +820,7 @@ describe('Job Tests', () => {
 
   it('invoke stopped job does not proceed', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -844,30 +845,30 @@ describe('Job Tests', () => {
 
   it('handles errors during run', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
       .reply(404)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'stopped');
         return [200];
       })
       // move - test failing move
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
       .reply(404)
 
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'job-42' }],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -893,30 +894,30 @@ describe('Job Tests', () => {
 
   it('handles errors during complete', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
       .reply(404)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'stopped');
         return [200];
       })
       // move - test failing move
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
       .reply(404)
 
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'job-42' }],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(401)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -937,35 +938,35 @@ describe('Job Tests', () => {
 
   it('handles single failures during run', async () => {
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=GetObject')
       .reply(404)
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'running');
         return [200];
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=PutObject')
       .reply((_, body) => {
         assert.strictEqual(body.state, 'stopped');
         return [200];
       })
 
       // move
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=GetObject')
       .reply(200)
-      .put('/foo-id/preview/.helix/admin-jobs/test/job-42.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/job-42.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42.json?x-id=DeleteObject')
       .reply(200)
 
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'job-42' }],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .put('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=PutObject')
       .reply(200)
-      .delete('/foo-id/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
+      .delete('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-42-stop.json?x-id=DeleteObject')
       .reply(200);
 
     class MockJob extends Job {
@@ -998,26 +999,26 @@ describe('Job Tests', () => {
   });
 
   it('lists pending and current jobs', async () => {
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', [
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
       { Key: 'job-43.json' },
       { Key: 'job-44.json' },
       { Key: 'job-45.json' },
     ]);
     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-43.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-43.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         name: 'job-43.json',
         state: 'created',
       })
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-44.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-44.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         name: 'job-44.json',
       })
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-45.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/job-45.json?x-id=GetObject')
       .reply(401)
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .get('/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test.json?x-id=GetObject')
       .reply(200, {
         topic: 'test',
         jobs: [{ name: 'job-42', state: 'stopped' }],

@@ -271,7 +271,7 @@ export function createContext(suffix, {
       ...env,
     },
     runtime: { region: 'us-east-1', accountId: 'account-id' },
-    func: { fqn: 'helix-api-service' },
+    func: { fqn: 'helix-api-service', version: '1.0.0' },
     invocation: {
       id: 'invocation-id',
     },

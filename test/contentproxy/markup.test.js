@@ -59,7 +59,7 @@ describe('Markup Integration Tests', () => {
 
   function setupTest(path = '/', {
     config = SITE_MUP_CONFIG(), data,
-    headers = { X_CONTENT_SOURCE_AUTH: 'Bearer dummy-access-token' },
+    headers = { 'x-content-source-authorization': 'Bearer dummy-access-token' },
     authInfo = AuthInfo.Default().withAuthenticated(true),
   } = {}) {
     nock.siteConfig(config);

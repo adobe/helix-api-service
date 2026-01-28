@@ -113,7 +113,7 @@ describe('Markup Integration Tests (JSON)', () => {
 
     const { request, context } = setupTest('/test.json', {
       headers: {
-        X_CONTENT_SOURCE_AUTH: 'Basic 1234',
+        'x-content-source-authorization': 'Basic 1234',
         'x-content-source-location': '/Index',
       },
     });
@@ -252,7 +252,7 @@ describe('Markup Integration Tests (JSON)', () => {
 
     const { request, context } = setupTest('/test.json', {
       headers: {
-        X_CONTENT_SOURCE_AUTH: 'Basic 1234',
+        'x-content-source-authorization': 'Basic 1234',
       },
     });
     const response = await main(request, context);

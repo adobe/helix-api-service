@@ -381,8 +381,8 @@ export class Job {
     // add job to queue
     const sqs = new SQSClient();
     const jobQueueUrl = ctx.func?.version === 'ci'
-      ? `https://sqs.${region}.amazonaws.com/${accountId}/helix-admin-jobs-ci.fifo`
-      : `https://sqs.${region}.amazonaws.com/${accountId}/helix-admin-jobs.fifo`;
+      ? `https://sqs.${region}.amazonaws.com/${accountId}/helix-api-service-jobs-ci.fifo`
+      : `https://sqs.${region}.amazonaws.com/${accountId}/helix-api-service-jobs.fifo`;
 
     try {
       const result = await sqs.send(new SendMessageCommand({

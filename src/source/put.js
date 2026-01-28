@@ -36,21 +36,16 @@ async function copySource(context, info) {
     const srcKey = getS3Key(info.org, info.site, source);
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
-    let copied;
-    if (info.rawPath.endsWith('/')) {
-      // copy a folder
-      if (!srcKey.endsWith('/')) {
-        return createErrorResponse({ status: 400, msg: 'Source is not a folder', log: context.log });
-      }
+    const isFolder = info.rawPath.endsWith('/');
+    if (isFolder !== srcKey.endsWith('/')) {
+      return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log: context.log });
+    }
 
+    let copied;
+    if (isFolder) {
       const destKey = getS3Key(info.org, info.site, info.rawPath);
       copied = await bucket.copyDeep(srcKey, destKey);
     } else {
-      // copy a single resource
-      if (srcKey.endsWith('/')) {
-        return createErrorResponse({ status: 400, msg: 'Source is not a file', log: context.log });
-      }
-
       const destKey = getS3KeyFromInfo(info);
       await bucket.copy(srcKey, destKey);
       copied = [{ src: srcKey, dst: destKey }];

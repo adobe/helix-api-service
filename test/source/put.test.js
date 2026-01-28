@@ -277,7 +277,7 @@ describe('Source PUT Tests', () => {
     const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
 
     assert.equal(resp.status, 400);
-    assert.equal(resp.headers.get('x-error'), 'Source is not a folder');
+    assert.equal(resp.headers.get('x-error'), 'Source and destination type mismatch');
   });
 
   it('test putSource copy dest file but source is a folder', async () => {
@@ -287,6 +287,6 @@ describe('Source PUT Tests', () => {
     const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
 
     assert.equal(resp.status, 400);
-    assert.equal(resp.headers.get('x-error'), 'Source is not a file');
+    assert.equal(resp.headers.get('x-error'), 'Source and destination type mismatch');
   });
 });

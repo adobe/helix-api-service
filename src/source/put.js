@@ -11,7 +11,6 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { router } from '../index.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { checkConditionals } from './header-utils.js';
 import {
@@ -22,6 +21,14 @@ import {
   storeSourceFile,
 } from './utils.js';
 
+/**
+ * Copies a resource of a folder to the destination folder. If a folder is
+ * copied, this is done recursively.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} response
+ */
 async function copySource(context, info) {
   const { source } = context.data;
 
@@ -29,6 +36,7 @@ async function copySource(context, info) {
     const srcKey = getS3Key(info.org, info.site, source);
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
+    let copied;
     if (info.rawPath.endsWith('/')) {
       // copy a folder
       if (!srcKey.endsWith('/')) {
@@ -36,15 +44,23 @@ async function copySource(context, info) {
       }
 
       const destKey = getS3Key(info.org, info.site, info.rawPath);
-      await bucket.copyDeep(srcKey, destKey);
+      copied = await bucket.copyDeep(srcKey, destKey);
     } else {
       // copy a single resource
+      if (srcKey.endsWith('/')) {
+        return createErrorResponse({ status: 400, msg: 'Source is not a file', log: context.log });
+      }
+
       const destKey = getSourceKey(info);
       await bucket.copy(srcKey, destKey);
+      copied = [{ src: srcKey, dst: destKey }];
     }
-    return new Response('', { status: 200 });
+    const headers = { 'Content-Type': 'application/json' };
+    return new Response(`{"copied": ${JSON.stringify(copied)}}`, { status: 200, headers });
   } catch (e) {
-    return createErrorResponse({ e, log: context.log });
+    const opts = { e, log: context.log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
   }
 }
 

@@ -170,7 +170,26 @@ describe('Source PUT Tests', () => {
     const ctx = setupContext(path);
     ctx.data.source = '/src.html';
     const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    const body = await resp.json();
+    // filter json so that only the src and dst keys are present (so that we only compare those)
+    const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
+    assert.deepStrictEqual(json, [
+      { src: 'testorg/testsite/src.html', dst: 'testorg/testsite/dst.html' },
+    ]);
     assert.equal(resp.status, 200);
+    assert.equal('application/json', resp.headers.get('content-type'));
+  });
+
+  it('test putSource file copy fails', async () => {
+    nock.source()
+      .copyObject('/testorg/testsite/dst.html')
+      .reply(403);
+    const path = '/testorg/sites/testsite/source/dst.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/src.html';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 403);
   });
 
   const BUCKET_LIST_RESULT = `
@@ -211,20 +230,63 @@ describe('Source PUT Tests', () => {
     nock.source()
       .copyObject('/org1/site2/dest/somejson.json')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/somejson.json')
-      .reply(200);
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '"98989"',
+        },
+      }));
     nock.source()
       .copyObject('/org1/site2/dest/d1.html')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/d1.html')
-      .reply(200);
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '"654"',
+        },
+      }));
     nock.source()
       .copyObject('/org1/site2/dest/d/d2.html')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/d/d2.html')
-      .reply(200);
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '"65"',
+        },
+      }));
 
     const path = '/org1/sites/site2/source/dest/';
     const ctx = setupContext(path);
     ctx.data.source = '/a/b/c/';
     const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    const body = await resp.json();
+
+    // filter json so that only the src and dst keys are present (so that we only compare those)
+    const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
+    assert.deepStrictEqual(json, [
+      { src: 'org1/site2/a/b/c/somejson.json', dst: 'org1/site2/dest/somejson.json' },
+      { src: 'org1/site2/a/b/c/d1.html', dst: 'org1/site2/dest/d1.html' },
+      { src: 'org1/site2/a/b/c/d/d2.html', dst: 'org1/site2/dest/d/d2.html' },
+    ]);
     assert.equal(resp.status, 200);
+    assert.equal('application/json', resp.headers.get('content-type'));
+  });
+
+  it('test putSource copy dest folder but source is a file', async () => {
+    const path = '/org1/sites/site2/source/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/a/b/c/somejson.json';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    assert.equal(resp.status, 400);
+    assert.equal(resp.headers.get('x-error'), 'Source is not a folder');
+  });
+
+  it('test putSource copy dest file but source is a folder', async () => {
+    const path = '/org1/sites/site2/source/dest.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/a/b/c/';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    assert.equal(resp.status, 400);
+    assert.equal(resp.headers.get('x-error'), 'Source is not a file');
   });
 });

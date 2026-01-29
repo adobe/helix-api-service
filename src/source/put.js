@@ -30,6 +30,7 @@ import {
  * @returns {Promise<Response>} response
  */
 async function copySource(context, info) {
+  const { log } = context;
   const { source } = context.data;
 
   try {
@@ -38,7 +39,7 @@ async function copySource(context, info) {
 
     const isFolder = info.rawPath.endsWith('/');
     if (isFolder !== srcKey.endsWith('/')) {
-      return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log: context.log });
+      return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log });
     }
 
     let copied;
@@ -53,7 +54,7 @@ async function copySource(context, info) {
     const headers = { 'Content-Type': 'application/json' };
     return new Response(`{"copied": ${JSON.stringify(copied)}}`, { status: 200, headers });
   } catch (e) {
-    const opts = { e, log: context.log };
+    const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }

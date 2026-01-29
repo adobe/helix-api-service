@@ -13,7 +13,12 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { getValidHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import {
+  getValidHtml,
+  getS3Key,
+  validateJson,
+  validateMedia,
+} from '../../src/source/utils.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { createInfo } from '../utils.js';
 import { setupContext, stripSpaces } from './testutils.js';
@@ -202,6 +207,31 @@ describe('Source Utils Tests', () => {
     await assert.rejects(
       validateMedia(setupContext(), info, 'video/blah', Buffer.from(media)),
       new StatusCodeError('Unknown media type: video/blah', 400),
+    );
+  });
+
+  it('test getS3Key', async () => {
+    assert.equal(getS3Key('org1', 'site2', '/a/b/c/'), 'org1/site2/a/b/c/');
+
+    await assert.rejects(
+      async () => getS3Key('org1', 'site2', '/a/b/c/../d/'),
+      new StatusCodeError('Invalid path', 400),
+    );
+    await assert.rejects(
+      async () => getS3Key('org1', 'site2', '/../q/../x.html'),
+      new StatusCodeError('Invalid path', 400),
+    );
+    await assert.rejects(
+      async () => getS3Key('org1', 'site2', '/a/b/c/%2E./d/'),
+      new StatusCodeError('Invalid path', 400),
+    );
+    await assert.rejects(
+      async () => getS3Key('org1', 'site2', '/a/b/c/.%2e/d/'),
+      new StatusCodeError('Invalid path', 400),
+    );
+    await assert.rejects(
+      async () => getS3Key('org1', 'site2', '/a/b/c/%2e%2E/d/'),
+      new StatusCodeError('Invalid path', 400),
     );
   });
 });

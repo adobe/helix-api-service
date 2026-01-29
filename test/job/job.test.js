@@ -18,7 +18,9 @@ import { AuthInfo } from '../../src/auth/auth-info.js';
 import { decryptToken, encryptToken, Job } from '../../src/job/job.js';
 import { JobStorage } from '../../src/job/storage.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
-import { createContext, createInfo, Nock } from '../utils.js';
+import {
+  createContext, createInfo, Nock, SITE_CONFIG,
+} from '../utils.js';
 
 describe('Job Tests', () => {
   let nock;
@@ -55,7 +57,7 @@ describe('Job Tests', () => {
       Size: 100,
     }));
 
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', incomingFiles);
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, incomingFiles);
     nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(200, {
@@ -120,7 +122,7 @@ describe('Job Tests', () => {
                   'author',
                 ],
               },
-              MessageGroupId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/test',
+              MessageGroupId: `${SITE_CONFIG.content.contentBusId}/test`,
               QueueUrl: `https://sqs.us-east-1.amazonaws.com/account-id/helix-api-service-jobs${version === 'ci' ? '-ci' : ''}.fifo`,
             },
           );
@@ -206,8 +208,8 @@ describe('Job Tests', () => {
       .reply((uri, body) => {
         assert.strictEqual(body, '<?xml version="1.0" encoding="UTF-8"?>'
           + '<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
-          + '<Object><Key>853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/old1.json</Key></Object>'
-          + '<Object><Key>853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/old2.json</Key></Object>'
+          + `<Object><Key>${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/old1.json</Key></Object>`
+          + `<Object><Key>${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/old2.json</Key></Object>`
           + '</Delete>');
         return [200, '<?xml version="1.0" encoding="UTF-8"?><DeleteResult><Deleted><Key>/foo</Key></Deleted></DeleteResult>'];
       });
@@ -265,7 +267,7 @@ describe('Job Tests', () => {
   it('Creates a new job and includes x-content-source-authorization header', async () => {
     const jobs = [];
     let jobName;
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, []);
     nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(200, {
@@ -313,7 +315,7 @@ describe('Job Tests', () => {
                 'author',
               ],
             },
-            MessageGroupId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/test',
+            MessageGroupId: `${SITE_CONFIG.content.contentBusId}/test`,
             QueueUrl: 'https://sqs.us-east-1.amazonaws.com/account-id/helix-api-service-jobs.fifo',
           },
         );
@@ -394,7 +396,7 @@ describe('Job Tests', () => {
   });
 
   it('Creates a new job for the first time', async () => {
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, []);
     nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(404)
@@ -453,7 +455,7 @@ describe('Job Tests', () => {
 
   it('Create invokes directly in development server', async () => {
     process.env.HLX_DEV_SERVER_HOST = 'http://localhost:3000';
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, []);
     nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .twice()
@@ -505,7 +507,7 @@ describe('Job Tests', () => {
   });
 
   it('Rejects a 5th job for the same topic (maxQueued = 4)', async () => {
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, [
       { Key: 'job-1.json' },
       { Key: 'job-2.json' },
       { Key: 'job-3.json' },
@@ -740,7 +742,7 @@ describe('Job Tests', () => {
       ref: 'ref',
       result: {
         timestamp: 0,
-        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+        contentBusId: SITE_CONFIG.content.contentBusId,
         duration: 1,
         status: 200,
         method: 'DELETE',
@@ -758,7 +760,7 @@ describe('Job Tests', () => {
       ref: 'ref',
       result: {
         job: 'test/my-job-name',
-        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+        contentBusId: SITE_CONFIG.content.contentBusId,
         status: 200,
         method: 'POST',
         path: '/',
@@ -1016,7 +1018,7 @@ describe('Job Tests', () => {
   });
 
   it('lists pending and current jobs', async () => {
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, [
       { Key: 'job-43.json' },
       { Key: 'job-44.json' },
       { Key: 'job-45.json' },

@@ -277,7 +277,7 @@ describe('Job Handler Tests', () => {
 
   it('GET returns job list', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, [
       { Key: 'job-43.json' },
     ]);
 
@@ -416,7 +416,7 @@ describe('Job Handler Tests', () => {
     });
 
     process.env.HLX_DEV_SERVER_HOST = 'http://localhost:3000';
-    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.listObjects('helix-content-bus', `${SITE_CONFIG.content.contentBusId}/preview/.helix/admin-jobs/test/incoming/`, []);
     nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .times(2)

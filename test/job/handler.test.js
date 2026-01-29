@@ -111,7 +111,7 @@ describe('Job Handler Tests', () => {
 
   it('GET returns job status', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
@@ -148,7 +148,7 @@ describe('Job Handler Tests', () => {
 
   it('GET returns job status details', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
@@ -189,7 +189,7 @@ describe('Job Handler Tests', () => {
 
   it('GET returns job status details, with user if set and authorized', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
@@ -233,7 +233,7 @@ describe('Job Handler Tests', () => {
 
   it('GET returns job status details, omits user if not authorized', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
@@ -277,10 +277,11 @@ describe('Job Handler Tests', () => {
 
   it('GET returns job list', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [
-        { Key: 'job-43.json' },
-      ])
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
+      { Key: 'job-43.json' },
+    ]);
+
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-43.json')
       .reply(200, {
         topic: 'test',
@@ -326,7 +327,7 @@ describe('Job Handler Tests', () => {
 
   it('DELETE returns 404 for missing job', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(404)
       .getObject('/preview/.helix/admin-jobs/test/job-24.json')
@@ -351,7 +352,7 @@ describe('Job Handler Tests', () => {
 
   it('RUN invokes the job', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
@@ -379,7 +380,7 @@ describe('Job Handler Tests', () => {
 
   it('DELETE stops the job', async () => {
     nock.siteConfig(SITE_CONFIG);
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
@@ -415,8 +416,8 @@ describe('Job Handler Tests', () => {
     });
 
     process.env.HLX_DEV_SERVER_HOST = 'http://localhost:3000';
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [])
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .times(2)
       .reply(200, {

@@ -131,18 +131,22 @@ export function Nock() {
   };
 
   nocker.s3 = (bucket, prefix) => {
-    const scope = nocker(`https://${bucket}.s3.us-east-1.amazonaws.com`);
-    scope.getObject = (key) => scope.get(`/${prefix}${key}`).query({ 'x-id': 'GetObject' });
-    scope.headObject = (key) => scope.head(`/${prefix}${key}`);
-    scope.putObject = (key) => scope.put(`/${prefix}${key}`).query({ 'x-id': 'PutObject' });
-    scope.deleteObject = (key) => scope.delete(`/${prefix}${key}`).query({ 'x-id': 'DeleteObject' });
-    scope.copyObject = (key) => scope.put(`/${prefix}${key}`).query({ 'x-id': 'CopyObject' });
-    scope.listObjects = (folder, keys) => scope
+    const scope = nocker(`https://${bucket}.s3.us-east-1.amazonaws.com/${prefix}`);
+    scope.getObject = (key) => scope.get(key).query({ 'x-id': 'GetObject' });
+    scope.headObject = (key) => scope.head(key);
+    scope.putObject = (key) => scope.put(key).query({ 'x-id': 'PutObject' });
+    scope.deleteObject = (key) => scope.delete(key).query({ 'x-id': 'DeleteObject' });
+    scope.copyObject = (key) => scope.put(key).query({ 'x-id': 'CopyObject' });
+    return scope;
+  };
+
+  nocker.listObjects = (bucket, prefix, keys) => {
+    nock(`https://${bucket}.s3.us-east-1.amazonaws.com`)
       .get('/')
       .query({
         delimiter: '/',
         'list-type': '2',
-        prefix: `${prefix}${folder}`,
+        prefix,
       })
       .reply(() => [200, new xml2js.Builder().buildObject({
         ListBucketResult: {
@@ -151,17 +155,19 @@ export function Nock() {
           KeyCount: keys.length,
           Contents: keys.map((entry) => ({
             ...entry,
-            Key: `${prefix}${folder}${entry.Key}`,
+            Key: `${prefix}${entry.Key}`,
           })),
         },
       })]);
+  };
 
-    scope.listFolders = (folder, folders) => scope
+  nocker.listFolders = (bucket, prefix, folders) => {
+    nock(`https://${bucket}.s3.us-east-1.amazonaws.com`)
       .get('/')
       .query({
         delimiter: '/',
         'list-type': '2',
-        prefix: `${prefix}${folder}`,
+        prefix,
       })
       .reply(() => [200, new xml2js.Builder().buildObject({
         ListBucketResult: {
@@ -169,12 +175,10 @@ export function Nock() {
           Prefix: prefix,
           KeyCount: folders.length,
           CommonPrefixes: folders.map((entry) => ({
-            Prefix: `${prefix}${folder}${entry}/`,
+            Prefix: `${prefix}${entry}/`,
           })),
         },
       })]);
-
-    return scope;
   };
 
   nocker.code = (ref = 'main') => {

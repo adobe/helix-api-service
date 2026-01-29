@@ -55,8 +55,8 @@ describe('Job Tests', () => {
       Size: 100,
     }));
 
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', incomingFiles)
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', incomingFiles);
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(200, {
         topic: 'test',
@@ -265,8 +265,8 @@ describe('Job Tests', () => {
   it('Creates a new job and includes x-content-source-authorization header', async () => {
     const jobs = [];
     let jobName;
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [])
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(200, {
         topic: 'test',
@@ -394,8 +394,8 @@ describe('Job Tests', () => {
   });
 
   it('Creates a new job for the first time', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [])
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(404)
       // PUT the new job state to incoming directory
@@ -420,8 +420,8 @@ describe('Job Tests', () => {
   });
 
   it('Creates a new job for the first time (code bus)', async () => {
+    nock.listObjects('helix-code-bus', 'owner/repo/.helix/admin-jobs/test/incoming/', []);
     nock.s3('helix-code-bus', 'owner/repo')
-      .listObjects('/.helix/admin-jobs/test/incoming/', [])
       .getObject('/.helix/admin-jobs/test.json')
       .reply(404)
       // PUT the new job state to incoming directory
@@ -453,8 +453,8 @@ describe('Job Tests', () => {
 
   it('Create invokes directly in development server', async () => {
     process.env.HLX_DEV_SERVER_HOST = 'http://localhost:3000';
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [])
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', []);
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test.json')
       .twice()
       .reply(404)
@@ -505,18 +505,17 @@ describe('Job Tests', () => {
   });
 
   it('Rejects a 5th job for the same topic (maxQueued = 4)', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [
-        { Key: 'job-1.json' },
-        { Key: 'job-2.json' },
-        { Key: 'job-3.json' },
-        { Key: 'job-4.json' },
-      ]);
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
+      { Key: 'job-1.json' },
+      { Key: 'job-2.json' },
+      { Key: 'job-3.json' },
+      { Key: 'job-4.json' },
+    ]);
     await assert.rejects(Job.create(ctx, info, 'test', { maxQueued: 4 }), new StatusCodeError('max 4 test jobs already queued.', 409));
   });
 
   it('stop puts a stop-file', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-123-stop.json')
       .twice()
       .reply(404)
@@ -536,7 +535,7 @@ describe('Job Tests', () => {
   });
 
   it('stop ignored if stop-file already present', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-123-stop.json')
       .reply(200);
 
@@ -564,7 +563,7 @@ describe('Job Tests', () => {
   });
 
   it('checkStopped returns false', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-123-stop.json')
       .reply(404);
 
@@ -576,7 +575,7 @@ describe('Job Tests', () => {
   });
 
   it('checkStopped returns true', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-123-stop.json')
       .reply(200);
 
@@ -589,7 +588,7 @@ describe('Job Tests', () => {
   });
 
   it('invoke calls run', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-42-stop.json')
       .reply(404)
       .putObject('/preview/.helix/admin-jobs/test/incoming/job-42.json')
@@ -659,7 +658,7 @@ describe('Job Tests', () => {
 
   // TODO: enable once audit is added
   it('invoke completes with audit entry containing job topic', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/my-job-name-stop.json')
       .reply(404)
       .putObject('/preview/.helix/admin-jobs/test/incoming/my-job-name.json')
@@ -770,7 +769,7 @@ describe('Job Tests', () => {
   });
 
   it('invoke can resume job ', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-42-stop.json')
       .reply(404)
       .putObject('/preview/.helix/admin-jobs/test/incoming/job-42.json')
@@ -837,7 +836,7 @@ describe('Job Tests', () => {
   });
 
   it('invoke stopped job does not proceed', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-42-stop.json')
       .reply(200);
 
@@ -862,7 +861,7 @@ describe('Job Tests', () => {
   });
 
   it('handles errors during run', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-42-stop.json')
       .reply(404)
       .putObject('/preview/.helix/admin-jobs/test/incoming/job-42.json')
@@ -911,7 +910,7 @@ describe('Job Tests', () => {
   });
 
   it('handles errors during complete', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-42-stop.json')
       .reply(404)
       .putObject('/preview/.helix/admin-jobs/test/incoming/job-42.json')
@@ -955,7 +954,7 @@ describe('Job Tests', () => {
   });
 
   it('handles single failures during run', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-42-stop.json')
       .reply(404)
       .putObject('/preview/.helix/admin-jobs/test/incoming/job-42.json')
@@ -1017,12 +1016,12 @@ describe('Job Tests', () => {
   });
 
   it('lists pending and current jobs', async () => {
-    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [
-        { Key: 'job-43.json' },
-        { Key: 'job-44.json' },
-        { Key: 'job-45.json' },
-      ])
+    nock.listObjects('helix-content-bus', '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/admin-jobs/test/incoming/', [
+      { Key: 'job-43.json' },
+      { Key: 'job-44.json' },
+      { Key: 'job-45.json' },
+    ]);
+    nock.content()
       .getObject('/preview/.helix/admin-jobs/test/incoming/job-43.json')
       .reply(200, {
         topic: 'test',

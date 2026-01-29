@@ -1,3 +1,10 @@
+## [1.30.5](https://github.com/adobe/helix-api-service/compare/v1.30.4...v1.30.5) (2026-01-27)
+
+
+### Bug Fixes
+
+* **status:** use path info from successful lookup ([#116](https://github.com/adobe/helix-api-service/issues/116)) ([d52a303](https://github.com/adobe/helix-api-service/commit/d52a303ae1e469aad43d61150ceab2ac71baef17))
+
 ## [1.30.4](https://github.com/adobe/helix-api-service/compare/v1.30.3...v1.30.4) (2026-01-26)
 
 

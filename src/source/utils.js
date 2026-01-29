@@ -60,21 +60,6 @@ const DEFAULT_MAX_IMAGES = 200;
 const PREVIEW_ERROR_PREFIX = 'Unable to preview';
 
 /**
- * Checks that the path doesn't contain any illegal elements. Currently it
- * only checks for '..' in the path.
- * @param {string} path The path to check
- * @returns {string} The path if it is valid
- * @throws {StatusCodeError} If the path is illegal
- */
-function checkPath(path) {
-  const decoded = decodeURI(path);
-  if (decoded.includes('..')) {
-    throw new StatusCodeError('Invalid path', 400);
-  }
-  return path;
-}
-
-/**
  * Get the content type from the extension.
  *
  * @param {string} ext extension
@@ -121,7 +106,7 @@ function getHast(body) {
  * @returns {string} the S3 key
  */
 export function getS3Key(org, site, path) {
-  return checkPath(`${org}/${site}${path}`);
+  return `${org}/${site}${path}`;
 }
 
 /**

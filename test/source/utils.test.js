@@ -210,28 +210,7 @@ describe('Source Utils Tests', () => {
     );
   });
 
-  it('test getS3Key', async () => {
+  it('test getS3Key', () => {
     assert.equal(getS3Key('org1', 'site2', '/a/b/c/'), 'org1/site2/a/b/c/');
-
-    await assert.rejects(
-      async () => getS3Key('org1', 'site2', '/a/b/c/../d/'),
-      new StatusCodeError('Invalid path', 400),
-    );
-    await assert.rejects(
-      async () => getS3Key('org1', 'site2', '/../q/../x.html'),
-      new StatusCodeError('Invalid path', 400),
-    );
-    await assert.rejects(
-      async () => getS3Key('org1', 'site2', '/a/b/c/%2E./d/'),
-      new StatusCodeError('Invalid path', 400),
-    );
-    await assert.rejects(
-      async () => getS3Key('org1', 'site2', '/a/b/c/.%2e/d/'),
-      new StatusCodeError('Invalid path', 400),
-    );
-    await assert.rejects(
-      async () => getS3Key('org1', 'site2', '/a/b/c/%2e%2E/d/'),
-      new StatusCodeError('Invalid path', 400),
-    );
   });
 });

@@ -289,19 +289,4 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 400);
     assert.equal(resp.headers.get('x-error'), 'Source and destination type mismatch');
   });
-
-  async function testPathRejected(srcPath, destPath) {
-    const ctx = setupContext(destPath);
-    ctx.data.source = srcPath;
-    const resp = await putSource(ctx, createInfo(destPath, {}, 'PUT'));
-    assert.equal(resp.status, 400);
-    assert.equal(resp.headers.get('x-error'), 'Invalid path');
-  }
-
-  it('test putSource doesn\'t accept dest paths with ..', async () => {
-    await testPathRejected('/a/b/c/', '/org1/sites/site2/source/dest/../blah/');
-    await testPathRejected('/a/b/c/foo.html', '/org1/sites/site2/source/dest/../x/foo.html');
-    await testPathRejected('/a/../../b/c/foo.html', '/org1/sites/site2/source/dest/foo.html');
-    await testPathRejected('/../', '/org1/sites/site2/source/dest/hihi/');
-  });
 });

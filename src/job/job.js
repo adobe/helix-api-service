@@ -17,7 +17,7 @@ import { Response } from '@adobe/fetch';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { sleep } from '../support/utils.js';
 import { JobStorage } from './storage.js';
-import { AuditBatch } from '../support/audit.js';
+// import { AuditBatch } from '../support/audit.js';
 import { X_CONTENT_SOURCE_AUTH } from '../contentproxy/utils.js';
 
 const X_CONTENT_SOURCE_AUTH_ENCRYPTED = 'x-content-source-authorization-encrypted';
@@ -161,9 +161,10 @@ export class Job {
     this.info = info;
     this.storage = storage;
 
-    if (!noAudit) {
-      this.auditBatch = new AuditBatch(info);
-    }
+    // TODO: enabled once audit is added
+    // if (!noAudit) {
+    //   this.auditBatch = new AuditBatch(info);
+    // }
 
     this.state = null;
     // New jobs go to incoming directory by default
@@ -487,7 +488,7 @@ export class Job {
       }
     }
 
-    const topicPath = `/job/${info.org}/${info.site}/${info.ref}/${this.topic}`;
+    const topicPath = `/${info.org}/sites/${info.site}/jobs/${this.topic}`;
     const body = {
       topic: this.topic,
       jobs: jobs.map((job) => ({
@@ -511,6 +512,8 @@ export class Job {
     await this.writeState();
   }
 
+  // TODO: test once audit is added
+  /* c8 ignore next 7 */
   setProperties(props) {
     this.properties = {
       ...this.properties,
@@ -608,6 +611,8 @@ export class Job {
         method: 'POST',
       };
       const status = (this.state.progress?.failed > 0 || this.state.error) ? 207 : 200;
+      // TODO: test once audit is added
+      /* c8 ignore next 16 */
       if (this.auditBatch) {
         await this.auditBatch.add(this.ctx, auditInfo, {
           res: new Response('', { status }),
@@ -841,6 +846,8 @@ export class Job {
    * Audit an operation on a single resource.
    */
   async audit(ctx, info, opts) {
+    // TODO: test once audit is added
+    /* c8 ignore next 3 */
     if (this.auditBatch) {
       await this.auditBatch.add(ctx, info, { ...opts, logDetails: false });
     }

@@ -225,10 +225,13 @@ export class RequestInfo {
 
   #ref;
 
-  constructor(request, router, pathInfo) {
+  #variables;
+
+  constructor(request, router, pathInfo, variables) {
     this.#request = request;
     this.#router = router;
     this.#pathInfo = pathInfo;
+    this.#variables = variables;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -317,26 +320,31 @@ export class RequestInfo {
     return this.#pathInfo.ext;
   }
 
+  get variables() {
+    return this.#variables;
+  }
+
   /**
    * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
    * @param {import('../router/router.js').default} router router
-   * @param {object} param0 params
-   * @param {string} [param0.org] org, optional
-   * @param {string} [param0.site] site, optional
-   * @param {string} [param0.path] path, optional
-   * @param {string} [param0.ref] ref, optional
-   * @param {string} [param0.route] route, optional
+   * @param {object} variables route variables
+   * @param {string} [variables.org] org, optional
+   * @param {string} [variables.site] site, optional
+   * @param {string} [variables.path] path, optional
+   * @param {string} [variables.ref] ref, optional
+   * @param {string} [variables.route] route, optional
    * @returns {RequestInfo}
    */
-  static create(request, router, {
-    org, site, path, ref, route,
-  } = {}) {
+  static create(request, router, variables = {}) {
+    const {
+      org, site, path, ref, route,
+    } = variables;
     const httpRequest = new HttpRequest(request);
     const pathInfo = new PathInfo(route, org, site, path);
 
-    return Object.freeze(new RequestInfo(httpRequest, router, pathInfo).withRef(ref));
+    return Object.freeze(new RequestInfo(httpRequest, router, pathInfo, variables).withRef(ref));
   }
 
   /**

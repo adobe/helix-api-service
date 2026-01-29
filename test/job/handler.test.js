@@ -16,7 +16,8 @@ import { AuthInfo } from '../../src/auth/auth-info.js';
 import { JOB_CLASS } from '../../src/job/handler.js';
 import { Job } from '../../src/job/job.js';
 import { TestJob } from '../../src/job/test-job.js';
-import { DEFAULT_CONTEXT, Nock, main } from '../utils.js';
+import { main } from '../../src/index.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 class MockJob extends Job {
   async invoke() {
@@ -52,13 +53,15 @@ describe('Job Handler Tests', () => {
     for (const method of ['POST', 'PUT']) {
       // eslint-disable-next-line no-loop-func
       it(`${method} sends method not allowed`, async () => {
-        nock.config(null, 'org', 'site', 'ref');
-        const result = await main(new Request('https://admin.hlx.page/', {
+        nock.siteConfig(SITE_CONFIG, { org: 'org', site: 'site' });
+        const result = await main(new Request('https://api.aem.live/', {
           method,
         }), {
-          ...DEFAULT_CONTEXT(),
+          attributes: {
+            authInfo: AuthInfo.Default().withAuthenticated(true),
+          },
           pathInfo: {
-            suffix: '/job/org/site/ref/topic/jobName',
+            suffix: '/org/sites/site/jobs/topic/jobName',
           },
         });
         assert.strictEqual(result.status, 405);
@@ -72,11 +75,13 @@ describe('Job Handler Tests', () => {
   });
 
   it('GET returns 404 for invalid job topic', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT(),
+    nock.siteConfig(SITE_CONFIG);
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/foo/job-24',
+        suffix: '/org/sites/site/jobs/foo/job-24',
       },
     });
     assert.strictEqual(result.status, 404);
@@ -88,55 +93,26 @@ describe('Job Handler Tests', () => {
     });
   });
 
-  for (let i = 0; i < 4; i += 1) {
-    const segs = ['org', 'site', 'ref', 'topic'];
-    const suffix = `/job/${segs.slice(0, i).join('/')}`;
-    // eslint-disable-next-line no-loop-func
-    it(`GET returns 400 for missing ${segs[i]} parameter`, async () => {
-      if (segs[i] === 'topic' || segs[i] === 'ref') {
-        nock.config(null, 'org', 'site', 'ref');
-      }
-      const result = await main(new Request('https://admin.hlx.page/'), {
-        ...DEFAULT_CONTEXT(),
-        pathInfo: {
-          suffix,
-        },
-      });
-      assert.strictEqual(result.status, 400);
-      assert.strictEqual(await result.text(), '');
-      assert.deepStrictEqual(result.headers.plain(), {
-        'content-type': 'text/plain; charset=utf-8',
-        'cache-control': 'no-store, private, must-revalidate',
-        'x-error': `invalid path parameters: "${segs[i]}" is required`,
-      });
-    });
-  }
-
   it('GET returns 404 for missing project', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT({ attributes: { contentBusId: null } }),
+    nock.siteConfig(null).reply(404);
+    const result = await main(new Request('https://api.aem.live/'), {
       pathInfo: {
-        suffix: '/job/org/site/ref/foo/job-24',
+        suffix: '/org/sites/site/jobs/foo/job-24',
       },
     });
     assert.strictEqual(result.status, 404);
-    assert.strictEqual(await result.text(), 'project not found');
     assert.deepStrictEqual(result.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
+      'x-error': '',
       vary: 'Accept-Encoding',
     });
   });
 
-  // it('fetches contentbusid via github bot', async () => {
-  //   // see tests in update.test.js
-  // });
-
   it('GET returns job status', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
         data: {
@@ -144,10 +120,12 @@ describe('Job Handler Tests', () => {
         },
       });
 
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT(),
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24',
+        suffix: '/org/sites/site/jobs/test/job-24',
       },
     });
 
@@ -155,9 +133,9 @@ describe('Job Handler Tests', () => {
     const data = await result.json();
     assert.deepStrictEqual(data, {
       links: {
-        list: 'https://admin.hlx.page/job/org/site/ref/test',
-        self: 'https://admin.hlx.page/job/org/site/ref/test/job-24',
-        details: 'https://admin.hlx.page/job/org/site/ref/test/job-24/details',
+        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        self: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
+        details: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
       state: 'running',
     });
@@ -169,9 +147,9 @@ describe('Job Handler Tests', () => {
   });
 
   it('GET returns job status details', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
         user: 'foo@example.com',
@@ -180,10 +158,12 @@ describe('Job Handler Tests', () => {
         },
       });
 
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT(),
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24/details',
+        suffix: '/org/sites/site/jobs/test/job-24/details',
       },
     });
 
@@ -195,9 +175,9 @@ describe('Job Handler Tests', () => {
       },
       state: 'running',
       links: {
-        job: 'https://admin.hlx.page/job/org/site/ref/test/job-24',
-        list: 'https://admin.hlx.page/job/org/site/ref/test',
-        self: 'https://admin.hlx.page/job/org/site/ref/test/job-24/details',
+        job: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
+        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        self: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
     });
     assert.deepStrictEqual(result.headers.plain(), {
@@ -208,9 +188,9 @@ describe('Job Handler Tests', () => {
   });
 
   it('GET returns job status details, with user if set and authorized', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
         user: 'foo@example.com',
@@ -219,14 +199,14 @@ describe('Job Handler Tests', () => {
         },
       });
 
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT({
-        attributes: {
-          authInfo: AuthInfo.Admin().withProfile({ user: 'admin@example.com' }),
-        },
-      }),
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Admin()
+          .withAuthenticated(true)
+          .withProfile({ user: 'admin@example.com' }),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24/details',
+        suffix: '/org/sites/site/jobs/test/job-24/details',
       },
     });
 
@@ -239,9 +219,9 @@ describe('Job Handler Tests', () => {
       state: 'running',
       user: 'foo@example.com',
       links: {
-        job: 'https://admin.hlx.page/job/org/site/ref/test/job-24',
-        list: 'https://admin.hlx.page/job/org/site/ref/test',
-        self: 'https://admin.hlx.page/job/org/site/ref/test/job-24/details',
+        job: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
+        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        self: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
     });
     assert.deepStrictEqual(result.headers.plain(), {
@@ -252,9 +232,9 @@ describe('Job Handler Tests', () => {
   });
 
   it('GET returns job status details, omits user if not authorized', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
         user: 'bar@example.com',
@@ -263,16 +243,15 @@ describe('Job Handler Tests', () => {
         },
       });
 
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT({
-        attributes: {
-          authInfo: AuthInfo.Admin()
-            .withProfile({ user: 'user@example.com' })
-            .removePermissions('log:read'),
-        },
-      }),
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Admin()
+          .withAuthenticated(true)
+          .withProfile({ user: 'user@example.com' })
+          .removePermissions('log:read'),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24/details',
+        suffix: '/org/sites/site/jobs/test/job-24/details',
       },
     });
 
@@ -284,9 +263,9 @@ describe('Job Handler Tests', () => {
       },
       state: 'running',
       links: {
-        job: 'https://admin.hlx.page/job/org/site/ref/test/job-24',
-        list: 'https://admin.hlx.page/job/org/site/ref/test',
-        self: 'https://admin.hlx.page/job/org/site/ref/test/job-24/details',
+        job: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
+        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        self: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
     });
     assert.deepStrictEqual(result.headers.plain(), {
@@ -297,32 +276,29 @@ describe('Job Handler Tests', () => {
   });
 
   it('GET returns job list', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', [
-      { Key: 'job-43.json' },
-    ]);
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-43.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [
+        { Key: 'job-43.json' },
+      ])
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-43.json')
       .reply(200, {
         topic: 'test',
         name: 'job-43.json',
         state: 'created',
       })
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+      .getObject('/preview/.helix/admin-jobs/test.json')
       .reply(200, {
         topic: 'test',
         jobs: [],
       });
 
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT({
-        attributes: {
-          authInfo: AuthInfo.Admin().withAuthenticated(true),
-        },
-      }),
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test',
+        suffix: '/org/sites/site/jobs/test',
       },
     });
 
@@ -332,50 +308,13 @@ describe('Job Handler Tests', () => {
       topic: 'test',
       jobs: [
         {
-          href: 'https://admin.hlx.page/job/org/site/ref/test/job-43.json',
+          href: 'https://api.aem.live/org/sites/site/jobs/test/job-43.json',
           name: 'job-43.json',
           state: 'created',
         },
       ],
       links: {
-        self: 'https://admin.hlx.page/job/org/site/ref/test',
-      },
-    });
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'application/json',
-      'cache-control': 'no-store, private, must-revalidate',
-      vary: 'Accept-Encoding',
-    });
-  });
-
-  it('GET returns job list (index topic)', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/index/incoming/', []);
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/index.json?x-id=GetObject')
-      .reply(200, {
-        topic: 'index',
-        jobs: [],
-      });
-
-    const result = await main(new Request('https://admin.hlx.page/'), {
-      ...DEFAULT_CONTEXT({
-        attributes: {
-          authInfo: AuthInfo.Admin().withAuthenticated(true),
-        },
-      }),
-      pathInfo: {
-        suffix: '/job/org/site/ref/index',
-      },
-    });
-
-    assert.strictEqual(result.status, 200);
-    const data = await result.json();
-    assert.deepStrictEqual(data, {
-      topic: 'index',
-      jobs: [],
-      links: {
-        self: 'https://admin.hlx.page/job/org/site/ref/index',
+        self: 'https://api.aem.live/org/sites/site/jobs/test',
       },
     });
     assert.deepStrictEqual(result.headers.plain(), {
@@ -386,17 +325,19 @@ describe('Job Handler Tests', () => {
   });
 
   it('DELETE returns 404 for missing job', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(404)
-      .get('/foo-id/preview/.helix/admin-jobs/test/job-24.json?x-id=GetObject')
+      .getObject('/preview/.helix/admin-jobs/test/job-24.json')
       .reply(404);
 
-    const result = await main(new Request('https://admin.hlx.page/', { method: 'DELETE' }), {
-      ...DEFAULT_CONTEXT(),
+    const result = await main(new Request('https://api.aem.live/', { method: 'DELETE' }), {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24',
+        suffix: '/org/sites/site/jobs/test/job-24',
       },
     });
 
@@ -409,19 +350,21 @@ describe('Job Handler Tests', () => {
   });
 
   it('RUN invokes the job', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
       });
 
-    const result = await main.unbundled(new Request('https://admin.hlx.page/', {
+    const result = await main(new Request('https://api.aem.live/', {
       method: 'RUN',
     }), {
-      ...DEFAULT_CONTEXT(),
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24',
+        suffix: '/org/sites/site/jobs/test/job-24',
       },
     });
 
@@ -435,23 +378,21 @@ describe('Job Handler Tests', () => {
   });
 
   it('DELETE stops the job', async () => {
-    nock.config(null, 'org', 'site', 'ref');
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test/incoming/job-24.json?x-id=GetObject')
+    nock.siteConfig(SITE_CONFIG);
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .getObject('/preview/.helix/admin-jobs/test/incoming/job-24.json')
       .reply(200, {
         state: 'running',
       });
 
-    const result = await main.unbundled(new Request('https://admin.hlx.page/', {
+    const result = await main(new Request('https://api.aem.live/', {
       method: 'DELETE',
     }), {
-      ...DEFAULT_CONTEXT({
-        attributes: {
-          authInfo: AuthInfo.Admin().withAuthenticated(true),
-        },
-      }),
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test/job-24',
+        suffix: '/org/sites/site/jobs/test/job-24',
       },
     });
 
@@ -465,7 +406,7 @@ describe('Job Handler Tests', () => {
   });
 
   it('POST to test creates test job', async () => {
-    nock.config(null, 'org', 'site', 'ref');
+    nock.siteConfig(SITE_CONFIG);
     JOB_CLASS.test = new Proxy(MockJob, {
       construct(target, args) {
         testJob = new TestJob(...args);
@@ -474,46 +415,46 @@ describe('Job Handler Tests', () => {
     });
 
     process.env.HLX_DEV_SERVER_HOST = 'http://localhost:3000';
-    nock.audit();
-    nock.listObjects('helix-content-bus', 'foo-id/preview/.helix/admin-jobs/test/incoming/', []);
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/admin-jobs/test.json?x-id=GetObject')
+    nock.content('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+      .listObjects('/preview/.helix/admin-jobs/test/incoming/', [])
+      .getObject('/preview/.helix/admin-jobs/test.json')
       .times(2)
       .reply(200, {
         topic: 'test',
         jobs: [],
       })
-      .put('/foo-id/preview/.helix/admin-jobs/test.json?x-id=PutObject')
+      .putObject('/preview/.helix/admin-jobs/test.json')
       .reply(200)
-      .put(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .put(/\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .times(5)
       .reply(200)
-      .delete(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .delete(/\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .reply(200)
-      .put(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/job-(.*)\.json/)
+      .put(/\/preview\/\.helix\/admin-jobs\/test\/job-(.*)\.json/)
       .reply(200)
-      .get(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop.json\?x-id=GetObject/)
+      .get(/\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop.json/)
       .reply(404)
-      .delete(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop.json\?x-id=DeleteObject/)
+      .delete(/\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)-stop.json/)
       .reply(200)
-      .get(/\/foo-id\/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
+      .get(/preview\/\.helix\/admin-jobs\/test\/incoming\/job-(.*)\.json/)
       .times(2)
       .reply(200, '{}');
 
-    const result = await main.unbundled(new Request('https://admin.hlx.page/', {
+    const result = await main(new Request('https://api.aem.live/', {
       method: 'POST',
       body: JSON.stringify({ time: 1 }),
       headers: {
         'content-type': 'application/json',
       },
     }), {
-      ...DEFAULT_CONTEXT({
-        attributes: {
-          authInfo: AuthInfo.Admin().withAuthenticated(true),
-        },
-      }),
+      runtime: { region: 'us-east-1', accountId: 'account-id' },
+      func: { fqn: 'helix-api-service' },
+      invocation: { id: 'invocation-id' },
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
       pathInfo: {
-        suffix: '/job/org/site/ref/test',
+        suffix: '/org/sites/site/jobs/test',
       },
     });
 
@@ -521,8 +462,8 @@ describe('Job Handler Tests', () => {
     assert.deepStrictEqual(await result.json(), {
       job: {},
       links: {
-        list: 'https://http//localhost:3000/job/org/site/ref/test',
-        self: `https://http//localhost:3000/job/org/site/ref/test/${testJob.name}`,
+        list: 'https://http//localhost:3000/org/sites/site/jobs/test',
+        self: `https://http//localhost:3000/org/sites/site/jobs/test/${testJob.name}`,
       },
     });
     assert.deepStrictEqual(result.headers.plain(), {

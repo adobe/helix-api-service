@@ -28,14 +28,7 @@ export const JOB_CLASS = {
  * @returns {Promise<Response>} response
  */
 export default async function jobHandler(ctx, info) {
-  const { log } = ctx;
-  const [, topic, jobName, report] = info.rawPath.split('/');
-
-  try {
-    assertRequiredProperties({ ...info, topic }, 'invalid path parameters', 'org', 'site', 'ref', 'topic');
-  } catch (e) {
-    return errorResponse(log, 400, e.message);
-  }
+  const { log, attributes: { authInfo } } = ctx;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
@@ -43,7 +36,10 @@ export default async function jobHandler(ctx, info) {
     });
   }
 
-  ctx.attributes.authInfo.assertPermissions('job:read');
+  authInfo.assertPermissions('job:read');
+
+  const { topic } = info.variables;
+  const [, jobName, report] = info.variables.path?.split('/') ?? [];
 
   // create test job
   if (info.method === 'POST') {
@@ -52,7 +48,7 @@ export default async function jobHandler(ctx, info) {
         status: 405,
       });
     }
-    ctx.attributes.authInfo.assertPermissions('job:test');
+    authInfo.assertPermissions('job:test');
     return Job.create(ctx, info, 'test', {
       jobClass: JOB_CLASS.test,
       data: {

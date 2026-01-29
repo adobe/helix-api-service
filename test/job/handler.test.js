@@ -133,7 +133,7 @@ describe('Job Handler Tests', () => {
     const data = await result.json();
     assert.deepStrictEqual(data, {
       links: {
-        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        list: 'https://api.aem.live/org/sites/site/jobs/test/',
         self: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
         details: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
@@ -176,7 +176,7 @@ describe('Job Handler Tests', () => {
       state: 'running',
       links: {
         job: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
-        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        list: 'https://api.aem.live/org/sites/site/jobs/test/',
         self: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
     });
@@ -220,7 +220,7 @@ describe('Job Handler Tests', () => {
       user: 'foo@example.com',
       links: {
         job: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
-        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        list: 'https://api.aem.live/org/sites/site/jobs/test/',
         self: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
     });
@@ -264,7 +264,7 @@ describe('Job Handler Tests', () => {
       state: 'running',
       links: {
         job: 'https://api.aem.live/org/sites/site/jobs/test/job-24',
-        list: 'https://api.aem.live/org/sites/site/jobs/test',
+        list: 'https://api.aem.live/org/sites/site/jobs/test/',
         self: 'https://api.aem.live/org/sites/site/jobs/test/job-24/details',
       },
     });
@@ -299,7 +299,7 @@ describe('Job Handler Tests', () => {
         authInfo: AuthInfo.Admin().withAuthenticated(true),
       },
       pathInfo: {
-        suffix: '/org/sites/site/jobs/test',
+        suffix: '/org/sites/site/jobs/test/',
       },
     });
 
@@ -315,7 +315,7 @@ describe('Job Handler Tests', () => {
         },
       ],
       links: {
-        self: 'https://api.aem.live/org/sites/site/jobs/test',
+        self: 'https://api.aem.live/org/sites/site/jobs/test/',
       },
     });
     assert.deepStrictEqual(result.headers.plain(), {
@@ -455,7 +455,7 @@ describe('Job Handler Tests', () => {
         authInfo: AuthInfo.Admin().withAuthenticated(true),
       },
       pathInfo: {
-        suffix: '/org/sites/site/jobs/test',
+        suffix: '/org/sites/site/jobs/test/',
       },
     });
 
@@ -463,7 +463,7 @@ describe('Job Handler Tests', () => {
     assert.deepStrictEqual(await result.json(), {
       job: {},
       links: {
-        list: 'https://http//localhost:3000/org/sites/site/jobs/test',
+        list: 'https://http//localhost:3000/org/sites/site/jobs/test/',
         self: `https://http//localhost:3000/org/sites/site/jobs/test/${testJob.name}`,
       },
     });

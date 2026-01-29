@@ -399,6 +399,7 @@ export class RequestInfo {
   getAPIUrls(...routes) {
     const links = {};
     const variables = {
+      ...this.#variables,
       org: this.org,
       site: this.site,
       path: this.webPath.slice(1),

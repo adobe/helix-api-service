@@ -439,7 +439,7 @@ export class Job {
     if (jobName) {
       return info.getLinkUrl(`/${info.org}/sites/${info.site}/jobs/${topic}/${jobName}`);
     }
-    return info.getLinkUrl(`/${info.org}/sites/${info.site}/jobs/${topic}`);
+    return info.getLinkUrl(`/${info.org}/sites/${info.site}/jobs/${topic}/`);
   }
 
   /**
@@ -489,12 +489,12 @@ export class Job {
       }
     }
 
-    const topicPath = `/${info.org}/sites/${info.site}/jobs/${this.topic}`;
+    const topicPath = `/${info.org}/sites/${info.site}/jobs/${this.topic}/`;
     const body = {
       topic: this.topic,
       jobs: jobs.map((job) => ({
         ...job,
-        href: info.getLinkUrl(`${topicPath}/${job.name}`),
+        href: info.getLinkUrl(`${topicPath}${job.name}`),
       })),
       links: {
         self: info.getLinkUrl(topicPath),

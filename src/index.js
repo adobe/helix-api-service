@@ -93,7 +93,6 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', source)
-  .add('/:org/sites/:site/jobs/:topic', job)
   .add('/:org/sites/:site/jobs/:topic/*', job);
 
 /**

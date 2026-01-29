@@ -29,12 +29,12 @@ describe('Job Tests', () => {
 
   beforeEach(() => {
     nock = new Nock().env();
-    ctx = createContext('/org/sites/site/jobs/test', {
+    ctx = createContext('/org/sites/site/jobs/test/', {
       env: {
         CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'fake-secret',
       },
     });
-    info = createInfo('/org/sites/site/jobs/test');
+    info = createInfo('/org/sites/site/jobs/test/');
   });
 
   afterEach(() => {
@@ -133,14 +133,14 @@ describe('Job Tests', () => {
         });
     }
 
-    ctx = createContext('/org/sites/site/jobs/test', {
+    ctx = createContext('/org/sites/site/preview/*', {
       data: payload,
     });
     ctx.attributes.authInfo = AuthInfo.Admin()
       .withAuthToken('foo-token')
       .withProfile({ userId: 'admin', email: 'admin@example.com' });
     ctx.func.version = version;
-    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test'), 'test', opts);
+    const result = await Job.create(ctx, createInfo('/org/sites/site/preview/*'), 'test', opts);
 
     assert.strictEqual(result.status, 202);
 
@@ -159,7 +159,7 @@ describe('Job Tests', () => {
           user: 'admin@example.com',
         },
         links: {
-          list: 'https://api.aem.live/org/sites/site/jobs/test',
+          list: 'https://api.aem.live/org/sites/site/jobs/test/',
           self: `https://api.aem.live/org/sites/site/jobs/test/${jobName}`,
         },
       });
@@ -174,7 +174,7 @@ describe('Job Tests', () => {
         },
         messageId: '374cec7b-d0c8-4a2e-ad0b-67be763cf97e',
         links: {
-          list: 'https://api.aem.live/org/sites/site/jobs/test',
+          list: 'https://api.aem.live/org/sites/site/jobs/test/',
           self: `https://api.aem.live/org/sites/site/jobs/test/${jobName}`,
         },
       });
@@ -239,13 +239,13 @@ describe('Job Tests', () => {
   });
 
   it('Creates a new job (forceSync)', async () => {
-    ctx = createContext('/org/sites/site/jobs/test', {
+    ctx = createContext('/org/sites/site/jobs/test/', {
       data: {
         forceSync: true,
       },
     });
     ctx.attributes.authInfo = AuthInfo.Admin().withAuthToken('foo-token');
-    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test'), 'test', {
+    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test/'), 'test', {
       roles: ['author'],
     });
 
@@ -284,7 +284,7 @@ describe('Job Tests', () => {
         return [200];
       });
 
-    info = createInfo('/org/sites/site/jobs/test', {
+    info = createInfo('/org/sites/site/jobs/test/', {
       'x-content-source-authorization': 'foo-token',
     });
     nock('https://sqs.us-east-1.amazonaws.com')
@@ -348,7 +348,7 @@ describe('Job Tests', () => {
     ctx.attributes.authInfo = AuthInfo.Admin()
       .withAuthToken('foo-token')
       .withProfile({ userId: 'admin', email: 'admin@example.com' });
-    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test'), 'test', {
+    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test/'), 'test', {
       roles: ['author'],
       transient: true,
     });
@@ -373,7 +373,7 @@ describe('Job Tests', () => {
     ctx.attributes.authInfo = AuthInfo.Admin()
       .withAuthToken('foo-token')
       .withProfile({ userId: 'admin', email: 'admin@example.com' });
-    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test'), 'test', {
+    const result = await Job.create(ctx, createInfo('/org/sites/site/jobs/test/'), 'test', {
       roles: ['author'],
       transient: true,
       user: 'override@example.com',
@@ -443,7 +443,7 @@ describe('Job Tests', () => {
     class MockJob extends Job {
     }
     MockJob.USE_CODE_BUS = true;
-    info = createInfo('/org/sites/site/jobs/test').withCode('owner', 'repo');
+    info = createInfo('/org/sites/site/jobs/test/').withCode('owner', 'repo');
     const result = await Job.create(ctx, info, 'test', {
       jobClass: MockJob,
     });
@@ -1075,7 +1075,7 @@ describe('Job Tests', () => {
         },
       ],
       links: {
-        self: 'https://api.aem.live/org/sites/site/jobs/test',
+        self: 'https://api.aem.live/org/sites/site/jobs/test/',
       },
       topic: 'test',
     });

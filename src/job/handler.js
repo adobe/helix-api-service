@@ -12,7 +12,6 @@
 import { Response } from '@adobe/fetch';
 import { Job } from './job.js';
 import { TestJob } from './test-job.js';
-import { assertRequiredProperties, errorResponse } from '../support/utils.js';
 import { JobStorage } from './storage.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];

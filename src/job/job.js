@@ -154,6 +154,7 @@ export class Job {
    */
   transient = false;
 
+  // eslint-disable-next-line no-unused-vars
   constructor(context, info, topic, name, storage, noAudit) {
     this.name = name;
     this.topic = topic;

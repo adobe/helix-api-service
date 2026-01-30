@@ -30,6 +30,7 @@ import sidekick from './sidekick/handler.js';
 import sitemap from './sitemap/handler.js';
 import source from './source/handler.js';
 import status from './status/handler.js';
+import job from './job/handler.js';
 
 import Router from './router/router.js';
 import { adminContext } from './support/AdminContext.js';
@@ -92,7 +93,7 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', source)
-  .add('/:org/sites/:site/jobs', notImplemented);
+  .add('/:org/sites/:site/jobs/:topic/*', job);
 
 /**
  * Main entry point.

@@ -140,6 +140,47 @@ export function Nock() {
     return scope;
   };
 
+  nocker.listObjects = (bucket, prefix, keys) => {
+    nock(`https://${bucket}.s3.us-east-1.amazonaws.com`)
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix,
+      })
+      .reply(() => [200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          Name: bucket,
+          Prefix: prefix,
+          KeyCount: keys.length,
+          Contents: keys.map((entry) => ({
+            ...entry,
+            Key: `${prefix}${entry.Key}`,
+          })),
+        },
+      })]);
+  };
+
+  nocker.listFolders = (bucket, prefix, folders) => {
+    nock(`https://${bucket}.s3.us-east-1.amazonaws.com`)
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix,
+      })
+      .reply(() => [200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          Name: bucket,
+          Prefix: prefix,
+          KeyCount: folders.length,
+          CommonPrefixes: folders.map((entry) => ({
+            Prefix: `${prefix}${entry}/`,
+          })),
+        },
+      })]);
+  };
+
   nocker.code = (ref = 'main') => {
     const { owner, repo } = SITE_CONFIG.code;
     const prefix = `${owner}/${repo}/${ref}`;
@@ -233,7 +274,11 @@ export function createContext(suffix, {
       HELIX_STORAGE_MAX_ATTEMPTS: '1',
       ...env,
     },
-    runtime: { region: 'us-east-1' },
+    runtime: { region: 'us-east-1', accountId: 'account-id' },
+    func: { fqn: 'helix-api-service', version: '1.0.0' },
+    invocation: {
+      id: 'invocation-id',
+    },
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),

@@ -24,6 +24,8 @@ const MEDIA_BLOB_REGEXP = /^https:\/\/.*\.hlx3?\.(live|page)\/media_.*/;
 
 const HELIX_URL_REGEXP = /^https:\/\/(?!admin\.|www\.)[^.]+\.hlx3?\.(live|page)\/?.*/;
 
+export const X_CONTENT_SOURCE_AUTH = 'x-content-source-authorization';
+
 /**
  * Rewrites the media, helix or external url. Returns the original if not rewritten.
  * @param {string} url
@@ -133,7 +135,7 @@ export function getContentSourceHeaders(context, info, source) {
   const { headers, rawPath } = info;
   const providerHeaders = {};
 
-  let sourceAuthorization = headers['x-content-source-authorization'];
+  let sourceAuthorization = headers[X_CONTENT_SOURCE_AUTH];
   if (!sourceAuthorization && isAdobeMountpoint(source) && authInfo.imsToken) {
     // don't share IMS token with 3rd party content sources
     sourceAuthorization = `Bearer ${authInfo.imsToken}`;
@@ -218,7 +220,6 @@ export function getSheetData(json, names) {
  * Returns `null` if there is neither.
  *
  * @param {any} json JSON object
- * @param {String[]} names names to check in a multi sheet
  */
 export function getDefaultSheetData(json) {
   return getSheetData(json, ['default']);

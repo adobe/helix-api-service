@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/adobe/helix-api-service/compare/v1.30.5...v1.31.0) (2026-01-30)
+
+
+### Features
+
+* add job route ([97ef0ee](https://github.com/adobe/helix-api-service/commit/97ef0ee063ec65a190e61b6b4ce3fb189bf6ec35))
+
 ## [1.30.5](https://github.com/adobe/helix-api-service/compare/v1.30.4...v1.30.5) (2026-01-27)
 
 

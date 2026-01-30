@@ -13,7 +13,12 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { getValidHtml, validateJson, validateMedia } from '../../src/source/utils.js';
+import {
+  getValidHtml,
+  getS3Key,
+  validateJson,
+  validateMedia,
+} from '../../src/source/utils.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { createInfo } from '../utils.js';
 import { setupContext, stripSpaces } from './testutils.js';
@@ -203,5 +208,9 @@ describe('Source Utils Tests', () => {
       validateMedia(setupContext(), info, 'video/blah', Buffer.from(media)),
       new StatusCodeError('Unknown media type: video/blah', 400),
     );
+  });
+
+  it('test getS3Key', () => {
+    assert.equal(getS3Key('org1', 'site2', '/a/b/c/'), 'org1/site2/a/b/c/');
   });
 });

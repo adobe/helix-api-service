@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { promisify } from 'util';
+import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { putSource } from '../../src/source/put.js';
 import { createInfo, Nock } from '../utils.js';
@@ -153,5 +154,139 @@ describe('Source PUT Tests', () => {
     const path = '/test/sites/test/source/test.html';
     const resp = await putSource(setupContext(path), createInfo(path, {}, 'PUT', '<main></main>'));
     assert.equal(resp.status, 403);
+  });
+
+  it('test putSource copies a file', async () => {
+    nock.source()
+      .copyObject('/testorg/testsite/dst.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/testorg/testsite/src.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      }));
+
+    const path = '/testorg/sites/testsite/source/dst.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/src.html';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    const body = await resp.json();
+    // filter json so that only the src and dst keys are present (so that we only compare those)
+    const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
+    assert.deepStrictEqual(json, [
+      { src: 'testorg/testsite/src.html', dst: 'testorg/testsite/dst.html' },
+    ]);
+    assert.equal(resp.status, 200);
+    assert.equal('application/json', resp.headers.get('content-type'));
+  });
+
+  it('test putSource file copy fails', async () => {
+    nock.source()
+      .copyObject('/testorg/testsite/dst.html')
+      .reply(403);
+    const path = '/testorg/sites/testsite/source/dst.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/src.html';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 403);
+  });
+
+  const BUCKET_LIST_RESULT = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>org1/site2/a/b/c/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+      <Contents>
+        <Key>org1/site2/a/b/c/somejson.json</Key>
+        <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+        <Size>32768</Size>
+      </Contents>
+      <Contents>
+        <Key>org1/site2/a/b/c/d1.html</Key>
+        <LastModified>2021-12-31T01:01:01.001Z</LastModified>
+        <Size>123</Size>
+      </Contents>
+      <Contents>
+        <Key>org1/site2/a/b/c/d/d2.html</Key>
+        <LastModified>2001-01-01T01:01:01.001Z</LastModified>
+        <Size>88888</Size>
+      </Contents>
+      <CommonPrefixes>
+        <Prefix>org1/site2/a/b/c/q/</Prefix>
+      </CommonPrefixes>
+    </ListBucketResult>`;
+
+  it('test putSource copies a folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org1/site2/a/b/c/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+    nock.source()
+      .copyObject('/org1/site2/dest/somejson.json')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/somejson.json')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '"98989"',
+        },
+      }));
+    nock.source()
+      .copyObject('/org1/site2/dest/d1.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/d1.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '"654"',
+        },
+      }));
+    nock.source()
+      .copyObject('/org1/site2/dest/d/d2.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/d/d2.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '"65"',
+        },
+      }));
+
+    const path = '/org1/sites/site2/source/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/a/b/c/';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    const body = await resp.json();
+
+    // filter json so that only the src and dst keys are present (so that we only compare those)
+    const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
+    assert.deepStrictEqual(json, [
+      { src: 'org1/site2/a/b/c/somejson.json', dst: 'org1/site2/dest/somejson.json' },
+      { src: 'org1/site2/a/b/c/d1.html', dst: 'org1/site2/dest/d1.html' },
+      { src: 'org1/site2/a/b/c/d/d2.html', dst: 'org1/site2/dest/d/d2.html' },
+    ]);
+    assert.equal(resp.status, 200);
+    assert.equal('application/json', resp.headers.get('content-type'));
+  });
+
+  it('test putSource copy dest folder but source is a file', async () => {
+    const path = '/org1/sites/site2/source/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/a/b/c/somejson.json';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    assert.equal(resp.status, 400);
+    assert.equal(resp.headers.get('x-error'), 'Source and destination type mismatch');
+  });
+
+  it('test putSource copy dest file but source is a folder', async () => {
+    const path = '/org1/sites/site2/source/dest.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/a/b/c/';
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+
+    assert.equal(resp.status, 400);
+    assert.equal(resp.headers.get('x-error'), 'Source and destination type mismatch');
   });
 });

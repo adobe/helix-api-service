@@ -115,7 +115,7 @@ export function getS3Key(org, site, path) {
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @return {string} the source bus path
  */
-export function getSourceKey(info) {
+export function getS3KeyFromInfo(info) {
   const { org, site, resourcePath } = info;
   return getS3Key(org, site, resourcePath);
 }

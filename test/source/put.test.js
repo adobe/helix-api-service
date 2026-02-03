@@ -333,7 +333,7 @@ describe('Source PUT Tests', () => {
     const path = '/org123/sites/456site/source/lala/dst.html';
     const ctx = setupContext(path);
     ctx.data.source = '/foo/bar/src.html';
-    ctx.data.move = 'true';
+    ctx.data.move = true;
 
     const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
     assert.equal(resp.status, 203);

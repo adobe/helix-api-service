@@ -97,7 +97,7 @@ async function copySource(context, info, move) {
 */
 export async function putSource(context, info) {
   if (context.data.source) {
-    return copySource(context, info, context.data.move === 'true');
+    return copySource(context, info, String(context.data.move) === 'true');
   }
 
   try {

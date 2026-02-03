@@ -9,62 +9,23 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Response } from '@adobe/fetch';
-import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { listFolder } from './folder.js';
-import { getS3KeyFromInfo } from './utils.js';
-
-/**
- * Get the headers for the response.
- *
- * @param {*} meta The metadata that contains many of the headers
- * @param {number} length The content length
- * @return {Object} headers
- */
-function getHeaders(meta, length) {
-  const headers = {
-    'Content-Type': meta.ContentType,
-    'Last-Modified': meta.LastModified.toUTCString(),
-  };
-  if (length) {
-    headers['Content-Length'] = length;
-  }
-  if (meta.ETag) {
-    headers.ETag = meta.ETag;
-  }
-  return headers;
-}
+import { accessSourceFile, getS3KeyFromInfo } from './utils.js';
+import { getVersions } from './versions.js';
 
 async function accessSource(context, info, headRequest) {
   if (info.rawPath.endsWith('/')) {
     return listFolder(context, info, headRequest);
+  } else if (info.rawPath.includes('/.versions')) {
+    return getVersions(context, info, headRequest);
   }
   const { log } = context;
 
-  const bucket = HelixStorage.fromContext(context).sourceBus();
   const key = getS3KeyFromInfo(info);
 
   try {
-    if (headRequest) {
-      const head = await bucket.head(key);
-      if (!head) {
-        return new Response('', { status: 404 });
-      }
-
-      const length = head.Metadata?.['uncompressed-length'] || head.ContentLength;
-      const headers = getHeaders(head, length);
-      return new Response('', { status: head.$metadata.httpStatusCode, headers });
-    } else {
-      const meta = {};
-      const body = await bucket.get(key, meta);
-      if (!body) {
-        return new Response('', { status: 404 });
-      }
-
-      const headers = getHeaders(meta, body.length);
-      return new Response(body, { status: 200, headers });
-    }
+    return await accessSourceFile(context, key, headRequest);
   } catch (e) {
     const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;

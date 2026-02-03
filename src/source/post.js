@@ -18,6 +18,7 @@ import {
   getValidPayload,
   storeSourceFile,
 } from './utils.js';
+import { createVersion } from './versions.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -31,6 +32,8 @@ import {
 export async function postSource(context, info) {
   if (info.rawPath.endsWith('/')) {
     return createFolder(context, info);
+  } else if (info.rawPath.endsWith('/.versions')) {
+    return createVersion(context, info);
   }
 
   try {

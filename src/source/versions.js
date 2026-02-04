@@ -20,6 +20,7 @@ import {
   getUser,
 } from './utils.js';
 
+const VERSION_FOLDER = '/.versions';
 const VERSION_INDEX = '/index.json';
 
 /**
@@ -30,10 +31,15 @@ const VERSION_INDEX = '/index.json';
  * @returns {Promise<Response>} response with the file body and metadata
  */
 export async function createVersion(context, info) {
+  const { log } = context;
   const key = getS3KeyFromInfo(info);
-  const baseKey = key.slice(0, -'/.versions'.length);
+  const baseKey = key.slice(0, -VERSION_FOLDER.length);
   const indexKey = `${key}${VERSION_INDEX}`;
   const comment = String(context.data.comment || '');
+
+  if (!context.data.operation) {
+    return createErrorResponse({ status: 400, msg: 'Operation is required when creating a version', log });
+  }
   const operation = String(context.data.operation);
 
   try {
@@ -52,21 +58,32 @@ export async function createVersion(context, info) {
     const versionKey = `${key}/${index.next}`;
     await bucket.copy(baseKey, versionKey);
 
-    index.versions.push({
+    const version = {
       version: index.next,
-      comment,
       op: operation,
       date: new Date().toISOString(),
       user: getUser(context),
-    });
+      ...(comment && { comment }),
+    };
+    index.versions.push(version);
     index.next += 1;
     await bucket.put(indexKey, JSON.stringify(index), 'application/json');
     return new Response('', { status: 201 });
   } catch (e) {
-    const opts = { e, log: context.log };
+    const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }
+}
+
+/**
+ * Delete all versions of a file.
+ *
+ * @param {import('@adobe/helix-shared-storage').Storage} bucket storage bucket
+ * @param {string} key key of the file
+ */
+export async function deleteVersions(bucket, key) {
+  await bucket.rmdir(`${key}${VERSION_FOLDER}`);
 }
 
 /**
@@ -126,7 +143,7 @@ export async function listVersions(context, info, headRequest) {
  */
 async function getVersion(context, info, version, headRequest) {
   const baseKey = getS3KeyFromInfo(info);
-  const versionKey = `${baseKey}/.versions/${version}`;
+  const versionKey = `${baseKey}${VERSION_FOLDER}/${version}`;
   try {
     return await accessSourceFile(context, versionKey, headRequest);
   } catch (e) {
@@ -144,7 +161,7 @@ async function getVersion(context, info, version, headRequest) {
  * @returns {Promise<Response>} response with the file body and metadata
  */
 export async function getVersions(context, info, headRequest) {
-  if (info.rawPath.endsWith('/.versions')) {
+  if (info.rawPath.endsWith(VERSION_FOLDER)) {
     return listVersions(context, info, headRequest);
   }
 

@@ -14,6 +14,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { deleteFolder } from './folder.js';
 import { getS3KeyFromInfo } from './utils.js';
+import { deleteVersions } from './versions.js';
 
 /**
  * Delete from the source bus.
@@ -33,6 +34,8 @@ export async function deleteSource(context, info) {
 
   try {
     const resp = await bucket.remove(key);
+    await deleteVersions(bucket, key);
+
     return new Response('', { status: resp.$metadata?.httpStatusCode });
   } catch (e) {
     const opts = { e, log };

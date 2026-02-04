@@ -35,6 +35,13 @@ describe('Source Delete Tests', () => {
     nock.source()
       .deleteObject('/test/rest/toast/jam.html')
       .reply(204);
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'test/rest/toast/jam.html/.versions',
+      })
+      .reply(200);
 
     const info = createInfo('/test/sites/rest/source/toast/jam.html');
     const resp = await deleteSource(context, info);

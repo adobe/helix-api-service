@@ -376,14 +376,20 @@ export class AdminContext {
         meta['original-repository'] = `${owner}/${repo}`;
         modified = true;
       }
-      if (!meta.mountpoint) {
-        meta.mountpoint = sourceUrl;
-        modified = true;
-      }
-
       // for helix5 configs, we also store the original site
       if (!meta['original-site']) {
-        meta['original-site'] = `${org}/${site}`;
+        if (modified) {
+          // for new sites, use the current site information
+          meta['original-site'] = `${org}/${site}`;
+        } else {
+          // for helix4 sites, use the original repo
+          meta['original-site'] = meta['original-repository'];
+          modified = true;
+        }
+      }
+
+      if (!meta.mountpoint) {
+        meta.mountpoint = sourceUrl;
         modified = true;
       }
 

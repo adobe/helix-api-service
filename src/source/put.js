@@ -54,14 +54,13 @@ async function copySource(context, info, move) {
       copied = await bucket.copyDeep(srcKey, destKey);
 
       if (move) {
-        const deleted = await bucket.rmdir(srcKey);
+        const copiedKeys = copied.map((item) => item.src);
+        const deleted = await bucket.remove(copiedKeys);
 
         // Check that delKeys and copiedKeys are the same set
-        const delKeys = new Set(deleted.Deleted.map((item) => item.Key));
-        const copiedKeys = new Set(copied.map((item) => item.src));
-
-        if (delKeys.size !== copiedKeys.size
-          || [...delKeys].some((el) => !copiedKeys.has(el))) {
+        const delKeys = deleted.Deleted.map((item) => item.Key);
+        if (delKeys.length !== copiedKeys.length
+          || [...delKeys].some((el) => !copiedKeys.includes(el))) {
           return createErrorResponse({ msg: 'Move operation failed', status: 500, log });
         }
       }
@@ -78,9 +77,11 @@ async function copySource(context, info, move) {
 
       copied = [{ src: srcKey, dst: destKey }];
     }
-    const headers = { 'Content-Type': 'application/json' };
+
     const operation = move ? 'moved' : 'copied';
-    return new Response(`{"${operation}": ${JSON.stringify(copied)}}`, { status: 200, headers });
+    return new Response({
+      [operation]: copied,
+    });
   } catch (e) {
     const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;

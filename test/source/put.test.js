@@ -366,7 +366,6 @@ describe('Source PUT Tests', () => {
         'list-type': '2',
         prefix: 'o/s/x/',
       })
-      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     nock.source()
@@ -429,7 +428,6 @@ describe('Source PUT Tests', () => {
         'list-type': '2',
         prefix: 'o/s/x/',
       })
-      .twice()
       .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
 
     nock.source()

@@ -1,0 +1,24 @@
+{
+  "type": "github",
+  "owner": "owner",
+  "repo": "repo",
+  "ref": "new-branch",
+  "branch": "New-Branch",
+  "baseRef": "ref",
+  "changes": [
+    {
+      "path": "*",
+      "time": "now",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd",
+      "type": "added"
+    },
+    {
+      "path": "foo.md",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "added",
+      "contentType": "text/markdown; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    }
+  ],
+  "installationId": 995843
+}

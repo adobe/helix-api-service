@@ -1,0 +1,17 @@
+{
+  "type": "github",
+  "owner": "owner",
+  "repo": "repo",
+  "ref": "new-tag",
+  "tag": true,
+  "baseRef": "ref",
+  "changes": [
+    {
+      "path": "*",
+      "time": "now",
+      "commit": "e7dc0087d4b2f8d37f6f5c233655e9d34add005e",
+      "type": "added"
+    }
+  ],
+  "installationId": 995843
+}

@@ -51,19 +51,6 @@ export class AdminContext {
     this.requestId = headers?.get('x-request-id')
       || headers?.get('x-cdn-request-id')
       || '';
-    this.githubToken = headers?.get('x-github-token') || '';
-
-    // If we have a github token, we want to check if we have a base url override as well
-    if (this.githubToken) {
-      const GH_BASE_URL = headers.get('x-github-base');
-      const GH_RAW_URL = headers.get('x-github-raw');
-      if (GH_BASE_URL && GH_BASE_URL !== 'https://api.github.com') {
-        this.env.GH_BASE_URL = GH_BASE_URL;
-        this.env.GH_RAW_URL = GH_RAW_URL;
-        // this is used to differentiate to a configured byogit
-        this.env.GH_EXTERNAL = true;
-      }
-    }
   }
 
   static create(context, opts) {
@@ -376,14 +363,20 @@ export class AdminContext {
         meta['original-repository'] = `${owner}/${repo}`;
         modified = true;
       }
-      if (!meta.mountpoint) {
-        meta.mountpoint = sourceUrl;
-        modified = true;
-      }
-
       // for helix5 configs, we also store the original site
       if (!meta['original-site']) {
-        meta['original-site'] = `${org}/${site}`;
+        if (modified) {
+          // for new sites, use the current site information
+          meta['original-site'] = `${org}/${site}`;
+        } else {
+          // for helix4 sites, use the original repo
+          meta['original-site'] = meta['original-repository'];
+          modified = true;
+        }
+      }
+
+      if (!meta.mountpoint) {
+        meta.mountpoint = sourceUrl;
         modified = true;
       }
 

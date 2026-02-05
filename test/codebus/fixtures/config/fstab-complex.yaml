@@ -1,0 +1,10 @@
+mountpoints:
+  /:
+    url: https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/theblog
+    type: onedrive
+    tenant: 1234
+
+folders:
+  "/products": "/generic-product",
+  "/articles/": "/special/default-article",
+  "/app": "/spa/index.html"

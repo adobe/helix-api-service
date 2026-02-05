@@ -1,3 +1,10 @@
+## [1.31.3](https://github.com/adobe/helix-api-service/compare/v1.31.2...v1.31.3) (2026-02-05)
+
+
+### Bug Fixes
+
+* use original-repo for new helix5 sites ([#126](https://github.com/adobe/helix-api-service/issues/126)) ([b60951d](https://github.com/adobe/helix-api-service/commit/b60951daf25f584619a4212dec3478f93d71cf8c))
+
 ## [1.31.2](https://github.com/adobe/helix-api-service/compare/v1.31.1...v1.31.2) (2026-02-03)
 
 

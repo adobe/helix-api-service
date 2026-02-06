@@ -139,6 +139,13 @@ describe('Source Handler Tests', () => {
 
   it('handles DELETE requests', async () => {
     nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org/site/to/be/deleted.html/.versions',
+      })
+      .reply(200);
+    nock.source()
       .deleteObject('/org/site/to/be/deleted.html')
       .reply(204);
     const resp = await main(new Request('https://api.aem.live/', {

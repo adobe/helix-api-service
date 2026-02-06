@@ -20,21 +20,21 @@ import {
   getUser,
 } from './utils.js';
 
-const VERSION_FOLDER = '/.versions';
-const VERSION_INDEX = '/index.json';
+export const VERSION_FOLDER = '/.versions';
+const VERSION_INDEX = 'index.json';
 
 /**
  * Create a version of the source file.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {string} baseKey base key of the source file
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function createVersion(context, info) {
+export async function createVersion(context, baseKey) {
   const { log } = context;
-  const key = getS3KeyFromInfo(info);
-  const baseKey = key.slice(0, -VERSION_FOLDER.length);
-  const indexKey = `${key}${VERSION_INDEX}`;
+
+  const versionFolderKey = `${baseKey}${VERSION_FOLDER}/`;
+  const indexKey = `${versionFolderKey}${VERSION_INDEX}`;
   const comment = String(context.data.comment || '');
 
   if (!context.data.operation) {
@@ -55,7 +55,7 @@ export async function createVersion(context, info) {
       };
     }
 
-    const versionKey = `${key}/${index.next}`;
+    const versionKey = `${versionFolderKey}${index.next}`;
     await bucket.copy(baseKey, versionKey);
 
     const version = {
@@ -86,6 +86,16 @@ export async function deleteVersions(bucket, key) {
   await bucket.rmdir(`${key}${VERSION_FOLDER}`);
 }
 
+async function handleNoVersions(context, baseKey) {
+  const baseFileResp = await accessSourceFile(context, baseKey, true);
+  if (baseFileResp.status === 200) {
+    const headers = { 'Content-Type': 'application/json' };
+    return new Response('[]', { status: 200, headers });
+  } else {
+    return new Response('', { status: 404 });
+  }
+}
+
 /**
  * List all versions of a file. The response is a JSON array of version objects:
  * For example:
@@ -103,19 +113,20 @@ export async function deleteVersions(bucket, key) {
  *   }]
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {string} baseKey base key of the source file
  * @param {boolean} headRequest whether to return the headers only for a HEAD request
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function listVersions(context, info, headRequest) {
-  const key = getS3KeyFromInfo(info);
-  const indexKey = `${key}${VERSION_INDEX}`;
+export async function listVersions(context, baseKey, headRequest) {
+  const versionFolderKey = `${baseKey}${VERSION_FOLDER}/`;
+
+  const indexKey = `${versionFolderKey}${VERSION_INDEX}`;
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
   if (headRequest) {
     const head = await bucket.head(indexKey);
     if (!head) {
-      return new Response('', { status: 404 });
+      return handleNoVersions(context, baseKey);
     }
     const length = head.Metadata?.['uncompressed-length'] || head.ContentLength;
     const headers = getFileHeaders(head, length);
@@ -124,7 +135,7 @@ export async function listVersions(context, info, headRequest) {
     const meta = {};
     const idx = await bucket.get(indexKey, meta);
     if (!idx) {
-      return new Response('', { status: 404 });
+      return handleNoVersions(context, baseKey);
     }
     const index = JSON.parse(idx);
     const headers = getFileHeaders(meta, idx.length);
@@ -162,7 +173,8 @@ async function getVersion(context, info, version, headRequest) {
  */
 export async function getVersions(context, info, headRequest) {
   if (info.rawPath.endsWith(VERSION_FOLDER)) {
-    return listVersions(context, info, headRequest);
+    const baseKey = getS3KeyFromInfo(info).slice(0, -VERSION_FOLDER.length);
+    return listVersions(context, baseKey, headRequest);
   }
 
   // Parse the requested individual version out of the request info

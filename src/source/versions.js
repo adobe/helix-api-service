@@ -36,11 +36,7 @@ export async function createVersion(context, baseKey) {
   const versionFolderKey = `${baseKey}${VERSION_FOLDER}/`;
   const indexKey = `${versionFolderKey}${VERSION_INDEX}`;
   const comment = String(context.data.comment || '');
-
-  if (!context.data.operation) {
-    return createErrorResponse({ status: 400, msg: 'Operation is required when creating a version', log });
-  }
-  const operation = String(context.data.operation);
+  const operation = String(context.data.operation || '');
 
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
@@ -60,10 +56,10 @@ export async function createVersion(context, baseKey) {
 
     const version = {
       version: index.next,
-      op: operation,
       date: new Date().toISOString(),
       user: getUser(context),
       ...(comment && { comment }),
+      ...(operation && { operation }),
     };
     index.versions.push(version);
     index.next += 1;

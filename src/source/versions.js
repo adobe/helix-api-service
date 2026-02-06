@@ -67,7 +67,7 @@ export async function createVersion(context, info) {
     };
     index.versions.push(version);
     index.next += 1;
-    await bucket.put(indexKey, JSON.stringify(index), 'application/json');
+    await bucket.put(indexKey, JSON.stringify(index, null, 2), 'application/json');
     return new Response('', { status: 201 });
   } catch (e) {
     const opts = { e, log };

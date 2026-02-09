@@ -14,24 +14,15 @@
 
 import mime from 'mime';
 import {
-  ModifiersConfig, MountConfig, IndexConfig, SitemapConfig, IgnoreConfig,
+  ModifiersConfig, IndexConfig, SitemapConfig, IgnoreConfig,
 } from '@adobe/helix-shared-config';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { sanitizeName } from '@adobe/helix-shared-string';
-import { calculateContentBusId, fetchConfigAll, getContentBusId } from '@adobe/helix-admin-support';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import {
-  aggregate, CONFIG_FILES, CONFIG_PATH, validate,
-} from './config.js';
 import tree from './github-tree.js';
-import { ALLOWED_HEADERS_FILTER, getFetch, measure } from '../support/utils.js';
-import { contentConfigMerge } from '../contentbus/config-merge.js';
+import { ALLOWED_HEADERS_FILTER, measure } from '../support/utils.js';
 import { Job } from '../job/job.js';
-import {
-  PURGE_PREVIEW_AND_LIVE, performPurge, purgeCode, purgeConfig,
-} from '../cache/purge.js';
-import { deployFstab } from '../support/deploy-fstab.js';
-import { reindexProject } from '../discover/reindex.js';
+import purge, { PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import {
   createDeployment,
@@ -42,7 +33,6 @@ import {
   updateDeployment, getRefSha,
 } from './github-bot.js';
 import { fetchHlxJson } from '../config/utils.js';
-import { assertSourceLock } from '../support/source-lock.js';
 import { RateLimitError } from './rate-limit-error.js';
 
 /**
@@ -64,6 +54,12 @@ import { RateLimitError } from './rate-limit-error.js';
 /**
  * @typedef {import('./index').ChangeEvent} ChangeEvent
  */
+
+/**
+ * Path of the aggregate config
+ * @type {string}
+ */
+export const CONFIG_PATH = 'helix-config.json';
 
 /**
  * Other configuration files
@@ -326,6 +322,7 @@ export class CodeJob extends Job {
         const treeChanges = await tree(ctx, codeSource, evt, this.state.data.sha);
         changes = treeChanges.map((c) => {
           if (!pathFilter(c.path)) {
+            // eslint-disable-next-line no-param-reassign
             c.type = 'ignored';
           }
           return c;
@@ -366,7 +363,7 @@ export class CodeJob extends Job {
     const { ctx, state: { data: /** @type {ChangeEvent} */ evt } } = this;
     const { resources, changes, codePrefix } = evt;
     const { log } = ctx;
-    const fetch = getFetch(ctx);
+    const fetch = ctx.getFetch();
 
     const startTime = Date.now();
     const storage = HelixStorage.fromContext(ctx).codeBus();
@@ -378,8 +375,7 @@ export class CodeJob extends Job {
     }
 
     // ensure config all is loaded
-    const configAll = await fetchConfigAll(ctx, { ...this.state.data.evt, route: 'preview', path: '/' });
-    const headers = new ModifiersConfig(configAll?.headers?.data, ALLOWED_HEADERS_FILTER);
+    const headers = new ModifiersConfig(ctx.config.headers?.data, ALLOWED_HEADERS_FILTER);
     const { octokit } = codeSource;
     let counter = 0;
     const rateLimit = {
@@ -440,18 +436,17 @@ export class CodeJob extends Job {
             if (evt.ref === 'main') {
               const { name } = OTHER_CONFIG_FILES[change.path] || {};
               if (name) {
-                const contentBusId = await getContentBusId(ctx, evt);
+                const { contentBusId } = ctx.config.content;
                 const contentPath = `${contentBusId}/preview/.helix/${name}.yaml`;
                 const hlx = await fetchHlxJson(ctx, contentBusId);
                 const project = `${evt.codeOwner}/${evt.codeRepo}`;
-                if (ctx.attributes.config) {
-                  log.info(`[code][${nr}] not removing ${contentPath} from storage: might be used by site config.`);
-                } else if (hlx?.['original-repository'] === project) {
+                // since repo == site is enforced, we can remove when the original site matches
+                if (hlx?.['original-site'] === project) {
                   log.info(`[code][${nr}] removing ${contentPath} from storage.`);
                   await measure(() => contentBus.remove(contentPath), this.storageTimer);
                   this.storageTimer.remove += 1;
                 } else {
-                  log.info(`[code][${nr}] not removing ${contentPath} from storage: original repository is: ${hlx?.['original-repository']}`);
+                  log.info(`[code][${nr}] not removing ${contentPath} from storage: original site is: ${hlx?.['original-site']}`);
                 }
               }
             }
@@ -486,6 +481,7 @@ export class CodeJob extends Job {
           const oldFstab = await measure(() => storage.get(path), this.storageTimer);
           if (oldFstab && oldFstab.equals(body)) {
             log.info(`[code][${nr}] fstab.yaml on main branch not modified.`);
+            // eslint-disable-next-line no-param-reassign
             change.type = 'ignored';
             this.state.progress.ignored += 1;
             await this.writeStateLazy();
@@ -519,9 +515,11 @@ export class CodeJob extends Job {
             // eslint-disable-next-line no-param-reassign
             const dateStr = commitsJson[0]?.commit?.committer?.date;
             if (dateStr) {
+              // eslint-disable-next-line no-param-reassign
               change.lastModified = new Date(dateStr).toUTCString();
             }
             if (!change.commit) {
+              // eslint-disable-next-line no-param-reassign
               change.commit = commitsJson[0]?.sha;
             }
           }
@@ -535,6 +533,7 @@ export class CodeJob extends Job {
           if (newDate <= oldDate) {
             log.info(`[code][${nr}] ignoring last modified from github. last modified is older than existing file in code-bus: ${path}`);
             oldDate.setSeconds(oldDate.getSeconds() + 1);
+            // eslint-disable-next-line no-param-reassign
             change.lastModified = oldDate.toUTCString();
           }
         }
@@ -556,15 +555,6 @@ export class CodeJob extends Job {
       }
 
       try {
-        // validate config before storing
-        if (!(await validate(log, change.path, body))) {
-          resources.push(createResourceInfo(change, 400, 'invalid config'));
-          log.warn(`[code][${nr}] Not storing invalid config: ${change.path} in code-bus`);
-          this.state.progress.failed += 1;
-          await this.writeStateLazy();
-          return;
-        }
-
         log.info(`[code][${nr}] uploading ${path} to storage`);
         const meta = {
           ...headers.getModifiers(`/${change.path}`),
@@ -633,7 +623,7 @@ export class CodeJob extends Job {
 
     const { ctx, state: { data: /** @type {ChangeEvent} */ evt } } = this;
     const {
-      resources, codePrefix, codeOwner, codeRepo, ref,
+      resources, codeOwner, codeRepo, ref,
     } = evt;
     const { log } = ctx;
     const info = {
@@ -646,157 +636,21 @@ export class CodeJob extends Job {
     };
 
     // check for config changes
-    let fstabModified = false;
-    let fstabMissing = false;
-    let fstabDeleted = false;
     let doPurgeConfig = false;
-    let hasConfigChanges = false;
-
-    const oldContentBusId = await getContentBusId(ctx, info);
-    const configChanges = {};
 
     for (const resource of resources) {
       if (resource.status < 300) {
         const key = resource.resourcePath.substring(1);
-        if (CONFIG_FILES[key]) {
-          configChanges[key] = {
-            deleted: resource.deleted,
-          };
-          hasConfigChanges = true;
+        if (key === 'head.html') {
           doPurgeConfig = true;
-
-          // remember to purge head also in config
-          if (key === 'head.html') {
-            info.purgeHead = true;
-          }
-        } else if (ref === 'main' && ctx.attributes.config && key === 'tools/sidekick/config.json') {
+          info.purgeHead = true;
+        } else if (ref === 'main' && key === 'tools/sidekick/config.json') {
           doPurgeConfig = true;
         } else if (ref === 'main' && key === 'robots.txt') {
           doPurgeConfig = true;
         }
       }
     }
-
-    if (hasConfigChanges) {
-      try {
-        const storage = HelixStorage.fromContext(ctx).codeBus();
-        const configAll = await fetchConfigAll(ctx, { ...info, route: 'preview', path: '/' });
-        /* c8 ignore next */
-        const headers = new ModifiersConfig(configAll?.headers?.data, ALLOWED_HEADERS_FILTER);
-
-        // load the previous config
-        const path = `${codePrefix}${CONFIG_PATH}`;
-        let previousConfig = null;
-        const cfg = await storage.get(path);
-        if (cfg) {
-          previousConfig = JSON.parse(cfg);
-        }
-
-        // load all the new config files
-        for (const key of Object.keys(CONFIG_FILES)) {
-          const change = configChanges[key] || {};
-          const objectMeta = {};
-          // special handling for fstab
-          if (key === 'fstab.yaml') {
-            // always load fstab from main
-            fstabMissing = !change.data;
-            change.data = await storage.get(`/${codeOwner}/${codeRepo}/main/fstab.yaml`, objectMeta);
-            if (change.data) {
-              fstabMissing = false;
-            }
-            if (configChanges[key] && ref === 'main') {
-              if (change.deleted) {
-                fstabDeleted = true;
-              } else {
-                // if the fstab was modified, invalidate the currently cached
-                ctx.attributes.mountConfig = await new MountConfig().withSource(change.data.toString('utf-8')).init();
-                await assertSourceLock(ctx, info);
-                fstabModified = true;
-              }
-            }
-          } else {
-            change.data = await storage.get(`${codePrefix}${key}`, objectMeta);
-          }
-          change.lastModified = objectMeta.lastModified;
-          configChanges[key] = change;
-        }
-
-        if (fstabDeleted) {
-          // remove config
-          const codeInfo = createResourceInfo(/** @type Change */{
-            path: CONFIG_PATH,
-            deleted: true,
-          });
-          log.info(`[code] removing ${path} from storage.`);
-          await measure(() => storage.remove(path), this.storageTimer);
-          resources.push(codeInfo);
-          info.purgeHead = true;
-        } else if (!fstabMissing) {
-          // update config
-          const newConfig = await aggregate(log, configChanges, previousConfig || {});
-          // check if previous had a content section
-          if (previousConfig?.content) {
-            newConfig.content = previousConfig.content;
-          }
-
-          // handle helix version and creation date. note that we only set the information on newly
-          // created configurations.
-          if (!previousConfig) {
-            newConfig.helixVersion = 4;
-            newConfig.created = new Date().toUTCString();
-          }
-          if (previousConfig?.helixVersion) {
-            newConfig.helixVersion = previousConfig.helixVersion;
-          }
-          if (previousConfig?.created) {
-            newConfig.created = previousConfig.created;
-          }
-
-          const contentBusId = await calculateContentBusId(ctx, /** @type PathInfo */ {
-            ...info,
-            path: '/',
-          });
-          if (!newConfig.content) {
-            newConfig.content = {
-              data: {},
-            };
-          }
-          newConfig.content.data['/'] = {
-            contentBusId,
-          };
-          ctx.attributes.helixConfig = newConfig;
-          ctx.attributes.contentBusId = contentBusId;
-
-          // store new config
-          const body = JSON.stringify(newConfig, null, 2);
-          const codeInfo = createResourceInfo(/** @type Change */{
-            path: CONFIG_PATH,
-            contentLength: body.length,
-            contentType: 'application/json',
-          });
-
-          const meta = {
-            ...headers.getModifiers(`/${CONFIG_PATH}`),
-            'x-contentbus-id': `/=${contentBusId}`,
-          };
-          if (newConfig.created) {
-            meta['x-created-date'] = newConfig.created;
-          }
-          if (newConfig.helixVersion) {
-            meta['x-helix-version'] = String(newConfig.helixVersion);
-          }
-
-          log.info('[code] uploading', path);
-          await storage.put(path, body, 'application/json', meta, false);
-          resources.push(codeInfo);
-        }
-      } catch (e) {
-        log.error(`[code] Unable to process combined config: ${e.message}`);
-      }
-    } else {
-      log.info('[code] no config files modified');
-    }
-
     // purge config with _head surrogate for tree syncs, as they might invalidate the config
     if (this.state.data.treeSyncReason) {
       log.info(`[code] forcing config purge for ${codeOwner}/${codeRepo}/${ref} due to tree sync: ${this.state.data.treeSyncReason}`);
@@ -805,31 +659,8 @@ export class CodeJob extends Job {
     }
 
     // check if fstab was modified
-    if (fstabModified) {
-      // ensure proper route
-      await fetchConfigAll(ctx, info);
-      await deployFstab(ctx, info);
-      await contentConfigMerge(ctx, info);
-
-      // check if contentBusId changed and purge live and preview if needed
-      const contentBusId = await getContentBusId(ctx, info);
-      if (contentBusId !== oldContentBusId) {
-        ctx.log.info(`[code] contentBusId modified from ${oldContentBusId} to ${contentBusId}, performing purge.`);
-        await performPurge(ctx, info, [{
-          key: `p_${oldContentBusId}`,
-        }, {
-          key: oldContentBusId,
-        }], PURGE_PREVIEW_AND_LIVE, info.ref);
-      }
-      // those are handled by contentConfigMerge
-      doPurgeConfig = false;
-    }
     if (doPurgeConfig) {
-      await purgeConfig(ctx, info);
-    }
-    if (fstabModified) {
-      // reindex discover after config changes
-      await reindexProject(ctx, info.org, info.site);
+      await purge.config(ctx, info);
     }
   }
 
@@ -847,18 +678,10 @@ export class CodeJob extends Job {
       resources, codeOwner: owner, codeRepo: repo,
     } = evt;
     const { log } = ctx;
-    const info = {
-      owner,
-      repo,
-      ref: evt.codeRef,
-      org: this.info.org,
-      site: this.info.site,
-      route: 'code',
-    };
 
     // check for config changes
     const contentBus = HelixStorage.fromContext(ctx).contentBus();
-    const contentBusId = await getContentBusId(ctx, info);
+    const { contentBusId } = ctx.config.content;
     const configChanges = {};
 
     for (const resource of resources) {
@@ -867,10 +690,10 @@ export class CodeJob extends Job {
       if (status < 300 && OTHER_CONFIG_FILES[key] && evt.ref === 'main') {
         const hlx = await fetchHlxJson(ctx, contentBusId);
         const project = `${owner}/${repo}`;
-        if (hlx?.['original-repository'] === project) {
+        if (hlx?.['original-site'] === project) {
           configChanges[key] = { deleted };
         } else {
-          log.info(`[code] ignoring change to ${key}: original repository is: ${hlx?.['original-repository']}`);
+          log.info(`[code] ignoring change to ${key}: original repository is: ${hlx?.['original-site']}`);
         }
       }
     }
@@ -879,10 +702,6 @@ export class CodeJob extends Job {
       return;
     }
     const codeBus = HelixStorage.fromContext(ctx).codeBus();
-    if (!await codeBus.head(`/${owner}/${repo}/main/fstab.yaml`)) {
-      log.info(`[code] project has no fstab, changes to helix-*.yaml files ignored: ${owner}/${repo}`);
-      return;
-    }
 
     try {
       // load all the new config files
@@ -930,7 +749,7 @@ export class CodeJob extends Job {
     };
 
     if (this.state.data.deleteTree) {
-      await performPurge(ctx, info, [{
+      await purge.perform(ctx, info, [{
         key: `${codeRef}--${codeOwner}--${codeRepo}`,
       }, {
         key: `${codeRef}--${codeOwner}--${codeRepo}_code`,
@@ -942,17 +761,17 @@ export class CodeJob extends Job {
     const purgePaths = resources
       .filter(({ status }) => status === 200 || status === 204)
       .map(({ resourcePath }) => resourcePath);
-    await purgeCode(ctx, info, purgePaths);
+    await purge.code(ctx, info, purgePaths);
   }
 
   /**
-     * Helper for retrying a function with rate limit handling.
-     * Waits and retries if a RateLimitError is thrown, up to the allowed deadline.
-     * @param {Function} fn - The function to execute.
-     * @param {string} phaseName - The name of the current phase.
-     * @param {object} codeSource - The code source context.
-     * @returns {Promise<void>}
-     */
+   * Helper for retrying a function with rate limit handling.
+   * Waits and retries if a RateLimitError is thrown, up to the allowed deadline.
+   * @param {Function} fn - The function to execute.
+   * @param {string} phaseName - The name of the current phase.
+   * @param {object} codeSource - The code source context.
+   * @returns {Promise<void>}
+   */
   async runWithRetry(fn, phaseName, codeSource) {
     let waitTime = 0;
     do {

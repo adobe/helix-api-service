@@ -268,6 +268,7 @@ export class AdminContext {
 
   /**
    * Returns the config associated with this request.
+   * @returns SiteConfig
    */
   get config() {
     return this.attributes.config;

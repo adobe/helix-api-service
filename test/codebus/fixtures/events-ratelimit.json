@@ -1,0 +1,28 @@
+{
+  "type": "github",
+  "owner": "owner",
+  "repo": "repo",
+  "ref": "ref",
+  "baseRef": "",
+  "changes": [
+    {
+      "path": "new-file.txt",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "added",
+      "contentType": "text/plain; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "rate-error.md",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/markdown; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "music.mp3",
+      "type": "modified"
+    }
+  ],
+  "installationId": 995843
+}

@@ -1,0 +1,39 @@
+{
+  "type": "github",
+  "owner": "owner",
+  "repo": "repo",
+  "ref": "v1",
+  "tag": "true",
+  "baseRef": "",
+  "changes": [
+    {
+      "path": ".hlxignore",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/plain; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "README.md",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/plain; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "node_modules/should_not_include",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/plain; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "src/node_modules/should_not_include",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/plain; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    }
+  ],
+  "installationId": 995843
+}

@@ -424,3 +424,18 @@ export function logRequest(context, info, response) {
   });
   log.info('%j', { admin });
 }
+
+/**
+ * Simple timing function for async functions.
+ * @param f
+ * @param timer
+ * @returns {Promise<*>}
+ */
+export async function measure(f, timer) {
+  const t0 = Date.now();
+  const ret = await f();
+  const t1 = Date.now();
+  // eslint-disable-next-line no-param-reassign
+  timer.time += (t1 - t0);
+  return ret;
+}

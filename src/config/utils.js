@@ -96,3 +96,25 @@ export async function fetchHlxJson(contentBus, contentBusId) {
   }
   return JSON.parse(buf.toString());
 }
+
+/**
+ * Checks if "this" site's code source is the canonical source of this site.
+ * If not, name of the primary code source is returned.
+ * @param {AdminContext} ctx
+ * @param {RequestInfo} info
+ * @returns {string}
+ */
+export function checkCanonicalRepo(ctx, info) {
+  if (!ctx.attributes.config?.code) {
+    return '';
+  }
+  const { code } = ctx.attributes.config;
+  const url = new URL(code.source.url);
+  // only check for github repos
+  if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {
+    if (code.owner !== info.org || code.repo !== info.site) {
+      return `${code.owner}/${code.repo}`;
+    }
+  }
+  return '';
+}

@@ -1,0 +1,38 @@
+{
+  "type": "github",
+  "owner": "owner",
+  "repo": "repo",
+  "ref": "tripod/test_@34/SUB",
+  "branch": "tripod/test_@34/SUB",
+  "baseRef": "",
+  "changes": [
+    {
+      "path": "new-file.txt",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "added",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "src/html.htl",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "deleted",
+      "contentType": "application/octet-stream",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "README.md",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/markdown; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    },
+    {
+      "path": "fail.md",
+      "time": "2021-05-04T13:40:15+09:00",
+      "type": "modified",
+      "contentType": "text/markdown; charset=utf-8",
+      "commit": "5edf98811d50b5b948f6f890f0c4367095490dbd"
+    }
+  ],
+  "installationId": 995843
+}

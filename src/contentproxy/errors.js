@@ -146,6 +146,10 @@ const errors = [
     code: 'AEM_BACKEND_CONFIG_DELETE',
     template: 'Error removing config: $1',
   },
+  {
+    code: 'AEM_ NOT_CANONICAL_CODE_SOURCE',
+    template: 'Code operation restricted to canonical source: $1',
+  },
 ];
 
 /**

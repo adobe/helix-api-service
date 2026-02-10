@@ -17,19 +17,16 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { useFakeTimers } from 'sinon';
 import { Octokit } from '@octokit/rest';
-import esmock from 'esmock';
 import { computeSurrogateKey } from '@adobe/helix-shared-utils';
 import { sanitizeName } from '@adobe/helix-shared-string';
 import {
-  createPathInfo, DEFAULT_CONTEXT, FSTAB, FSTAB_FOLDER_MAPPED, Nock, SITE_CONFIG,
+  Nock, SITE_CONFIG,
 } from '../utils.js';
-import { getFetch } from '../../src/support/utils.js';
-import { CodeJob, getCodeRef } from '../../src/codebus/code-job.js';
+import { CodeJob, getCodeRef } from '../../src/code/code-job.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
-import { getCodeSource } from '../../src/codebus/github-bot.js';
+import { getCodeSource } from '../../src/code/github-bot.js';
 import { JobStorage } from '../../src/job/storage.js';
-import { applyConfig } from '../../src/config/utils.js';
-import { RateLimitError } from '../../src/codebus/rate-limit-error.js';
+import { RateLimitError } from '../../src/code/rate-limit-error.js';
 
 const DEFAULT_OCTOKIT = (ctx) => new Octokit({
   request: { fetch: getFetch(ctx) },

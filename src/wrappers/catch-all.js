@@ -49,6 +49,10 @@ export default function catchAll(func) {
       if (e instanceof TypeError) {
         log.warn(e);
       }
+      // for testing
+      if (e.name === 'AssertionError') {
+        throw e;
+      }
       return new Response('', {
         status: e.status || e.statusCode || e.$metadata?.httpStatusCode || 500,
         headers: {

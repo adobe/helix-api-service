@@ -19,7 +19,7 @@ import { getCodeBusInfo } from './info.js';
  * @param {RequestInfo} info path info
  * @returns {Promise<Response>} response
  */
-export default async function status(ctx, info) {
+export async function status(ctx, info) {
   ctx.attributes.authInfo.assertPermissions('code:read');
   const codeInfo = await getCodeBusInfo(ctx, info);
   if (codeInfo.status === 404) {

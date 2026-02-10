@@ -19,7 +19,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
  * @param {PathInfo} info path info
  * @returns {Promise<Response>} response
  */
-export default async function codeRemove(ctx, info) {
+export async function remove(ctx, info) {
   const { log } = ctx;
   const {
     owner, repo, ref, resourcePath,

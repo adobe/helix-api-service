@@ -13,8 +13,8 @@
 import assert from 'assert';
 import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import codeStatus from '../../src/codebus/status.js';
-import { createPathInfo, DEFAULT_CONTEXT, Nock } from '../utils.js';
+import codeStatus from '../../src/code/status.js';
+import { Nock } from '../utils.js';
 
 describe('Code Status Tests', () => {
   let nock;

@@ -76,18 +76,13 @@ export async function update(ctx, info) {
       path,
       contentType,
     }];
-    event.owner = ctx.data?.owner || info.owner;
-    event.repo = ctx.data?.repo || info.repo;
-    event.ref = info.ref;
-    event.branch = info.branch;
+    event.owner = info.owner;
+    event.repo = info.repo;
+    event.branch = ctx.data?.branch || info.ref;
     if (startJob) {
       log.info(`[code][${event.owner}/${event.repo}/*] explicit '${type}' branch operation requested.`);
     }
   } else {
-    event.owner = event.owner || info.owner;
-    event.repo = event.repo || info.repo;
-    event.ref = event.ref || info.ref;
-    event.branch = event.branch || info.branch;
     event.deploymentAllowed = isDeploymentAllowed(ctx);
   }
   if (String(event.tag) === 'true') {
@@ -114,9 +109,9 @@ export async function update(ctx, info) {
   }
 
   // calculate codebus prefix
-  event.codeRef = getCodeRef(event.ref);
+  event.codeRef = getCodeRef(event.branch);
   event.codePrefix = `/${event.codeOwner}/${event.codeRepo}/${event.codeRef}/`;
-  log.info(`code-sync ${info.org}/${info.site} syncing ${event.owner}/${event.repo}/${event.ref} to ${event.codePrefix}`);
+  log.info(`code-sync ${info.org}/${info.site} syncing ${event.owner}/${event.repo}/${event.branch} to ${event.codePrefix}`);
 
   // this ensures that the octokit is setup
   const codeSource = await getCodeSource(ctx, event);

@@ -10,12 +10,9 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { update } from './update.js';
-import status from './status.js';
-import remove from './remove.js';
+import codebus from './codebus.js';
 import { errorResponse } from '../support/utils.js';
 import purge from '../cache/purge.js';
-import listBranches from './list-branches.js';
 import { checkCanonicalRepo } from '../config/utils.js';
 import { error } from '../contentproxy/errors.js';
 
@@ -50,13 +47,13 @@ export default async function codeHandler(context, info) {
 
   if (info.method === 'GET') {
     if (info.ref === '*') {
-      return listBranches(context, info);
+      return codebus.listBranches(context, info);
     }
-    return status(context, info);
+    return codebus.status(context, info);
   }
 
   if (info.method === 'POST') {
-    return update(context, info);
+    return codebus.update(context, info);
   }
 
   // DELETE
@@ -72,10 +69,10 @@ export default async function codeHandler(context, info) {
   }
 
   if (info.rawPath.endsWith('/*')) {
-    return update(context, info);
+    return codebus.update(context, info);
   }
 
-  const resp = await remove(context, info);
+  const resp = await codebus.remove(context, info);
   if (resp.status !== 204) {
     return resp;
   }

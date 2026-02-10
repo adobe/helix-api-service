@@ -14,16 +14,11 @@
 import assert from 'assert';
 import { generateKeyPair } from 'crypto';
 import { promisify } from 'util';
-import esmock from 'esmock';
 import { Request, Response } from '@adobe/fetch';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { update } from '../../src/codebus/update.js';
-import {
-  createPathInfo, DEFAULT_CONTEXT, Nock, SITE_CONFIG, main,
-} from '../utils.js';
+import { update } from '../../src/code/update.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
-import { applyConfig } from '../../src/config/utils.js';
 
 const getKeyPair = promisify(generateKeyPair);
 

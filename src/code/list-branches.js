@@ -18,7 +18,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
  * @param {PathInfo} info path info
  * @returns {Promise<Response>} response
  */
-export default async function listBranches(ctx, info) {
+export async function listBranches(ctx, info) {
   ctx.attributes.authInfo.assertPermissions('code:read');
   const { owner, repo, path } = info;
   const codeBus = HelixStorage.fromContext(ctx).codeBus();

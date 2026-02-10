@@ -14,8 +14,8 @@ import assert from 'assert';
 import xml2js from 'xml2js';
 import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import listBranches from '../../src/codebus/list-branches.js';
-import { createPathInfo, DEFAULT_CONTEXT, Nock } from '../utils.js';
+import listBranches from '../../src/code/list-branches.js';
+import { Nock } from '../utils.js';
 
 describe('Code List Branches Tests', () => {
   let nock;

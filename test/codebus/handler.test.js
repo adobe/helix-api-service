@@ -11,45 +11,67 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
-import esmock from 'esmock';
 import { Request, Response } from '@adobe/fetch';
+import sinon from 'sinon';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import {
-  DEFAULT_CONTEXT_MAIN, Nock, main, SITE_CONFIG,
-} from '../utils.js';
-
-const HELIX_CONFIG = JSON.stringify({
-  head: {},
-  fstab: {
-    data: {
-      mountpoints: [{
-        url: 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-        path: '/',
-        contentBusId: '1234',
-      }],
-    },
-  },
-});
+import { Nock, SITE_CONFIG } from '../utils.js';
+import { main } from '../../src/index.js';
+import codebus from '../../src/code/codebus.js';
+import purge from '../../src/cache/purge.js';
 
 describe('Code Handler Tests', () => {
   let nock;
+
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {
     nock.done();
+    sandbox.restore();
   });
 
-  it('sends method not allowed for unsupported method', async () => {
-    nock.config(null);
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'PUT',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/en/blogs/may-21',
+  function setupTest(path = '/', { data, redirects, method = 'POST' } = {}) {
+    const suffix = `/owner/sites/repo/code${path}`;
+    const query = new URLSearchParams(data);
+
+    const request = new Request(`https://api.aem.live${suffix}?${query}`, {
+      method,
+      headers: {
+        'x-request-id': 'rid',
+        'content-type': data ? 'application/json' : 'text/plain',
       },
-    }));
+      body: data ? JSON.stringify(data) : null,
+    });
+    const context = {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        infoMarkerChecked: true,
+        redirects: { live: redirects ?? [] },
+      },
+      runtime: { region: 'us-east-1' },
+      env: {
+        HLX_CONFIG_SERVICE_TOKEN: 'token',
+        HLX_FASTLY_PURGE_TOKEN: 'token',
+        HELIX_STORAGE_DISABLE_R2: 'true',
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    };
+    return { request, context };
+  }
+
+  it('sends method not allowed for unsupported method', async () => {
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/en/blogs/may-21', {
+      method: 'PUT',
+    });
+
+    const result = await main(request, context);
     assert.strictEqual(result.status, 405);
     assert.strictEqual(await result.text(), 'method not allowed');
     assert.deepStrictEqual(result.headers.plain(), {
@@ -59,14 +81,12 @@ describe('Code Handler Tests', () => {
   });
 
   it('rejects unauthenticated for DELETE', async () => {
-    nock.config(null);
-    const result = await main(new Request('https://admin.hlx.page/', {
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/en/blogs/may-21', {
       method: 'DELETE',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/en/blogs/may-21',
-      },
-    }));
+    });
+
+    const result = await main(request, context);
     assert.strictEqual(result.status, 403);
     assert.deepStrictEqual(result.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
@@ -76,141 +96,35 @@ describe('Code Handler Tests', () => {
   });
 
   it('rejects cross original repository sync requests', async () => {
-    nock.config(SITE_CONFIG, 'org', 'site');
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'POST',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/org/site/ref/en/blogs/may-21',
-      },
-    }));
-    assert.strictEqual(result.status, 403);
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'Code operation restricted to canonical source: owner/repo',
-      'x-error-code': 'AEM_ NOT_CANONICAL_CODE_SOURCE',
-    });
-  });
-
-  it('POST requires org parameter', async () => {
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'POST',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code',
-      },
-    }));
-    assert.strictEqual(result.status, 400);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'invalid path parameters: "org" is required',
-    });
-  });
-
-  it('POST requires site parameter', async () => {
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'POST',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner',
-      },
-    }));
-    assert.strictEqual(result.status, 400);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'invalid path parameters: "site" is required',
-    });
-  });
-
-  it('POST requires ref parameter', async () => {
-    nock.config(null);
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'POST',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo',
-      },
-    }));
-    assert.strictEqual(result.status, 400);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'invalid path parameters: "ref" is required',
-    });
-  });
-
-  it.skip('rejects operation to non canonical repo', async () => {
-    nock.config({
+    nock.siteConfig({
       ...SITE_CONFIG,
       code: {
-        ...SITE_CONFIG.code,
-        owner: 'another-owner',
-        repo: 'another-repo',
+        source: {
+          url: 'https://github.com/owner/repo-another',
+        },
+        owner: 'owner',
+        repo: 'repo-another',
       },
-    });
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'POST',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/en/blogs/may-21',
-      },
-    }));
+    }, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/en/blogs/may-21');
+    const result = await main(request, context);
     assert.strictEqual(result.status, 403);
-    assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'Code operation restricted to canonical source: another-owner/another-repo',
+      'x-error': 'Code operation restricted to canonical source: owner/repo-another',
       'x-error-code': 'AEM_ NOT_CANONICAL_CODE_SOURCE',
     });
   });
 
   it('handles code action', async () => {
-    nock.config(null, 'owner', 'repo', 'main');
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': {
-          update: async (ctx, info) => {
-            assert.deepStrictEqual(info.toJSON(), {
-              headers: {},
-              host: 'admin.hlx.page',
-              method: 'POST',
-              query: {},
-              cookies: {},
-              functionPath: '',
-              scheme: 'https',
-              suffix: '/code/OWNER/REPO/main/',
-              owner: 'owner',
-              org: 'owner',
-              path: '/',
-              rawPath: '/',
-              ref: 'main',
-              branch: 'main',
-              repo: 'repo',
-              site: 'repo',
-              resourcePath: '/index.md',
-              ext: '.md',
-              route: 'code',
-            });
-            return new Response('', {
-              status: 200,
-            });
-          },
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/', { method: 'POST' }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/OWNER/REPO/main/',
-      },
+    sandbox.stub(codebus, 'update').callsFake(() => new Response('', {
+      status: 200,
     }));
+
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/script.js');
+    const result = await main(request, context);
     assert.strictEqual(result.status, 200);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
@@ -220,7 +134,10 @@ describe('Code Handler Tests', () => {
   });
 
   it('handles code action to non canonical byogit repo', async () => {
-    nock.config({
+    sandbox.stub(codebus, 'update').callsFake(() => new Response('', {
+      status: 200,
+    }));
+    nock.siteConfig({
       ...SITE_CONFIG,
       code: {
         source: {
@@ -229,45 +146,9 @@ describe('Code Handler Tests', () => {
         owner: 'another-owner',
         repo: 'another-repo',
       },
-    });
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': {
-          update: async (ctx, info) => {
-            assert.deepStrictEqual(info.toJSON(), {
-              headers: {},
-              host: 'admin.hlx.page',
-              method: 'POST',
-              query: {},
-              cookies: {},
-              functionPath: '',
-              scheme: 'https',
-              suffix: '/code/owner/repo/main/',
-              owner: 'another-owner',
-              org: 'owner',
-              path: '/',
-              rawPath: '/',
-              ref: 'main',
-              branch: 'main',
-              repo: 'another-repo',
-              site: 'repo',
-              resourcePath: '/index.md',
-              ext: '.md',
-              route: 'code',
-            });
-            return new Response('', {
-              status: 200,
-            });
-          },
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/', { method: 'POST' }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/main/',
-      },
-    }));
+    }, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/script.js');
+    const result = await main(request, context);
     assert.strictEqual(result.status, 200);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
@@ -276,122 +157,15 @@ describe('Code Handler Tests', () => {
     });
   });
 
-  it('handles code action (with unsupported characters payload ref)', async () => {
-    nock.config(null, 'owner', 'repo', 'main');
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': {
-          update: async (ctx, info) => {
-            assert.deepStrictEqual(info.toJSON(), {
-              headers: {
-                'content-type': 'application/json',
-              },
-              host: 'admin.hlx.page',
-              method: 'POST',
-              query: {},
-              cookies: {},
-              functionPath: '',
-              scheme: 'https',
-              suffix: '/code/OWNER/REPO/renovate-yargs-18-x',
-              owner: 'owner',
-              org: 'owner',
-              path: '/',
-              rawPath: '',
-              ref: 'renovate-yargs-18-x',
-              branch: 'renovate-yargs-18.x',
-              repo: 'repo',
-              site: 'repo',
-              resourcePath: '/index.md',
-              ext: '.md',
-              route: 'code',
-            });
-            return new Response('', {
-              status: 200,
-            });
-          },
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        installationId: 1234,
-        owner: 'OWNER',
-        repo: 'REPO',
-        ref: 'renovate-yargs-18.x',
-      }),
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/OWNER/REPO/renovate-yargs-18-x',
-      },
+  it('handles errors from code action', async () => {
+    sandbox.stub(codebus, 'update').callsFake(() => new Response('', {
+      status: 504,
     }));
-    assert.strictEqual(result.status, 200);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-    });
-  });
 
-  it('handles code action (no fstab)', async () => {
-    nock.config(null, 'owner', 'repo', 'main');
-    nock.helixConfig(null, 'owner', 'repo', 'main');
-    nock.fstab(null, 'owner', 'repo', 'main');
-    nock('https://raw.githubusercontent.com')
-      .get('/owner/repo/main/fstab.yaml')
-      .reply(404);
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': {
-          update: async (ctx) => {
-            assert.strictEqual('mountConfig' in ctx.attributes, false);
-            return new Response('', {
-              status: 200,
-            });
-          },
-        },
-      }),
-    });
-
-    const ctx = DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/main/',
-      },
-      attributes: {
-        mountConfig: null,
-      },
-    });
-    const result = await proxyMain(new Request('https://admin.hlx.page/', { method: 'POST' }), ctx);
-    assert.strictEqual(result.status, 200);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-    });
-  });
-
-  it('handles code action for scripts', async () => {
-    nock.config(null, 'owner', 'repo', 'main');
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': {
-          update: async () => (new Response('', {
-            status: 200,
-          })),
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/', { method: 'POST' }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/main/scripts.js',
-      },
-    }));
-    assert.strictEqual(result.status, 200);
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/script.js');
+    const result = await main(request, context);
+    assert.strictEqual(result.status, 504);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
@@ -400,43 +174,13 @@ describe('Code Handler Tests', () => {
   });
 
   it('handles code status', async () => {
-    nock.config(null);
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/status.js': async (_, info) => {
-          assert.deepStrictEqual(info.toJSON(), {
-            headers: {},
-            host: 'admin.hlx.page',
-            method: 'GET',
-            query: {},
-            cookies: {},
-            functionPath: '',
-            scheme: 'https',
-            suffix: '/code/owner/repo/ref/',
-            owner: 'owner',
-            org: 'owner',
-            path: '/',
-            rawPath: '/',
-            ref: 'ref',
-            branch: 'ref',
-            repo: 'repo',
-            site: 'repo',
-            resourcePath: '/index.md',
-            ext: '.md',
-            route: 'code',
-          });
-          return new Response('', {
-            status: 200,
-          });
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/'), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/',
-      },
+    sandbox.stub(codebus, 'status').callsFake(() => new Response('', {
+      status: 200,
     }));
+
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/script.js', { method: 'GET' });
+    const result = await main(request, context);
     assert.strictEqual(result.status, 200);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
@@ -447,43 +191,13 @@ describe('Code Handler Tests', () => {
   });
 
   it('handles list branches', async () => {
-    nock.config(null);
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/list-branches.js': async (_, info) => {
-          assert.deepStrictEqual(info.toJSON(), {
-            headers: {},
-            host: 'admin.hlx.page',
-            method: 'GET',
-            query: {},
-            cookies: {},
-            functionPath: '',
-            scheme: 'https',
-            suffix: '/code/owner/repo/*',
-            owner: 'owner',
-            org: 'owner',
-            path: '/',
-            rawPath: '',
-            ref: '*',
-            branch: '*',
-            repo: 'repo',
-            site: 'repo',
-            resourcePath: '/index.md',
-            ext: '.md',
-            route: 'code',
-          });
-          return new Response('', {
-            status: 200,
-          });
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/'), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/*',
-      },
+    sandbox.stub(codebus, 'listBranches').callsFake(() => new Response('', {
+      status: 200,
     }));
+
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/*', { method: 'GET' });
+    const result = await main(request, context);
     assert.strictEqual(result.status, 200);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
@@ -493,126 +207,37 @@ describe('Code Handler Tests', () => {
     });
   });
 
-  it('handles errors from code action', async () => {
-    nock.config(null);
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': { update: async () => (new Response('', { status: 504 })) },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/?action=publish', { method: 'POST' }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/',
-      },
-    }));
-    assert.strictEqual(result.status, 504);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-    });
-  });
-
   it('handles remove action', async () => {
-    nock.config(null);
-    nock('https://helix-code-bus.s3.us-east-1.amazonaws.com')
-      .delete('/owner/repo/ref/foo/bar.js?x-id=DeleteObject')
-      .reply(204);
-    nock('https://helix-code-bus.fake-account-id.r2.cloudflarestorage.com')
-      .delete('/owner/repo/ref/foo/bar.js?x-id=DeleteObject')
-      .reply(204);
-    nock('https://api.fastly.com')
-      .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-      .reply(200);
-
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'DELETE',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/foo/bar.js',
-      },
-      attributes: {
-        authInfo: AuthInfo.Default()
-          .withAuthenticated(true)
-          .withRole('develop'),
-        helixConfig: HELIX_CONFIG,
-        configAll: {},
-        contentBusId: 'foo-id',
-      },
+    sandbox.stub(codebus, 'remove').callsFake(() => new Response('', {
+      status: 204,
     }));
+    let purgeInfos = [];
+    sandbox.stub(purge, 'code').callsFake((ctx, info, infos) => {
+      purgeInfos = infos;
+    });
+
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/script.js', { method: 'DELETE' });
+    context.attributes.authInfo.withRole('develop');
+    const result = await main(request, context);
     assert.strictEqual(result.status, 204);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
     });
-  });
-
-  it('handles remove action of fstab.yaml', async () => {
-    nock.config(null);
-    nock('https://helix-code-bus.s3.us-east-1.amazonaws.com')
-      .delete('/owner/repo/main/fstab.yaml?x-id=DeleteObject')
-      .reply(204)
-      .delete('/owner/repo/main/helix-config.json?x-id=DeleteObject')
-      .reply(204);
-    nock('https://helix-code-bus.fake-account-id.r2.cloudflarestorage.com')
-      .delete('/owner/repo/main/fstab.yaml?x-id=DeleteObject')
-      .reply(204)
-      .delete('/owner/repo/main/helix-config.json?x-id=DeleteObject')
-      .reply(204);
-    nock('https://api.fastly.com')
-      .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-      .reply(200);
-
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'DELETE',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/main/fstab.yaml',
-      },
-      attributes: {
-        authInfo: AuthInfo.Default()
-          .withAuthenticated(true)
-          .withRole('develop'),
-        helixConfig: HELIX_CONFIG,
-        configAll: {},
-        contentBusId: 'foo-id',
-      },
-    }));
-    assert.strictEqual(result.status, 204);
-    assert.strictEqual(await result.text(), '');
-    assert.deepStrictEqual(result.headers.plain(), {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store, private, must-revalidate',
-    });
+    assert.deepStrictEqual(purgeInfos, ['/script.js']);
   });
 
   it('handles bulk remove action', async () => {
-    nock.config(null);
-    const { main: proxyMain } = await esmock('../../src/index.js', {
-      '../../src/codebus/handler.js': await esmock('../../src/codebus/handler.js', {
-        '../../src/codebus/update.js': {
-          update: async () => (new Response('', {
-            status: 200,
-          })),
-        },
-      }),
-    });
-
-    const result = await proxyMain(new Request('https://admin.hlx.page/', {
-      method: 'DELETE',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/*',
-      },
-      attributes: {
-        authInfo: AuthInfo.Admin().withAuthenticated(true),
-        helixConfig: HELIX_CONFIG,
-        configAll: {},
-        contentBusId: 'foo-id',
-      },
+    sandbox.stub(codebus, 'update').callsFake(() => new Response('', {
+      status: 200,
     }));
+
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/*', { method: 'DELETE' });
+    context.attributes.authInfo.withRole('develop');
+    const result = await main(request, context);
     assert.strictEqual(result.status, 200);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
@@ -621,34 +246,19 @@ describe('Code Handler Tests', () => {
     });
   });
 
-  it('handles error from remove action', async () => {
-    nock.config(null);
-    nock('https://helix-code-bus.s3.us-east-1.amazonaws.com')
-      .delete('/owner/repo/ref/foo/bar.js?x-id=DeleteObject')
-      .reply(401);
-    nock('https://helix-code-bus.fake-account-id.r2.cloudflarestorage.com')
-      .delete('/owner/repo/ref/foo/bar.js?x-id=DeleteObject')
-      .reply(204);
-
-    const result = await main(new Request('https://admin.hlx.page/', {
-      method: 'DELETE',
-    }), DEFAULT_CONTEXT_MAIN({
-      pathInfo: {
-        suffix: '/code/owner/repo/ref/foo/bar.js',
-      },
-      attributes: {
-        authInfo: AuthInfo.Admin().withAuthenticated(true),
-        helixConfig: HELIX_CONFIG,
-        configAll: {},
-        contentBusId: 'foo-id',
-      },
+  it('handles errors from remove action', async () => {
+    sandbox.stub(codebus, 'remove').callsFake(() => new Response('', {
+      status: 401,
     }));
+    nock.siteConfig(SITE_CONFIG, { org: 'owner', site: 'repo' });
+    const { request, context } = setupTest('/ref/script.js', { method: 'DELETE' });
+    context.attributes.authInfo.withRole('develop');
+    const result = await main(request, context);
     assert.strictEqual(result.status, 401);
     assert.strictEqual(await result.text(), '');
     assert.deepStrictEqual(result.headers.plain(), {
       'content-type': 'text/plain; charset=utf-8',
       'cache-control': 'no-store, private, must-revalidate',
-      'x-error': 'removing helix-code-bus/owner/repo/ref/foo/bar.js from storage failed: [S3] UnknownError',
     });
   });
 });

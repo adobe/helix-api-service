@@ -27,32 +27,61 @@ import {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {boolean} move whether to move the source
  * @returns {Promise<Response>} response
  */
-async function copySource(context, info) {
+async function copySource(context, info, move) {
   const { log } = context;
   const { source } = context.data;
 
   try {
     const srcKey = getS3Key(info.org, info.site, source);
-    const bucket = HelixStorage.fromContext(context).sourceBus();
 
     const isFolder = info.rawPath.endsWith('/');
     if (isFolder !== srcKey.endsWith('/')) {
       return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log });
     }
 
+    const bucket = HelixStorage.fromContext(context).sourceBus();
     let copied;
     if (isFolder) {
       const destKey = getS3Key(info.org, info.site, info.rawPath);
+
+      if (destKey.startsWith(srcKey)) {
+        return createErrorResponse({ msg: 'Destination cannot be a subfolder of source', status: 400, log });
+      }
+
       copied = await bucket.copyDeep(srcKey, destKey);
+
+      if (move) {
+        const copiedKeys = copied.map((item) => item.src);
+        const deleted = await bucket.remove(copiedKeys);
+
+        // Check that delKeys and copiedKeys are the same set
+        const delKeys = deleted.Deleted.map((item) => item.Key);
+        if (delKeys.length !== copiedKeys.length
+          || [...delKeys].some((el) => !copiedKeys.includes(el))) {
+          return createErrorResponse({ msg: 'Move operation failed', status: 500, log });
+        }
+      }
     } else {
       const destKey = getS3KeyFromInfo(info);
       await bucket.copy(srcKey, destKey);
+
+      if (move) {
+        const resp = await bucket.remove(srcKey);
+        if (resp.$metadata?.httpStatusCode !== 204) {
+          return createErrorResponse({ msg: 'Failed to remove source', status: resp.$metadata?.httpStatusCode, log });
+        }
+      }
+
       copied = [{ src: srcKey, dst: destKey }];
     }
-    const headers = { 'Content-Type': 'application/json' };
-    return new Response(`{"copied": ${JSON.stringify(copied)}}`, { status: 200, headers });
+
+    const operation = move ? 'moved' : 'copied';
+    return new Response({
+      [operation]: copied,
+    });
   } catch (e) {
     const opts = { e, log };
     opts.status = e.$metadata?.httpStatusCode;
@@ -69,7 +98,7 @@ async function copySource(context, info) {
 */
 export async function putSource(context, info) {
   if (context.data.source) {
-    return copySource(context, info);
+    return copySource(context, info, String(context.data.move) === 'true');
   }
 
   try {

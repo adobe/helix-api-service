@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/adobe/helix-api-service/compare/v1.31.6...v1.32.0) (2026-02-10)
+
+
+### Features
+
+* **source:** support moving a resource or folder ([#120](https://github.com/adobe/helix-api-service/issues/120)) ([fe7a29a](https://github.com/adobe/helix-api-service/commit/fe7a29a8fd982e164419288530bfbe130e85e253))
+
 ## [1.31.6](https://github.com/adobe/helix-api-service/compare/v1.31.5...v1.31.6) (2026-02-10)
 
 

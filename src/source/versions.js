@@ -85,7 +85,10 @@ export async function deleteVersions(bucket, key) {
 async function handleNoVersions(context, baseKey) {
   const baseFileResp = await accessSourceFile(context, baseKey, true);
   if (baseFileResp.status === 200) {
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = {
+      'Content-Type': 'application/json',
+      'Content-Length': '2',
+    };
     return new Response('[]', { status: 200, headers });
   } else {
     return new Response('', { status: 404 });
@@ -113,7 +116,7 @@ async function handleNoVersions(context, baseKey) {
  * @param {boolean} headRequest whether to return the headers only for a HEAD request
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function listVersions(context, baseKey, headRequest) {
+async function listVersions(context, baseKey, headRequest) {
   const versionFolderKey = `${baseKey}${VERSION_FOLDER}/`;
 
   const indexKey = `${versionFolderKey}${VERSION_INDEX}`;

@@ -289,4 +289,193 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 400);
     assert.equal(resp.headers.get('x-error'), 'Source and destination type mismatch');
   });
+
+  it('test putSource moves a file', async () => {
+    nock.source()
+      .copyObject('/org123/456site/lala/dst.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org123/456site/foo/bar/src.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'ahahahaha',
+        },
+      }));
+    nock.source()
+      .deleteObject('/org123/456site/foo/bar/src.html')
+      .reply(204);
+
+    const path = '/org123/sites/456site/source/lala/dst.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/foo/bar/src.html';
+    ctx.data.move = 'true';
+
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 200);
+    const body = await resp.json();
+    assert.deepStrictEqual(body.moved, [
+      { src: 'org123/456site/foo/bar/src.html', dst: 'org123/456site/lala/dst.html' },
+    ]);
+    assert.equal('application/json', resp.headers.get('content-type'));
+  });
+
+  it('test putSource file move fails', async () => {
+    nock.source()
+      .copyObject('/org123/456site/lala/dst.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org123/456site/foo/bar/src.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'ahahahaha',
+        },
+      }));
+    nock.source()
+      .deleteObject('/org123/456site/foo/bar/src.html')
+      .reply(203);
+
+    const path = '/org123/sites/456site/source/lala/dst.html';
+    const ctx = setupContext(path);
+    ctx.data.source = '/foo/bar/src.html';
+    ctx.data.move = true;
+
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 203);
+    assert.equal(resp.headers.get('x-error'), 'Failed to remove source');
+  });
+
+  const BUCKET_LIST_RESULT2 = `
+    <ListBucketResult>
+      <Name>abucket</Name>
+      <Prefix>o/s/x/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+      <Contents>
+        <Key>o/s/x/x.html</Key>
+        <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+        <Size>32768</Size>
+      </Contents>
+      <Contents>
+        <Key>o/s/x/sub/x.pdf</Key>
+        <LastModified>2026-01-30T01:01:01.001Z</LastModified>
+        <Size>123</Size>
+      </Contents>
+    </ListBucketResult>`;
+
+  it('test putSource moves a folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'o/s/x/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
+
+    nock.source()
+      .copyObject('/o/s/hello/dest/x.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o/s/x/x.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '7',
+        },
+      }));
+    nock.source()
+      .copyObject('/o/s/hello/dest/sub/x.pdf')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o/s/x/sub/x.pdf')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '7',
+        },
+      }));
+
+    function deleteBodyCheck(body) {
+      assert(body.includes('<Delete'));
+      assert(body.includes('<Object><Key>o/s/x/x.html</Key></Object>'));
+      assert(body.includes('<Object><Key>o/s/x/sub/x.pdf</Key></Object>'));
+      return true;
+    }
+
+    nock.source()
+      .post('/?delete=', deleteBodyCheck)
+      .reply(204, new xml2js.Builder().buildObject({
+        DeleteObjectsOutput: {
+          Deleted: [
+            { Key: 'o/s/x/x.html' },
+            { Key: 'o/s/x/sub/x.pdf' },
+          ],
+        },
+      }));
+
+    const path = '/o/sites/s/source/hello/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/x/';
+    ctx.data.move = 'true';
+
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 200);
+    const body = await resp.json();
+
+    // remove all keys from body except src and dst, for comparison
+    const cmp = body.moved.map((item) => ({ src: item.src, dst: item.dst }));
+    assert.deepStrictEqual(cmp, [
+      { src: 'o/s/x/x.html', dst: 'o/s/hello/dest/x.html' },
+      { src: 'o/s/x/sub/x.pdf', dst: 'o/s/hello/dest/sub/x.pdf' },
+    ]);
+    assert.equal('application/json', resp.headers.get('content-type'));
+  });
+
+  it('test putSource incompletely moves a folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'o/s/x/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT2));
+
+    nock.source()
+      .copyObject('/o/s/hello/dest/x.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o/s/x/x.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '7',
+        },
+      }));
+    nock.source()
+      .copyObject('/o/s/hello/dest/sub/x.pdf')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o/s/x/sub/x.pdf')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '7',
+        },
+      }));
+
+    nock.source()
+      .post('/?delete=')
+      .reply(204, new xml2js.Builder().buildObject({
+        DeleteObjectsOutput: {
+          Deleted: [
+            { Key: 'o/s/x/x.html' },
+            // only return one of the 2 files, which will cause a 500
+          ],
+        },
+      }));
+
+    const path = '/o/sites/s/source/hello/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/x/';
+    ctx.data.move = 'true';
+
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 500);
+    assert.equal(resp.headers.get('x-error'), 'Move operation failed');
+  });
+
+  it('test putSource moves a folder to its own subfolder is not allowed', async () => {
+    const path = '/o/sites/s/source/x/hello/dest/';
+    const ctx = setupContext(path);
+    ctx.data.source = '/x/';
+    ctx.data.move = 'true';
+
+    const resp = await putSource(ctx, createInfo(path, {}, 'PUT'));
+    assert.equal(resp.status, 400);
+    assert.equal(resp.headers.get('x-error'), 'Destination cannot be a subfolder of source');
+  });
 });

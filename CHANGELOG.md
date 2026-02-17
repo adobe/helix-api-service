@@ -1,3 +1,45 @@
+## [1.32.1](https://github.com/adobe/helix-api-service/compare/v1.32.0...v1.32.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#132](https://github.com/adobe/helix-api-service/issues/132)) ([766c354](https://github.com/adobe/helix-api-service/commit/766c3549d045066b6027be3ef059d7e652390018))
+
+# [1.32.0](https://github.com/adobe/helix-api-service/compare/v1.31.6...v1.32.0) (2026-02-10)
+
+
+### Features
+
+* **source:** support moving a resource or folder ([#120](https://github.com/adobe/helix-api-service/issues/120)) ([fe7a29a](https://github.com/adobe/helix-api-service/commit/fe7a29a8fd982e164419288530bfbe130e85e253))
+
+## [1.31.6](https://github.com/adobe/helix-api-service/compare/v1.31.5...v1.31.6) (2026-02-10)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#130](https://github.com/adobe/helix-api-service/issues/130)) ([0bbd5e3](https://github.com/adobe/helix-api-service/commit/0bbd5e3e3e94fadecb0ea2ed315d6228d8ec7fb3))
+
+## [1.31.5](https://github.com/adobe/helix-api-service/compare/v1.31.4...v1.31.5) (2026-02-09)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#129](https://github.com/adobe/helix-api-service/issues/129)) ([e68a1f9](https://github.com/adobe/helix-api-service/commit/e68a1f98a41029a85e98cc662a11fffb4152b877))
+
+## [1.31.4](https://github.com/adobe/helix-api-service/compare/v1.31.3...v1.31.4) (2026-02-06)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#127](https://github.com/adobe/helix-api-service/issues/127)) ([344e021](https://github.com/adobe/helix-api-service/commit/344e021fc478c18e78fdf19b119df413eafa4ce9))
+
+## [1.31.3](https://github.com/adobe/helix-api-service/compare/v1.31.2...v1.31.3) (2026-02-05)
+
+
+### Bug Fixes
+
+* use original-repo for new helix5 sites ([#126](https://github.com/adobe/helix-api-service/issues/126)) ([b60951d](https://github.com/adobe/helix-api-service/commit/b60951daf25f584619a4212dec3478f93d71cf8c))
+
 ## [1.31.2](https://github.com/adobe/helix-api-service/compare/v1.31.1...v1.31.2) (2026-02-03)
 
 

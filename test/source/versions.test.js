@@ -138,6 +138,28 @@ describe('Source Versions Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test createVersion causes error', async () => {
+    nock.source()
+      .getObject('/myorg/mysite/toast/jam.html/.versions/index.json')
+      .reply(400);
+
+    const path = '/myorg/sites/mysite/source/toast/jam.html';
+    const context = setupContext(path, {
+      attributes: {
+        authInfo: {
+          profile: {
+            email: 'joe@bloggs.org',
+          },
+        },
+      },
+    });
+    const info = createInfo(path);
+    const baseKey = getS3KeyFromInfo(info);
+    const resp = await createVersion(context, baseKey);
+    assert.equal(resp.status, 400);
+    assert(resp.headers.get('x-error').includes('Error'));
+  });
+
   const BUCKET_LIST_RESULT = `
     <ListBucketResult>
       <Name>my-bucket</Name>
@@ -271,8 +293,8 @@ describe('Source Versions Tests', () => {
     const info = createInfo('/my-org/sites/my-site/source/abc/987.html/.versions');
     const resp = await getVersions(createContext(), info);
     assert.equal(resp.status, 200);
-    assert.equal(resp.headers.keys().length, 1);
     assert.equal(resp.headers.get('content-type'), 'application/json');
+    assert.equal(resp.headers.get('content-length'), '2');
     assert.equal(await resp.text(), '[]');
   });
 
@@ -335,6 +357,17 @@ describe('Source Versions Tests', () => {
     const resp = await getVersions(createContext(), info, true);
     assert.equal(resp.status, 200);
     assert.equal(resp.headers.get('content-length'), '698');
+  });
+
+  it('test GET a version of a file causes error', async () => {
+    nock.source()
+      .getObject('/my-org/my-site/abc/987.html/.versions/1')
+      .reply(400);
+
+    const info = createInfo('/my-org/sites/my-site/source/abc/987.html/.versions/1');
+    const resp = await getVersions(createContext(), info);
+    assert.equal(resp.status, 400);
+    assert(resp.headers.get('x-error').includes('Error'));
   });
 
   it('test GET a version of a file not found', async () => {

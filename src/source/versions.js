@@ -76,22 +76,22 @@ export async function postVersion(context, baseKey) {
     } else {
       index = {
         versions: [],
-        next: 1,
       };
     }
 
-    const versionKey = `${versionFolderKey}${index.next}`;
+    const versionNr = index.versions.length + 1;
+    const versionKey = `${versionFolderKey}${versionNr}`;
     await bucket.copy(baseKey, versionKey);
 
     const version = {
-      version: index.next,
+      version: versionNr,
       date: new Date().toISOString(),
       user: getUser(context),
       ...(comment && { comment }),
       ...(operation && { operation }),
     };
     index.versions.push(version);
-    index.next += 1;
+
     await bucket.put(indexKey, JSON.stringify(index, null, 2), 'application/json');
     return new Response('', { status: 201 });
   } catch (e) {

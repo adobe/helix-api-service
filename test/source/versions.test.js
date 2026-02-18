@@ -35,7 +35,6 @@ describe('Source Versions Tests', () => {
 
   it('test createVersion with no index.json', async () => {
     function putFN(url, body) {
-      assert.equal(body.next, 2);
       assert.equal(body.versions.length, 1);
       assert.equal(body.versions[0].version, 1);
       assert.equal(body.versions[0].user, 'joe@bloggs.org');
@@ -77,7 +76,6 @@ describe('Source Versions Tests', () => {
 
   it('test createVersion', async () => {
     const indexJson = {
-      next: 3,
       versions: [
         {
           version: 1,
@@ -95,7 +93,6 @@ describe('Source Versions Tests', () => {
     };
 
     function putFN(url, body) {
-      assert.equal(body.next, 4);
       assert.equal(body.versions.length, 3);
       assert.equal(body.versions[2].version, 3);
       assert.equal(body.versions[2].comment, 'test comment');
@@ -214,7 +211,6 @@ describe('Source Versions Tests', () => {
 
   it('test listVersions', async () => {
     const indexJson = {
-      next: 3,
       versions: [
         {
           version: 1,
@@ -246,7 +242,6 @@ describe('Source Versions Tests', () => {
 
   it('test headVersions', async () => {
     const indexJson = {
-      next: 3,
       versions: [
         {
           version: 1,

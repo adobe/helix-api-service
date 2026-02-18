@@ -156,8 +156,7 @@ async function listVersions(context, baseKey, headRequest) {
     if (!head) {
       return handleNoVersions(context, baseKey);
     }
-    const length = head.Metadata?.['uncompressed-length'] || head.ContentLength;
-    const headers = getFileHeaders(head, length);
+    const headers = getFileHeaders(head);
     return new Response('', { status: head.$metadata.httpStatusCode, headers });
   } else {
     const meta = {};
@@ -166,7 +165,7 @@ async function listVersions(context, baseKey, headRequest) {
       return handleNoVersions(context, baseKey);
     }
     const index = JSON.parse(idx);
-    const headers = getFileHeaders(meta, idx.length);
+    const headers = getFileHeaders(meta);
     return new Response(JSON.stringify(index.versions), { status: 200, headers });
   }
 }

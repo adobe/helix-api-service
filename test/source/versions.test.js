@@ -241,7 +241,6 @@ describe('Source Versions Tests', () => {
     const resp = await getVersions(createContext(), info);
     assert.equal(resp.status, 200);
     assert.equal(await resp.text(), JSON.stringify(indexJson.versions));
-    assert.equal(resp.headers.get('content-length'), '211');
     assert.equal(resp.headers.get('last-modified'), 'Tue, 25 Oct 2022 02:57:46 GMT');
   });
 
@@ -267,7 +266,6 @@ describe('Source Versions Tests', () => {
     nock.source()
       .headObject('/my-org/my-site/abc/987.html/.versions/index.json')
       .reply(200, JSON.stringify(indexJson), {
-        'content-length': '12345',
         'last-modified': 'Tue, 25 Oct 2022 12:57:46 GMT',
       });
 
@@ -275,7 +273,6 @@ describe('Source Versions Tests', () => {
     const resp = await getVersions(createContext(), info, true);
     assert.equal(resp.status, 200);
     assert.equal(await resp.text(), '');
-    assert.equal(resp.headers.get('content-length'), '12345');
     assert.equal(resp.headers.get('last-modified'), 'Tue, 25 Oct 2022 12:57:46 GMT');
   });
 

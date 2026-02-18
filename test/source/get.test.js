@@ -160,4 +160,21 @@ describe('Source GET Tests', () => {
       'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
     });
   });
+
+  it('test getSource with version subpath', async () => {
+    nock.source()
+      .getObject('/my-org/my-site/abc/987.html/.versions/333')
+      .reply(200, 'Some old version', {
+        'content-type': 'text/plain',
+        'last-modified': 'Tue, 25 Oct 2022 17:17:46 GMT',
+      });
+
+    const info = createInfo('/my-org/sites/my-site/source/abc/987.html/.versions/333');
+    const resp = await getSource(context, info);
+    assert.equal(resp.status, 200);
+    assert.equal(await resp.text(), 'Some old version');
+    assert.equal(resp.headers.get('content-type'), 'text/plain');
+    assert.equal(resp.headers.get('content-length'), '16');
+    assert.equal(resp.headers.get('last-modified'), 'Tue, 25 Oct 2022 17:17:46 GMT');
+  });
 });

@@ -13,8 +13,10 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
+import xml2js from 'xml2js';
 import { promisify } from 'util';
 import zlib from 'zlib';
+
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
 import { setupContext, stripSpaces } from './testutils.js';
@@ -262,5 +264,26 @@ describe('Source POST Tests', () => {
     const resp = await postSource(setupContext(path), createInfo(path));
     assert.equal(resp.status, 415);
     assert.equal(resp.headers.get('x-error'), 'Unknown file type: .ugh');
+  });
+
+  it('test postSource to create version', async () => {
+    nock.source()
+      .getObject('/my-org/my-site/QQ.html/.versions/index.json')
+      .reply(404);
+    nock.source()
+      .copyObject('/my-org/my-site/QQ.html/.versions/1')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/my-org/my-site/QQ.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'abacac',
+        },
+      }));
+    nock.source()
+      .putObject('/my-org/my-site/QQ.html/.versions/index.json')
+      .reply(201);
+
+    const info = createInfo('/my-org/sites/my-site/source/QQ.html/.versions');
+    const resp = await postSource(setupContext(), info);
+    assert.equal(resp.status, 201);
   });
 });

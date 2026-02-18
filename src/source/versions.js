@@ -24,13 +24,42 @@ export const VERSION_FOLDER = '/.versions';
 const VERSION_INDEX = 'index.json';
 
 /**
- * Create a version of the source file.
+ * Restore a version of the source file by copying it to the base key.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} baseKey base key of the source file
+ * @param {number} restore version number to restore
+ * @returns {Promise<Response>} response.
+ */
+async function restoreVersion(context, baseKey, restore) {
+  const versionKey = `${baseKey}${VERSION_FOLDER}/${restore}`;
+
+  try {
+    const bucket = HelixStorage.fromContext(context).sourceBus();
+
+    // If the version does not exist, copy throws an error which will result in a 404 response.
+    await bucket.copy(versionKey, baseKey);
+    return new Response('', { status: 200 });
+  } catch (e) {
+    const opts = { e, log: context.log };
+    opts.status = e.$metadata?.httpStatusCode;
+    return createErrorResponse(opts);
+  }
+}
+
+/**
+ * Create a version of the source file, or restore a version if the restore flag is set.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} baseKey base key of the source file
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function createVersion(context, baseKey) {
+export async function postVersion(context, baseKey) {
+  const { restore } = context.data;
+  if (restore) {
+    return restoreVersion(context, baseKey, restore);
+  }
+
   const { log } = context;
 
   const versionFolderKey = `${baseKey}${VERSION_FOLDER}/`;

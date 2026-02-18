@@ -18,7 +18,7 @@ import {
   getValidPayload,
   storeSourceFile,
 } from './utils.js';
-import { createVersion, VERSION_FOLDER } from './versions.js';
+import { postVersion, VERSION_FOLDER } from './versions.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -34,7 +34,7 @@ export async function postSource(context, info) {
     return createFolder(context, info);
   } else if (info.rawPath.endsWith(VERSION_FOLDER)) {
     const baseKey = getS3KeyFromInfo(info).slice(0, -VERSION_FOLDER.length);
-    return createVersion(context, baseKey);
+    return postVersion(context, baseKey);
   }
 
   try {

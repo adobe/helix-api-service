@@ -18,7 +18,7 @@ import xml2js from 'xml2js';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createContext, createInfo, Nock } from '../utils.js';
 import { setupContext } from './testutils.js';
-import { createVersion, deleteVersions, getVersions } from '../../src/source/versions.js';
+import { postVersion, deleteVersions, getVersions } from '../../src/source/versions.js';
 import { getS3KeyFromInfo } from '../../src/source/utils.js';
 
 describe('Source Versions Tests', () => {
@@ -71,7 +71,7 @@ describe('Source Versions Tests', () => {
     });
     const info = createInfo(path);
     const baseKey = getS3KeyFromInfo(info);
-    const resp = await createVersion(context, baseKey);
+    const resp = await postVersion(context, baseKey);
     assert.equal(resp.status, 201);
   });
 
@@ -134,7 +134,7 @@ describe('Source Versions Tests', () => {
     });
     const info = createInfo(path);
     const baseKey = getS3KeyFromInfo(info);
-    const resp = await createVersion(context, baseKey);
+    const resp = await postVersion(context, baseKey);
     assert.equal(resp.status, 201);
   });
 
@@ -155,7 +155,7 @@ describe('Source Versions Tests', () => {
     });
     const info = createInfo(path);
     const baseKey = getS3KeyFromInfo(info);
-    const resp = await createVersion(context, baseKey);
+    const resp = await postVersion(context, baseKey);
     assert.equal(resp.status, 400);
     assert(resp.headers.get('x-error').includes('Error'));
   });
@@ -384,5 +384,40 @@ describe('Source Versions Tests', () => {
     const info = createInfo('/my-org/sites/my-site/source/abc/987.html/.versions/hello');
     const resp = await getVersions(createContext(), info);
     assert.equal(resp.status, 404);
+  });
+
+  it('test restore version', async () => {
+    nock.source()
+      .copyObject('/myorg/mysite/toast/jam.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/myorg/mysite/toast/jam.html/.versions/68')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'a25',
+        },
+      }));
+
+    const path = '/myorg/sites/mysite/source/toast/jam.html';
+    const context = setupContext(path, {
+      data: {
+        restore: 68,
+      },
+    });
+    const info = createInfo(path);
+    const baseKey = getS3KeyFromInfo(info);
+    const resp = await postVersion(context, baseKey);
+    assert.equal(resp.status, 200);
+  });
+
+  it('test restore version error', async () => {
+    const path = '/myorg/sites/mysite/source/toast/jam.html';
+    const context = setupContext(path, {
+      data: {
+        restore: 68,
+      },
+    });
+    const info = createInfo(path);
+    const baseKey = getS3KeyFromInfo(info);
+    const resp = await postVersion(context, baseKey);
+    assert.equal(resp.status, 500);
   });
 });

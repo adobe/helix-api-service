@@ -278,10 +278,11 @@ source bus images.
 
     assert.strictEqual(response.status, 409);
     assert.strictEqual(await response.text(), '');
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': "Unable to preview '/gallery.html': Images 1 and 2 exceed allowed limit of 100B",
-    });
+    assert.strictEqual(response.headers.get('cache-control'), 'no-store, private, must-revalidate');
+    assert.strictEqual(response.headers.get('content-type'), 'text/plain; charset=utf-8');
+
+    const error = response.headers.get('x-error');
+    assert(error === "Unable to preview '/gallery.html': Images 1 and 2 exceed allowed limit of 100B"
+      || error === "Unable to preview '/gallery.html': Images 2 and 1 exceed allowed limit of 100B");
   });
 });

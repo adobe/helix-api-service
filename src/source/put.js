@@ -51,6 +51,7 @@ async function copySource(context, info, move) {
         return createErrorResponse({ msg: 'Destination cannot be a subfolder of source', status: 400, log });
       }
 
+      // TODO assign new metadata when not moving
       copied = await bucket.copyDeep(srcKey, destKey);
 
       if (move) {
@@ -65,8 +66,14 @@ async function copySource(context, info, move) {
         }
       }
     } else {
+      const opts = {};
+      if (!move) {
+        // When copying, give the target a new uuid
+        opts.addMetadata = { uuid: crypto.randomUUID() };
+      }
+
       const destKey = getS3KeyFromInfo(info);
-      await bucket.copy(srcKey, destKey);
+      await bucket.copy(srcKey, destKey, opts);
 
       if (move) {
         const resp = await bucket.remove(srcKey);

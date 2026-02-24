@@ -145,7 +145,7 @@ export async function getVersions(context, info, headRequest) {
  * @param {string} baseKey base key of the source file
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function postVersion(context, baseKey, info) {
+export async function postVersion(context, baseKey, info, retryCount = 0) {
   const { log } = context;
 
   try {
@@ -178,9 +178,19 @@ export async function postVersion(context, baseKey, info) {
 
     const versionNr = index.versions.length + 1;
     const versionKey = `${versionFolderKey}${versionNr}`;
+
     const renameMetadata = { uuid: 'org-uuid' };
     const addMetadata = { 'org-path': baseKey };
-    await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata });
+    const copyOpts = { IfNoneMatch: '*' };
+    try {
+      await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata }, copyOpts);
+    } catch (e) {
+      if ((e.$metadata?.httpStatusCode === 409 || e.$metadata?.httpStatusCode === 412)
+        && retryCount < 2) {
+        return postVersion(context, baseKey, info, retryCount + 1);
+      }
+      throw e;
+    }
 
     const version = {
       version: versionNr,

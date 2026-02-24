@@ -54,13 +54,11 @@ function handleNoVersions() {
  *
  * @param {import('@adobe/helix-shared-storage').HelixStorageBucket} bucket
  *   bucket to access the source file
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} baseKey base key of the source file
  * @param {string} versionDirKey key of the version directory
  * @param {boolean} headRequest whether to return the headers only for a HEAD request
  * @returns {Promise<Response>} response with the file body and metadata
  */
-async function listVersions(bucket, context, baseKey, versionDirKey, headRequest) {
+async function listVersions(bucket, versionDirKey, headRequest) {
   const indexKey = `${versionDirKey}${VERSION_INDEX}`;
 
   if (headRequest) {
@@ -118,7 +116,7 @@ export async function getVersions(context, info, headRequest) {
     const versionDirKey = `${getSiteRoot(info)}${VERSION_FOLDER}/${head.Metadata.uuid}/`;
 
     if (info.rawPath.endsWith(VERSION_FOLDER)) {
-      return listVersions(bucket, context, baseKey, versionDirKey, headRequest);
+      return listVersions(bucket, versionDirKey, headRequest);
     }
 
     // We expect a '/' between '.versions' and the number
@@ -143,6 +141,8 @@ export async function getVersions(context, info, headRequest) {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} baseKey base key of the source file
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {number} retryCount retry count in case if a version number conflict
  * @returns {Promise<Response>} response with the file body and metadata
  */
 export async function postVersion(context, baseKey, info, retryCount = 0) {

@@ -125,7 +125,7 @@ export async function getVersions(context, info, headRequest) {
     }
 
     const version = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
-    if (Number.isNaN(version)) {
+    if (Number.isNaN(Number(version))) {
       return new Response('', { status: 400 });
     }
     return getVersion(context, versionDirKey, version, headRequest);

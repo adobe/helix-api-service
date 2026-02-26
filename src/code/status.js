@@ -31,6 +31,8 @@ export async function status(ctx, info) {
     throw new StatusCodeError(codeInfo.error, codeInfo.status);
   }
 
+  const branch = ctx.data.branch || info.ref;
+
   const resp = {
     webPath: info.resourcePath,
     resourcePath: info.resourcePath,
@@ -42,9 +44,9 @@ export async function status(ctx, info) {
       url: info.getPreviewUrl(),
     },
     edit: {
-      url: `https://github.com/${info.owner}/${info.repo}/edit/${info.branch}${info.resourcePath}`,
+      url: `https://github.com/${info.owner}/${info.repo}/edit/${branch}${info.resourcePath}`,
     },
-    links: info.getAPIUrls('status', 'preview', 'live', 'code'),
+    links: info.getAPIUrls('status', 'preview', 'live', { title: 'code', name: 'repos-code' }),
   };
 
   return new Response(JSON.stringify(resp, null, 2), {

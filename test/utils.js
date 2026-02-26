@@ -260,6 +260,12 @@ export function Nock() {
 
   nocker.sqs = (queue, entries) => new SQSNock(nocker, queue, entries);
 
+  nocker.botInstallation = (id = 42, owner = 'owner', repo = 'repo') => nocker('https://api.github.com')
+    .get(`/repos/${owner}/${repo}/installation`)
+    .reply(200, { id })
+    .post(`/app/installations/${id}/access_tokens`)
+    .reply(200, { token: 'dummy-token' });
+
   nock.disableNetConnect();
   return nocker;
 }

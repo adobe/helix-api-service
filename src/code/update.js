@@ -79,6 +79,7 @@ export async function update(ctx, info) {
     event.owner = info.owner;
     event.repo = info.repo;
     event.branch = ctx.data?.branch || info.ref;
+    event.ref = info.ref;
     if (startJob) {
       log.info(`[code][${event.owner}/${event.repo}/*] explicit '${type}' branch operation requested.`);
     }

@@ -179,9 +179,6 @@ export class AdminContext {
     if (this.requestId) {
       fetchopts.headers['x-request-id'] = this.requestId;
     }
-    if (this.githubToken) {
-      fetchopts.headers['x-github-token'] = this.githubToken;
-    }
     if (opts?.fetchTimeout) {
       fetchopts.signal = timeoutSignal(opts.fetchTimeout);
       delete fetchopts.fetchTimeout;

@@ -147,27 +147,6 @@ export function setTokenOctokit(ctx, codeSource) {
 }
 
 /**
- * sets a missing ctx.githubToken based on the bot installation.
- *
- * @param {AdminContext} ctx
- * @param {PathInfo} info
- * @throws Error if cannot be obtained
- */
-export async function setupGithubToken(ctx, info) {
-  // get bot token if not set on context
-  if (!ctx.githubToken) {
-    ctx.log.info('obtaining helix-bot authentication');
-    const installation = await getInstallationForRepo(ctx, info);
-    if (!installation) {
-      throw new Error('github bot not installed on repository.');
-    }
-    const octokit = await getInstallationOctokit(ctx, installation.id);
-    const authentication = await octokit.auth({ type: 'installation' });
-    ctx.githubToken = authentication.token;
-  }
-}
-
-/**
  * Setup the installation octokit in the context based on the event information.
  * Returns the code info.
  * @param ctx
@@ -187,7 +166,6 @@ export async function getCodeSource(ctx, event) {
     installationId: event.installationId,
     base_url: GH_BASE_URL,
     raw_url: GH_RAW_URL,
-    token: ctx.githubToken,
     ...ctx.attributes.config?.code?.source ?? {},
   };
 
@@ -229,7 +207,6 @@ export async function getCodeSource(ctx, event) {
     }
     const octokit = getInstallationOctokit(ctx, installation.id);
     const authentication = await octokit.auth({ type: 'installation' });
-    ctx.githubToken = authentication.token;
     codeSource.octokit = octokit;
     codeSource.token = authentication.token;
   }

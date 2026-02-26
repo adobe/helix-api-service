@@ -38,13 +38,14 @@ export async function getCodeBusInfo(ctx, info) {
     codeBusId: `${ctx.attributes.bucketMap.code}/${key}`,
     permissions: ctx.attributes.authInfo.getPermissions('code:'),
   };
-  const { GH_RAW_URL = 'https://raw.githubusercontent.com' } = ctx.env;
+  const branch = info.query.branch || info.ref;
   if (resp.ok) {
     ret.contentType = resp.headers.get('content-type');
     ret.lastModified = resp.headers.get('last-modified');
     ret.contentLength = resp.headers.get('x-source-content-length') || undefined;
     ret.sourceLastModified = resp.headers.get('x-source-last-modified') || undefined;
-    ret.sourceLocation = `${GH_RAW_URL}/${info.owner}/${info.repo}/${info.branch}${info.rawPath}`;
+    // TODO: respect byo git ?
+    ret.sourceLocation = `https://raw.githubusercontent.com/${info.owner}/${info.repo}/${branch}${info.rawPath}`;
   } else if (resp.status !== 404) {
     ret.error = resp.headers.get('x-error');
   }

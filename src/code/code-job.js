@@ -838,7 +838,6 @@ export class CodeJob extends Job {
     // override env and context for byogit
     ctx.env.GH_RAW_URL = codeSource.raw_url;
     ctx.env.GH_BASE_URL = codeSource.base_url;
-    ctx.githubToken = codeSource.token;
 
     const { octokit } = codeSource;
     const url = Job.getApiLink(info, topic, name);

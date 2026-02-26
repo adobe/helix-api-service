@@ -405,9 +405,11 @@ export class RequestInfo {
       path: this.webPath.slice(1),
       ref: this.ref,
     };
-    routes.forEach((name) => {
+    routes.forEach((value) => {
+      const title = value.title || value;
+      const name = value.name || value;
       const path = this.#router.external(name, variables);
-      links[name] = this.getLinkUrl(path);
+      links[title] = this.getLinkUrl(path);
     });
     return links;
   }

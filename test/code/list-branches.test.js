@@ -14,8 +14,8 @@ import assert from 'assert';
 import xml2js from 'xml2js';
 import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
 import { AuthInfo } from '../../src/auth/auth-info.js';
-import listBranches from '../../src/code/list-branches.js';
-import { Nock } from '../utils.js';
+import { listBranches } from '../../src/code/list-branches.js';
+import { createContext, createInfo, Nock } from '../utils.js';
 
 describe('Code List Branches Tests', () => {
   let nock;
@@ -43,19 +43,19 @@ describe('Code List Branches Tests', () => {
         },
       })]);
 
-    const result = await listBranches(DEFAULT_CONTEXT({
+    const result = await listBranches(createContext({
       attributes: {
         authInfo: AuthInfo.Admin(),
       },
-    }), createPathInfo('/code/owner/repo/*'));
+    }), createInfo('/owner/repos/repo/code/*'));
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(
       await result.json(),
       {
         branches: [
-          '/code/owner/repo/main/',
-          '/code/owner/repo/dev/',
-          '/code/owner/repo/feature-123/',
+          '/owner/repos/repo/code/main',
+          '/owner/repos/repo/code/dev',
+          '/owner/repos/repo/code/feature-123',
         ],
         owner: 'owner',
         repo: 'repo',

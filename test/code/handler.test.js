@@ -36,7 +36,7 @@ describe('Code Handler Tests', () => {
   });
 
   function setupTest(path = '/', { data, redirects, method = 'POST' } = {}) {
-    const suffix = `/owner/sites/repo/code${path}`;
+    const suffix = `/owner/repos/repo/code${path}`;
     const query = new URLSearchParams(data);
 
     const request = new Request(`https://api.aem.live${suffix}?${query}`, {

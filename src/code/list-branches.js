@@ -20,15 +20,18 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
  */
 export async function listBranches(ctx, info) {
   ctx.attributes.authInfo.assertPermissions('code:read');
-  const { owner, repo, path } = info;
+  const { org, site } = info;
   const codeBus = HelixStorage.fromContext(ctx).codeBus();
-  const branches = await codeBus.listFolders(`${owner}/${repo}/`);
+  const branches = await codeBus.listFolders(`${org}/${site}/`);
   const resp = {
-    owner,
-    repo,
+    owner: org,
+    repo: site,
     branches: branches
       .filter((branch) => !branch.endsWith('.helix/'))
-      .map((branch) => `/code/${branch.substring(0, branch.length - 1)}${path}`),
+      .map((branch) => {
+        const [owner, repo, name] = branch.split('/');
+        return `/${owner}/repos/${repo}/code/${name}`;
+      }),
   };
 
   return new Response(JSON.stringify(resp, null, 2), {

@@ -17,6 +17,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { fromHtml } from 'hast-util-from-html';
 import { select } from 'hast-util-select';
 import { toHtml } from 'hast-util-to-html';
+import { ulid } from 'ulid';
 import { visit, CONTINUE } from 'unist-util-visit';
 import { MEDIA_TYPES } from '../media/validate.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
@@ -398,16 +399,16 @@ export function getUser(context) {
  * @param {Buffer} body content body
  * @returns {Promise<Response>} response
  */
-export async function storeSourceFile(context, key, mime, body, existingUUID) {
+export async function storeSourceFile(context, key, mime, body) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
   const head = await bucket.head(key);
-  const uuid = existingUUID || head?.Metadata?.uuid || crypto.randomUUID();
+  const id = head?.Metadata?.ulid || ulid();
 
   const resp = await bucket.put(key, body, mime, {
     'Last-Modified-By': getUser(context),
     'Uncompressed-Length': String(body.length),
-    uuid,
+    ulid: id,
   }, true);
 
   const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;

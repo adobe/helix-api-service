@@ -85,6 +85,7 @@
     "lodash.escape": "4.0.1",
     "private-ip": "3.0.2",
     "unist-util-visit": "5.1.0",
+    "ulid": "3.0.2",
     "xml2js": "0.6.2"
   },
   "devDependencies": {

@@ -52,7 +52,11 @@ async function copySource(context, info, move) {
       }
 
       // TODO assign new metadata when not moving
-      copied = await bucket.copyDeep(srcKey, destKey);
+      const opts = {};
+      if (!move) {
+        opts.renameMetadata = { uuid: 'org-uuid' };
+      }
+      copied = await bucket.copyDeep(srcKey, destKey, () => true, opts);
 
       if (move) {
         const copiedKeys = copied.map((item) => item.src);
@@ -69,6 +73,7 @@ async function copySource(context, info, move) {
       const opts = {};
       if (!move) {
         // When copying, give the target a new uuid
+        opts.renameMetadata = { uuid: 'org-uuid' };
         opts.addMetadata = { uuid: crypto.randomUUID() };
       }
 

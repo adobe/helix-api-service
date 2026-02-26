@@ -11,17 +11,13 @@
  */
 
 import { Response } from '@adobe/fetch';
+import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { isValid, ulid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
-import {
-  accessSourceFile,
-  getFileHeaders,
-  getS3Key,
-  getUser,
-} from './utils.js';
+import { accessSourceFile, getS3Key, getUser } from './utils.js';
 
 export const VERSION_FOLDER = '/.versions';
-const VERSION_INDEX = 'index.json';
 
 function getSiteRoot(info) {
   const { org, site } = info;
@@ -36,13 +32,29 @@ function handleNoVersions() {
   return new Response('[]', { status: 200, headers });
 }
 
+async function getVersionInfo(item, bucket, versions) {
+  const head = await bucket.head(item.key);
+  if (head) {
+    versions.push({
+      version: item.path,
+      date: item.lastModified,
+      user: head.Metadata['version-user'],
+      'org-path': head.Metadata['org-path'],
+      ...(head.Metadata['version-comment'] && { comment: head.Metadata['version-comment'] }),
+      ...(head.Metadata['version-operation'] && { operation: head.Metadata['version-operation'] }),
+    });
+  }
+}
+
 /**
- * List all versions of a file. The response is a JSON array of version objects:
+ * List all versions of a file returned in order from old to new. The response is a JSON array of
+ * version objects:
  * For example:
  *   [{
- *     "version": 1,
+ *     "version": "1234567890",
  *     "comment": "initial version",
  *     "op": "version",
+ *     "org-path": "/path/to/file.md",
  *     "date": "2026-02-03T11:49:22.632Z",
  *     "user": "joe@bloggs.org"
  *   }, {
@@ -55,40 +67,29 @@ function handleNoVersions() {
  * @param {import('@adobe/helix-shared-storage').HelixStorageBucket} bucket
  *   bucket to access the source file
  * @param {string} versionDirKey key of the version directory
- * @param {boolean} headRequest whether to return the headers only for a HEAD request
  * @returns {Promise<Response>} response with the file body and metadata
  */
-async function listVersions(bucket, versionDirKey, headRequest) {
-  const indexKey = `${versionDirKey}${VERSION_INDEX}`;
+async function listVersions(bucket, versionDirKey) {
+  const list = await bucket.list(versionDirKey, { shallow: true, includePrefixes: false });
 
-  if (headRequest) {
-    const head = await bucket.head(indexKey);
-    if (!head) {
-      return handleNoVersions();
-    }
-    const headers = getFileHeaders(head);
-    return new Response('', { status: head.$metadata.httpStatusCode, headers });
-  } else {
-    const meta = {};
-    const idx = await bucket.get(indexKey, meta);
-    if (!idx) {
-      return handleNoVersions();
-    }
-    const index = JSON.parse(idx);
-    const headers = getFileHeaders(meta);
-    return new Response(JSON.stringify(index.versions), { status: 200, headers });
+  if (!list || list.length === 0) {
+    return handleNoVersions();
   }
+
+  const versions = [];
+  await processQueue(list, async (item) => getVersionInfo(item, bucket, versions));
+
+  // sort objects in the versions array by date descending
+  versions.sort((a, b) => b.date > a.date);
+
+  // versions.sort((a, b) => b.date.localeCompare(a.date));
+
+  return new Response(JSON.stringify(versions), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
 async function getVersion(context, versionDirKey, version, headRequest) {
   const versionKey = `${versionDirKey}${version}`;
-  try {
-    return await accessSourceFile(context, versionKey, headRequest);
-  } catch (e) {
-    const opts = { e, log: context.log };
-    opts.status = e.$metadata?.httpStatusCode;
-    return createErrorResponse(opts);
-  }
+  return accessSourceFile(context, versionKey, headRequest);
 }
 
 /**
@@ -102,21 +103,20 @@ export async function getVersions(context, info, headRequest) {
   try {
     const idx = info.rawPath.indexOf(VERSION_FOLDER);
     if (idx === -1) {
-      return new Response('', { status: 404 });
+      return new Response('', { status: 400 });
     }
 
-    // Obtain the UUID of the version storage root
     const baseKey = getS3Key(info.org, info.site, info.rawPath.slice(0, idx));
 
     const bucket = HelixStorage.fromContext(context).sourceBus();
     const head = await bucket.head(baseKey);
-    if (!head?.Metadata?.uuid) {
+    if (!head?.Metadata?.ulid) {
       return new Response('', { status: 404 });
     }
-    const versionDirKey = `${getSiteRoot(info)}${VERSION_FOLDER}/${head.Metadata.uuid}/`;
+    const versionDirKey = `${getSiteRoot(info)}${VERSION_FOLDER}/${head.Metadata.ulid}/`;
 
     if (info.rawPath.endsWith(VERSION_FOLDER)) {
-      return listVersions(bucket, versionDirKey, headRequest);
+      return listVersions(bucket, versionDirKey);
     }
 
     // We expect a '/' between '.versions' and the number
@@ -125,7 +125,7 @@ export async function getVersions(context, info, headRequest) {
     }
 
     const version = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
-    if (Number.isNaN(version)) {
+    if (!isValid(version)) {
       return new Response('', { status: 400 });
     }
     return getVersion(context, versionDirKey, version, headRequest);
@@ -142,12 +142,9 @@ export async function getVersions(context, info, headRequest) {
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} baseKey base key of the source file
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {number} retryCount retry count in case if a version number conflict
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function postVersion(context, baseKey, info, retryCount = 0) {
-  const { log } = context;
-
+export async function postVersion(context, baseKey, info) {
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
@@ -156,60 +153,35 @@ export async function postVersion(context, baseKey, info, retryCount = 0) {
       return new Response('', { status: 404 });
     }
 
-    const uuid = head.Metadata?.uuid;
-    if (!uuid) {
-      return new Response('Document without UUID', { status: 500 });
+    const id = head.Metadata?.ulid;
+    if (!id) {
+      throw new Error('Document without ULID');
     }
 
-    const versionFolderKey = `${getSiteRoot(info)}${VERSION_FOLDER}/${uuid}/`;
-    const indexKey = `${versionFolderKey}${VERSION_INDEX}`;
+    const versionFolderKey = `${getSiteRoot(info)}${VERSION_FOLDER}/${id}/`;
+    const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
     const comment = String(context.data.comment || '');
     const operation = String(context.data.operation || '');
 
-    const idx = await bucket.get(indexKey);
-    let index;
-    if (idx) {
-      index = JSON.parse(idx);
-    } else {
-      index = {
-        versions: [],
-      };
-    }
+    const versionULID = ulid();
+    const versionKey = `${versionFolderKey}${versionULID}`;
 
-    const versionNr = index.versions.length + 1;
-    const versionKey = `${versionFolderKey}${versionNr}`;
-
-    const renameMetadata = { uuid: 'org-uuid' };
-    const addMetadata = { 'org-path': baseKey };
-    const copyOpts = { IfNoneMatch: '*' };
-    try {
-      await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata }, copyOpts);
-    } catch (e) {
-      if ((e.$metadata?.httpStatusCode === 409 || e.$metadata?.httpStatusCode === 412)
-        && retryCount < 2) {
-        return postVersion(context, baseKey, info, retryCount + 1);
-      }
-      throw e;
-    }
-
-    const version = {
-      version: versionNr,
-      date: new Date().toISOString(),
-      user: getUser(context),
-      ...(comment && { comment }),
-      ...(operation && { operation }),
+    const renameMetadata = { ulid: 'org-ulid' };
+    const addMetadata = {
+      'org-path': pathName,
+      'version-user': getUser(context),
+      ...(comment && { 'version-comment': comment }),
+      ...(operation && { 'version-operation': operation }),
     };
-    index.versions.push(version);
 
-    await bucket.put(indexKey, JSON.stringify(index, null, 2), 'application/json');
-
+    await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata });
     const headers = {
-      Location: `/${info.org}/sites/${info.site}/source${info.resourcePath}/${versionNr}`,
+      Location: `/${info.org}/sites/${info.site}/source${info.resourcePath}/${versionULID}`,
     };
 
     return new Response('', { status: 201, headers });
   } catch (e) {
-    const opts = { e, log };
+    const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }

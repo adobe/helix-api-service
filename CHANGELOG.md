@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/adobe/helix-api-service/compare/v1.32.2...v1.33.0) (2026-02-26)
+
+
+### Features
+
+* **auth:** publish role should contain log:write permission ([d0fbf67](https://github.com/adobe/helix-api-service/commit/d0fbf6784825a9cd8313422e0066a19dee26814b))
+
 ## [1.32.2](https://github.com/adobe/helix-api-service/compare/v1.32.1...v1.32.2) (2026-02-24)
 
 

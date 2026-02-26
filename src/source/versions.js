@@ -47,22 +47,26 @@ async function getVersionInfo(item, bucket, versions) {
 }
 
 /**
- * List all versions of a file returned in order from old to new. The response is a JSON array of
- * version objects:
+ * List all versions of a file returned in order from old to new.
+ * The response is a JSON array of objects with version information.
  * For example:
- *   [{
- *     "version": "1234567890",
- *     "comment": "initial version",
+ * [
+ *   {
+ *     "version": "01KJDB3QXBAFRRXWRV3W8DBD9R",
+ *     "date": "2026-02-26T16:04:36.000Z",
+ *     "user": "joe@bloggs.org",
+ *     "org-path": "/path/to/file.html",
+ *     "op": "preview"
+ *   },
+ *   {
+ *     "version": "01KJDB2TW1AWCD1P7TMRZMBCT1",
+ *     "date": "2026-02-26T16:04:06.000Z",
+ *     "user": "mel@bloggs.org",
+ *     "org-path": "/path/to/file.html",
  *     "op": "version",
- *     "org-path": "/path/to/file.md",
- *     "date": "2026-02-03T11:49:22.632Z",
- *     "user": "joe@bloggs.org"
- *   }, {
- *     "version": 2,
- *     "op": "preview",
- *     "date": "2026-02-03T11:49:22.632Z",
- *     "user": "harry@bloggs.org"
- *   }]
+ *     "comment": "ready for approval"
+ *   }
+ * ]
  *
  * @param {import('@adobe/helix-shared-storage').HelixStorageBucket} bucket
  *   bucket to access the source file
@@ -82,8 +86,6 @@ async function listVersions(bucket, versionDirKey) {
   // sort objects in the versions array by date descending
   versions.sort((a, b) => b.date > a.date);
 
-  // versions.sort((a, b) => b.date.localeCompare(a.date));
-
   return new Response(JSON.stringify(versions), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
@@ -93,7 +95,10 @@ async function getVersion(context, versionDirKey, version, headRequest) {
 }
 
 /**
- * Handle GET operations on the /.versions API
+ * Handle GET operations on the /.versions API, return either a version listing
+ * when the .../.versions endpoint is accessed, or a specific version for requests
+ * to .../.versions/<someversion>
+ *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {boolean} headRequest whether to return the headers only for a HEAD request
@@ -126,6 +131,7 @@ export async function getVersions(context, info, headRequest) {
 
     const version = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
     if (!isValid(version)) {
+      // It's not a valid ULID
       return new Response('', { status: 400 });
     }
     return getVersion(context, versionDirKey, version, headRequest);

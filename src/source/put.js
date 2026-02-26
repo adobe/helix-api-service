@@ -24,6 +24,17 @@ import {
   MAX_RETRY_RECURSION,
 } from './utils.js';
 
+/**
+ * Copy an S3 object and handle conflichts.
+ *
+ * @param {string} srcKey source S3 key
+ * @param {string} destKey destination S3 key
+ * @param {Bucket} bucket the S3 bucket
+ * @param {boolean} move true if this is a move operation
+ * @param {object} opts metadata options for the copy operation
+ * @param {object} copyOpts copy options
+ * @param {number} recursion recursion count
+ */
 async function copyWithRetry(srcKey, destKey, bucket, move, opts, copyOpts, recursion = 0) {
   try {
     const allOpts = { copyOpts, ...opts };

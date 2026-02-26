@@ -70,15 +70,28 @@ async function copySource(context, info, move) {
         }
       }
     } else {
-      const opts = {};
-      if (!move) {
-        // When copying, give the target a new uuid
-        opts.renameMetadata = { uuid: 'org-uuid' };
-        opts.addMetadata = { uuid: crypto.randomUUID() };
-      }
-
+      const opts = {};                                                                                                                                                                                                                                 
+      const headers = {};                    
+      if (!move) {                                                                                                                                                                                                                               
+        opts.addMetadata = { uuid: crypto.randomUUID() };                                                                                                                                                                                        
+        headers.IfNoneMatch = '*';                                                                                                                                                                                                               
+      }                                                                                                                                                                                                                                          
+    
       const destKey = getS3KeyFromInfo(info);
-      await bucket.copy(srcKey, destKey, opts);
+    
+      async function copyWithRetry(headerOpts) {
+        try {
+          return await bucket.copy(srcKey, destKey, opts, headerOpts);
+        } catch (e) {
+          if (e.$metadata?.httpStatusCode !== 412) throw e;
+          // Not the happy path - something is at the destination already.
+          const dest = await bucket.head(destKey);
+          opts.addMetadata = { uuid: dest.Metadata.uuid };
+          return await copyWithRetry({ IfMatch: dest.ETag });
+        }
+      }
+    
+      await copyWithRetry(headers);
 
       if (move) {
         const resp = await bucket.remove(srcKey);

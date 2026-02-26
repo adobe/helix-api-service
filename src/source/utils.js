@@ -56,6 +56,12 @@ const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 const DEFAULT_MAX_IMAGES = 200;
 
 /**
+ * Recursive functions that are used to retry, do this at most for this
+ * number of times.
+ */
+export const MAX_RETRY_RECURSION = 4;
+
+/**
  * Error messages from the media validation often start with this prefix.
  */
 const PREVIEW_ERROR_PREFIX = 'Unable to preview';

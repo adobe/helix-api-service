@@ -15,7 +15,12 @@ import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { isValid, ulid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
-import { accessSourceFile, getS3Key, getUser } from './utils.js';
+import {
+  accessSourceFile,
+  getS3Key,
+  getUser,
+  MAX_RETRY_RECURSION,
+} from './utils.js';
 
 export const VERSION_FOLDER = '/.versions';
 
@@ -132,7 +137,7 @@ export async function getVersions(context, info, headRequest) {
     const version = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
     if (!isValid(version)) {
       // It's not a valid ULID
-      return new Response('', { status: 400 });
+      return new Response('Not a valid version', { status: 400 });
     }
     return getVersion(context, versionDirKey, version, headRequest);
   } catch (e) {
@@ -148,9 +153,10 @@ export async function getVersions(context, info, headRequest) {
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} baseKey base key of the source file
  * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {number} recursion recursion count
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function postVersion(context, baseKey, info) {
+export async function postVersion(context, baseKey, info, recursion = 0) {
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
@@ -179,8 +185,20 @@ export async function postVersion(context, baseKey, info) {
       ...(comment && { 'version-comment': comment }),
       ...(operation && { 'version-operation': operation }),
     };
+    const copyOpts = { CopySourceIfMatch: head.ETag };
 
-    await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata });
+    try {
+      await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata, copyOpts });
+    } catch (e) {
+      if (recursion >= MAX_RETRY_RECURSION) throw e;
+
+      if (e.$metadata?.httpStatusCode === 412) {
+        // The source object has been modified since we last checked, so we need to redo
+        return postVersion(context, baseKey, info, recursion + 1);
+      }
+
+      throw e;
+    }
     const headers = {
       Location: `/${info.org}/sites/${info.site}/source${info.resourcePath}/${versionULID}`,
     };

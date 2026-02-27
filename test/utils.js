@@ -266,6 +266,18 @@ export function Nock() {
     .post(`/app/installations/${id}/access_tokens`)
     .reply(200, { token: 'dummy-token' });
 
+  nocker.mockIgnore = ({
+    content = '',
+    route = '/owner/repo/ref/.hlxignore',
+    status = 404,
+    times = 1,
+    optional = false,
+  } = {}) => nocker('https://raw.githubusercontent.com')
+    .get(route)
+    .times(times)
+    .optionally(optional)
+    .reply(status, content);
+
   nock.disableNetConnect();
   return nocker;
 }

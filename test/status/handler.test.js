@@ -102,7 +102,7 @@ describe('Status Handler Tests', () => {
         status: 403,
       },
       links: {
-        code: 'https://api.aem.live/org/sites/site/code/main/',
+        code: 'https://api.aem.live/org/repos/site/code/main/',
         live: 'https://api.aem.live/org/sites/site/live/',
         preview: 'https://api.aem.live/org/sites/site/preview/',
         status: 'https://api.aem.live/org/sites/site/status/',
@@ -180,7 +180,7 @@ describe('Status Handler Tests', () => {
         status: 200,
       },
       links: {
-        code: 'https://api.aem.live/org/sites/site/code/main/folder/page',
+        code: 'https://api.aem.live/org/repos/site/code/main/folder/page',
         live: 'https://api.aem.live/org/sites/site/live/folder/page',
         preview: 'https://api.aem.live/org/sites/site/preview/folder/page',
         status: 'https://api.aem.live/org/sites/site/status/folder/page',
@@ -265,7 +265,7 @@ describe('Status Handler Tests', () => {
         url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
       },
       links: {
-        code: 'https://api.aem.live/org/sites/site/code/main/page',
+        code: 'https://api.aem.live/org/repos/site/code/main/page',
         live: 'https://api.aem.live/org/sites/site/live/page',
         preview: 'https://api.aem.live/org/sites/site/preview/page',
         status: 'https://api.aem.live/org/sites/site/status/page',

@@ -11,6 +11,7 @@
  */
 import { AbortError } from '@adobe/fetch';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import {HelixStorage} from "@adobe/helix-shared-storage";
 
 /**
  * Load configuration from the config service.
@@ -85,12 +86,13 @@ export async function getUserListPaths(context) {
 /**
  * Return the contents of the `.hlx.json` file in a project.
  *
- * @param {import('@adobe/helix-shared-storage').Bucket} contentBus content bus bucket
+ * @param {import('../support/AdminContext').AdminContext} ctx context
  * @param {string} contentBusId content bus id
  * @returns contents of `.hlx.json` or null
  */
-export async function fetchHlxJson(contentBus, contentBusId) {
-  const buf = await contentBus.get(`${contentBusId}/.hlx.json`);
+export async function fetchHlxJson(ctx, contentBusId) {
+  const storage = HelixStorage.fromContext(ctx);
+  const buf = await storage.contentBus().get(`${contentBusId}/.hlx.json`);
   if (!buf) {
     return null;
   }

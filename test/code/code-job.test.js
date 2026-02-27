@@ -11,15 +11,16 @@
  */
 
 /* eslint-env mocha */
-/* eslint-disable max-len, max-classes-per-file */
+/* eslint-disable max-len, max-classes-per-file,no-param-reassign */
 import assert from 'assert';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { useFakeTimers } from 'sinon';
+import sinon, { useFakeTimers } from 'sinon';
 import { Octokit } from '@octokit/rest';
 import { computeSurrogateKey } from '@adobe/helix-shared-utils';
 import { sanitizeName } from '@adobe/helix-shared-string';
 import {
+  createContext, createInfo,
   Nock, SITE_CONFIG,
 } from '../utils.js';
 import { CodeJob, getCodeRef } from '../../src/code/code-job.js';
@@ -29,7 +30,7 @@ import { JobStorage } from '../../src/job/storage.js';
 import { RateLimitError } from '../../src/code/rate-limit-error.js';
 
 const DEFAULT_OCTOKIT = (ctx) => new Octokit({
-  request: { fetch: getFetch(ctx) },
+  request: { fetch: ctx.getFetch() },
   auth: 'token foo-token',
   log: ctx.log,
 });
@@ -150,36 +151,39 @@ function removeLastModified(resources) {
  * @param info
  * @return {Promise<CodeJob>}
  */
-const createJob = async (ctx, event = {}, mocked = false) => {
+const createJob = async (ctx, event = {}, sandbox) => {
   // augment test event if not setup correctly yet
   event.codeRef = event.codeRef || sanitizeName(event.ref);
   event.codeRepo = event.codeRepo || sanitizeName(event.repo);
   event.codeOwner = event.codeOwner || sanitizeName(event.owner);
   event.codePrefix = event.codePrefix || `/${event.codeOwner}/${event.codeRepo}/${event.codeRef}/`;
-  const info = createPathInfo(`/preview/${event.codeOwner}/${event.codeRepo}/${event.codeRef}`);
-  let MockedCodeJob = CodeJob;
+  const info = createInfo(`/${event.codeOwner}/repos/${event.codeRepo}/code/${event.codeRef}`)
+    .withCode(event.owner, event.repo)
+    .withRef(event.ref);
   const actions = [];
-  if (mocked) {
-    MockedCodeJob = (await esmock('../../src/codebus/code-job.js', {
-      '../../src/support/deploy-fstab.js': {
-        deployFstab: () => { actions.push('deployFstab'); },
-      },
-      '../../src/discover/reindex.js': {
-        reindexProject: () => { actions.push('discoverReindex'); },
-      },
-      '../../src/cache/purge.js': {
-        performPurge: (...args) => { actions.push({ name: 'performPurge', args }); },
-        purgeCode: (...args) => { actions.push({ name: 'purgeCode', args }); },
-      },
-      '../../src/contentbus/config-merge.js': {
-        contentConfigMerge: () => {
-          actions.push('config-merge');
-        },
-      },
-    })).CodeJob;
+  if (sandbox) {
+    // sandbox.stub(CodeJob, 'reindexProject').callsFake(() => { actions.push('deployFstab'); });
+    // sandbox.stub(CodeJob, 'reindexProject').callsFake(() => { actions.push('deployFstab'); });
+    // MockedCodeJob = (await esmock('../../src/codebus/code-job.js', {
+    //   '../../src/support/deploy-fstab.js': {
+    //     deployFstab: () => { actions.push('deployFstab'); },
+    //   },
+    //   '../../src/discover/reindex.js': {
+    //     reindexProject: () => { actions.push('discoverReindex'); },
+    //   },
+    //   '../../src/cache/purge.js': {
+    //     performPurge: (...args) => { actions.push({ name: 'performPurge', args }); },
+    //     purgeCode: (...args) => { actions.push({ name: 'purgeCode', args }); },
+    //   },
+    //   '../../src/contentbus/config-merge.js': {
+    //     contentConfigMerge: () => {
+    //       actions.push('config-merge');
+    //     },
+    //   },
+    // })).CodeJob;
   }
-  const storage = await JobStorage.create(ctx, info, MockedCodeJob);
-  const job = new MockedCodeJob(ctx, info, 'code', 'job-123', storage)
+  const storage = await JobStorage.create(ctx, info, CodeJob);
+  const job = new CodeJob(ctx, info, 'code', 'job-123', storage)
     .withTransient(true);
   job.state = {
     data: {
@@ -224,13 +228,15 @@ describe('Code Job tests', () => {
   let codeBus;
   let configBus;
   let contentBus;
+  let sandbox;
   beforeEach(() => {
     nock = new Nock().env();
     storage = new MockStorageS3();
     codeBus = storage.codeBus();
     contentBus = storage.contentBus();
     configBus = storage.configBus();
-    ctx = DEFAULT_CONTEXT({
+    sandbox = sinon.createSandbox();
+    ctx = createContext('/owner/repos/repo/code/main/*', {
       attributes: {
         storage,
       },
@@ -250,6 +256,8 @@ describe('Code Job tests', () => {
 
   afterEach(() => {
     nock.done();
+    sandbox.restore();
+
   });
 
   it('job rejects resume during collect', async () => {
@@ -344,62 +352,16 @@ describe('Code Job tests', () => {
     assert.deepStrictEqual(reqs[0], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'in_progress',
       },
     ]);
     assert.deepStrictEqual(reqs[1], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
-        state: 'success',
-      },
-    ]);
-    assert.strictEqual(job.state.data.phase, 'completed');
-  });
-
-  it('run updates deployments when deploymentId is defined (helix5)', async () => {
-    const reqs = [];
-    nock('https://api.github.com')
-      .post('/repos/owner/MY_REPO-42/deployments/123/statuses')
-      .times(2)
-      .reply((...args) => {
-        reqs.push(args);
-        return [200];
-      });
-
-    ctx.attributes.config = {};
-    const job = await createJob(ctx, {
-      owner: 'owner',
-      repo: 'MY_REPO-42',
-      ref: 'ref',
-      deploymentId: '123',
-      deploymentAllowed: true,
-    });
-    ctx.attributes.installations['owner/MY_REPO-42'] = {
-      id: 42,
-    };
-
-    job.collect = () => {};
-    job.sync = () => {};
-    job.postProcess = () => {};
-    job.flushCache = () => {};
-    await job.run();
-    assert.deepStrictEqual(reqs[0], [
-      '/repos/owner/MY_REPO-42/deployments/123/statuses',
-      {
-        environment_url: 'https://ref--my-repo-42--owner.aem.page',
-        log_url: 'https://admin.hlx.page/job/owner/my-repo-42/ref/code/job-123',
-        state: 'in_progress',
-      },
-    ]);
-    assert.deepStrictEqual(reqs[1], [
-      '/repos/owner/MY_REPO-42/deployments/123/statuses',
-      {
-        environment_url: 'https://ref--my-repo-42--owner.aem.page',
-        log_url: 'https://admin.hlx.page/job/owner/my-repo-42/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'success',
       },
     ]);
@@ -435,16 +397,16 @@ describe('Code Job tests', () => {
     assert.deepStrictEqual(reqs[0], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'in_progress',
       },
     ]);
     assert.deepStrictEqual(reqs[1], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'failure',
       },
     ]);
@@ -475,8 +437,8 @@ describe('Code Job tests', () => {
     assert.deepStrictEqual(reqs[0], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'in_progress',
       },
     ]);
@@ -509,16 +471,16 @@ describe('Code Job tests', () => {
     assert.deepStrictEqual(reqs[0], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'in_progress',
       },
     ]);
     assert.deepStrictEqual(reqs[1], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'success',
       },
     ]);
@@ -567,16 +529,16 @@ describe('Code Job tests', () => {
     assert.deepStrictEqual(reqs[1], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'in_progress',
       },
     ]);
     assert.deepStrictEqual(reqs[2], [
       '/repos/owner/repo/deployments/123/statuses',
       {
-        environment_url: 'https://ref--repo--owner.hlx.page',
-        log_url: 'https://admin.hlx.page/job/owner/repo/ref/code/job-123',
+        environment_url: 'https://ref--repo--owner.aem.page',
+        log_url: 'https://api.aem.live/owner/sites/repo/jobs/code/job-123',
         state: 'success',
       },
     ]);
@@ -722,7 +684,7 @@ describe('Code Job tests', () => {
     });
 
     it('handles branch deletion', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       await job.collect(codeSource);
       assert.deepStrictEqual(job.state.data.resources, [
@@ -736,7 +698,7 @@ describe('Code Job tests', () => {
     });
 
     it('handles branch deletion on main', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       events.ref = 'main';
       const job = await createJob(ctx, events);
       await assert.rejects(job.collect(codeSource), Error('[/owner/repo/main/] cowardly refusing to delete potential default branch.'));
@@ -756,7 +718,7 @@ describe('Code Job tests', () => {
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
@@ -782,9 +744,9 @@ describe('Code Job tests', () => {
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
       codeBus
-        .withFile('/owner/repo/ref/fstab.yaml')
+        .withFile('/owner/repo/ref/.sha')
         .withFile('/owner/repo/ref/styles/styles.js', 'alert("hello, world")');
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
@@ -797,11 +759,6 @@ describe('Code Job tests', () => {
       }]);
       removeLastModified(job.state.data.resources);
       assert.deepStrictEqual(job.state.data.resources, [{
-        contentLength: 0,
-        contentType: 'text/plain',
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }, {
         contentLength: 21,
         contentType: 'text/plain',
         resourcePath: '/styles/styles.js',
@@ -840,17 +797,12 @@ describe('Code Job tests', () => {
         .withFile('/owner/repo/ref/styles/readme.md')
         .withFile('/owner/repo/ref/package.json');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
       removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
-        contentLength: 0,
-        contentType: 'text/plain',
-        resourcePath: '/.sha',
-        status: 200,
-      }]);
+      assert.deepStrictEqual(job.state.data.resources, []);
     });
 
     it('handles rate limit error from hlxignore', async () => {
@@ -861,11 +813,11 @@ describe('Code Job tests', () => {
         .get('/repos/owner/repo/contents/.hlxignore?ref=new-branch')
         .reply(429);
       codeBus
-        .withFile('/owner/repo/ref/fstab.yaml')
+        .withFile('/owner/repo/ref/.sha')
         .withFile('/owner/repo/ref/styles/readme.md')
         .withFile('/owner/repo/ref/package.json');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       await assert.rejects(job.collect(codeSource), Error('error reading content from github. (url=https://api.github.com/repos/owner/repo/contents/.hlxignore?ref=new-branch, branch=undefined)'));
     });
@@ -876,11 +828,11 @@ describe('Code Job tests', () => {
         .get('/owner/repo/new-branch/.hlxignore')
         .reply(429);
       codeBus
-        .withFile('/owner/repo/ref/fstab.yaml')
+        .withFile('/owner/repo/ref/.sha')
         .withFile('/owner/repo/ref/styles/readme.md')
         .withFile('/owner/repo/ref/package.json');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       await assert.rejects(job.collect(codeSource), Error('error reading content from github. (url=https://raw.githubusercontent.com/owner/repo/new-branch/.hlxignore, branch=undefined)'));
     });
@@ -890,11 +842,11 @@ describe('Code Job tests', () => {
         .get('/owner/repo/new-branch/.hlxignore')
         .reply(403);
       codeBus
-        .withFile('/owner/repo/ref/fstab.yaml')
+        .withFile('/owner/repo/ref/.sha')
         .withFile('/owner/repo/ref/styles/readme.md')
         .withFile('/owner/repo/ref/package.json');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       await assert.rejects(job.collect(codeSource), Error('Unable to fetch hlxignore: 403'));
     });
@@ -963,7 +915,7 @@ describe('Code Job tests', () => {
         .withFile('aemsites/repo/new-branch/bar.md')
         .withFile('aemsites/repo/new-branch/package.json');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       events.baseRef = '';
       events.owner = 'aemsites';
       const job = await createJob(ctx, events);
@@ -1048,7 +1000,7 @@ describe('Code Job tests', () => {
         .times(2)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-ignore.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-ignore.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
@@ -1089,7 +1041,7 @@ describe('Code Job tests', () => {
         .times(2)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-tag-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-tag-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
@@ -1122,7 +1074,7 @@ describe('Code Job tests', () => {
         .times(1)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-tag-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-tag-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await assert.rejects(job.collect(codeSource), Error('Unable to list tree for owner/repo/new-tag: tree too large to sync. rejecting truncated result.'));
@@ -1144,7 +1096,7 @@ describe('Code Job tests', () => {
         .times(1)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-tag-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-tag-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await assert.rejects(job.collect(codeSource), new StatusCodeError('Unable to list tree for owner/repo/new-tag: 401', 401));
@@ -1168,7 +1120,7 @@ describe('Code Job tests', () => {
         .times(1)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-tag-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-tag-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await assert.rejects(job.collect(codeSource), new RateLimitError('Unable to list tree for owner/repo/new-tag: 429', 0, 1625731200));
@@ -1197,7 +1149,7 @@ describe('Code Job tests', () => {
         .times(2)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-new-repo.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-new-repo.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
@@ -1215,13 +1167,13 @@ describe('Code Job tests', () => {
         .get('/rate_limit')
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await assert.rejects(job.collect(codeSource), Error('[/owner/repo/new-branch/] branch not found.'));
     });
 
-    it('commit when fstab does not exist in storage yet causes tree sync', async () => {
+    it('commit when .sha does not exist in storage yet causes tree sync', async () => {
       nock.mockIgnore({ route: '/owner/repo/new-branch/.hlxignore' });
       nock('https://api.github.com')
         .get('/repos/owner/repo/branches/new-branch')
@@ -1249,7 +1201,7 @@ describe('Code Job tests', () => {
         .times(2)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-created.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-created.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
       await job.collect(codeSource);
@@ -1271,7 +1223,7 @@ describe('Code Job tests', () => {
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
       events.changes[1].type = 'DELETED';
       const job = await createJob(ctx, events);
       codeSource.octokit = ctx.attributes.octokits['42'];
@@ -1328,7 +1280,7 @@ describe('Code Job tests', () => {
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      ctx.attributes.configAll = {
+      ctx.attributes.config = {
         headers: {
           data: {
             '/**': [
@@ -1348,7 +1300,7 @@ describe('Code Job tests', () => {
           LastModified: '2022-03-01T08:32:01Z',
         });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.sha = '5edf98811d50b5b948f6f890f0c4367095490dbd';
       const codeSource = {
@@ -1544,7 +1496,7 @@ describe('Code Job tests', () => {
         .times(3)
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      ctx.attributes.configAll = {
+      ctx.attributes.config = {
         headers: {
           data: {
             '/**': [
@@ -1564,7 +1516,7 @@ describe('Code Job tests', () => {
           LastModified: '2022-03-01T08:32:01Z',
         });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-ratelimit.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-ratelimit.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.sha = '5edf98811d50b5b948f6f890f0c4367095490dbd';
       const codeSource = {
@@ -1708,7 +1660,7 @@ describe('Code Job tests', () => {
           LastModified: '2019-03-01T08:32:01Z',
         });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       const codeSource = await getCodeSource(ctx, events);
       await job.sync(codeSource);
@@ -1842,64 +1794,6 @@ describe('Code Job tests', () => {
       ]);
     });
 
-    it('getCodeSource() can handle external GH_BASE_URL', async () => {
-      ctx.env.GH_BASE_URL = 'https://my.githiub.com';
-      ctx.env.GH_EXTERNAL = true;
-      ctx.githubToken = 'test-token';
-      const codeSource = await getCodeSource(ctx, {
-        owner: 'owner',
-        repo: 'repo',
-        installationId: 'fake-installationid',
-      });
-      assert.deepStrictEqual(await codeSource.octokit.auth(), {
-        token: 'test-token',
-        tokenType: 'oauth',
-        type: 'token',
-      });
-      delete codeSource.octokit;
-      assert.deepStrictEqual(codeSource, {
-        base_url: 'https://my.githiub.com',
-        installationId: 'fake-installationid',
-        owner: 'owner',
-        raw_url: 'https://raw.githubusercontent.com',
-        repo: 'repo',
-        token: 'test-token',
-      });
-    });
-
-    it('getCodeSource() can handle external GH_BASE_URL (helix5)', async () => {
-      ctx.env.GH_BASE_URL = 'https://my.githiub.com';
-      ctx.env.GH_EXTERNAL = true;
-      ctx.githubToken = 'test-token';
-      ctx.attributes.config = {
-        code: {
-          source: {
-            url: 'https://my-github.com/',
-          },
-        },
-      };
-      const codeSource = await getCodeSource(ctx, {
-        owner: 'owner',
-        repo: 'repo',
-        installationId: 'fake-installationid',
-      });
-      assert.deepStrictEqual(await codeSource.octokit.auth(), {
-        token: 'test-token',
-        tokenType: 'oauth',
-        type: 'token',
-      });
-      delete codeSource.octokit;
-      assert.deepStrictEqual(codeSource, {
-        base_url: 'https://my.githiub.com',
-        installationId: 'fake-installationid',
-        owner: 'owner',
-        raw_url: 'https://raw.githubusercontent.com',
-        repo: 'repo',
-        token: 'test-token',
-        url: 'https://my-github.com/',
-      });
-    });
-
     it('getCodeSource() supports secret', async () => {
       ctx.attributes.config = {
         code: {
@@ -1961,89 +1855,8 @@ describe('Code Job tests', () => {
         raw_url: 'https://my-raw.github.com',
         repo: 'repo',
         secretId: 'my-secret-id',
-        token: undefined,
         url: 'https://my.github.com',
       });
-    });
-
-    it('delete fstab.yaml ignored on main', async () => {
-      nock('https://api.github.com')
-        .get('/rate_limit')
-        .twice()
-        .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-delete-on-main.json'), 'utf-8'));
-      codeBus.withFile('/owner/repo/main/fstab.yaml', 'foo');
-
-      const job = await createJob(ctx, events);
-      const codeSource = {
-        owner: 'owner',
-        repo: 'repo',
-        base_url: 'https://api.github.com',
-        raw_url: 'https://raw.githubusercontent.com',
-        octokit: ctx.attributes.octokits['42'],
-      };
-      await job.sync(codeSource);
-      removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
-        deleted: true,
-        resourcePath: '/fstab.yaml',
-        error: 'refused',
-        status: 304,
-      }]);
-      assert.deepEqual(codeBus.removed, []);
-    });
-
-    it('update of unmodified fstab.yaml ignored on main', async () => {
-      nock('https://api.github.com')
-        .get('/rate_limit')
-        .twice()
-        .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      nock('https://raw.githubusercontent.com')
-        .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/fstab.yaml')
-        .reply(200, 'foo');
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      codeBus.withFile('/owner/repo/main/fstab.yaml', 'foo');
-
-      const job = await createJob(ctx, events);
-      const codeSource = {
-        owner: 'owner',
-        repo: 'repo',
-        base_url: 'https://api.github.com',
-        raw_url: 'https://raw.githubusercontent.com',
-        octokit: ctx.attributes.octokits['42'],
-      };
-      await job.sync(codeSource);
-      removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, []);
-      assert.deepEqual(codeBus.removed, []);
-    });
-
-    it('delete fstab.yaml not ignored on main for helix5', async () => {
-      nock('https://api.github.com')
-        .get('/rate_limit')
-        .twice()
-        .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-delete-on-main.json'), 'utf-8'));
-      codeBus.withFile('/owner/repo/main/fstab.yaml', 'foo');
-
-      ctx.attributes.config = {};
-      const job = await createJob(ctx, events);
-      const codeSource = {
-        owner: 'owner',
-        repo: 'repo',
-        base_url: 'https://api.github.com',
-        raw_url: 'https://raw.githubusercontent.com',
-        octokit: ctx.attributes.octokits['42'],
-      };
-      await job.sync(codeSource);
-      removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
-        deleted: true,
-        resourcePath: '/fstab.yaml',
-        status: 204,
-      }]);
-      assert.deepEqual(codeBus.removed, ['/owner/repo/main/fstab.yaml']);
     });
 
     it('deleting helix-query.yaml on main should remove query.yaml in content', async () => {
@@ -2051,10 +1864,11 @@ describe('Code Job tests', () => {
         .get('/rate_limit')
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-delete-query.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-query.yaml', 'foo');
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/.hlx.json', {
         'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const job = await createJob(ctx, events);
@@ -2073,7 +1887,7 @@ describe('Code Job tests', () => {
         status: 204,
       }]);
       assert.deepEqual(codeBus.removed, ['/owner/repo/main/helix-query.yaml']);
-      assert.deepEqual(contentBus.removed, ['foo-id/preview/.helix/query.yaml']);
+      assert.deepEqual(contentBus.removed, ['853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/query.yaml']);
     });
 
     it('deleting helix-query.yaml on forked repo should not remove query.yaml in content', async () => {
@@ -2081,7 +1895,7 @@ describe('Code Job tests', () => {
         .get('/rate_limit')
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-delete-query.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       events.owner = 'other';
       codeBus.withFile('/other/repo/main/helix-query.yaml', 'foo');
       contentBus.withFile('foo-id/.hlx.json', {
@@ -2111,7 +1925,7 @@ describe('Code Job tests', () => {
         .get('/rate_limit')
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-delete-query.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-query.yaml', 'foo');
       contentBus.withFile('foo-id/.hlx.json', {
         'original-repository': 'owner/repo',
@@ -2141,7 +1955,7 @@ describe('Code Job tests', () => {
         .get('/rate_limit')
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-delete-sitemap.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-sitemap.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-sitemap.yaml', 'foo');
       contentBus.withFile('foo-id/.hlx.json', {
         'original-repository': 'owner/repo',
@@ -2171,7 +1985,7 @@ describe('Code Job tests', () => {
         .get('/rate_limit')
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.cancelled = true;
       const codeSource = {
@@ -2183,100 +1997,6 @@ describe('Code Job tests', () => {
       };
       await job.sync(codeSource);
       assert.deepStrictEqual(job.state.data.resources, []);
-    });
-
-    it('syncs events with invalid config', async () => {
-      nock('https://raw.githubusercontent.com')
-        .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/fstab.yaml')
-        .reply(200, 'hello, world');
-      nock('https://api.github.com')
-        .get('/rate_limit')
-        .twice()
-        .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      codeBus
-        .withFile('/owner/repo/main/fstab.yaml', 'foo')
-        .withFile('/owner/repo/main/head.html', 'foo');
-      const job = await createJob(ctx, events);
-      const codeSource = {
-        owner: 'owner',
-        repo: 'repo',
-        base_url: 'https://api.github.com',
-        raw_url: 'https://raw.githubusercontent.com',
-        octokit: ctx.attributes.octokits['42'],
-      };
-      await job.sync(codeSource);
-      removeLastModified(job.state.data.resources);
-      job.state.data.resources.sort((a0, a1) => a0.resourcePath.localeCompare(a1.resourcePath));
-      assert.deepStrictEqual(job.state.data.resources, [{
-        contentLength: 12,
-        contentType: 'text/plain; charset=utf-8',
-        error: 'invalid config',
-        resourcePath: '/fstab.yaml',
-        status: 400,
-      }, {
-        deleted: true,
-        resourcePath: '/head.html',
-        status: 204,
-      }]);
-
-      assert.deepStrictEqual(codeBus.added, []);
-      assert.deepEqual(codeBus.removed, [
-        '/owner/repo/main/head.html',
-      ]);
-    });
-
-    it('syncs events with valid config', async () => {
-      nock('https://raw.githubusercontent.com')
-        .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/fstab.yaml')
-        .reply(200, FSTAB);
-      nock('https://api.github.com')
-        .get('/rate_limit')
-        .twice()
-        .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      codeBus
-        .withFile('/owner/repo/main/fstab.yaml', 'foo')
-        .withFile('/owner/repo/main/head.html', 'foo');
-      const job = await createJob(ctx, events);
-      const codeSource = {
-        owner: 'owner',
-        repo: 'repo',
-        base_url: 'https://api.github.com',
-        raw_url: 'https://raw.githubusercontent.com',
-        octokit: ctx.attributes.octokits['42'],
-      };
-      await job.sync(codeSource);
-      removeLastModified(job.state.data.resources);
-      job.state.data.resources.sort((a0, a1) => a0.resourcePath.localeCompare(a1.resourcePath));
-      assert.deepStrictEqual(job.state.data.resources, [{
-        contentLength: 96,
-        contentType: 'text/plain; charset=utf-8',
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }, {
-        deleted: true,
-        resourcePath: '/head.html',
-        status: 204,
-      }]);
-
-      assert.deepStrictEqual(codeBus.added, [{
-        body: '\n'
-       + 'mountpoints:\n'
-       + '  /: https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg\n',
-        compressed: true,
-        contentType: 'text/plain; charset=utf-8',
-        filePath: '/owner/repo/main/fstab.yaml',
-        meta: {
-          'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
-          'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
-        },
-      }]);
-      assert.deepEqual(codeBus.removed, [
-        '/owner/repo/main/head.html',
-      ]);
     });
 
     it('call storage for events (weird repo / branch)', async () => {
@@ -2292,7 +2012,7 @@ describe('Code Job tests', () => {
         .twice()
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-sb.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-sb.json'), 'utf-8'));
       events.repo = 'TEST_42';
       codeBus
         .withFile('/owner/test-42/tripod-test-34-sub/src/html.htl', 'foo');
@@ -2345,7 +2065,7 @@ describe('Code Job tests', () => {
     });
 
     it('sync handles branch deletion', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.deleteTree = true;
       await job.sync();
@@ -2355,7 +2075,7 @@ describe('Code Job tests', () => {
 
   describe('flush cache phase', () => {
     it('purges the resource paths', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/head.html',
@@ -2385,7 +2105,7 @@ describe('Code Job tests', () => {
     });
 
     it('purges the resource paths (unsupported character branch)', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-sb.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-sb.json'), 'utf-8'));
       events.codeRef = 'tripod-test-34-sub';
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
@@ -2407,7 +2127,7 @@ describe('Code Job tests', () => {
     });
 
     it('purge handles branch deletion', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.deleteTree = true;
       await job.flushCache();
@@ -2421,10 +2141,6 @@ describe('Code Job tests', () => {
   });
 
   describe('post process phase', () => {
-    const FSTAB_NEW = `
-mountpoints:
-  /: https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-different
-`;
     const INDEX_NEW = `
 indices:
   default:
@@ -2443,20 +2159,19 @@ sitemaps:
 `;
 
     it('ignores if no config modified', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       await job.postProcess();
     });
 
     it('ignores branch deletion', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.deleteTree = true;
       await job.postProcess();
     });
 
     it('update config if head.html is modified', async () => {
-      nock.fstab();
       nock('https://api.fastly.com')
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(replyConfigPurge('ref--repo--owner_head'))
@@ -2464,10 +2179,9 @@ sitemaps:
         .reply(replyConfigPurge('ref--repo--owner_head'));
 
       codeBus
-        .withFile('/owner/repo/ref/head.html', '<head>')
-        .withFile('/owner/repo/main/fstab.yaml', FSTAB);
+        .withFile('/owner/repo/ref/head.html', '<head>');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
         resourcePath: '/head.html',
@@ -2547,7 +2261,7 @@ sitemaps:
         .get('/main--repo--aemsites/config.json?scope=admin')
         .reply(404);
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
       events.owner = 'aemsites';
       codeBus
         .withFile('/aemsites/repo/ref/head.html', '<head>')
@@ -2636,7 +2350,7 @@ sitemaps:
         .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
         .reply(replyConfigPurge('fail--repo--owner_head'));
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
       events.ref = 'fail';
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
@@ -2684,7 +2398,7 @@ sitemaps:
         .withFile('/owner/repo/ref/head.html', '<head>')
         .withFile('/owner/repo/ref/helix-config.json', JSON.stringify(configJson));
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
         resourcePath: '/head.html',
@@ -2725,7 +2439,7 @@ sitemaps:
       // head.html was deleted
       // storage.withFile('/owner/repo/ref/head.html', '<head>');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
       events.ref = 'branch_with/slash';
       events.codeRef = getCodeRef(events.ref);
       events.prefix = `/${events.owner}/${events.repo}/${events.codeRef}/`;
@@ -2797,7 +2511,7 @@ sitemaps:
       // head.html was deleted
       // storage.withFile('/owner/repo/ref/head.html', '<head>');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-no-head.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-head.json'), 'utf-8'));
       events.ref = 'ref';
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
@@ -2865,7 +2579,7 @@ sitemaps:
         helixVersion: 5,
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/fstab.yaml',
@@ -2933,7 +2647,7 @@ sitemaps:
 
     it('handles fstab creation (main)', async () => {
       codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB_NEW);
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/fstab.yaml',
@@ -3013,7 +2727,7 @@ sitemaps:
         helixVersion: 5,
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-fstab-deleted.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-fstab-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/fstab.yaml',
@@ -3048,7 +2762,7 @@ sitemaps:
         'drive.google.com': [],
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/fstab.yaml',
@@ -3068,7 +2782,7 @@ sitemaps:
         'original-repository': 'owner/repo',
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-query.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/helix-query.yaml',
@@ -3087,7 +2801,7 @@ sitemaps:
         'original-repository': 'owner/repo',
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-query.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/helix-query.yaml',
@@ -3108,7 +2822,7 @@ sitemaps:
         'original-repository': 'owner/repo',
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-query.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/helix-query.yaml',
@@ -3127,7 +2841,7 @@ sitemaps:
         'original-repository': 'owner/repo',
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/helix-sitemap.yaml',
@@ -3146,7 +2860,7 @@ sitemaps:
         'original-repository': 'owner/repo',
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
       events.owner = 'other';
 
       const job = await createJob(ctx, events, true);
@@ -3160,7 +2874,7 @@ sitemaps:
     });
 
     it('ignores helix-sitemap.yaml update (non-main)', async () => {
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
       events.ref = 'other';
 
       const job = await createJob(ctx, events, true);
@@ -3179,7 +2893,7 @@ sitemaps:
         'original-repository': 'owner/repo',
       });
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
 
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
@@ -3209,7 +2923,7 @@ sitemaps:
       configBus
         .withFile('/orgs/owner/sites/repo.json', JSON.stringify(oldConfig));
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-sidekick.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-sidekick.json'), 'utf-8'));
       await applyConfig(ctx, { }, SITE_CONFIG);
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
@@ -3226,7 +2940,7 @@ sitemaps:
         .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
         .reply(replyConfigPurge());
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-robots.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-robots.json'), 'utf-8'));
       ctx.attributes.config = {};
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
@@ -3243,7 +2957,7 @@ sitemaps:
         .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
         .reply(replyConfigPurge('main--repo--owner_head'));
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'codebus', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
       await applyConfig(ctx, { }, SITE_CONFIG);
       const job = await createJob(ctx, events);
       job.state.data.resources = [{

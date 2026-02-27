@@ -32,8 +32,7 @@
     "require": [
       "nock",
       "test/setup-env.js",
-      "test/setup-test-idp.js",
-      "mocha-suppress-logs"
+      "test/setup-test-idp.js"
     ],
     "recursive": "true",
     "reporter": "mocha-multi-reporters",

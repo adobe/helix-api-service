@@ -252,6 +252,10 @@ export class CodeJob extends Job {
         // do not allow to overwrite the internal helix-config.json
         return false;
       }
+      if (key === '.sha') {
+        // ignore internal sha file
+        return false;
+      }
       if (key.startsWith('node_modules/') || key.indexOf('/node_modules/') >= 0) {
         return false;
       }
@@ -303,11 +307,10 @@ export class CodeJob extends Job {
         log.info(`[code][${codePrefix}*] base ref identical to new branch. enumerating files.`);
         needsTreeSync = true;
       } else {
-        const hasBaseSha = !!await storage.head(`/${codeOwner}/${codeRepo}/${baseRef}/.sha`);
-        const hasBase = hasBaseSha || !!await storage.head(`/${codeOwner}/${codeRepo}/${baseRef}/fstab.yaml`);
+        const hasBase = !!await storage.head(`/${codeOwner}/${codeRepo}/${baseRef}/.sha`);
         if (!hasBase) {
-          this.state.data.treeSyncReason = 'base ref .sha or fstab.yaml does no exist';
-          log.info(`[code][${codePrefix}*] base ref .sha or fstab.yaml on '${baseRef}' does not exist. enumerating files.`);
+          this.state.data.treeSyncReason = 'base ref .sha does no exist';
+          log.info(`[code][${codePrefix}*] base ref .sha on '${baseRef}' does not exist. enumerating files.`);
           needsTreeSync = true;
         } else {
           this.state.data.treeSyncReason = 'requested';
@@ -416,18 +419,6 @@ export class CodeJob extends Job {
               log.info(`[code][${nr}] deleted ${path} does not exist in storage.`);
               this.state.progress.processed += 1;
             }
-          } else if (evt.ref === 'main' && path.endsWith('/fstab.yaml')) {
-            if (ctx.attributes.config) {
-              log.info(`[code][${nr}] removing ${path} from storage (allowed due to site config)`);
-              await measure(() => storage.remove(path), this.storageTimer);
-              this.storageTimer.remove += 1;
-              resources.push(createResourceInfo(change, 204));
-              this.state.progress.processed += 1;
-            } else {
-              log.info(`[code][${nr}] removing ${path} from storage (cowardly refused)`);
-              resources.push(createResourceInfo(change, 304, 'refused'));
-              this.state.progress.ignored += 1;
-            }
           } else {
             log.info(`[code][${nr}] removing ${path} from storage.`);
             await measure(() => storage.remove(path), this.storageTimer);
@@ -476,18 +467,6 @@ export class CodeJob extends Job {
         }
         body = await res.buffer();
 
-        // special check for fstab on main branch.
-        if (change.path === 'fstab.yaml' && evt.ref === 'main') {
-          const oldFstab = await measure(() => storage.get(path), this.storageTimer);
-          if (oldFstab && oldFstab.equals(body)) {
-            log.info(`[code][${nr}] fstab.yaml on main branch not modified.`);
-            // eslint-disable-next-line no-param-reassign
-            change.type = 'ignored';
-            this.state.progress.ignored += 1;
-            await this.writeStateLazy();
-            return;
-          }
-        }
         // eslint-disable-next-line no-param-reassign
         change.contentLength = body.length;
         this.bytesDownloaded += body.length;
@@ -658,7 +637,7 @@ export class CodeJob extends Job {
       info.purgeHead = true;
     }
 
-    // check if fstab was modified
+    // check if config was modified
     if (doPurgeConfig) {
       await purge.config(ctx, info);
     }

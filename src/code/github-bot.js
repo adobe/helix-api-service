@@ -221,9 +221,8 @@ export async function getCodeSource(ctx, event) {
  * @returns {string}
  */
 function getDeploymentURL(ctx, owner, repo, pref) {
-  const domain = ctx.attributes.config ? 'aem' : 'hlx';
   const ref = pref.replace(/\//g, '-');
-  return `https://${ref}--${repo}--${owner}.${domain}.page`;
+  return `https://${ref}--${repo}--${owner}.aem.page`;
 }
 
 /**

@@ -112,7 +112,7 @@ export default async function status(context, info) {
     live: await getLiveInfo(context, localinfo),
     preview: await getPreviewInfo(context, localinfo),
     edit,
-    links: localinfo.getAPIUrls('status', 'preview', 'live', 'code'),
+    links: localinfo.getAPIUrls('status', 'preview', 'live', { title: 'code', name: 'repos-code' }),
   };
 
   if (authInfo.profile) {

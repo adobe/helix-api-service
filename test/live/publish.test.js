@@ -258,7 +258,7 @@ describe('Publish Action Tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), {
         links: {
-          code: 'https://api.aem.live/org/sites/site/code/main/',
+          code: 'https://api.aem.live/org/repos/site/code/main/',
           live: 'https://api.aem.live/org/sites/site/live/',
           preview: 'https://api.aem.live/org/sites/site/preview/',
           status: 'https://api.aem.live/org/sites/site/status/',

@@ -1,3 +1,10 @@
+## [1.33.1](https://github.com/adobe/helix-api-service/compare/v1.33.0...v1.33.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* use new md svc response format ([#139](https://github.com/adobe/helix-api-service/issues/139)) ([2ac1230](https://github.com/adobe/helix-api-service/commit/2ac12303dc57d2b683c5c780ebcaa4bfaaf3c0a3)), closes [#138](https://github.com/adobe/helix-api-service/issues/138)
+
 # [1.33.0](https://github.com/adobe/helix-api-service/compare/v1.32.2...v1.33.0) (2026-02-26)
 
 

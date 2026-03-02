@@ -672,7 +672,7 @@ export class CodeJob extends Job {
         if (hlx?.['original-site'] === project) {
           configChanges[key] = { deleted };
         } else {
-          log.info(`[code] ignoring change to ${key}: original repository is: ${hlx?.['original-site']}`);
+          log.info(`[code] ignoring change to ${key}: original site is: ${hlx?.['original-site']}`);
         }
       }
     }

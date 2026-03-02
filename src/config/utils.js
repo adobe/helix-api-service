@@ -10,8 +10,8 @@
  * governing permissions and limitations under the License.
  */
 import { AbortError } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import {HelixStorage} from "@adobe/helix-shared-storage";
 
 /**
  * Load configuration from the config service.

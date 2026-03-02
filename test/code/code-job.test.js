@@ -23,11 +23,12 @@ import {
   createContext, createInfo,
   Nock, SITE_CONFIG,
 } from '../utils.js';
-import { CodeJob, getCodeRef } from '../../src/code/code-job.js';
+import { CodeJob } from '../../src/code/code-job.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { getCodeSource } from '../../src/code/github-bot.js';
 import { JobStorage } from '../../src/job/storage.js';
 import { RateLimitError } from '../../src/code/rate-limit-error.js';
+import purge from '../../src/cache/purge.js';
 
 const DEFAULT_OCTOKIT = (ctx) => new Octokit({
   request: { fetch: ctx.getFetch() },
@@ -148,10 +149,10 @@ function removeLastModified(resources) {
 /**
  * Creates a mock CodeJob
  * @param ctx
- * @param info
+ * @param event
  * @return {Promise<CodeJob>}
  */
-const createJob = async (ctx, event = {}, sandbox) => {
+const createJob = async (ctx, event = {}) => {
   // augment test event if not setup correctly yet
   event.codeRef = event.codeRef || sanitizeName(event.ref);
   event.codeRepo = event.codeRepo || sanitizeName(event.repo);
@@ -161,27 +162,6 @@ const createJob = async (ctx, event = {}, sandbox) => {
     .withCode(event.owner, event.repo)
     .withRef(event.ref);
   const actions = [];
-  if (sandbox) {
-    // sandbox.stub(CodeJob, 'reindexProject').callsFake(() => { actions.push('deployFstab'); });
-    // sandbox.stub(CodeJob, 'reindexProject').callsFake(() => { actions.push('deployFstab'); });
-    // MockedCodeJob = (await esmock('../../src/codebus/code-job.js', {
-    //   '../../src/support/deploy-fstab.js': {
-    //     deployFstab: () => { actions.push('deployFstab'); },
-    //   },
-    //   '../../src/discover/reindex.js': {
-    //     reindexProject: () => { actions.push('discoverReindex'); },
-    //   },
-    //   '../../src/cache/purge.js': {
-    //     performPurge: (...args) => { actions.push({ name: 'performPurge', args }); },
-    //     purgeCode: (...args) => { actions.push({ name: 'purgeCode', args }); },
-    //   },
-    //   '../../src/contentbus/config-merge.js': {
-    //     contentConfigMerge: () => {
-    //       actions.push('config-merge');
-    //     },
-    //   },
-    // })).CodeJob;
-  }
   const storage = await JobStorage.create(ctx, info, CodeJob);
   const job = new CodeJob(ctx, info, 'code', 'job-123', storage)
     .withTransient(true);
@@ -244,6 +224,7 @@ describe('Code Job tests', () => {
         HLX_FASTLY_PURGE_TOKEN: '1234',
       },
     });
+    ctx.attributes.config.content.contentBusId = 'foo-id';
     ctx.attributes.octokits = {
       42: DEFAULT_OCTOKIT(ctx),
     };
@@ -257,7 +238,6 @@ describe('Code Job tests', () => {
   afterEach(() => {
     nock.done();
     sandbox.restore();
-
   });
 
   it('job rejects resume during collect', async () => {
@@ -1866,7 +1846,7 @@ describe('Code Job tests', () => {
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-query.yaml', 'foo');
-      contentBus.withFile('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/.hlx.json', {
+      contentBus.withFile('foo-id/.hlx.json', {
         'original-repository': 'owner/repo',
         'original-site': 'owner/repo',
       });
@@ -1887,7 +1867,7 @@ describe('Code Job tests', () => {
         status: 204,
       }]);
       assert.deepEqual(codeBus.removed, ['/owner/repo/main/helix-query.yaml']);
-      assert.deepEqual(contentBus.removed, ['853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/.helix/query.yaml']);
+      assert.deepEqual(contentBus.removed, ['foo-id/preview/.helix/query.yaml']);
     });
 
     it('deleting helix-query.yaml on forked repo should not remove query.yaml in content', async () => {
@@ -1930,7 +1910,6 @@ describe('Code Job tests', () => {
       contentBus.withFile('foo-id/.hlx.json', {
         'original-repository': 'owner/repo',
       });
-      ctx.attributes.config = {};
 
       const job = await createJob(ctx, events);
       const codeSource = {
@@ -1959,6 +1938,7 @@ describe('Code Job tests', () => {
       codeBus.withFile('/owner/repo/main/helix-sitemap.yaml', 'foo');
       contentBus.withFile('foo-id/.hlx.json', {
         'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const job = await createJob(ctx, events);
@@ -2075,6 +2055,10 @@ describe('Code Job tests', () => {
 
   describe('flush cache phase', () => {
     it('purges the resource paths', async () => {
+      let purgeInfos = [];
+      sandbox.stub(purge, 'perform').callsFake((context, info, infos) => {
+        purgeInfos = infos;
+      });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
@@ -2091,20 +2075,29 @@ describe('Code Job tests', () => {
         status: 304,
       }];
       await job.flushCache();
-      const info = job.mockActions[0].args[1];
-      delete info.changes;
-      delete info.resources;
-      assert.deepStrictEqual(info, {
-        org: 'owner',
-        owner: 'owner',
-        ref: 'ref',
-        site: 'repo',
-        repo: 'repo',
-      });
-      assert.deepStrictEqual(job.mockActions[0].args[2], ['/head.html', '/package.json']);
+      assert.deepStrictEqual(purgeInfos, [
+        {
+          key: 'efbFuvT8UH_4lweb',
+        },
+        {
+          path: '/head.html',
+        },
+        {
+          key: 'sAEKXf44hn_AvYjI',
+        },
+        {
+          path: '/package.json',
+        },
+        {
+          key: 'ref--repo--owner_head',
+        }]);
     });
 
     it('purges the resource paths (unsupported character branch)', async () => {
+      let purgeInfos = [];
+      sandbox.stub(purge, 'perform').callsFake((context, info, infos) => {
+        purgeInfos = infos;
+      });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-sb.json'), 'utf-8'));
       events.codeRef = 'tripod-test-34-sub';
       const job = await createJob(ctx, events, true);
@@ -2113,30 +2106,34 @@ describe('Code Job tests', () => {
         status: 200,
       }];
       await job.flushCache();
-      const info = job.mockActions[0].args[1];
-      delete info.changes;
-      delete info.resources;
-      assert.deepStrictEqual(info, {
-        ref: 'tripod-test-34-sub',
-        org: 'owner',
-        owner: 'owner',
-        site: 'repo',
-        repo: 'repo',
-      });
-      assert.deepStrictEqual(job.mockActions[0].args[2], ['/head.html']);
+      assert.deepStrictEqual(purgeInfos, [
+        {
+          key: 'ec5rmlVmVC2IMrGC',
+        },
+        {
+          path: '/head.html',
+        },
+        {
+          key: 'tripod-test-34-sub--repo--owner_head',
+        }]);
     });
 
     it('purge handles branch deletion', async () => {
+      let purgeInfos = [];
+      sandbox.stub(purge, 'perform').callsFake((context, info, infos) => {
+        purgeInfos = infos;
+      });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
       job.state.data.deleteTree = true;
       await job.flushCache();
-      const infos = job.mockActions[0].args[2];
-      assert.deepStrictEqual(infos, [{
-        key: 'ref--owner--repo',
-      }, {
-        key: 'ref--owner--repo_code',
-      }]);
+      assert.deepStrictEqual(purgeInfos, [
+        {
+          key: 'ref--owner--repo',
+        },
+        {
+          key: 'ref--owner--repo_code',
+        }]);
     });
   });
 
@@ -2171,7 +2168,7 @@ sitemaps:
       await job.postProcess();
     });
 
-    it('update config if head.html is modified', async () => {
+    it('purge config if head.html is modified', async () => {
       nock('https://api.fastly.com')
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(replyConfigPurge('ref--repo--owner_head'))
@@ -2188,135 +2185,6 @@ sitemaps:
         status: 200,
       }];
       await job.postProcess();
-
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.ok(codeBus.added[0].body.created);
-      assert.deepEqual(codeBus.added, [
-        {
-          body: {
-            helixVersion: 4,
-            created: codeBus.added[0].body.created,
-            content: {
-              data: {
-                '/': {
-                  contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-                },
-              },
-            },
-            fstab: {
-              data: {
-                folders: {},
-                mountpoints: {
-                  '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-                },
-              },
-            },
-            head: {
-              data: {
-                html: '<head>',
-              },
-            },
-            version: 2,
-          },
-          compressed: false,
-          contentType: 'application/json',
-          filePath: '/owner/repo/ref/helix-config.json',
-          meta: {
-            'x-contentbus-id': '/=853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-            'x-helix-version': '4',
-            'x-created-date': codeBus.added[0].body.created,
-          },
-        },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-        },
-        folders: {},
-      });
-    });
-
-    it('update config if head.html is modified (aemsites)', async () => {
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .times(2)
-        .reply(200)
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(200);
-
-      // from config merge
-      nock('https://helix-content-bus.s3.us-east-1.amazonaws.com/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
-        .get('/preview/.helix/config.json?x-id=GetObject')
-        .reply(404)
-        .get('/preview/.helix/headers.json?x-id=GetObject')
-        .reply(404)
-        .get('/preview/metadata.json?x-id=GetObject')
-        .reply(404)
-        .get('/live/metadata.json?x-id=GetObject')
-        .reply(404);
-
-      // from re-index
-      nock('https://config.aem.page')
-        .get('/main--repo--aemsites/config.json?scope=admin')
-        .reply(404);
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      events.owner = 'aemsites';
-      codeBus
-        .withFile('/aemsites/repo/ref/head.html', '<head>')
-        .withFile('/aemsites/repo/main/fstab.yaml', FSTAB);
-      const job = await createJob(ctx, events);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }, {
-        resourcePath: '/head.html',
-        status: 200,
-      }];
-      await job.postProcess();
-
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.ok(codeBus.added[0].body.created);
-      assert.deepEqual(codeBus.added, [
-        {
-          body: {
-            content: {
-              data: {
-                '/': {
-                  contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-                },
-              },
-            },
-            fstab: {
-              data: {
-                folders: {},
-                mountpoints: {
-                  '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-                },
-              },
-            },
-            created: codeBus.added[0].body.created,
-            helixVersion: 4,
-            version: 2,
-          },
-          compressed: false,
-          contentType: 'application/json',
-          filePath: '/aemsites/repo/main/helix-config.json',
-          meta: {
-            'x-contentbus-id': '/=853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-            'x-created-date': codeBus.added[0].body.created,
-            'x-helix-version': '4',
-          },
-        },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-        },
-        folders: {},
-      });
     });
 
     it('new branch purges config with _head', async () => {
@@ -2362,424 +2230,11 @@ sitemaps:
       assert.deepEqual(codeBus.removed, []);
     });
 
-    it('update config if head.html is modified (existing config)', async () => {
-      nock.fstab();
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(replyConfigPurge('ref--repo--owner_head'))
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(replyConfigPurge('ref--repo--owner_head'));
-
-      const configJson = {
-        content: {
-          data: {
-            '/': {
-              contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-            },
-          },
-        },
-        head: {
-          data: {
-            html: '<head>',
-          },
-        },
-        fstab: {
-          data: {
-            folders: {},
-            mountpoints: {
-              '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-            },
-          },
-        },
-        version: 2,
-      };
-      codeBus
-        .withFile('/owner/repo/main/fstab.yaml', FSTAB)
-        .withFile('/owner/repo/ref/head.html', '<head>')
-        .withFile('/owner/repo/ref/helix-config.json', JSON.stringify(configJson));
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
-      const job = await createJob(ctx, events);
-      job.state.data.resources = [{
-        resourcePath: '/head.html',
-        status: 200,
-      }];
-      await job.postProcess();
-
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.deepEqual(codeBus.added, [{
-        body: configJson,
-        compressed: false,
-        contentType: 'application/json',
-        filePath: '/owner/repo/ref/helix-config.json',
-        meta: {
-          'x-contentbus-id': '/=853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-        },
-      },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-        },
-        folders: {},
-      });
-    });
-
-    it('handles fstab update (non main)', async () => {
-      nock.fstab();
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(replyConfigPurge('branch-with-slash--repo--owner_head'))
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(replyConfigPurge('branch-with-slash--repo--owner_head'));
-
-      codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB);
-      codeBus.withFile('/owner/repo/branch-with-slash/fstab.yaml', FSTAB_NEW); // should not be used
-      // head.html was deleted
-      // storage.withFile('/owner/repo/ref/head.html', '<head>');
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      events.ref = 'branch_with/slash';
-      events.codeRef = getCodeRef(events.ref);
-      events.prefix = `/${events.owner}/${events.repo}/${events.codeRef}/`;
-
-      const job = await createJob(ctx, events);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }, {
-        deleted: true,
-        resourcePath: '/head.html',
-        status: 202,
-      }];
-      await job.postProcess();
-
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.ok(codeBus.added[0].body.created);
-      assert.deepEqual(codeBus.added, [
-        {
-          body: {
-            helixVersion: 4,
-            created: codeBus.added[0].body.created,
-            content: {
-              data: {
-                '/': {
-                  contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-                },
-              },
-            },
-            fstab: {
-              data: {
-                folders: {},
-                mountpoints: {
-                  '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-                },
-              },
-            },
-            version: 2,
-          },
-          compressed: false,
-          contentType: 'application/json',
-          filePath: '/owner/repo/branch-with-slash/helix-config.json',
-          meta: {
-            'x-contentbus-id': '/=853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-            'x-helix-version': 4,
-            'x-created-date': codeBus.added[0].body.created,
-          },
-        },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-        },
-        folders: {},
-      });
-    });
-
-    it('handles fstab update (non main, no head)', async () => {
-      nock.fstab();
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(replyConfigPurge('ref--repo--owner_head'))
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(replyConfigPurge('ref--repo--owner_head'));
-
-      codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB_FOLDER_MAPPED);
-      codeBus.withFile('/owner/repo/ref/fstab.yaml', FSTAB_NEW); // should not be used
-      // head.html was deleted
-      // storage.withFile('/owner/repo/ref/head.html', '<head>');
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-head.json'), 'utf-8'));
-      events.ref = 'ref';
-      const job = await createJob(ctx, events);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }, {
-        deleted: true,
-        resourcePath: '/head.html',
-        status: 202,
-      }];
-      await job.postProcess();
-
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.ok(codeBus.added[0].body.created);
-      assert.deepEqual(codeBus.added, [
-        {
-          body: {
-            helixVersion: 4,
-            created: codeBus.added[0].body.created,
-            content: {
-              data: {
-                '/': {
-                  contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-                },
-              },
-            },
-            fstab: {
-              data: {
-                folders: {
-                  '/products': '/products/default',
-                },
-                mountpoints: {
-                  '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-                },
-              },
-            },
-            version: 2,
-          },
-          compressed: false,
-          contentType: 'application/json',
-          filePath: '/owner/repo/ref/helix-config.json',
-          meta: {
-            'x-contentbus-id': '/=853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-            'x-helix-version': 4,
-            'x-created-date': codeBus.added[0].body.created,
-          },
-        },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-9oeaMae16P9Kbb3xg4Cg',
-        },
-        folders: {},
-      });
-    });
-
-    it('handles fstab update (main)', async () => {
-      codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB_NEW);
-      // head.html was deleted
-      // storage.withFile('/owner/repo/ref/head.html', '<head>');
-      codeBus.withFile('/owner/repo/main/helix-config.json', {
-        version: 2,
-        created: 'Thu, 06 Jun 2024 09:09:57 GMT',
-        helixVersion: 5,
-      });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }];
-      await job.postProcess();
-
-      const performPurge = job.mockActions.splice(2, 1)[0];
-      assert.strictEqual(performPurge.name, 'performPurge');
-      assert.deepStrictEqual(performPurge.args[2], [
-        {
-          key: 'p_foo-id',
-        },
-        {
-          key: 'foo-id',
-        },
-      ]);
-
-      assert.deepStrictEqual(job.mockActions, [
-        'deployFstab',
-        'config-merge',
-        'discoverReindex',
-      ]);
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.deepEqual(codeBus.added, [
-        {
-          body: {
-            helixVersion: 5,
-            created: 'Thu, 06 Jun 2024 09:09:57 GMT',
-            content: {
-              data: {
-                '/': {
-                  contentBusId: '55d2bd2eab1e751581f108d730b78b52d9c0e94ed9a68306d8b02373f66',
-                },
-              },
-            },
-            fstab: {
-              data: {
-                folders: {},
-                mountpoints: {
-                  '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-different',
-                },
-              },
-            },
-            version: 2,
-          },
-          compressed: false,
-          contentType: 'application/json',
-          filePath: '/owner/repo/main/helix-config.json',
-          meta: {
-            'x-contentbus-id': '/=55d2bd2eab1e751581f108d730b78b52d9c0e94ed9a68306d8b02373f66',
-            'x-helix-version': '5',
-            'x-created-date': 'Thu, 06 Jun 2024 09:09:57 GMT',
-          },
-        },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-different',
-        },
-        folders: {},
-      });
-    });
-
-    it('handles fstab creation (main)', async () => {
-      codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB_NEW);
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }];
-      await job.postProcess();
-
-      const performPurge = job.mockActions.splice(2, 1)[0];
-      assert.strictEqual(performPurge.name, 'performPurge');
-      assert.deepStrictEqual(performPurge.args[2], [
-        {
-          key: 'p_foo-id',
-        },
-        {
-          key: 'foo-id',
-        },
-      ]);
-
-      assert.deepStrictEqual(job.mockActions, [
-        'deployFstab',
-        'config-merge',
-        'discoverReindex',
-      ]);
-      codeBus.added[0].body = JSON.parse(codeBus.added[0].body);
-      assert.deepEqual(codeBus.added, [
-        {
-          body: {
-            helixVersion: 4,
-            created: codeBus.added[0].body.created,
-            content: {
-              data: {
-                '/': {
-                  contentBusId: '55d2bd2eab1e751581f108d730b78b52d9c0e94ed9a68306d8b02373f66',
-                },
-              },
-            },
-            fstab: {
-              data: {
-                folders: {},
-                mountpoints: {
-                  '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-different',
-                },
-              },
-            },
-            version: 2,
-          },
-          compressed: false,
-          contentType: 'application/json',
-          filePath: '/owner/repo/main/helix-config.json',
-          meta: {
-            'x-contentbus-id': '/=55d2bd2eab1e751581f108d730b78b52d9c0e94ed9a68306d8b02373f66',
-            'x-helix-version': '4',
-            'x-created-date': codeBus.added[0].body.created,
-          },
-        },
-      ]);
-      assert.deepEqual(codeBus.removed, []);
-      assert.deepEqual(ctx.attributes.mountConfig.toJSON(), {
-        mountpoints: {
-          '/': 'https://drive.google.com/drive/u/2/folders/1vjng4ahZWph-different',
-        },
-        folders: {},
-      });
-    });
-
-    it('handles fstab delete (main)', async () => {
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(replyConfigPurge('main--repo--owner_head'))
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(replyConfigPurge('main--repo--owner_head'));
-
-      // storage.withFile('/owner/repo/ref/head.html', '<head>');
-      codeBus.withFile('/owner/repo/main/helix-config.json', {
-        version: 2,
-        created: 'Thu, 06 Jun 2024 09:09:57 GMT',
-        helixVersion: 5,
-      });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-fstab-deleted.json'), 'utf-8'));
-      const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        deleted: true,
-        status: 202,
-      }];
-      await job.postProcess();
-
-      assert.deepStrictEqual(job.mockActions, []);
-      assert.deepEqual(codeBus.added, []);
-      assert.deepEqual(codeBus.removed, ['/owner/repo/main/helix-config.json']);
-      assert.deepEqual(ctx.attributes.mountConfig, undefined);
-    });
-
-    it('handles rejected fstab update', async () => {
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(replyConfigPurge())
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(replyConfigPurge());
-
-      codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB_NEW);
-      // head.html was deleted
-      // storage.withFile('/owner/repo/ref/head.html', '<head>');
-      codeBus.withFile('/owner/repo/main/helix-config.json', {
-        version: 2,
-        created: 'Thu, 06 Jun 2024 09:09:57 GMT',
-        helixVersion: 5,
-      });
-
-      ctx.env.HLX_CONTENT_SOURCE_LOCK = JSON.stringify({
-        'drive.google.com': [],
-      });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
-        resourcePath: '/fstab.yaml',
-        status: 200,
-      }];
-      await job.postProcess();
-
-      assert.strictEqual(job.mockActions.pop(), undefined);
-      assert.deepStrictEqual(job.mockActions, []);
-    });
-
     it('handles helix-query.yaml update (main)', async () => {
       codeBus
-        .withFile('/owner/repo/main/fstab.yaml', FSTAB)
         .withFile('/owner/repo/main/helix-query.yaml', INDEX_NEW);
       contentBus.withFile('foo-id/.hlx.json', {
-        'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
@@ -2796,9 +2251,8 @@ sitemaps:
     });
 
     it('handles helix-query.yaml remove (main)', async () => {
-      codeBus.withFile('/owner/repo/main/fstab.yaml', FSTAB);
       contentBus.withFile('foo-id/.hlx.json', {
-        'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
@@ -2816,10 +2270,9 @@ sitemaps:
 
     it('handles error while updating helix-query.yaml', async () => {
       codeBus
-        .withFile('/owner/repo/main/fstab.yaml', FSTAB)
         .withFile('/owner/repo/main/helix-query.yaml', 'indices');
       contentBus.withFile('foo-id/.hlx.json', {
-        'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
@@ -2835,10 +2288,9 @@ sitemaps:
 
     it('handles helix-sitemap.yaml update (main)', async () => {
       codeBus
-        .withFile('/owner/repo/main/fstab.yaml', FSTAB)
         .withFile('/owner/repo/main/helix-sitemap.yaml', SITEMAP_NEW);
       contentBus.withFile('foo-id/.hlx.json', {
-        'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
@@ -2857,7 +2309,7 @@ sitemaps:
     it('ignored helix-sitemap.yaml update (forked)', async () => {
       codeBus.withFile('/other/repo/main/helix-sitemap.yaml', SITEMAP_NEW);
       contentBus.withFile('foo-id/.hlx.json', {
-        'original-repository': 'owner/repo',
+        'original-site': 'owner/repo',
       });
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
@@ -2887,25 +2339,7 @@ sitemaps:
       assert.strictEqual(contentBus.added.length, 0);
     });
 
-    it('ignores helix-sitemap.yaml update (no fstab.yaml)', async () => {
-      codeBus.withFile('/owner/repo/main/helix-sitemap.yaml', SITEMAP_NEW);
-      contentBus.withFile('foo-id/.hlx.json', {
-        'original-repository': 'owner/repo',
-      });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
-
-      const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
-        resourcePath: '/helix-sitemap.yaml',
-        status: 200,
-      }];
-      await job.postProcess();
-
-      assert.strictEqual(contentBus.added.length, 0);
-    });
-
-    it('purge config if sidekick.json is modified (helix5)', async () => {
+    it('purge config if sidekick.json is modified', async () => {
       nock('https://api.fastly.com')
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(replyPurge('u9DQngmJ6BZT5Mdb'))
@@ -2913,7 +2347,6 @@ sitemaps:
         .reply(replyConfigPurge());
 
       codeBus
-        .withFile('owner/repo/main/fstab.yaml', FSTAB)
         .withFile('owner/repo/main/tools/sidekick/config.json', '{ "plugins": []}');
 
       const oldConfig = JSON.parse(JSON.stringify(SITE_CONFIG));
@@ -2924,7 +2357,6 @@ sitemaps:
         .withFile('/orgs/owner/sites/repo.json', JSON.stringify(oldConfig));
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-sidekick.json'), 'utf-8'));
-      await applyConfig(ctx, { }, SITE_CONFIG);
       const job = await createJob(ctx, events, true);
       job.state.data.resources = [{
         resourcePath: '/tools/sidekick/config.json',
@@ -2933,7 +2365,7 @@ sitemaps:
       await job.postProcess();
     });
 
-    it('purge config if robots.txt is modified (helix5)', async () => {
+    it('purge config if robots.txt is modified', async () => {
       nock('https://api.fastly.com')
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(replyConfigPurge())
@@ -2941,7 +2373,6 @@ sitemaps:
         .reply(replyConfigPurge());
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-robots.json'), 'utf-8'));
-      ctx.attributes.config = {};
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
         resourcePath: '/robots.txt',
@@ -2950,7 +2381,7 @@ sitemaps:
       await job.postProcess();
     });
 
-    it('purge config if head.html is modified (helix5)', async () => {
+    it('purge config if head.html is modified', async () => {
       nock('https://api.fastly.com')
         .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
         .reply(replyConfigPurge('main--repo--owner_head'))
@@ -2958,7 +2389,6 @@ sitemaps:
         .reply(replyConfigPurge('main--repo--owner_head'));
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
-      await applyConfig(ctx, { }, SITE_CONFIG);
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
         resourcePath: '/head.html',

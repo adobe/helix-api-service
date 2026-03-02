@@ -300,7 +300,7 @@ export function createContext(suffix, {
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),
-      config: SITE_CONFIG,
+      config: structuredClone(SITE_CONFIG),
       googleApiOpts: { retry: false },
       gracePeriod: 1,
       retryDelay: 1,

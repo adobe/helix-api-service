@@ -9,10 +9,14 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { promisify } from 'util';
+import { gunzip } from 'zlib';
 import { Response } from '@adobe/fetch';
 import { InvocationType, InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { errorResponse } from '../support/utils.js';
 import { error } from './errors.js';
+
+const gunzipAsync = promisify(gunzip);
 
 /**
  * Creates the request payload.
@@ -82,6 +86,27 @@ async function requestPayload(context, info, opts) {
 }
 
 /**
+ * Parses JSON response from conversion services.
+ * Returns the parsed object or null if not JSON or parse fails.
+ * @param {Buffer|string} responseBody the response body (already decompressed)
+ * @param {string} contentType the content-type header
+ * @param {object} log logger instance
+ * @returns {{markdown: string, media: Array}|null} parsed response or null
+ */
+function parseJsonResponse(responseBody, contentType, log) {
+  if (!contentType?.includes('application/json')) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(responseBody);
+  } catch (e) {
+    log.warn(`Failed to parse JSON response: ${e.message}`);
+    return null;
+  }
+}
+
+/**
  * Creates a response from the result obtained.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -90,7 +115,7 @@ async function requestPayload(context, info, opts) {
  * @param {Object} result a result containing statusCode, headers and body
  * @returns {Promise<Response>} payload payload to use in the invoke
  */
-function createResponse(context, info, opts, result) {
+async function createResponse(context, info, opts, result) {
   const { log } = context;
   const { resourcePath } = info;
   const { provider } = opts;
@@ -120,7 +145,31 @@ function createResponse(context, info, opts, result) {
     });
   }
   if (statusCode < 300) {
-    const responseBody = result.isBase64Encoded ? Buffer.from(body, 'base64') : body;
+    let responseBody = result.isBase64Encoded
+      ? Buffer.from(body, 'base64')
+      : Buffer.from(body);
+    if (resheaders['content-encoding']?.includes('gzip')) {
+      responseBody = await gunzipAsync(responseBody);
+      delete headers['content-encoding'];
+    }
+
+    // Handle JSON responses from conversion services (contains markdown and media)
+    const parsed = parseJsonResponse(responseBody, resheaders['content-type'], log);
+    if (parsed) {
+      // TODO
+      // Record uploaded media for logging at end of request
+      // if (parsed.media?.length > 0) {
+      //   recordMediaUploads(ctx, parsed.media, resourcePath);
+      // }
+      // Return just the markdown (or empty string if missing)
+      responseBody = parsed.markdown || '';
+    }
+
+    // Always calculate content-length from actual response body
+    headers['content-length'] = Buffer.isBuffer(responseBody)
+      ? responseBody.length
+      : Buffer.byteLength(responseBody);
+
     return new Response(responseBody, {
       status: 200,
       headers: {

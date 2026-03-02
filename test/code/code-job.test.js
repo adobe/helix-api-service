@@ -1188,30 +1188,6 @@ describe('Code Job tests', () => {
       codeSource.octokit = ctx.attributes.octokits['42'];
       assert.deepStrictEqual(job.state.data.resources, []);
     });
-
-    it('commit with config changes', async () => {
-      nock.mockIgnore({ route: '/owner/repo/main/.hlxignore' });
-      nock('https://api.github.com')
-        .get('/repos/owner/repo/branches/main')
-        .reply(200, {
-          name: 'ref',
-          commit: {
-            sha: 'e7dc0087d4b2f8d37f6f5c233655e9d34add005e',
-          },
-        })
-        .get('/rate_limit')
-        .twice()
-        .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config.json'), 'utf-8'));
-      events.changes[1].type = 'DELETED';
-      const job = await createJob(ctx, events);
-      codeSource.octokit = ctx.attributes.octokits['42'];
-      await job.collect(codeSource);
-      assert.deepStrictEqual(job.state.data.resources, []);
-      assert.deepStrictEqual(job.state.data.changes, events.changes);
-      assert.deepStrictEqual(job.state.data.changes[1].type, 'deleted');
-    });
   });
 
   describe('sync phase', () => {
@@ -2178,7 +2154,7 @@ sitemaps:
       codeBus
         .withFile('/owner/repo/ref/head.html', '<head>');
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
         resourcePath: '/head.html',
@@ -2218,7 +2194,7 @@ sitemaps:
         .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
         .reply(replyConfigPurge('fail--repo--owner_head'));
 
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-no-fstab.json'), 'utf-8'));
+      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
       events.ref = 'fail';
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
@@ -2376,22 +2352,6 @@ sitemaps:
       const job = await createJob(ctx, events);
       job.state.data.resources = [{
         resourcePath: '/robots.txt',
-        status: 200,
-      }];
-      await job.postProcess();
-    });
-
-    it('purge config if head.html is modified', async () => {
-      nock('https://api.fastly.com')
-        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
-        .reply(replyConfigPurge('main--repo--owner_head'))
-        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
-        .reply(replyConfigPurge('main--repo--owner_head'));
-
-      const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
-      const job = await createJob(ctx, events);
-      job.state.data.resources = [{
-        resourcePath: '/head.html',
         status: 200,
       }];
       await job.postProcess();

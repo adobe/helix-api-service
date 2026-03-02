@@ -208,9 +208,10 @@ describe('Code Handler Tests', () => {
   });
 
   it('handles remove action', async () => {
-    sandbox.stub(codebus, 'remove').callsFake(() => new Response('', {
-      status: 204,
-    }));
+    nock('https://helix-code-bus.s3.us-east-1.amazonaws.com')
+      .delete('/owner/repo/ref/script.js?x-id=DeleteObject')
+      .reply(204);
+
     let purgeInfos = [];
     sandbox.stub(purge, 'code').callsFake((ctx, info, infos) => {
       purgeInfos = infos;

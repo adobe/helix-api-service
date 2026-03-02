@@ -2,7 +2,7 @@
   "type": "github",
   "owner": "owner",
   "repo": "repo",
-  "ref": "main",
+  "ref": "ref",
   "baseRef": "",
   "changes": [
     {

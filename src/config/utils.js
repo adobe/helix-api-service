@@ -102,8 +102,8 @@ export async function fetchHlxJson(ctx, contentBusId) {
 /**
  * Checks if "this" site's code source is the canonical source of this site.
  * If not, name of the primary code source is returned.
- * @param {AdminContext} ctx
- * @param {RequestInfo} info
+ * @param {import('../support/AdminContext').AdminContext} ctx
+ * @param {import('../support/RequestInfo').RequestInfo} info
  * @returns {string}
  */
 export function checkCanonicalRepo(ctx, info) {

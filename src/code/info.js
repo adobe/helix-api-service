@@ -14,8 +14,8 @@ import { fetchS3 } from '@adobe/helix-admin-support';
 /**
  * Returns the code bus info for the given resource. If the resource is missing, it will not
  * have a contentType.
- * @param {AdminContext} ctx the context
- * @param {RequestInfo} info lookup options
+ * @param {import('../support/AdminContext').AdminContext} ctx the context
+ * @param {import('../support/RequestInfo').RequestInfo} info lookup options
  * @returns {Promise<CodeBusResource>} a resource
  */
 export async function getCodeBusInfo(ctx, info) {

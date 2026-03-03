@@ -15,8 +15,8 @@ import { getCodeBusInfo } from './info.js';
 
 /**
  * Updates a code resource by fetching the content from github and storing it in the code-bus
- * @param {AdminContext} ctx context
- * @param {RequestInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/RequestInfo').RequestInfo} info path info
  * @returns {Promise<Response>} response
  */
 export async function status(ctx, info) {

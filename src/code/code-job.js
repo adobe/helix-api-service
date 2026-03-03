@@ -144,7 +144,7 @@ function createResourceInfo(change, status = 200, error = null) {
  * Retrieves the hlxignore from github and stores it in the context as IgnoreConfig.
  * If 404 is encountered, returns an empty IgnoreConfig that considers nothing ignored.
  *
- * @param {AdminContext} ctx the context
+ * @param {import('../support/AdminContext').AdminContext} ctx the context
  * @param {CodeSource} codeSource
  * @param {ChangeEvent} evt
  * @param timer

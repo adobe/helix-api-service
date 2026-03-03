@@ -15,8 +15,8 @@ import { createErrorResponse } from '../contentbus/utils.js';
 
 /**
  * Removes a resource from the code-bus
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/RequestInfo').RequestInfo} info path info
  * @returns {Promise<Response>} response
  */
 export async function remove(ctx, info) {

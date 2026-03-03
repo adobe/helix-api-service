@@ -14,8 +14,8 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 
 /**
  * lists the branches of the repository present in code bus (not github)
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/RequestInfo').RequestInfo} info path info
  * @returns {Promise<Response>} response
  */
 export async function listBranches(ctx, info) {

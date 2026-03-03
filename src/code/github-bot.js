@@ -20,8 +20,6 @@ const DEPLOYMENT_SYNC = 'aem-code-sync';
 export const BYOGIT_INSTALLATION_ID = 'byogit';
 
 /**
- * @typedef {import('../index').AdminContext} AdminContext
- * @typedef {import('../index').PathInfo} PathInfo
  * @typedef { 'error'
  *            |'failure'
  *            |'in_progress'
@@ -34,7 +32,7 @@ export const BYOGIT_INSTALLATION_ID = 'byogit';
 
 /**
  * Returns the octokit for the app
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  * @returns {Octokit}
  */
 export function getAppOctokit(ctx) {
@@ -65,7 +63,7 @@ export function getAppOctokit(ctx) {
 
 /**
  * Returns the octokit for the installation
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  * @param {string} installationId
  * @returns {Octokit}
  */
@@ -98,16 +96,16 @@ export function getInstallationOctokit(ctx, installationId) {
 }
 
 /**
- * @param {AdminContext} ctx
- * @param {PathInfo} opts
+ * @param {import('../support/AdminContext').AdminContext} ctx
+ * @param {import('../support/RequestInfo').RequestInfo} info
  * @returns {Octokit | null}
  */
-export async function getInstallationForRepo(ctx, opts) {
+export async function getInstallationForRepo(ctx, info) {
   /* c8 ignore next 3 */
   if (!ctx.attributes.installations) {
     ctx.attributes.installations = {};
   }
-  const { owner, repo } = opts;
+  const { owner, repo } = info;
   const key = `${owner}/${repo}`;
   if (!ctx.attributes.installations[key]) {
     const octokit = getAppOctokit(ctx);
@@ -126,7 +124,7 @@ export async function getInstallationForRepo(ctx, opts) {
 }
 
 /**
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  * @param {CodeSource} codeSource
  * @returns {Octokit}
  */
@@ -238,11 +236,11 @@ function isPermissionError(e) {
 }
 
 /**
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  * @param {Octokit} octokit
  * @param {string} id
  * @param {CodeSource} codeSource
- * @param {PathInfo} info
+ * @param {import('../support/RequestInfo').RequestInfo} info
  * @param {{
  *  state: DeploymentState;
  *  url?: string;
@@ -282,10 +280,10 @@ export async function updateDeployment(
 }
 
 /**
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  * @param {Octokit} octokit
  * @param {CodeSource} codeSource
- * @param {PathInfo} info
+ * @param {import('../support/RequestInfo').RequestInfo} info
  * @param {{
  *  state: DeploymentState;
  *  url?: string;
@@ -380,7 +378,7 @@ export async function logGithubErrorResponse(log, res, nr, message) {
  * Fetches the content from github via the github raw url. if this fails due to a 429,
  * it will retry using the github API.
  * @see https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  * @param {CodeSource} codeSource
  * @param {string} ref
  * @param {string} path

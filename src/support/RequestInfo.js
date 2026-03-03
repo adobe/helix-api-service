@@ -189,13 +189,13 @@ class PathInfo {
   /**
    * Clone another path info.
    *
-   * @param {PathInfo} other other info
+   * @param {import('../support/RequestInfo').RequestInfo} other other info
    * @param {object} param0 params
    * @param {string} [param0.org] org, optional
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
 ]  * @param {string} [param0.route] route, optional
-   * @returns {PathInfo} clone with the params overwritten
+   * @returns {import('../support/RequestInfo').RequestInfo} clone with the params overwritten
    */
   static clone(other, {
     route, org, site, path,
@@ -335,7 +335,7 @@ export class RequestInfo {
    * @param {string} [variables.path] path, optional
    * @param {string} [variables.ref] ref, optional
    * @param {string} [variables.route] route, optional
-   * @returns {RequestInfo}
+   * @returns {import('../support/RequestInfo').RequestInfo}
    */
   static create(request, router, variables = {}) {
     const {
@@ -350,13 +350,13 @@ export class RequestInfo {
   /**
    * Clone an existing request info.
    *
-   * @param {RequestInfo} other
+   * @param {import('../support/RequestInfo').RequestInfo} other
    * @param {object} param0 params
    * @param {string} [param0.org] org
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
    * @param {string} [param0.route] route
-   * @returns {RequestInfo}
+   * @returns {import('../support/RequestInfo').RequestInfo}
    */
   static clone(other, {
     org, site, path, route,

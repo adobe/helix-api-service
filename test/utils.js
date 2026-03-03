@@ -319,7 +319,7 @@ export function createContext(suffix, {
  * @param {Headers} headers the headers (defaults to empty)
  * @param {string} method the http method (defaults to GET)
  * @param {BodyInit} body the body if any
- * @returns {RequestInfo} info
+ * @returns {import('../support/RequestInfo').RequestInfo} info
  */
 export function createInfo(suffix, headers = {}, method = null, body = null) {
   const { variables } = router.match(suffix);

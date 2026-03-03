@@ -24,7 +24,7 @@ export const JOB_CLASS = {
 
 /**
  * Handles the /job route
- * @param {AdminContext} ctx the universal context
+ * @param {import('../support/AdminContext').AdminContext} ctx the universal context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */

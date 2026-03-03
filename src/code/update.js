@@ -22,14 +22,13 @@ import { errorResponse } from '../support/utils.js';
 
 /**
  * @typedef {import('./index').ChangeEvent} ChangeEvent
- * @typedef {import('../index').AdminContext} AdminContext
  */
 
 /**
  * Allow deployment to be created and updated when event.changes exist
  * and initiator has code:write permission.
  *
- * @param {AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} ctx
  */
 function isDeploymentAllowed(ctx) {
   const { attributes: { authInfo } } = ctx;

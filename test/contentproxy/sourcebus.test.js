@@ -16,7 +16,8 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
+import { createContext, Nock, SITE_CONFIG } from '../utils.js';
+import { SVGValidationError, validateSVG } from '../../src/contentproxy/sourcebus.js';
 
 const SITE_MUP_CONFIG = (url = 'https://api.aem.live/org/sites/site/source') => ({
   ...SITE_CONFIG,
@@ -287,5 +288,257 @@ source bus images.
       'content-type': 'text/plain; charset=utf-8',
       'x-error': "Unable to preview '/gallery.html': Images 1 and 2 exceed allowed limit of 100B",
     });
+  });
+
+  it('accepts valid SVG', async () => {
+    const svg = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="red"/>
+</svg>`);
+
+    nock.source()
+      .getObject('/org/site/gallery.html')
+      .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/svg.html'), {
+        'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
+        'content-type': 'text/html',
+      });
+    nock.media()
+      .headObject('/17d55a1d5a57e8fcee802eec435599147fc0935dc')
+      .reply(404)
+      .putObject('/17d55a1d5a57e8fcee802eec435599147fc0935dc')
+      .reply(201);
+
+    nock('https://www.example.com')
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      });
+
+    const { request, context } = setupTest('/gallery', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+        limits: {
+          preview: {
+            maxSVGSize: 40000,
+          },
+        },
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/markdown',
+      'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
+      vary: 'Accept-Encoding',
+    });
+  });
+
+  it('rejects invalid SVG', async () => {
+    const svg = Buffer.from('<xml xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="24" style="stroke:#006600; fill:#00cc00"/></xml>');
+
+    nock.source()
+      .getObject('/org/site/gallery.html')
+      .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/svg.html'), {
+        'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
+        'content-type': 'text/html',
+      });
+    nock.media()
+      .headObject('/199c601995c217244407df21d6a1d71b0e83f3ffb')
+      .reply(404);
+
+    nock('https://www.example.com')
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      });
+
+    const { request, context } = setupTest('/gallery', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(await response.text(), '');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': "Unable to preview '/gallery.html': Image 1 failed validation: Expected XML content with an SVG root item",
+    });
+  });
+
+  it('rejects large SVG', async () => {
+    const svg = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="red"/>
+</svg>`);
+
+    nock.source()
+      .getObject('/org/site/gallery.html')
+      .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/svg.html'), {
+        'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
+        'content-type': 'text/html',
+      });
+    nock.media()
+      .headObject('/17d55a1d5a57e8fcee802eec435599147fc0935dc')
+      .reply(404);
+
+    nock('https://www.example.com')
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      });
+
+    const { request, context } = setupTest('/gallery', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+        limits: {
+          preview: {
+            maxSVGSize: 40,
+          },
+        },
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(await response.text(), '');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': "Unable to preview '/gallery.html': Image 1 failed validation: SVG is larger than 40B: 146B",
+    });
+  });
+
+  it('rejects single large image', async () => {
+    nock.source()
+      .getObject('/org/site/gallery.html')
+      .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/svg.html'), {
+        'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
+        'content-type': 'text/html',
+      });
+    nock.media()
+      .headObject('/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
+      .reply(404);
+
+    nock('https://www.example.com')
+      .get('/icon.svg')
+      .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/300.png'))
+      .get('/image2.jpg');
+
+    const { request, context } = setupTest('/gallery', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+        limits: {
+          preview: {
+            maxImageSize: 40,
+          },
+        },
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(await response.text(), '');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': "Unable to preview '/gallery.html': Image 1 exceeds allowed limit of 40B",
+    });
+  });
+
+  it('rejects invalid SVG, large image and ignores non image', async () => {
+    const svg = Buffer.from('<xml xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="24" style="stroke:#006600; fill:#00cc00"/></xml>');
+
+    nock.source()
+      .getObject('/org/site/gallery.html')
+      .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/svg-mix.html'), {
+        'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
+        'content-type': 'text/html',
+      });
+    nock.media()
+      .headObject('/199c601995c217244407df21d6a1d71b0e83f3ffb')
+      .reply(404)
+      .headObject('/186a5ba15193adc18f983308b64a0b92b4ad941f1')
+      .reply(404)
+      .headObject('/1234dea2862775a45dbc9311cff50ae57eba56eba')
+      .reply(404);
+
+    nock('https://www.example.com')
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      })
+      .get('/icon.txt')
+      .reply(200, 'hello, world!', {
+        'content-type': 'text/plain; charset=utf-8',
+      })
+      .get('/icon.png')
+      .reply(200, Buffer.alloc(25 * 1025 * 1024), {
+        'content-type': 'image/png',
+        'content-length': 25 * 1024 * 1240,
+      });
+
+    const { request, context } = setupTest('/gallery', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+      },
+    });
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(await response.text(), '');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': "Unable to preview '/gallery.html': Images 1 and 3 have failed validation.",
+    });
+  });
+});
+
+describe('Validate SVG Test', () => {
+  it('validates an SVG that has a script tag', async () => {
+    const contents = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 56 54" style="enable-background:new 0 0 56 54;" xml:space="preserve">
+   <circle cx="40" cy="40" r="24" style="stroke:#006600; fill:#00cc00">
+    <script>alert('I can do evil things...');</script>
+  </circle>
+</svg>`);
+    await assert.rejects(validateSVG(createContext('/'), contents, 1000), new SVGValidationError('Script or event handler detected in SVG at: /svg/circle[0]'));
+  });
+
+  it('validates an SVG that has an onload handler', async () => {
+    const contents = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" onload="alert('XSS')">
+  <rect width="100" height="100" fill="red"/>
+</svg>`);
+
+    await assert.rejects(validateSVG(createContext('/'), contents, 1000), new SVGValidationError('Script or event handler detected in SVG at: /svg'));
+  });
+
+  it('validates an SVG that has an unexpected character', async () => {
+    const contents = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+  <svg version="1.1" id="Adobe_Express_Logo" xmlns:x="&ns_extend;" xmlns:i="&ns_ai;" xmlns:graph="&ns_graphs;"
+      xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 240 234"
+      style="enable-background:new 0 0 240 234;" xml:space="preserve">
+      <!-- foo ->
+  </svg>`);
+    await assert.rejects(validateSVG(createContext('/'), contents, 1000), new SVGValidationError('Unable to parse SVG XML'));
+  });
+
+  it('validates an SVG', async () => {
+    const contents = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 56 54" style="enable-background:new 0 0 56 54;" xml:space="preserve">
+  <circle cx="40" cy="40" r="24" style="stroke:#006600; fill:#00cc00"/>
+</svg>`);
+
+    await assert.rejects(validateSVG(createContext('/'), contents, 10), new SVGValidationError('SVG is larger than 10B: 313B'));
   });
 });

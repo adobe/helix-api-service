@@ -257,6 +257,10 @@ source bus images.
         'last-modified': 'Thu, 11 Dec 2025 12:00:00 GMT',
         'content-type': 'text/html',
       });
+    nock.media()
+      .headObject('/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
+      .times(2)
+      .reply(404);
 
     nock('https://www.example.com')
       .get('/image1.jpg')
@@ -268,7 +272,7 @@ source bus images.
       config: {
         ...SITE_MUP_CONFIG(),
         limits: {
-          html2md: {
+          preview: {
             maxImageSize: 100,
           },
         },

@@ -93,7 +93,7 @@ export async function indexPage(context, info, index, retryParams) {
   const { webPath, resourcePath } = info;
 
   const url = info.getLiveUrl();
-  const headers = await getFetchHeaders(context, info);
+  const headers = getFetchHeaders(context, info);
 
   const page = await fetchPage(context, url, headers, retryParams);
   if (page.error) {

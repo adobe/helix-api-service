@@ -132,6 +132,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -178,6 +179,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -226,6 +228,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -250,6 +253,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -298,6 +302,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -363,6 +368,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -404,6 +410,7 @@ describe('Code update tests', () => {
       owner: 'owner',
       ref: 'ref',
       repo: 'repo',
+      tag: false,
     });
   });
 
@@ -449,6 +456,7 @@ describe('Code update tests', () => {
       ref: 'tripod/test_@34/SUB',
       repo: 'TEST-42',
       type: 'github',
+      tag: false,
     });
   });
 
@@ -481,6 +489,7 @@ describe('Code update tests', () => {
       ref: 'main',
       repo: 'repo',
       type: 'github',
+      tag: false,
     });
   });
 

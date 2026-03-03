@@ -1207,14 +1207,14 @@ describe('Code Job tests', () => {
         .reply(200, 'hello, world')
         .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/src/fail/modified.htl')
         .reply(200, 'hello, world')
-        .get('/owner/repo/ref/music.mp3')
+        .get('/owner/repo/main/music.mp3')
         .reply(200, 'tralala!')
         .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/github-error.md')
         .replyWithError('broken');
       nock('https://api.github.com')
         .get('/repos/owner/repo/commits?page=1&per_page=1&sha=5edf98811d50b5b948f6f890f0c4367095490dbd&path=no-modified-no-commits.md')
         .reply(404)
-        .get('/repos/owner/repo/commits?page=1&per_page=1&sha=ref&path=music.mp3')
+        .get('/repos/owner/repo/commits?page=1&per_page=1&sha=main&path=music.mp3')
         .reply(200, [{
           sha: '5beb72484d916d5682e59d78c3cc85e3e9d146b7',
           commit: {
@@ -1250,13 +1250,14 @@ describe('Code Job tests', () => {
         },
       };
       codeBus
-        .withFile('/owner/repo/ref/src/html.htl', 'foo')
-        .withFile('/owner/repo/ref/src/fail/html.htl', 'foo')
-        .withMeta('/owner/repo/ref/back-dated.md', {
+        .withFile('/owner/repo/main/src/html.htl', 'foo')
+        .withFile('/owner/repo/main/src/fail/html.htl', 'foo')
+        .withMeta('/owner/repo/main/back-dated.md', {
           LastModified: '2022-03-01T08:32:01Z',
         });
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
+      events.ref = 'main';
       const job = await createJob(ctx, events);
       job.state.data.sha = '5edf98811d50b5b948f6f890f0c4367095490dbd';
       const codeSource = {
@@ -1273,8 +1274,8 @@ describe('Code Job tests', () => {
         baseRef: '',
         changes: [],
         codeOwner: 'owner',
-        codePrefix: '/owner/repo/ref/',
-        codeRef: 'ref',
+        codePrefix: '/owner/repo/main/',
+        codeRef: 'main',
         codeRepo: 'repo',
         githubRateLimit: {
           limit: 5000,
@@ -1283,7 +1284,7 @@ describe('Code Job tests', () => {
         },
         installationId: 42,
         owner: 'owner',
-        ref: 'ref',
+        ref: 'main',
         repo: 'repo',
         type: 'github',
         sha: '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1359,7 +1360,7 @@ describe('Code Job tests', () => {
       assert.deepStrictEqual(codeBus.added, [{
         body: 'hello, world',
         contentType: 'text/plain; charset=utf-8',
-        filePath: '/owner/repo/ref/new-file.txt',
+        filePath: '/owner/repo/main/new-file.txt',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1369,7 +1370,7 @@ describe('Code Job tests', () => {
       }, {
         body: 'hello, world',
         contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/ref/README.md',
+        filePath: '/owner/repo/main/README.md',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1380,7 +1381,7 @@ describe('Code Job tests', () => {
         body: 'hello, world',
         compressed: true,
         contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/ref/no-modified-no-commits.md',
+        filePath: '/owner/repo/main/no-modified-no-commits.md',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1389,7 +1390,7 @@ describe('Code Job tests', () => {
         body: 'hello, world',
         compressed: true,
         contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/ref/no-modified.md',
+        filePath: '/owner/repo/main/no-modified.md',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1400,7 +1401,7 @@ describe('Code Job tests', () => {
         body: 'hello, world',
         compressed: true,
         contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/ref/back-dated.md',
+        filePath: '/owner/repo/main/back-dated.md',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1410,7 +1411,7 @@ describe('Code Job tests', () => {
         body: 'tralala!',
         compressed: false,
         contentType: undefined,
-        filePath: '/owner/repo/ref/music.mp3',
+        filePath: '/owner/repo/main/music.mp3',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5beb72484d916d5682e59d78c3cc85e3e9d146b7',
@@ -1421,7 +1422,7 @@ describe('Code Job tests', () => {
         body: '5edf98811d50b5b948f6f890f0c4367095490dbd',
         compressed: false,
         contentType: 'text/plain',
-        filePath: '/owner/repo/ref/.sha',
+        filePath: '/owner/repo/main/.sha',
         meta: {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': codeBus.added.at(-1).meta['x-source-last-modified'],
@@ -1429,7 +1430,7 @@ describe('Code Job tests', () => {
       },
       ]);
       assert.deepEqual(codeBus.removed, [
-        '/owner/repo/ref/src/html.htl',
+        '/owner/repo/main/src/html.htl',
       ]);
     });
 

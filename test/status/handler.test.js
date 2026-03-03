@@ -117,6 +117,9 @@ describe('Status Handler Tests', () => {
         status: 403,
         url: 'https://main--site--org.aem.page/',
       },
+      code: {
+        status: 403,
+      },
       profile: {
         defaultRole: 'media_author',
       },
@@ -148,6 +151,9 @@ describe('Status Handler Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
       .head('/live/folder/page.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+    nock.code()
+      .head('/folder/page')
+      .reply(404);
 
     const result = await main(new Request('https://api.aem.live/?editUrl=auto'), {
       pathInfo: { suffix },
@@ -209,6 +215,15 @@ describe('Status Handler Tests', () => {
           'write',
         ],
       },
+      code: {
+        codeBusId: 'helix-code-bus/owner/repo/main/folder/page',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'https://raw.githubusercontent.com/owner/repo/main/folder/page',
+        status: 404,
+      },
       resourcePath: '/folder/page.md',
       webPath: '/folder/page',
     });
@@ -216,13 +231,13 @@ describe('Status Handler Tests', () => {
 
   it('calls `edit2web` when `editUrl` is not `auto`', async () => {
     const suffix = '/org/sites/site/status/';
-    const editUrl = 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit';
+    const editUrl = encodeURIComponent('https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit');
 
     nock.google(SITE_CONFIG.content)
       .user()
       .item('1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys', {
         mimeType: 'application/vnd.google-apps.document',
-        name: 'page',
+        name: 'index',
         parents: [SITE_CONFIG.content.source.id],
         modifiedTime: 'Tue, 15 Jun 2021 03:54:28 GMT',
       })
@@ -235,9 +250,9 @@ describe('Status Handler Tests', () => {
 
     // getContentBusInfo (preview/live)
     nock.content()
-      .head('/preview/page.md')
+      .head('/preview/index.md')
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' })
-      .head('/live/page.md')
+      .head('/live/index.md')
       .reply(404);
 
     const result = await main(new Request(`https://api.aem.live/?editUrl=${editUrl}`), {
@@ -259,28 +274,28 @@ describe('Status Handler Tests', () => {
           },
         ],
         lastModified: 'Tue, 15 Jun 2021 03:54:28 GMT',
-        name: 'page',
+        name: 'index',
         sourceLocation: 'gdrive:1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys',
         status: 200,
         url: 'https://docs.google.com/document/d/1ZJWJwL9szyTq6B-W0_Y7bFL1Tk1vyym4RyQ7AKXS7Ys/edit',
       },
       links: {
-        code: 'https://api.aem.live/org/repos/site/code/main/page',
-        live: 'https://api.aem.live/org/sites/site/live/page',
-        preview: 'https://api.aem.live/org/sites/site/preview/page',
-        status: 'https://api.aem.live/org/sites/site/status/page',
+        code: 'https://api.aem.live/org/repos/site/code/main/',
+        live: 'https://api.aem.live/org/sites/site/live/',
+        preview: 'https://api.aem.live/org/sites/site/preview/',
+        status: 'https://api.aem.live/org/sites/site/status/',
       },
       live: {
-        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/page.md`,
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md`,
         permissions: [
           'read',
           'write',
         ],
         status: 404,
-        url: 'https://main--site--org.aem.live/page',
+        url: 'https://main--site--org.aem.live/',
       },
       preview: {
-        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/page.md`,
+        contentBusId: `helix-content-bus/${SITE_CONFIG.content.contentBusId}/preview/index.md`,
         contentType: 'text/plain; charset=utf-8',
         lastModified: 'Thu, 08 Jul 2021 10:04:16 GMT',
         permissions: [
@@ -289,10 +304,228 @@ describe('Status Handler Tests', () => {
         ],
         sourceLocation: 'google:*',
         status: 200,
-        url: 'https://main--site--org.aem.page/page',
+        url: 'https://main--site--org.aem.page/',
       },
-      resourcePath: '/page.md',
-      webPath: '/page',
+      code: {
+        permissions: [
+          'read',
+          'write',
+        ],
+        status: 400,
+      },
+      resourcePath: '/index.md',
+      webPath: '/',
     });
+  });
+
+  it('reports the code bus status', async () => {
+    const suffix = '/org/sites/site/status/scripts/scripts.js';
+
+    nock.content()
+      .head('/preview/scripts/scripts.js')
+      .reply(404)
+      .head('/live/scripts/scripts.js')
+      .reply(404);
+
+    nock.code()
+      .head('/scripts/scripts.js')
+      .reply(200, '', {
+        'content-type': 'text/plain',
+        'last-modified': 'Tue, 15 Jun 2021 07:54:28 GMT',
+        'x-source-content-length': '45',
+        'x-source-last-modified': 'Tue, 15 Jun 2021 04:54:28 GMT',
+
+      });
+
+    const result = await main(new Request('https://api.aem.live/'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(
+      await result.json(),
+      {
+        code: {
+          codeBusId: 'helix-code-bus/owner/repo/main/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          contentType: 'text/plain',
+          lastModified: 'Tue, 15 Jun 2021 07:54:28 GMT',
+          sourceLocation: 'https://raw.githubusercontent.com/owner/repo/main/scripts/scripts.js',
+          status: 200,
+        },
+        edit: {},
+        links: {
+          code: 'https://api.aem.live/org/repos/site/code/main/scripts/scripts.js',
+          live: 'https://api.aem.live/org/sites/site/live/scripts/scripts.js',
+          preview: 'https://api.aem.live/org/sites/site/preview/scripts/scripts.js',
+          status: 'https://api.aem.live/org/sites/site/status/scripts/scripts.js',
+        },
+        live: {
+          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 404,
+          url: 'https://main--site--org.aem.live/scripts/scripts.js',
+        },
+        preview: {
+          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 404,
+          url: 'https://main--site--org.aem.page/scripts/scripts.js',
+        },
+        resourcePath: '/scripts/scripts.js',
+        webPath: '/scripts/scripts.js',
+      },
+    );
+  });
+
+  it('reports the code bus status (branch)', async () => {
+    const suffix = '/org/sites/site/status/scripts/scripts.js';
+
+    nock.content()
+      .head('/preview/scripts/scripts.js')
+      .reply(404)
+      .head('/live/scripts/scripts.js')
+      .reply(404);
+
+    nock.code('my-issue')
+      .head('/scripts/scripts.js')
+      .reply(200, '', {
+        'content-type': 'text/plain',
+        'last-modified': 'Tue, 15 Jun 2021 07:54:28 GMT',
+        'x-source-content-length': '45',
+        'x-source-last-modified': 'Tue, 15 Jun 2021 04:54:28 GMT',
+
+      });
+
+    const result = await main(new Request(new URL('https://api.aem.live/?branch=my.issue&ref=my-issue')), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(
+      await result.json(),
+      {
+        code: {
+          codeBusId: 'helix-code-bus/owner/repo/my-issue/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          contentType: 'text/plain',
+          lastModified: 'Tue, 15 Jun 2021 07:54:28 GMT',
+          sourceLocation: 'https://raw.githubusercontent.com/owner/repo/my.issue/scripts/scripts.js',
+          status: 200,
+        },
+        edit: {},
+        links: {
+          code: 'https://api.aem.live/org/repos/site/code/my-issue/scripts/scripts.js?branch=my.issue',
+          live: 'https://api.aem.live/org/sites/site/live/scripts/scripts.js',
+          preview: 'https://api.aem.live/org/sites/site/preview/scripts/scripts.js',
+          status: 'https://api.aem.live/org/sites/site/status/scripts/scripts.js',
+        },
+        live: {
+          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 404,
+          url: 'https://my-issue--site--org.aem.live/scripts/scripts.js',
+        },
+        preview: {
+          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 404,
+          url: 'https://my-issue--site--org.aem.page/scripts/scripts.js',
+        },
+        resourcePath: '/scripts/scripts.js',
+        webPath: '/scripts/scripts.js',
+      },
+    );
+  });
+
+  it('reports error in the code status', async () => {
+    const suffix = '/org/sites/site/status/scripts/scripts.js';
+
+    nock.content()
+      .head('/preview/scripts/scripts.js')
+      .reply(404)
+      .head('/live/scripts/scripts.js')
+      .reply(404);
+
+    nock.code()
+      .head('/scripts/scripts.js')
+      .reply(400, '', {
+        'x-error': 'kaputt',
+      });
+
+    const result = await main(new Request('https://api.aem.live/'), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+        redirects: { preview: [], live: [] },
+      },
+    });
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(
+      await result.json(),
+      {
+        code: {
+          codeBusId: 'helix-code-bus/owner/repo/main/scripts/scripts.js',
+          sourceLocation: 'https://raw.githubusercontent.com/owner/repo/main/scripts/scripts.js',
+          error: 'error while fetching: 400',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 502,
+        },
+        edit: {},
+        links: {
+          code: 'https://api.aem.live/org/repos/site/code/main/scripts/scripts.js',
+          live: 'https://api.aem.live/org/sites/site/live/scripts/scripts.js',
+          preview: 'https://api.aem.live/org/sites/site/preview/scripts/scripts.js',
+          status: 'https://api.aem.live/org/sites/site/status/scripts/scripts.js',
+        },
+        live: {
+          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 404,
+          url: 'https://main--site--org.aem.live/scripts/scripts.js',
+        },
+        preview: {
+          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/scripts/scripts.js',
+          permissions: [
+            'read',
+            'write',
+          ],
+          status: 404,
+          url: 'https://main--site--org.aem.page/scripts/scripts.js',
+        },
+        resourcePath: '/scripts/scripts.js',
+        webPath: '/scripts/scripts.js',
+      },
+    );
   });
 });

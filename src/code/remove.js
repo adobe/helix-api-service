@@ -27,9 +27,6 @@ export async function remove(ctx, info) {
   try {
     const contentStorage = HelixStorage.fromContext(ctx).codeBus();
     await contentStorage.remove(`${owner}/${repo}/${ref}${resourcePath}`);
-    if (ref === 'main' && resourcePath === '/fstab.yaml') {
-      await contentStorage.remove(`${owner}/${repo}/main/helix-config.json`);
-    }
     return new Response('', {
       status: 204,
     });

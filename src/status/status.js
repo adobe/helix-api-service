@@ -18,6 +18,7 @@ import getPreviewInfo from '../preview/info.js';
 import web2edit from '../lookup/web2edit.js';
 import edit2web from '../lookup/edit2web.js';
 import { RequestInfo } from '../support/RequestInfo.js';
+import { getCodeBusInfo } from '../code/info.js';
 
 /**
  * Handles GET status.
@@ -106,13 +107,26 @@ export default async function status(context, info) {
     }
   }
 
+  if (info.query.ref && info.query.ref !== 'main') {
+    if (localinfo !== info) {
+      localinfo = RequestInfo.clone(info);
+    }
+    localinfo.withRef(info.query.ref);
+  }
+
   const resp = {
     webPath,
     resourcePath,
     live: await getLiveInfo(context, localinfo),
     preview: await getPreviewInfo(context, localinfo),
     edit,
-    links: localinfo.getAPIUrls('status', 'preview', 'live', { title: 'code', name: 'repos-code' }),
+    code: await getCodeBusInfo(context, info),
+    links: {
+      ...localinfo.getAPIUrls('status', 'preview', 'live'),
+      code: localinfo.getLinkUrl(`/${info.org}/repos/${info.site}/code/${localinfo.ref}${info.rawPath}`, {
+        branch: info.query.branch,
+      }),
+    },
   };
 
   if (authInfo.profile) {

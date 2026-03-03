@@ -85,10 +85,8 @@ export async function update(ctx, info) {
   } else {
     event.deploymentAllowed = isDeploymentAllowed(ctx);
   }
-  if (String(event.tag) === 'true') {
-    // avoid setting false
-    event.tag = true;
-  }
+  // convert to boolean
+  event.tag = String(event.tag) === 'true';
 
   // ensure that owner/repo is always using the codebus owner/repo, even if the event or request
   // is pointed at org/site

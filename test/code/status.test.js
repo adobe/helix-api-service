@@ -169,7 +169,7 @@ describe('Code Status Tests', () => {
         contentType: 'text/xml+svg',
         lastModified: 'Mon, 12 Oct 2009 17:50:00 GMT',
         sourceLastModified: 'Wed, 1 June 2009 17:50:00 GMT',
-        sourceLocation: 'https://raw.githubusercontent.com/owner/repo/issue-42/icons/logo.svg',
+        sourceLocation: 'https://raw.githubusercontent.com/owner/repo/ISSUE/42/icons/logo.svg',
         status: 200,
         permissions: ['delete', 'read', 'write'],
       },
@@ -177,7 +177,7 @@ describe('Code Status Tests', () => {
         url: 'https://github.com/owner/repo/edit/ISSUE/42/icons/logo.svg',
       },
       links: {
-        code: 'https://api.aem.live/owner/repos/repo/code/issue-42/icons/logo.svg',
+        code: 'https://api.aem.live/owner/repos/repo/code/issue-42/icons/logo.svg?branch=ISSUE%2F42',
         live: 'https://api.aem.live/owner/sites/repo/live/icons/logo.svg',
         preview: 'https://api.aem.live/owner/sites/repo/preview/icons/logo.svg',
         status: 'https://api.aem.live/owner/sites/repo/status/icons/logo.svg',

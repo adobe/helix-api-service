@@ -164,7 +164,7 @@ export async function getCodeSource(ctx, event) {
     installationId: event.installationId,
     base_url: GH_BASE_URL,
     raw_url: GH_RAW_URL,
-    ...ctx.attributes.config?.code?.source ?? {},
+    ...ctx.attributes.config.code.source,
   };
 
   if (codeSource.url) {
@@ -178,6 +178,7 @@ export async function getCodeSource(ctx, event) {
       delete codeSource.secret;
       codeSource.base_url = url.href;
       codeSource.installationId = BYOGIT_INSTALLATION_ID;
+      codeSource.octokit = setTokenOctokit(ctx, codeSource);
       // eslint-disable-next-line no-param-reassign
       event.installationId = codeSource.installationId;
       ctx.log.info(`byogit detected for ${event.owner}/${event.repo}:`, codeSource);
@@ -185,13 +186,7 @@ export async function getCodeSource(ctx, event) {
   }
 
   // get bot token if not set on context
-  if (codeSource.token || codeSource.installationId === BYOGIT_INSTALLATION_ID) {
-    if (codeSource.installationId) {
-      codeSource.octokit = setTokenOctokit(ctx, codeSource);
-    } else {
-      throw new StatusCodeError('using github token needs installation id.', 400);
-    }
-  } else {
+  if (codeSource.installationId !== BYOGIT_INSTALLATION_ID) {
     log.info('obtaining helix-bot authentication');
     const installation = await getInstallationForRepo(ctx, event);
     if (!installation) {

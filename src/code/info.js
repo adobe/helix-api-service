@@ -24,28 +24,29 @@ export async function getCodeBusInfo(ctx, info) {
       status: 403,
     };
   }
-  if (!info.rawPath) {
+  if (!info.rawPath || info.rawPath === '/') {
     return {
       status: 400,
       permissions: ctx.attributes.authInfo.getPermissions('code:'),
     };
   }
 
-  const key = `${info.owner}/${info.repo}/${info.ref}${info.rawPath}`;
+  const ref = info.query.ref || info.ref;
+  const branch = info.query.branch || ref;
+  const key = `${info.owner}/${info.repo}/${ref}${info.rawPath}`;
   const resp = await fetchS3(ctx, 'code', key, true);
   const ret = {
     status: resp.status,
     codeBusId: `${ctx.attributes.bucketMap.code}/${key}`,
     permissions: ctx.attributes.authInfo.getPermissions('code:'),
+    // TODO: respect byo git ?
+    sourceLocation: `https://raw.githubusercontent.com/${info.owner}/${info.repo}/${branch}${info.rawPath}`,
   };
-  const branch = info.query.branch || info.ref;
   if (resp.ok) {
     ret.contentType = resp.headers.get('content-type');
     ret.lastModified = resp.headers.get('last-modified');
     ret.contentLength = resp.headers.get('x-source-content-length') || undefined;
     ret.sourceLastModified = resp.headers.get('x-source-last-modified') || undefined;
-    // TODO: respect byo git ?
-    ret.sourceLocation = `https://raw.githubusercontent.com/${info.owner}/${info.repo}/${branch}${info.rawPath}`;
   } else if (resp.status !== 404) {
     ret.error = resp.headers.get('x-error');
   }

@@ -161,6 +161,9 @@ class HttpRequest {
     this.scheme = process.env.HLX_DEV_SERVER_SCHEME ?? 'https';
     this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.live';
     this.query = {};
+    new URL(request.url).searchParams.forEach((value, key) => {
+      this.query[key] = value;
+    });
   }
 }
 
@@ -383,16 +386,13 @@ export class RequestInfo {
     return `https://${this.ref}--${this.site}--${this.org}.aem.live${this.webPath}`;
   }
 
-  getLinkUrl(path, query) {
+  getLinkUrl(path, query = {}) {
     const url = new URL(`${this.scheme ?? 'https'}://${this.host}${path}`);
-    Object.entries(this.query).forEach(([name, value]) => {
-      url.searchParams.append(name, value);
-    });
-    if (query) {
-      Object.entries(query).forEach(([name, value]) => {
+    Object.entries(query).forEach(([name, value]) => {
+      if (value !== undefined) {
         url.searchParams.append(name, value);
-      });
-    }
+      }
+    });
     return url.href;
   }
 

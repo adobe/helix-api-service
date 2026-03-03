@@ -114,6 +114,9 @@ describe('Index Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' })
       .getObject('/preview/redirects.json')
       .reply(404);
+    nock.code()
+      .head('/document')
+      .reply(404);
 
     const { request, context } = setupTest('/org/sites/site/status/document', {
       attributes: {
@@ -157,6 +160,15 @@ describe('Index Tests', () => {
         sourceLocation: 'google:*',
         status: 200,
         url: 'https://main--site--org.aem.page/document',
+      },
+      code: {
+        codeBusId: 'helix-code-bus/owner/repo/main/document',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'https://raw.githubusercontent.com/owner/repo/main/document',
+        status: 404,
       },
       resourcePath: '/document.md',
       webPath: '/document',

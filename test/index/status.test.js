@@ -18,21 +18,6 @@ import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
-const INDEX_CONFIG = `
-indices:
-  default:
-    target: /query-index.json
-    properties:
-      title:
-        select: head > meta[property="og:title"]
-        value: |
-          attribute(el, 'content')
-      lastModified:
-        select: none
-        value: |
-          parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
-`;
-
 describe('Index Status Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
@@ -74,90 +59,208 @@ describe('Index Status Tests', () => {
     return { request, context };
   }
 
-  it('returns index status', async () => {
-    nock.indexConfig(INDEX_CONFIG);
+  describe('single index definition', () => {
+    const INDEX_CONFIG = `
+    indices:
+      default:
+        exclude:
+          - '/drafts/**'
+        target: /query-index.json
+        properties:
+          title:
+            select: head > meta[property="og:title"]
+            value: |
+              attribute(el, 'content')
+          lastModified:
+            select: none
+            value: |
+              parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
+    `;
 
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .replyWithFile(
-        200,
-        resolve(__testdir, 'index', 'fixtures', 'document.html'),
-        { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
-      );
+    it('returns index status', async () => {
+      nock.indexConfig(INDEX_CONFIG);
 
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
+        );
 
-    assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(await response.json(), {
-      results: [{
-        name: 'default',
-        result: {
-          record: {
-            lastModified: 1625738656,
-            title: '3 marketing predictions for a cookieless world',
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        results: [{
+          name: 'default',
+          result: {
+            record: {
+              lastModified: 1625738656,
+              title: '3 marketing predictions for a cookieless world',
+            },
           },
-        },
-        type: 'google',
-      }],
-      resourcePath: '/document.md',
-      webPath: '/document',
+          type: 'google',
+        }],
+        resourcePath: '/document.md',
+        webPath: '/document',
+      });
+    });
+
+    it('ignores resources that are excluded', async () => {
+      nock.indexConfig(INDEX_CONFIG);
+
+      const { request, context } = setupTest('/drafts/my-draft');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 204);
+    });
+
+    it('reports a page that either has status 301 or 404', async () => {
+      nock.indexConfig(INDEX_CONFIG);
+
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .reply(404);
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        results: [{
+          name: 'default',
+          result: {
+            message: 'requested path returned a 301 or 404',
+            noIndex: true,
+          },
+          type: 'google',
+        }],
+        resourcePath: '/document.md',
+        webPath: '/document',
+      });
+    });
+
+    it('reports error if loading page fails', async () => {
+      nock.indexConfig(INDEX_CONFIG);
+
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .reply(500);
+
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 500);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'fetching https://main--site--org.aem.live/document failed',
+      });
+    });
+
+    it('ignores resources that are index targets', async () => {
+      nock.indexConfig(INDEX_CONFIG);
+
+      const { request, context } = setupTest('/query-index.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 204);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+      });
     });
   });
 
-  it('reports a page that either has status 301 or 404', async () => {
-    nock.indexConfig(INDEX_CONFIG);
+  describe('multiple index definitions', () => {
+    const INDEX_CONFIG = `
+    indices:
+      default:
+        target: /query-index.json
+        properties:
+          title:
+            select: head > meta[property="og:title"]
+            value: |
+              attribute(el, 'content')
+      jsons:
+        include:
+          - '/folder/*.json'
+        target: /jsons-index.json
+        properties:
+          lastModified:
+            select: none
+            value: |
+              parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
+    `;
 
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(404);
+    it('ignores resource with body in site configurations', async () => {
+      nock.indexConfig(INDEX_CONFIG);
 
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
+      nock('https://main--site--org.aem.live')
+        .get('/document')
+        .replyWithFile(
+          200,
+          resolve(__testdir, 'index', 'fixtures', 'document.html'),
+          { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' },
+        );
 
-    assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(await response.json(), {
-      results: [{
-        name: 'default',
-        result: {
-          message: 'requested path returned a 301 or 404',
-          noIndex: true,
-        },
-        type: 'google',
-      }],
-      resourcePath: '/document.md',
-      webPath: '/document',
+      const { request, context } = setupTest('/document');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        results: [{
+          name: 'default',
+          result: {
+            record: {
+              title: '3 marketing predictions for a cookieless world',
+            },
+          },
+          type: 'google',
+        }, {
+          name: 'jsons',
+          result: {
+            message: 'requested path does not match index configuration',
+          },
+          type: 'google',
+        }],
+        resourcePath: '/document.md',
+        webPath: '/document',
+      });
     });
-  });
 
-  it('reports error if loading page fails', async () => {
-    nock.indexConfig(INDEX_CONFIG);
+    it('ignores resource without body in non-site configurations', async () => {
+      nock.indexConfig(INDEX_CONFIG);
 
-    nock('https://main--site--org.aem.live')
-      .get('/document')
-      .reply(500);
+      nock('https://main--site--org.aem.live')
+        .head('/folder/test.json')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
-    const { request, context } = setupTest('/document');
-    const response = await main(request, context);
+      const { request, context } = setupTest('/folder/test.json');
+      const response = await main(request, context);
 
-    assert.strictEqual(response.status, 500);
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
-      'x-error': 'fetching https://main--site--org.aem.live/document failed',
-    });
-  });
-
-  it('ignores resources that are index targets', async () => {
-    nock.indexConfig(INDEX_CONFIG);
-
-    const { request, context } = setupTest('/query-index.json');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 204);
-    assert.deepStrictEqual(response.headers.plain(), {
-      'cache-control': 'no-store, private, must-revalidate',
-      'content-type': 'text/plain; charset=utf-8',
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        results: [{
+          name: 'default',
+          result: {
+            message: 'non-HTML pages can only be added to site configurations',
+          },
+          type: 'google',
+        }, {
+          name: 'jsons',
+          result: {
+            record: {
+              lastModified: 1625738656,
+            },
+          },
+          type: 'google',
+        }],
+        resourcePath: '/folder/test.json',
+        webPath: '/folder/test.json',
+      });
     });
   });
 });

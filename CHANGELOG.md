@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/adobe/helix-api-service/compare/v1.33.3...v1.34.0) (2026-03-04)
+
+
+### Features
+
+* add code job ([7acc806](https://github.com/adobe/helix-api-service/commit/7acc806d194d1a35d304943624c3f4c3baeadfb8))
+
 ## [1.33.3](https://github.com/adobe/helix-api-service/compare/v1.33.2...v1.33.3) (2026-03-04)
 
 

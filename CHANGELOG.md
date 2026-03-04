@@ -1,3 +1,10 @@
+## [1.33.3](https://github.com/adobe/helix-api-service/compare/v1.33.2...v1.33.3) (2026-03-04)
+
+
+### Bug Fixes
+
+* upgrade media-handler ([#142](https://github.com/adobe/helix-api-service/issues/142)) ([dc26305](https://github.com/adobe/helix-api-service/commit/dc2630522af9baa90347977c8a253d261438523e))
+
 ## [1.33.2](https://github.com/adobe/helix-api-service/compare/v1.33.1...v1.33.2) (2026-03-03)
 
 

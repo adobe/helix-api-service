@@ -453,6 +453,7 @@ describe('Job Handler Tests', () => {
       invocation: { id: 'invocation-id' },
       attributes: {
         authInfo: AuthInfo.Admin().withAuthenticated(true),
+        jobSleep: 1,
       },
       pathInfo: {
         suffix: '/org/sites/site/jobs/test/',

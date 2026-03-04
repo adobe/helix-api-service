@@ -131,7 +131,7 @@ export class AdminContext {
    * Returns the normalized site access configuration for the current partition.
    *
    * @param {string} partition partition
-   * @returns {Promise<object>} the access configuration for this partition
+   * @returns {object} the access configuration for this partition
    */
   getSiteAccessConfig(partition) {
     const { attributes } = this;

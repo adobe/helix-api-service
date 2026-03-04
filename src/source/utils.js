@@ -11,7 +11,7 @@
  */
 
 import { Response } from '@adobe/fetch';
-import { MediaHandler } from '@adobe/helix-mediahandler';
+import { maxSizeMediaFilter, MediaHandler } from '@adobe/helix-mediahandler';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { fromHtml } from 'hast-util-from-html';
@@ -274,7 +274,7 @@ function getMediaHandler(ctx, info) {
     noCache,
     fetchTimeout: 5000, // limit image fetches to 5s
     forceHttp1: true,
-    maxSize: DEFAULT_MAX_IMAGE_SIZE,
+    filter: maxSizeMediaFilter(DEFAULT_MAX_IMAGE_SIZE),
   });
 }
 

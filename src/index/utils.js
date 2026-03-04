@@ -160,16 +160,19 @@ async function addSimpleSitemapIndex(context, info, config) {
 export async function fetchExtendedIndex(context, info) {
   const { log } = context;
 
-  let config = await context.fetchIndex(info);
+  const config = await context.fetchIndex(info);
   const errors = config?.getErrors();
   if (errors?.length) {
     const detail = errors.map(({ message }) => (message)).join('\n');
     log.warn(`Unable to add simple sitemap, index configuration contains errors:
       ${detail}`);
-  } else {
-    config = await addSimpleSitemapIndex(context, info, config);
+    return null;
   }
-  return config;
+  const sitemap = await context.fetchSitemap(info);
+  if (sitemap) {
+    return config;
+  }
+  return addSimpleSitemapIndex(context, info, config);
 }
 
 /**

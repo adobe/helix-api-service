@@ -62,38 +62,24 @@ describe('Index Tests', () => {
   it('succeeds calling code handler', async () => {
     nock.siteConfig(SITE_CONFIG);
 
-    const { request, context } = setupTest('/org/sites/site/code/main/', {
+    const { request, context } = setupTest('/org/repos/site/code/main/', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
     });
     const result = await main(request, context);
 
-    assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), 'method not allowed');
-  });
-
-  it('succeeds calling code handler with trailing path', async () => {
-    nock.siteConfig(SITE_CONFIG);
-
-    const { request, context } = setupTest('/org/sites/site/code/main/src/scripts.js', {
-      attributes: {
-        authInfo: AuthInfo.Default().withAuthenticated(true),
-      },
-      method: 'POST',
-      headers: {
-        'x-github-token': 'token',
-        'x-github-base': 'https://my.github.com',
-      },
+    assert.strictEqual(result.status, 403);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'Code operation restricted to canonical source: owner/repo',
+      'x-error-code': 'AEM_ NOT_CANONICAL_CODE_SOURCE',
     });
-    const result = await main(request, context);
-
-    assert.strictEqual(result.status, 405);
-    assert.strictEqual(await result.text(), 'NYI');
   });
 
   it('fails calling code handler with incomplete match', async () => {
-    const { request, context } = setupTest('/org/sites/site/code', {
+    const { request, context } = setupTest('/org/repos/site/code', {
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
       },
@@ -128,6 +114,9 @@ describe('Index Tests', () => {
       .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 09:04:16 GMT' })
       .getObject('/preview/redirects.json')
       .reply(404);
+    nock.code()
+      .head('/document')
+      .reply(404);
 
     const { request, context } = setupTest('/org/sites/site/status/document', {
       attributes: {
@@ -143,7 +132,7 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(await result.json(), {
       edit: {},
       links: {
-        code: 'https://api.aem.live/org/sites/site/code/main/document',
+        code: 'https://api.aem.live/org/repos/site/code/main/document',
         live: 'https://api.aem.live/org/sites/site/live/document',
         preview: 'https://api.aem.live/org/sites/site/preview/document',
         status: 'https://api.aem.live/org/sites/site/status/document',
@@ -171,6 +160,15 @@ describe('Index Tests', () => {
         sourceLocation: 'google:*',
         status: 200,
         url: 'https://main--site--org.aem.page/document',
+      },
+      code: {
+        codeBusId: 'helix-code-bus/owner/repo/main/document',
+        permissions: [
+          'read',
+          'write',
+        ],
+        sourceLocation: 'https://raw.githubusercontent.com/owner/repo/main/document',
+        status: 404,
       },
       resourcePath: '/document.md',
       webPath: '/document',

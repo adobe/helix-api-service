@@ -56,7 +56,7 @@ async function createEntry(context, contentBus, org, site, matchers) {
     entry.cdnId = cdnId;
   }
 
-  const hlx = await fetchHlxJson(contentBus, entry.contentBusId);
+  const hlx = await fetchHlxJson(context, entry.contentBusId);
   if (hlx?.['original-site']) {
     entry.originalSite = hlx['original-site'];
   } else if (hlx?.['original-repository']) {

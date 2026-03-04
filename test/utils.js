@@ -260,6 +260,24 @@ export function Nock() {
 
   nocker.sqs = (queue, entries) => new SQSNock(nocker, queue, entries);
 
+  nocker.botInstallation = (id = 42, owner = 'owner', repo = 'repo') => nocker('https://api.github.com')
+    .get(`/repos/${owner}/${repo}/installation`)
+    .reply(200, { id })
+    .post(`/app/installations/${id}/access_tokens`)
+    .reply(200, { token: 'dummy-token' });
+
+  nocker.mockIgnore = ({
+    content = '',
+    route = '/owner/repo/ref/.hlxignore',
+    status = 404,
+    times = 1,
+    optional = false,
+  } = {}) => nocker('https://raw.githubusercontent.com')
+    .get(route)
+    .times(times)
+    .optionally(optional)
+    .reply(status, content);
+
   nock.disableNetConnect();
   return nocker;
 }
@@ -282,7 +300,7 @@ export function createContext(suffix, {
   }, {
     attributes: {
       authInfo: AuthInfo.Admin(),
-      config: SITE_CONFIG,
+      config: structuredClone(SITE_CONFIG),
       googleApiOpts: { retry: false },
       gracePeriod: 1,
       retryDelay: 1,
@@ -301,7 +319,7 @@ export function createContext(suffix, {
  * @param {Headers} headers the headers (defaults to empty)
  * @param {string} method the http method (defaults to GET)
  * @param {BodyInit} body the body if any
- * @returns {RequestInfo} info
+ * @returns {import('../support/RequestInfo').RequestInfo} info
  */
 export function createInfo(suffix, headers = {}, method = null, body = null) {
   const { variables } = router.match(suffix);

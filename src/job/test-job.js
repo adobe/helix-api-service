@@ -16,8 +16,8 @@ import { sleep } from '../support/utils.js';
  * Test job for testing the queue. can only be used with the `job:test` permission only granted to
  * the admin role.
  *
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/RequestInfo').RequestInfo} info path info
  * @returns {Promise<Response>} response
  */
 export class TestJob extends Job {

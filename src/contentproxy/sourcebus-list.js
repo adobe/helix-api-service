@@ -74,7 +74,6 @@ export class SourceForest extends Forest {
  *
  * @type {import('./contentproxy.js').FetchList}
  * @param {import('../support/AdminContext').AdminContext} ctx context
- * @param {PathInfo} info
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @param {string[]} paths
  * @param {ProgressCallback} progressCB

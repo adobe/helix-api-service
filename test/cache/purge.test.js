@@ -426,7 +426,7 @@ describe('Purge Tests', () => {
     });
 
     function setupTest(cdn = CONFIG_FASTLY()) {
-      const suffix = '/org/sites/site/code/main/';
+      const suffix = '/org/repos/site/code/main/';
       const context = createContext(suffix, {
         env: ENV,
         attributes: {

@@ -10,11 +10,16 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import codebus from './codebus.js';
+import { errorResponse } from '../support/utils.js';
+import purge from '../cache/purge.js';
+import { checkCanonicalRepo } from '../config/utils.js';
+import { error } from '../contentproxy/errors.js';
 
 /**
  * Allowed methods for that handler
  */
-const ALLOWED_METHODS = ['POST'];
+const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
 
 /**
  * Handles the code route
@@ -29,7 +34,48 @@ export default async function codeHandler(context, info) {
       status: 405,
     });
   }
-  return new Response('NYI', {
-    status: 405,
-  });
+
+  const { log, attributes: { authInfo } } = context;
+
+  const canonical = checkCanonicalRepo(context, info);
+  if (canonical) {
+    return errorResponse(log, 403, error(
+      'Code operation restricted to canonical source: $1',
+      canonical,
+    ));
+  }
+
+  if (info.method === 'GET') {
+    if (info.ref === '*') {
+      return codebus.listBranches(context, info);
+    }
+    return codebus.status(context, info);
+  }
+
+  if (info.method === 'POST') {
+    return codebus.update(context, info);
+  }
+
+  // DELETE
+  authInfo.assertPermissions('code:delete');
+  if (!authInfo.hasPermissions('code:delete-forced')) {
+    log.warn(`rejecting deletion of /${info.owner}/sites/${info.repo}/code${info.resourcePath} when not authenticated.`);
+    return new Response('', {
+      status: 403,
+      headers: {
+        'x-error': 'delete not allowed if not authenticated.',
+      },
+    });
+  }
+
+  if (info.rawPath.endsWith('/*')) {
+    return codebus.update(context, info);
+  }
+
+  const resp = await codebus.remove(context, info);
+  if (resp.status !== 204) {
+    return resp;
+  }
+  await purge.code(context, info, [info.resourcePath]);
+  return resp;
 }

@@ -25,10 +25,10 @@ export const INTERNAL_SITEMAP_INDEX = '#internal-sitemap-index';
  * authenticated against the live site.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @returns {Promise<object>} the headers
+ * @returns {object} the headers
  */
-export async function getFetchHeaders(context) {
-  const accessConfig = await context.getSiteAccessConfig('live');
+export function getFetchHeaders(context) {
+  const accessConfig = context.getSiteAccessConfig('live');
   if (!accessConfig.allow.length
     && !accessConfig.apiKeyId.length
     && !accessConfig.secretId.length) {

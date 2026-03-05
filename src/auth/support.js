@@ -192,7 +192,7 @@ export async function decodeImsToken(context, idp, idToken) {
 /**
  * Fetches the IMS profile for the given IDP and token.
  *
- * @param {AdminContext} ctx - The universal context.
+ * @param {import('../support/AdminContext').AdminContext} ctx - The universal context.
  * @param {IDPConfig} idp - The identity provider configuration.
  * @param {string} token - The access token to fetch the profile.
  * @returns {Promise<object|undefined>} The IMS profile object or `undefined` if fetching fails.

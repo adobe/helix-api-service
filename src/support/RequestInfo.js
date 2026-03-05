@@ -161,6 +161,9 @@ class HttpRequest {
     this.scheme = process.env.HLX_DEV_SERVER_SCHEME ?? 'https';
     this.host = process.env.HLX_DEV_SERVER_HOST ?? 'api.aem.live';
     this.query = {};
+    new URL(request.url).searchParams.forEach((value, key) => {
+      this.query[key] = value;
+    });
   }
 }
 
@@ -189,13 +192,13 @@ class PathInfo {
   /**
    * Clone another path info.
    *
-   * @param {PathInfo} other other info
+   * @param {import('../support/RequestInfo').RequestInfo} other other info
    * @param {object} param0 params
    * @param {string} [param0.org] org, optional
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
 ]  * @param {string} [param0.route] route, optional
-   * @returns {PathInfo} clone with the params overwritten
+   * @returns {import('../support/RequestInfo').RequestInfo} clone with the params overwritten
    */
   static clone(other, {
     route, org, site, path,
@@ -335,7 +338,7 @@ export class RequestInfo {
    * @param {string} [variables.path] path, optional
    * @param {string} [variables.ref] ref, optional
    * @param {string} [variables.route] route, optional
-   * @returns {RequestInfo}
+   * @returns {import('../support/RequestInfo').RequestInfo}
    */
   static create(request, router, variables = {}) {
     const {
@@ -350,13 +353,13 @@ export class RequestInfo {
   /**
    * Clone an existing request info.
    *
-   * @param {RequestInfo} other
+   * @param {import('../support/RequestInfo').RequestInfo} other
    * @param {object} param0 params
    * @param {string} [param0.org] org
    * @param {string} [param0.site] site, optional
    * @param {string} [param0.path] path, optional
    * @param {string} [param0.route] route
-   * @returns {RequestInfo}
+   * @returns {import('../support/RequestInfo').RequestInfo}
    */
   static clone(other, {
     org, site, path, route,
@@ -383,16 +386,13 @@ export class RequestInfo {
     return `https://${this.ref}--${this.site}--${this.org}.aem.live${this.webPath}`;
   }
 
-  getLinkUrl(path, query) {
+  getLinkUrl(path, query = {}) {
     const url = new URL(`${this.scheme ?? 'https'}://${this.host}${path}`);
-    Object.entries(this.query).forEach(([name, value]) => {
-      url.searchParams.append(name, value);
-    });
-    if (query) {
-      Object.entries(query).forEach(([name, value]) => {
+    Object.entries(query).forEach(([name, value]) => {
+      if (value !== undefined) {
         url.searchParams.append(name, value);
-      });
-    }
+      }
+    });
     return url.href;
   }
 
@@ -405,9 +405,11 @@ export class RequestInfo {
       path: this.webPath.slice(1),
       ref: this.ref,
     };
-    routes.forEach((name) => {
+    routes.forEach((value) => {
+      const title = value.title || value;
+      const name = value.name || value;
       const path = this.#router.external(name, variables);
-      links[name] = this.getLinkUrl(path);
+      links[title] = this.getLinkUrl(path);
     });
     return links;
   }

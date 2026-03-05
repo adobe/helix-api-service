@@ -1,0 +1,15 @@
+{
+  "type": "github",
+  "owner": "owner",
+  "repo": "repo",
+  "ref": "ref",
+  "baseRef": "",
+  "changes": [
+    {
+      "path": "*",
+      "time": "now",
+      "type": "deleted"
+    }
+  ],
+  "installationId": 995843
+}

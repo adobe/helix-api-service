@@ -17,7 +17,6 @@ import {
   jwtVerify,
 } from 'jose';
 import { getSiteAuthToken, getTransientSiteTokenInfo } from '../../src/auth/support.js';
-import jwks from '../../src/idp-configs/jwks-json.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
@@ -52,31 +51,6 @@ describe('Support Test', () => {
   }
 
   describe('Site Auth Test', () => {
-    it.skip('creates a valid site auth token (helix 4)', async () => {
-      const keyPair = await generateKeyPair('RS256', { extractable: true });
-      const publicJwk = await exportJWK(keyPair.publicKey);
-      Object.assign(jwks.keys[0], publicJwk);
-
-      const { context } = setupTest({
-        access: {
-          allow: '*@adobe.com',
-        },
-        env: {
-          HLX_ADMIN_IDP_PRIVATE_KEY: JSON.stringify(await exportJWK(keyPair.privateKey)),
-          HLX_SITE_APP_AZURE_CLIENT_ID: 'dummy-clientid',
-        },
-      });
-
-      const token = await getSiteAuthToken(context, 'live');
-      const localJWKS = createLocalJWKSet(jwks);
-      const { payload } = await jwtVerify(token, localJWKS, {
-        audience: 'dummy-clientid',
-      });
-      assert.strictEqual(payload.email, 'helix@adobe.com');
-      // check if token is cached
-      assert.strictEqual(context.attributes.accessConfig.live.token, token);
-    });
-
     it('creates a valid site auth token', async () => {
       const { context } = setupTest({
         access: {

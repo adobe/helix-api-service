@@ -16,8 +16,8 @@ import { sleep } from '../support/utils.js';
  * Test job for testing the queue. can only be used with the `job:test` permission only granted to
  * the admin role.
  *
- * @param {AdminContext} ctx context
- * @param {PathInfo} info path info
+ * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/RequestInfo').RequestInfo} info path info
  * @returns {Promise<Response>} response
  */
 export class TestJob extends Job {
@@ -27,16 +27,15 @@ export class TestJob extends Job {
    */
   async run() {
     await this.setPhase('processing');
-    const { ctx } = this;
+    const { ctx: { log, attributes: { jobSleep } } } = this;
     const { time = 5000, fail } = this.state.data;
-    const { log } = ctx;
 
     log.info(`processing test job for ${time} ms`);
     const endTime = Date.now() + time;
     // eslint-disable-next-line no-await-in-loop
     while (Date.now() < endTime && !await this.checkStopped()) {
       // eslint-disable-next-line no-await-in-loop
-      await sleep(1000);
+      await sleep(jobSleep ?? 1000);
       /* c8 ignore next 3 */
       if (fail) {
         throw new Error('job failed');

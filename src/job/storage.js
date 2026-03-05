@@ -89,7 +89,7 @@ export class JobStorage {
   /**
    * Create a new job storage.
    * @param {import('@adobe/helix-universal').AdminContext} ctx context
-   * @param {RequestInfo} info
+   * @param {import('../support/RequestInfo').RequestInfo} info
    * @param {object} JobClass job class derivative
    * @returns {Promise<JobStorage>} job storage
    */

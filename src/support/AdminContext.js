@@ -51,19 +51,6 @@ export class AdminContext {
     this.requestId = headers?.get('x-request-id')
       || headers?.get('x-cdn-request-id')
       || '';
-    this.githubToken = headers?.get('x-github-token') || '';
-
-    // If we have a github token, we want to check if we have a base url override as well
-    if (this.githubToken) {
-      const GH_BASE_URL = headers.get('x-github-base');
-      const GH_RAW_URL = headers.get('x-github-raw');
-      if (GH_BASE_URL && GH_BASE_URL !== 'https://api.github.com') {
-        this.env.GH_BASE_URL = GH_BASE_URL;
-        this.env.GH_RAW_URL = GH_RAW_URL;
-        // this is used to differentiate to a configured byogit
-        this.env.GH_EXTERNAL = true;
-      }
-    }
   }
 
   static create(context, opts) {
@@ -144,7 +131,7 @@ export class AdminContext {
    * Returns the normalized site access configuration for the current partition.
    *
    * @param {string} partition partition
-   * @returns {Promise<object>} the access configuration for this partition
+   * @returns {object} the access configuration for this partition
    */
   getSiteAccessConfig(partition) {
     const { attributes } = this;
@@ -191,9 +178,6 @@ export class AdminContext {
     /* c8 ignore start */
     if (this.requestId) {
       fetchopts.headers['x-request-id'] = this.requestId;
-    }
-    if (this.githubToken) {
-      fetchopts.headers['x-github-token'] = this.githubToken;
     }
     if (opts?.fetchTimeout) {
       fetchopts.signal = timeoutSignal(opts.fetchTimeout);
@@ -281,6 +265,7 @@ export class AdminContext {
 
   /**
    * Returns the config associated with this request.
+   * @returns SiteConfig
    */
   get config() {
     return this.attributes.config;

@@ -26,7 +26,9 @@ describe('Source POST Tests', () => {
   let nock;
 
   beforeEach(() => {
-    nock = new Nock().env();
+    nock = new Nock().env({
+      HELIX_MEDIA_HANDLER_DISABLE_R2: 'true',
+    });
   });
 
   afterEach(() => {
@@ -96,6 +98,7 @@ describe('Source POST Tests', () => {
 
     function imgPutFn(url, body) {
       assert.equal(body, 'someimg');
+      return [201];
     }
 
     async function htmlPutFn(url, gzipBody) {
@@ -105,6 +108,7 @@ describe('Source POST Tests', () => {
         stripSpaces(htmlOut),
         'Should have interned the images to media bus',
       );
+      return [201];
     }
 
     nock('https://example.com')

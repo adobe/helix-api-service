@@ -113,6 +113,7 @@ PERMISSIONS.publish = [
   'live:delete',
   'live:delete-forced',
   'live:list',
+  'log:write',
 ].sort();
 
 PERMISSIONS.develop = [

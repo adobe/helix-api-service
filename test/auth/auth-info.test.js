@@ -57,6 +57,7 @@ describe('AuthInfo Test', () => {
       'live:list',
       'live:write',
       'log:read',
+      'log:write',
       'preview:delete',
       'preview:delete-forced',
       'preview:list',

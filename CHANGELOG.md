@@ -1,3 +1,45 @@
+## [1.34.1](https://github.com/adobe/helix-api-service/compare/v1.34.0...v1.34.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#131](https://github.com/adobe/helix-api-service/issues/131)) ([a4ae119](https://github.com/adobe/helix-api-service/commit/a4ae119c62bd8f97e9e0ac55002031df304cc152))
+
+# [1.34.0](https://github.com/adobe/helix-api-service/compare/v1.33.3...v1.34.0) (2026-03-04)
+
+
+### Features
+
+* add code job ([7acc806](https://github.com/adobe/helix-api-service/commit/7acc806d194d1a35d304943624c3f4c3baeadfb8))
+
+## [1.33.3](https://github.com/adobe/helix-api-service/compare/v1.33.2...v1.33.3) (2026-03-04)
+
+
+### Bug Fixes
+
+* upgrade media-handler ([#142](https://github.com/adobe/helix-api-service/issues/142)) ([dc26305](https://github.com/adobe/helix-api-service/commit/dc2630522af9baa90347977c8a253d261438523e))
+
+## [1.33.2](https://github.com/adobe/helix-api-service/compare/v1.33.1...v1.33.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#140](https://github.com/adobe/helix-api-service/issues/140)) ([3fbba5f](https://github.com/adobe/helix-api-service/commit/3fbba5f7f3d1bf11cbd6d72f60420589f288c2a4))
+
+## [1.33.1](https://github.com/adobe/helix-api-service/compare/v1.33.0...v1.33.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* use new md svc response format ([#139](https://github.com/adobe/helix-api-service/issues/139)) ([2ac1230](https://github.com/adobe/helix-api-service/commit/2ac12303dc57d2b683c5c780ebcaa4bfaaf3c0a3)), closes [#138](https://github.com/adobe/helix-api-service/issues/138)
+
+# [1.33.0](https://github.com/adobe/helix-api-service/compare/v1.32.2...v1.33.0) (2026-02-26)
+
+
+### Features
+
+* **auth:** publish role should contain log:write permission ([d0fbf67](https://github.com/adobe/helix-api-service/commit/d0fbf6784825a9cd8313422e0066a19dee26814b))
+
 ## [1.32.2](https://github.com/adobe/helix-api-service/compare/v1.32.1...v1.32.2) (2026-02-24)
 
 

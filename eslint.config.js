@@ -19,6 +19,12 @@ export default defineConfig([
     'dist/*',
   ]),
   {
+    rules: {
+      'import/no-unresolved': ['error', { ignore: ['@octokit/rest'] }],
+    },
+    plugins: {
+      import: recommended.plugins.import,
+    },
     extends: [recommended],
   },
   source,

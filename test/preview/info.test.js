@@ -66,7 +66,7 @@ describe('Preview Info Tests', () => {
     assert.strictEqual(response.status, 200);
     assert.deepStrictEqual(await response.json(), {
       links: {
-        code: 'https://api.aem.live/org/sites/site/code/main/document',
+        code: 'https://api.aem.live/org/repos/site/code/main/document',
         live: 'https://api.aem.live/org/sites/site/live/document',
         preview: 'https://api.aem.live/org/sites/site/preview/document',
         status: 'https://api.aem.live/org/sites/site/status/document',

@@ -36,7 +36,7 @@ export default async function liveStatus(context, info) {
     webPath: info.webPath,
     resourcePath: info.resourcePath,
     live,
-    links: info.getAPIUrls('status', 'preview', 'live', 'code'),
+    links: info.getAPIUrls('status', 'preview', 'live', { title: 'code', name: 'repos-code' }),
   };
 
   return new Response(JSON.stringify(resp, null, 2), {

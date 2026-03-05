@@ -112,10 +112,10 @@ export class Job {
   /** @type {string} */
   topic = undefined;
 
-  /** @type {AdminContext} */
+  /** @type {import('../support/AdminContext').AdminContext} */
   ctx = undefined;
 
-  /** @type {RequestInfo} */
+  /** @type {import('../support/RequestInfo').RequestInfo} */
   info = undefined;
 
   /** @type {JobState<TStateData>} */
@@ -236,8 +236,8 @@ export class Job {
   /**
    * Creates a new Job for the given topic. It invokes the admin service async and
    * and returns informational response.
-   * @param {AdminContext} ctx the universal context
-   * @param {RequestInfo} info path info
+   * @param {import('../support/AdminContext').AdminContext} ctx the universal context
+   * @param {import('../support/RequestInfo').RequestInfo} info path info
    * @param {string} topic
    * @param {JobOptions} opts
    * @return {Promise<Response>}
@@ -430,7 +430,7 @@ export class Job {
 
   /**
    * Returns the API link for the given job topic and optional name
-   * @param {RequestInfo} info
+   * @param {import('../support/RequestInfo').RequestInfo} info
    * @param {string} topic
    * @param {string} [jobName]
    * @return {string}
@@ -455,8 +455,8 @@ export class Job {
 
   /**
    * Lists the jobs for the given topic.
-   * @param {AdminContext} ctx the universal context
-   * @param {RequestInfo} info path info
+   * @param {import('../support/AdminContext').AdminContext} ctx the universal context
+   * @param {import('../support/RequestInfo').RequestInfo} info path info
    * @return {Promise<Response>}
    */
   async list(ctx, info) {

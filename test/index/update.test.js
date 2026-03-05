@@ -225,7 +225,7 @@ describe('Index Update Tests', () => {
     it('reports error if fetching the live URL throws', async () => {
       nock('https://main--site--org.aem.live')
         .get('/document')
-        .replyWithError('Boom!');
+        .replyWithError(`Boom! ${'blabla'.repeat(200)}`);
 
       const { request, context } = setupTest('/document');
       const response = await main(request, context);
@@ -240,6 +240,17 @@ describe('Index Update Tests', () => {
 
     it('ignores resources in `.helix`', async () => {
       const { request, context } = setupTest('/.helix/config.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 204);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+      });
+    });
+
+    it('ignores resources that are excluded', async () => {
+      const { request, context } = setupTest('/query-index.json');
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 204);

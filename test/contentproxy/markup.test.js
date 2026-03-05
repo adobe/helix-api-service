@@ -12,14 +12,14 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { gunzip } from 'zlib';
+import { gzip } from 'zlib';
 import { promisify } from 'util';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
-const gunzipAsync = promisify(gunzip);
+const gzipAsync = promisify(gzip);
 
 const SITE_MUP_CONFIG = (url = 'https://www.example.com') => ({
   ...SITE_CONFIG,
@@ -126,6 +126,10 @@ describe('Markup Integration Tests', () => {
   });
 
   it('Retrieves Document via html2md with gzip content-encoding', async () => {
+    const svcBody = await gzipAsync(JSON.stringify({
+      markdown: '# hello, world!',
+      media: [],
+    }));
     nock('https://lambda.us-east-1.amazonaws.com')
       .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
       .reply((_, requestBody) => {
@@ -141,10 +145,11 @@ describe('Markup Integration Tests', () => {
           statusCode: 200,
           headers: {
             'x-source-location': '1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+            'content-type': 'application/json',
             'content-encoding': 'gzip',
           },
           isBase64Encoded: true,
-          body: 'H4sIAAAAAAAAA1NWyEjNycnXUSjPL8pJUQQASeTj1A8AAAA=',
+          body: svcBody.toString('base64'),
         })];
       });
 
@@ -159,13 +164,10 @@ describe('Markup Integration Tests', () => {
       },
     });
     const response = await main(request, context);
-    const body = await response.buffer();
-    const decoded = await gunzipAsync(body);
-
     assert.strictEqual(response.status, 200);
-    assert.strictEqual(decoded.toString('utf-8'), '# hello, world!');
+    assert.strictEqual(await response.text(), '# hello, world!');
+    assert.strictEqual(response.headers.get('content-length'), '15');
     assert.strictEqual(response.headers.get('x-source-location'), 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE');
-    assert.strictEqual(response.headers.get('content-encoding'), 'gzip');
   });
 
   it('Retrieves Document via html2md from a DA with embedded IMS token', async () => {
@@ -232,30 +234,6 @@ describe('Markup Integration Tests', () => {
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
     assert.strictEqual(response.headers.get('x-source-location'), 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE');
-  });
-
-  it('Stores content length via html2md if sourceInfo is provided', async () => {
-    nock('https://lambda.us-east-1.amazonaws.com')
-      .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
-      .reply((_, requestBody) => {
-        const { headers, body } = JSON.parse(requestBody);
-        assert.deepStrictEqual(JSON.parse(body), DEFAULT_BODY);
-        assert.strictEqual(headers.authorization, 'Bearer dummy-access-token');
-        return [200, JSON.stringify({
-          statusCode: 200,
-          headers: {
-            'x-source-location': '1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
-            'content-length': '18',
-          },
-          body: '# hello, world!',
-        })];
-      });
-
-    const { request, context } = setupTest('/');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 200);
-    assert.strictEqual(response.headers.get('content-length'), '18');
   });
 
   it('Passes limits to html2md', async () => {
@@ -332,29 +310,6 @@ describe('Markup Integration Tests', () => {
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
     assert.strictEqual(response.headers.get('x-source-location'), 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE');
-  });
-
-  it('no content length via html2md', async () => {
-    nock('https://lambda.us-east-1.amazonaws.com')
-      .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
-      .reply((_, requestBody) => {
-        const { headers, body } = JSON.parse(requestBody);
-        assert.deepStrictEqual(JSON.parse(body), DEFAULT_BODY);
-        assert.strictEqual(headers.authorization, 'Bearer dummy-access-token');
-        return [200, JSON.stringify({
-          statusCode: 200,
-          headers: {
-            'x-source-location': '1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
-          },
-          body: '# hello, world!',
-        })];
-      });
-
-    const { request, context } = setupTest('/');
-    const response = await main(request, context);
-
-    assert.strictEqual(response.status, 200);
-    assert.strictEqual(response.headers.get('content-length'), null);
   });
 
   it('Retrieves Document via html2md with selected version', async () => {

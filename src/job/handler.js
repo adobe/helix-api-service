@@ -13,16 +13,18 @@ import { Response } from '@adobe/fetch';
 import { Job } from './job.js';
 import { TestJob } from './test-job.js';
 import { JobStorage } from './storage.js';
+import { CodeJob } from '../code/code-job.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
 
 export const JOB_CLASS = {
   test: TestJob,
+  code: CodeJob,
 };
 
 /**
  * Handles the /job route
- * @param {AdminContext} ctx the universal context
+ * @param {import('../support/AdminContext').AdminContext} ctx the universal context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */

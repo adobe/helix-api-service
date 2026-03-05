@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { AbortError } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
@@ -85,14 +86,37 @@ export async function getUserListPaths(context) {
 /**
  * Return the contents of the `.hlx.json` file in a project.
  *
- * @param {import('@adobe/helix-shared-storage').Bucket} contentBus content bus bucket
+ * @param {import('../support/AdminContext').AdminContext} ctx context
  * @param {string} contentBusId content bus id
  * @returns contents of `.hlx.json` or null
  */
-export async function fetchHlxJson(contentBus, contentBusId) {
-  const buf = await contentBus.get(`${contentBusId}/.hlx.json`);
+export async function fetchHlxJson(ctx, contentBusId) {
+  const storage = HelixStorage.fromContext(ctx);
+  const buf = await storage.contentBus().get(`${contentBusId}/.hlx.json`);
   if (!buf) {
     return null;
   }
   return JSON.parse(buf.toString());
+}
+
+/**
+ * Checks if "this" site's code source is the canonical source of this site.
+ * If not, name of the primary code source is returned.
+ * @param {import('../support/AdminContext').AdminContext} ctx
+ * @param {import('../support/RequestInfo').RequestInfo} info
+ * @returns {string}
+ */
+export function checkCanonicalRepo(ctx, info) {
+  if (!ctx.attributes.config?.code) {
+    return '';
+  }
+  const { code } = ctx.attributes.config;
+  const url = new URL(code.source.url);
+  // only check for github repos
+  if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {
+    if (code.owner !== info.org || code.repo !== info.site) {
+      return `${code.owner}/${code.repo}`;
+    }
+  }
+  return '';
 }

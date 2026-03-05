@@ -44,6 +44,6 @@ export async function storeBlob(context, info, buffer, contentType) {
 
   // upload to media bus
   const blob = mh.createMediaResource(buffer, null, contentType);
-  await mh.put(blob);
+  await mh.upload(blob);
   return blob;
 }

@@ -40,6 +40,7 @@ import catchAll from './wrappers/catch-all.js';
 import { contentEncodeWrapper } from './wrappers/content-encode.js';
 import commonResponseHeaders from './wrappers/response-headers.js';
 import { sidekickCSRFProtection } from './sidekick/csrf.js';
+import { sqsEventAdapter } from './wrappers/sqs-event-adapter.js';
 
 /**
  * Dummy NYI handler
@@ -141,6 +142,7 @@ async function run(request, context) {
 export const main = wrap(run)
   .with(catchAll)
   .with(adminContext)
+  .with(sqsEventAdapter)
   .with(commonResponseHeaders)
   .with(contentEncodeWrapper)
   .with(bodyData)

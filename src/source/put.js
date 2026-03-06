@@ -20,6 +20,7 @@ import {
   contentTypeFromExtension,
   getS3KeyFromInfo,
   getS3Key,
+  getDocID,
   getValidPayload,
   storeSourceFile,
   MAX_RETRY_RECURSION,
@@ -98,8 +99,8 @@ async function copyWithRetry(
           // eslint-disable-next-line no-await-in-loop
           const dest = await bucket.head(destKey);
 
-          const destULID = dest.Metadata.ulid;
-          opts = { ...initialOpts, addMetadata: { ulid: destULID } };
+          const getDestDocId = getDocID(dest);
+          opts = { ...initialOpts, addMetadata: { ulid: getDestDocId } };
           copyOpts = { IfMatch: dest.ETag };
         }
       }

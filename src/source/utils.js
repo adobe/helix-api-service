@@ -128,6 +128,21 @@ export function getS3KeyFromInfo(info) {
 }
 
 /**
+ * Get the ULID from the head.
+ *
+ * @param {import('@adobe/helix-shared-storage').HelixStorageBucketHead} head head response
+ * @returns {string} the ULID
+ * @throws {Error} with message 'Document without ULID' if the ULID is not found
+ */
+export function getDocID(head) {
+  const id = head.Metadata?.['doc-id'];
+  if (!id) {
+    throw new StatusCodeError('Document without ID', 404);
+  }
+  return id;
+}
+
+/**
  * Validate the HTML message body and intern the images if a media handler is provided.
  * When interning the images, they are uploaded to the media bus and references to them
  * are replaced with media bus URLs.
@@ -409,12 +424,12 @@ export async function storeSourceFile(context, key, mime, body) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
   const head = await bucket.head(key);
-  const id = head?.Metadata?.ulid || ulid();
+  const id = head?.Metadata?.['doc-id'] || ulid();
 
   const resp = await bucket.put(key, body, mime, {
     'Last-Modified-By': getUser(context),
     'Uncompressed-Length': String(body.length),
-    ulid: id,
+    'doc-id': id,
   }, true);
 
   const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;

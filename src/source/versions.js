@@ -18,6 +18,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import {
   accessSourceFile,
   getS3Key,
+  getDocID,
   getUser,
   MAX_RETRY_RECURSION,
 } from './utils.js';
@@ -44,7 +45,7 @@ async function getVersionInfo(item, bucket, versions) {
       version: item.path,
       date: item.lastModified,
       user: head.Metadata['version-user'],
-      'org-path': head.Metadata['org-path'],
+      'doc-path': head.Metadata['doc-path'],
       ...(head.Metadata['version-comment'] && { comment: head.Metadata['version-comment'] }),
       ...(head.Metadata['version-operation'] && { operation: head.Metadata['version-operation'] }),
     });
@@ -60,14 +61,14 @@ async function getVersionInfo(item, bucket, versions) {
  *     "version": "01KJDB3QXBAFRRXWRV3W8DBD9R",
  *     "date": "2026-02-26T16:04:36.000Z",
  *     "user": "joe@bloggs.org",
- *     "org-path": "/path/to/file.html",
+ *     "doc-path": "/path/to/file.html",
  *     "op": "preview"
  *   },
  *   {
  *     "version": "01KJDB2TW1AWCD1P7TMRZMBCT1",
  *     "date": "2026-02-26T16:04:06.000Z",
  *     "user": "mel@bloggs.org",
- *     "org-path": "/path/to/file.html",
+ *     "doc-path": "/path/to/file.html",
  *     "op": "version",
  *     "comment": "ready for approval"
  *   }
@@ -120,10 +121,8 @@ export async function getVersions(context, info, headRequest) {
 
     const bucket = HelixStorage.fromContext(context).sourceBus();
     const head = await bucket.head(baseKey);
-    if (!head?.Metadata?.ulid) {
-      return new Response('', { status: 404 });
-    }
-    const versionDirKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${head.Metadata.ulid}/`;
+    const docId = getDocID(head);
+    const versionDirKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${docId}/`;
 
     if (info.rawPath.endsWith(VERSION_FOLDER)) {
       return listVersions(bucket, versionDirKey);
@@ -134,12 +133,12 @@ export async function getVersions(context, info, headRequest) {
       return new Response('', { status: 400 });
     }
 
-    const version = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
-    if (!isValid(version)) {
+    const versionId = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
+    if (!isValid(versionId)) {
       // It's not a valid ULID
-      return new Response('Not a valid version', { status: 400 });
+      return new Response('Not a valid version', { status: 404 });
     }
-    return getVersion(context, versionDirKey, version, headRequest);
+    return getVersion(context, versionDirKey, versionId, headRequest);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
@@ -164,11 +163,7 @@ export async function postVersion(context, baseKey, recursion = 0) {
       return new Response('', { status: 404 });
     }
 
-    const id = head.Metadata?.ulid;
-    if (!id) {
-      throw new Error('Document without ULID');
-    }
-
+    const id = getDocID(head);
     const versionFolderKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${id}/`;
     const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
     const comment = String(context.data.comment || '');
@@ -177,9 +172,8 @@ export async function postVersion(context, baseKey, recursion = 0) {
     const versionULID = ulid();
     const versionKey = `${versionFolderKey}${versionULID}`;
 
-    const renameMetadata = { ulid: 'org-ulid' };
     const addMetadata = {
-      'org-path': pathName,
+      'doc-path': pathName,
       'version-user': getUser(context),
       ...(comment && { 'version-comment': comment }),
       ...(operation && { 'version-operation': operation }),
@@ -187,7 +181,7 @@ export async function postVersion(context, baseKey, recursion = 0) {
     const copyOpts = { CopySourceIfMatch: head.ETag };
 
     try {
-      await bucket.copy(baseKey, versionKey, { renameMetadata, addMetadata, copyOpts });
+      await bucket.copy(baseKey, versionKey, { addMetadata, copyOpts });
     } catch (e) {
       if (recursion >= MAX_RETRY_RECURSION) throw e;
 

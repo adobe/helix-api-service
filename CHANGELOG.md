@@ -1,3 +1,10 @@
+## [1.34.2](https://github.com/adobe/helix-api-service/compare/v1.34.1...v1.34.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* add sqs event adapter ([#144](https://github.com/adobe/helix-api-service/issues/144)) ([cfa842a](https://github.com/adobe/helix-api-service/commit/cfa842af53ef4fba6bbb955462d8ddb63522de4a))
+
 ## [1.34.1](https://github.com/adobe/helix-api-service/compare/v1.34.0...v1.34.1) (2026-03-04)
 
 

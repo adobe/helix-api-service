@@ -12,7 +12,7 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Response } from '@adobe/fetch';
+import { Request, Response } from '@adobe/fetch';
 import crypto from 'crypto';
 import wrap from '@adobe/helix-shared-wrap';
 import { sqsEventAdapter } from '../../src/wrappers/sqs-event-adapter.js';
@@ -53,6 +53,7 @@ describe('SQS Event Adapter Tests', () => {
       assert.deepStrictEqual(Object.fromEntries(request.headers.entries()), {
         'content-type': 'application/json',
       });
+      assert.ok(request instanceof Request);
       return new Response('Hello, world!', { status: 200 });
     };
     const main = wrap(fn)

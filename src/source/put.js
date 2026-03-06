@@ -14,6 +14,7 @@ import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { ulid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
 import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
@@ -23,6 +24,7 @@ import {
   storeSourceFile,
   MAX_RETRY_RECURSION,
 } from './utils.js';
+import { postVersion } from './versions.js';
 
 /**
  * Copy an S3 object and handle conflichts.
@@ -33,63 +35,98 @@ import {
  * @param {boolean} move true if this is a move operation
  * @param {object} opts metadata options for the copy operation
  * @param {object} copyOpts copy options
- * @param {number} recursion recursion count
+ * @param {object} collOpts collision options
  */
-async function copyWithRetry(srcKey, destKey, bucket, move, opts, copyOpts, recursion = 0) {
-  try {
-    const allOpts = { copyOpts, ...opts };
-    await bucket.copy(srcKey, destKey, allOpts);
+async function copyWithRetry(
+  context,
+  srcKey,
+  destKey,
+  move,
+  initialOpts,
+  initialCopyOpts,
+  collOpts,
+) {
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  let versionCreated = false;
+  let opts = initialOpts;
+  let copyOpts = initialCopyOpts;
 
-    if (move) {
-      const resp = await bucket.remove(srcKey);
-      if (resp.$metadata?.httpStatusCode !== 204) {
-        throw new Error(`Failed to remove source: ${srcKey}`);
+  for (let attempt = 0; attempt <= MAX_RETRY_RECURSION; attempt += 1) {
+    try {
+      const allOpts = { copyOpts, ...opts };
+      // eslint-disable-next-line no-await-in-loop
+      await bucket.copy(srcKey, destKey, allOpts);
+
+      if (move) {
+        // eslint-disable-next-line no-await-in-loop
+        const resp = await bucket.remove(srcKey);
+        if (resp.$metadata?.httpStatusCode !== 204) {
+          throw new Error(`Failed to remove source: ${srcKey}`);
+        }
+      }
+      return;
+    } catch (e) {
+      if (attempt >= MAX_RETRY_RECURSION) throw e;
+
+      const status = e.$metadata?.httpStatusCode;
+
+      // As per S3 docs, retry on a 409
+      if (status !== 409) {
+        if (status !== 412) throw e;
+        // 412: precondition failed - something is at the destination already.
+
+        if (move) {
+          // TODO add move collision handling
+          throw new StatusCodeError(409, 'Collision: something is at the destination already');
+        } else {
+          if (collOpts.copy !== 'overwrite') {
+            throw new StatusCodeError(409, 'Collision: something is at the destination already');
+          }
+
+          // version what's there before overwriting it
+          if (!versionCreated) {
+            // eslint-disable-next-line no-await-in-loop
+            const versionResp = await postVersion(context, destKey);
+            if (versionResp.status !== 201) {
+              throw new StatusCodeError(versionResp.status, 'Failed to version the destination');
+            }
+            versionCreated = true;
+          }
+
+          // If something is at the destination already, we copy over that file, but keep
+          // dest ULID from the destination as-is so that the destination keeps its history.
+          // eslint-disable-next-line no-await-in-loop
+          const dest = await bucket.head(destKey);
+
+          const destULID = dest.Metadata.ulid;
+          opts = { ...initialOpts, addMetadata: { ulid: destULID } };
+          copyOpts = { IfMatch: dest.ETag };
+        }
       }
     }
-  } catch (e) {
-    if (recursion >= MAX_RETRY_RECURSION) throw e;
-
-    const status = e.$metadata?.httpStatusCode;
-
-    // As per S3 docs, retry on a 409
-    if (status === 409) {
-      await copyWithRetry(srcKey, destKey, bucket, move, opts, copyOpts, recursion + 1);
-      return;
-    }
-
-    if (status !== 412) throw e;
-    // 412: precondition failed - something is at the destination already.
-
-    // If something is at the destination already, we copy over that file, but keep
-    // dest ULID from the destination as-is so that the destination keeps its history.
-    const dest = await bucket.head(destKey);
-
-    const destULID = dest.Metadata.uuid;
-    const newOpts = { ...opts, addMetadata: { ...opts.addMetadata, ulid: destULID } };
-    const newCopyOpts = { IfMatch: dest.ETag };
-    await copyWithRetry(srcKey, destKey, bucket, move, newOpts, newCopyOpts, recursion + 1);
   }
 }
 
-async function copyFile(srcKey, destKey, bucket, move) {
+async function copyFile(context, srcKey, destKey, move, collOpts) {
   const opts = {};
   const copyOpts = {};
   if (!move) {
     opts.addMetadata = { ulid: ulid() };
     copyOpts.IfNoneMatch = '*';
   }
-  await copyWithRetry(srcKey, destKey, bucket, move, opts, copyOpts);
+  await copyWithRetry(context, srcKey, destKey, move, opts, copyOpts, collOpts);
 }
 
-async function copyDocument(src, info, bucket, move) {
+async function copyDocument(context, src, info, move, collOpts) {
   const dst = getS3KeyFromInfo(info);
-  await copyFile(src, dst, bucket, move);
+  await copyFile(context, src, dst, move, collOpts);
   return [{ src, dst }];
 }
 
-async function copyFolder(srcKey, info, bucket, move) {
+async function copyFolder(context, srcKey, info, move, collOpts) {
   const tasks = [];
   const destKey = getS3Key(info.org, info.site, info.rawPath);
+  const bucket = HelixStorage.fromContext(context).sourceBus();
   (await bucket.list(srcKey)).forEach((obj) => {
     tasks.push({
       src: obj.key,
@@ -99,7 +136,7 @@ async function copyFolder(srcKey, info, bucket, move) {
 
   const copied = [];
   await processQueue(tasks, async (task) => {
-    await copyFile(task.src, task.dst, bucket, move);
+    await copyFile(context, task.src, task.dst, move, collOpts);
     copied.push({ src: task.src, dst: task.dst });
   });
   return copied;
@@ -114,7 +151,7 @@ async function copyFolder(srcKey, info, bucket, move) {
  * @param {boolean} move whether to move the source
  * @returns {Promise<Response>} response
  */
-async function copySource(context, info, move) {
+async function copySource(context, info, move, collOpts) {
   const { log } = context;
   const { source } = context.data;
 
@@ -126,10 +163,9 @@ async function copySource(context, info, move) {
       return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log });
     }
 
-    const bucket = HelixStorage.fromContext(context).sourceBus();
     const copied = isFolder
-      ? await copyFolder(srcKey, info, bucket, move)
-      : await copyDocument(srcKey, info, bucket, move);
+      ? await copyFolder(context, srcKey, info, move, collOpts)
+      : await copyDocument(context, srcKey, info, move, collOpts);
 
     const operation = move ? 'moved' : 'copied';
     return new Response({
@@ -151,7 +187,14 @@ async function copySource(context, info, move) {
 */
 export async function putSource(context, info) {
   if (context.data.source) {
-    return copySource(context, info, String(context.data.move) === 'true');
+    const move = String(context.data.move) === 'true';
+    const collOpts = {};
+    if (move) {
+      collOpts.move = context.data.collision;
+    } else {
+      collOpts.copy = context.data.collision;
+    }
+    return copySource(context, info, move, collOpts);
   }
 
   try {

@@ -598,22 +598,22 @@ describe('Authentication Test', () => {
     });
 
     it('rejects the api token with invalid sub claim (site mismatch)', async () => {
-      const authInfo = await testApiToken('owner/bar', '1234', '1234');
+      const authInfo = await testApiToken('org/bar', '1234', '1234');
       assert.strictEqual(authInfo.authenticated, false);
     });
 
     it('rejects the api token with invalid jti claim', async () => {
-      const authInfo = await testApiToken('owner/repo', '4567', '1234');
+      const authInfo = await testApiToken('org/site', '4567', '1234');
       assert.strictEqual(authInfo.authenticated, false);
     });
 
     it('rejects the api token with missing apiKeyId', async () => {
-      const authInfo = await testApiToken('owner/repo', '4567', undefined);
+      const authInfo = await testApiToken('org/site', '4567', undefined);
       assert.strictEqual(authInfo.authenticated, false);
     });
 
     it('rejects the api token with invalid JWT', async () => {
-      const authInfo = await testApiToken('owner/*', '1234', '1234', 'invalid');
+      const authInfo = await testApiToken('org/*', '1234', '1234', 'invalid');
       assert.strictEqual(authInfo.authenticated, false);
     });
   });

@@ -1,3 +1,10 @@
+## [1.34.3](https://github.com/adobe/helix-api-service/compare/v1.34.2...v1.34.3) (2026-03-06)
+
+
+### Bug Fixes
+
+* use correct request ([#145](https://github.com/adobe/helix-api-service/issues/145)) ([959f13b](https://github.com/adobe/helix-api-service/commit/959f13b38dbb3044a79d94c839c4ba418f23e365))
+
 ## [1.34.2](https://github.com/adobe/helix-api-service/compare/v1.34.1...v1.34.2) (2026-03-06)
 
 

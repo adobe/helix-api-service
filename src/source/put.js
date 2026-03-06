@@ -10,16 +10,143 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { ulid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
 import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
   getS3KeyFromInfo,
   getS3Key,
+  getDocID,
   getValidPayload,
   storeSourceFile,
+  MAX_RETRY_RECURSION,
 } from './utils.js';
+import { postVersion } from './versions.js';
+
+/**
+ * Copy an S3 object and handle conflichts.
+ *
+ * @param {string} srcKey source S3 key
+ * @param {string} destKey destination S3 key
+ * @param {Bucket} bucket the S3 bucket
+ * @param {boolean} move true if this is a move operation
+ * @param {object} opts metadata options for the copy operation
+ * @param {object} copyOpts copy options
+ * @param {object} collOpts collision options
+ */
+async function copyWithRetry(
+  context,
+  srcKey,
+  destKey,
+  move,
+  initialOpts,
+  initialCopyOpts,
+  collOpts,
+) {
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  let versionCreated = false;
+  let opts = initialOpts;
+  let copyOpts = initialCopyOpts;
+
+  for (let attempt = 0; attempt <= MAX_RETRY_RECURSION; attempt += 1) {
+    try {
+      const allOpts = { copyOpts, ...opts };
+      // eslint-disable-next-line no-await-in-loop
+      await bucket.copy(srcKey, destKey, allOpts);
+
+      break; // copy was successful, break out of the loop
+    } catch (e) {
+      if (attempt >= MAX_RETRY_RECURSION) throw e;
+
+      const status = e.$metadata?.httpStatusCode;
+
+      // As per S3 docs, retry on a 409
+      if (status !== 409) {
+        if (status !== 412) throw e;
+        // 412: precondition failed - something is at the destination already.
+
+        if (move) {
+          // TODO add move collision handling
+          throw new StatusCodeError(409, 'Collision: something is at the destination already');
+        } else {
+          if (collOpts.copy !== 'overwrite') {
+            throw new StatusCodeError(409, 'Collision: something is at the destination already');
+          }
+
+          // version what's there before overwriting it
+          if (!versionCreated) {
+            // eslint-disable-next-line no-await-in-loop
+            const versionResp = await postVersion(context, destKey);
+            if (versionResp.status !== 201) {
+              throw new StatusCodeError(versionResp.status, 'Failed to version the destination');
+            }
+            versionCreated = true;
+          }
+
+          // If something is at the destination already, we copy over that file, but keep
+          // dest ULID from the destination as-is so that the destination keeps its history.
+          // eslint-disable-next-line no-await-in-loop
+          const dest = await bucket.head(destKey);
+
+          const getDestDocId = getDocID(dest);
+          opts = { ...initialOpts, addMetadata: { ulid: getDestDocId } };
+          copyOpts = { IfMatch: dest.ETag };
+        }
+      }
+    }
+  }
+
+  if (move) {
+    const resp = await bucket.remove(srcKey);
+    if (resp.$metadata?.httpStatusCode !== 204) {
+      throw new StatusCodeError(`Failed to remove source: ${srcKey}`, resp.$metadata?.httpStatusCode);
+    }
+  }
+}
+
+async function copyFile(context, srcKey, destKey, move, collOpts) {
+  const opts = {};
+  const copyOpts = {};
+  if (!move) {
+    opts.addMetadata = { 'doc-id': ulid() };
+    copyOpts.IfNoneMatch = '*';
+  }
+  await copyWithRetry(context, srcKey, destKey, move, opts, copyOpts, collOpts);
+}
+
+async function copyDocument(context, src, info, move, collOpts) {
+  const dst = getS3KeyFromInfo(info);
+  await copyFile(context, src, dst, move, collOpts);
+  return [{ src, dst }];
+}
+
+async function copyFolder(context, srcKey, info, move, collOpts) {
+  const tasks = [];
+  const destKey = getS3Key(info.org, info.site, info.rawPath);
+
+  if (destKey.startsWith(srcKey)) {
+    throw new StatusCodeError('Destination cannot be a subfolder of source', 400);
+  }
+
+  const bucket = HelixStorage.fromContext(context).sourceBus();
+  (await bucket.list(srcKey)).forEach((obj) => {
+    tasks.push({
+      src: obj.key,
+      dst: `${destKey}${obj.path}`,
+    });
+  });
+
+  const copied = [];
+  await processQueue(tasks, async (task) => {
+    await copyFile(context, task.src, task.dst, move, collOpts);
+    copied.push({ src: task.src, dst: task.dst });
+  });
+  return copied;
+}
 
 /**
  * Copies a resource of a folder to the destination folder. If a folder is
@@ -30,7 +157,7 @@ import {
  * @param {boolean} move whether to move the source
  * @returns {Promise<Response>} response
  */
-async function copySource(context, info, move) {
+async function copySource(context, info, move, collOpts) {
   const { log } = context;
   const { source } = context.data;
 
@@ -42,41 +169,9 @@ async function copySource(context, info, move) {
       return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log });
     }
 
-    const bucket = HelixStorage.fromContext(context).sourceBus();
-    let copied;
-    if (isFolder) {
-      const destKey = getS3Key(info.org, info.site, info.rawPath);
-
-      if (destKey.startsWith(srcKey)) {
-        return createErrorResponse({ msg: 'Destination cannot be a subfolder of source', status: 400, log });
-      }
-
-      copied = await bucket.copyDeep(srcKey, destKey);
-
-      if (move) {
-        const copiedKeys = copied.map((item) => item.src);
-        const deleted = await bucket.remove(copiedKeys);
-
-        // Check that delKeys and copiedKeys are the same set
-        const delKeys = deleted.Deleted.map((item) => item.Key);
-        if (delKeys.length !== copiedKeys.length
-          || [...delKeys].some((el) => !copiedKeys.includes(el))) {
-          return createErrorResponse({ msg: 'Move operation failed', status: 500, log });
-        }
-      }
-    } else {
-      const destKey = getS3KeyFromInfo(info);
-      await bucket.copy(srcKey, destKey);
-
-      if (move) {
-        const resp = await bucket.remove(srcKey);
-        if (resp.$metadata?.httpStatusCode !== 204) {
-          return createErrorResponse({ msg: 'Failed to remove source', status: resp.$metadata?.httpStatusCode, log });
-        }
-      }
-
-      copied = [{ src: srcKey, dst: destKey }];
-    }
+    const copied = isFolder
+      ? await copyFolder(context, srcKey, info, move, collOpts)
+      : await copyDocument(context, srcKey, info, move, collOpts);
 
     const operation = move ? 'moved' : 'copied';
     return new Response({
@@ -98,7 +193,14 @@ async function copySource(context, info, move) {
 */
 export async function putSource(context, info) {
   if (context.data.source) {
-    return copySource(context, info, String(context.data.move) === 'true');
+    const move = String(context.data.move) === 'true';
+    const collOpts = {};
+    if (move) {
+      collOpts.move = context.data.collision;
+    } else {
+      collOpts.copy = context.data.collision;
+    }
+    return copySource(context, info, move, collOpts);
   }
 
   try {

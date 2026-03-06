@@ -42,6 +42,9 @@ describe('Source POST Tests', () => {
     }
 
     nock.source()
+      .headObject('/test/rest/toast/jam.html')
+      .reply(404);
+    nock.source()
       .putObject('/test/rest/toast/jam.html')
       .matchHeader('content-type', 'text/html')
       .reply(201, postFn);
@@ -61,9 +64,16 @@ describe('Source POST Tests', () => {
       assert.equal(b.toString(), '<body><main>Hello</main></body>');
     }
 
+    const docId = '01KK1E35DP7EQDG9G99QT437VH';
+    nock.source()
+      .headObject('/test/rest/toast/index.html')
+      .reply(200, null, {
+        'x-amz-meta-doc-id': docId,
+      });
     nock.source()
       .putObject('/test/rest/toast/index.html')
       .matchHeader('content-type', 'text/html')
+      .matchHeader('x-amz-meta-doc-id', docId)
       .reply(201, postFn);
 
     const resp = await postSource(setupContext(), createInfo(
@@ -122,6 +132,9 @@ describe('Source POST Tests', () => {
       .putObject(`/${imageHash}`)
       .reply(201, imgPutFn);
     nock.source()
+      .headObject('/test/rest/toast/jam.html')
+      .reply(404);
+    nock.source()
       .putObject('/test/rest/toast/jam.html')
       .reply(201, htmlPutFn);
 
@@ -167,6 +180,7 @@ describe('Source POST Tests', () => {
 
     nock.source()
       .headObject('/myorg/mysite/my-page.html')
+      .twice()
       .reply(200, null, {
         etag: '"yeehaa"',
         'last-modified': 'Tue, 29 Oct 2024 02:57:46 GMT',
@@ -206,6 +220,9 @@ describe('Source POST Tests', () => {
     }
 
     nock.source()
+      .headObject('/t/s/abc.json')
+      .reply(404);
+    nock.source()
       .putObject('/t/s/abc.json')
       .matchHeader('content-type', 'application/json')
       .reply(201, postFn);
@@ -235,6 +252,9 @@ describe('Source POST Tests', () => {
       assert.equal(b.toString(), 'somepdf');
     }
 
+    nock.source()
+      .headObject('/org-x/site-y/my.pdf')
+      .reply(404);
     nock.source()
       .putObject('/org-x/site-y/my.pdf')
       .matchHeader('content-type', 'application/pdf')

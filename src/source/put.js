@@ -58,14 +58,7 @@ async function copyWithRetry(
       // eslint-disable-next-line no-await-in-loop
       await bucket.copy(srcKey, destKey, allOpts);
 
-      if (move) {
-        // eslint-disable-next-line no-await-in-loop
-        const resp = await bucket.remove(srcKey);
-        if (resp.$metadata?.httpStatusCode !== 204) {
-          throw new Error(`Failed to remove source: ${srcKey}`);
-        }
-      }
-      return;
+      break; // copy was successful, break out of the loop
     } catch (e) {
       if (attempt >= MAX_RETRY_RECURSION) throw e;
 
@@ -106,13 +99,20 @@ async function copyWithRetry(
       }
     }
   }
+
+  if (move) {
+    const resp = await bucket.remove(srcKey);
+    if (resp.$metadata?.httpStatusCode !== 204) {
+      throw new StatusCodeError(`Failed to remove source: ${srcKey}`, resp.$metadata?.httpStatusCode);
+    }
+  }
 }
 
 async function copyFile(context, srcKey, destKey, move, collOpts) {
   const opts = {};
   const copyOpts = {};
   if (!move) {
-    opts.addMetadata = { ulid: ulid() };
+    opts.addMetadata = { 'doc-id': ulid() };
     copyOpts.IfNoneMatch = '*';
   }
   await copyWithRetry(context, srcKey, destKey, move, opts, copyOpts, collOpts);
@@ -127,6 +127,11 @@ async function copyDocument(context, src, info, move, collOpts) {
 async function copyFolder(context, srcKey, info, move, collOpts) {
   const tasks = [];
   const destKey = getS3Key(info.org, info.site, info.rawPath);
+
+  if (destKey.startsWith(srcKey)) {
+    throw new StatusCodeError('Destination cannot be a subfolder of source', 400);
+  }
+
   const bucket = HelixStorage.fromContext(context).sourceBus();
   (await bucket.list(srcKey)).forEach((obj) => {
     tasks.push({

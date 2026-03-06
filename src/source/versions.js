@@ -173,7 +173,7 @@ export async function postVersion(context, baseKey, recursion = 0) {
     const versionKey = `${versionFolderKey}${versionULID}`;
 
     const addMetadata = {
-      'doc-path': pathName,
+      'doc-path-hint': pathName,
       'version-user': getUser(context),
       ...(comment && { 'version-comment': comment }),
       ...(operation && { 'version-operation': operation }),

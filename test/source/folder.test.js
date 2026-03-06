@@ -234,6 +234,9 @@ describe('Source List Tests', () => {
 
   it('test create folder', async () => {
     nock.source()
+      .headObject('/org1/site2/new/.props')
+      .reply(404);
+    nock.source()
       .putObject('/org1/site2/new/.props')
       .reply(201);
     const info = createInfo('/org1/sites/site2/source/new/');
@@ -242,6 +245,9 @@ describe('Source List Tests', () => {
   });
 
   it('test create folder with error', async () => {
+    nock.source()
+      .headObject('/org1/site2/new/.props')
+      .reply(404);
     nock.source()
       .putObject('/org1/site2/new/.props')
       .reply(401);

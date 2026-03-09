@@ -90,7 +90,7 @@ async function listVersions(bucket, versionDirKey) {
   await processQueue(list, async (item) => getVersionInfo(item, bucket, versions));
 
   // sort objects in the versions array by date descending
-  versions.sort((a, b) => b.date > a.date);
+  versions.sort((a, b) => b.date - a.date);
 
   return new Response(JSON.stringify(versions), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
@@ -150,11 +150,17 @@ export async function getVersions(context, info, headRequest) {
  * Create a version of the source file.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} baseKey base key of the source file
+ * @param {string} baseKey base key of the source file, must not start with a slash
+ * @param {string} operation operation that triggered the version creation
+ * @param {string} comment comment for the version
  * @param {number} recursion recursion count
  * @returns {Promise<Response>} response with the file body and metadata
  */
 export async function postVersion(context, baseKey, operation, comment, recursion = 0) {
+  if (baseKey.startsWith('/')) {
+    return new Response('', { status: 400 });
+  }
+
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 

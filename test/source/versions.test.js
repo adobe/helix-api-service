@@ -14,8 +14,8 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import xml2js from 'xml2js';
-import { postVersion } from '../../src/source/versions.js';
-import { Nock } from '../utils.js';
+import { getVersions, postVersion } from '../../src/source/versions.js';
+import { createInfo, Nock } from '../utils.js';
 import { setupContext } from './testutils.js';
 
 describe('Versions Tests', () => {
@@ -130,5 +130,89 @@ describe('Versions Tests', () => {
 
     const resp = await postVersion(context, 'myorg/mysite/a/b/c.html');
     assert.equal(resp.status, 403);
+  });
+
+  it('test postVersion invalid base key', async () => {
+    const resp = await postVersion(context, '/myorg/mysite/a/b/c.html');
+    assert.equal(resp.status, 400);
+  });
+
+  const BUCKET_LIST_RESULT = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+      <Contents>
+        <Key>myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1Z</Key>
+        <LastModified>2021-01-01T00:00:00.000Z</LastModified>
+        <Size>123</Size>
+        <Path>01KK1E35DP7EQDG9G99QQAVQ1Z</Path>
+      </Contents>
+      <Contents>
+        <Key>myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1A</Key>
+        <LastModified>2021-02-02T00:00:00.000Z</LastModified>
+        <Size>456</Size>
+        <Path>01KK1E35DP7EQDG9G99QQAVQ1A</Path>
+      </Contents>
+    </ListBucketResult>`;
+
+  it('test list versions', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+      });
+    nock.source()
+      .headObject('/myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1Z')
+      .reply(200, null, {
+        etag: 'blah',
+        'x-amz-meta-doc-path': '/a/b/c.html',
+        'x-amz-meta-version-user': 'billy@example.com',
+        'x-amz-meta-version-operation': 'preview',
+        'x-amz-meta-version-comment': 'test comment',
+      });
+    nock.source()
+      .headObject('/myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1A')
+      .reply(200, null, {
+        etag: 'boo',
+        'x-amz-meta-doc-path': '/a/b/d.html',
+        'x-amz-meta-version-user': 'jolo@example.com',
+      });
+
+    nock.source()
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions');
+    const resp = await getVersions(context, info);
+    assert.equal(resp.status, 200);
+
+    const versions = await resp.json();
+    const expectedVersion = [
+      {
+        version: '01KK1E35DP7EQDG9G99QQAVQ1A',
+        date: '2021-02-02T00:00:00.000Z',
+        user: 'jolo@example.com',
+        'doc-path': '/a/b/d.html',
+      },
+      {
+        version: '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        date: '2021-01-01T00:00:00.000Z',
+        user: 'billy@example.com',
+        'doc-path': '/a/b/c.html',
+        comment: 'test comment',
+        operation: 'preview',
+      },
+    ];
+
+    assert.deepStrictEqual(versions, expectedVersion);
   });
 });

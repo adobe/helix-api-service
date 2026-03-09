@@ -34,7 +34,10 @@ export async function postSource(context, info) {
     return createFolder(context, info);
   } else if (info.rawPath.endsWith(VERSION_FOLDER)) {
     const baseKey = getS3KeyFromInfo(info).slice(0, -VERSION_FOLDER.length);
-    return postVersion(context, baseKey, info);
+    const operation = String(context.data.operation || '');
+    const comment = String(context.data.comment || '');
+
+    return postVersion(context, baseKey, operation, comment);
   }
 
   try {

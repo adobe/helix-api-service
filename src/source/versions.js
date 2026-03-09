@@ -154,7 +154,7 @@ export async function getVersions(context, info, headRequest) {
  * @param {number} recursion recursion count
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function postVersion(context, baseKey, recursion = 0) {
+export async function postVersion(context, baseKey, operation, comment, recursion = 0) {
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
@@ -166,11 +166,9 @@ export async function postVersion(context, baseKey, recursion = 0) {
     const id = getDocID(head);
     const versionFolderKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${id}/`;
     const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
-    const comment = String(context.data.comment || '');
-    const operation = String(context.data.operation || '');
 
-    const versionULID = ulid();
-    const versionKey = `${versionFolderKey}${versionULID}`;
+    const versionId = ulid();
+    const versionKey = `${versionFolderKey}${versionId}`;
 
     const addMetadata = {
       'doc-path-hint': pathName,
@@ -187,13 +185,13 @@ export async function postVersion(context, baseKey, recursion = 0) {
 
       if (e.$metadata?.httpStatusCode === 412) {
         // The source object has been modified since we last checked, so we need to redo
-        return postVersion(context, baseKey, recursion + 1);
+        return postVersion(context, baseKey, operation, comment, recursion + 1);
       }
 
       throw e;
     }
     const headers = {
-      Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}${VERSION_FOLDER}/${versionULID}`,
+      Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}${VERSION_FOLDER}/${versionId}`,
     };
 
     return new Response('', { status: 201, headers });

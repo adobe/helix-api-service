@@ -80,7 +80,7 @@ async function copyWithRetry(
           // version what's there before overwriting it
           if (!versionCreated) {
             // eslint-disable-next-line no-await-in-loop
-            const versionResp = await postVersion(context, destKey);
+            const versionResp = await postVersion(context, destKey, 'copy');
             if (versionResp.status !== 201) {
               throw new StatusCodeError(versionResp.status, 'Failed to version the destination');
             }

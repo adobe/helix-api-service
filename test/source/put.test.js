@@ -218,6 +218,66 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 403);
   });
 
+  it('test putSource copies a file with 412 collision and version creation', async () => {
+    nock.source()
+      .headObject('/o1/s1/s/src.html')
+      .twice()
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+
+    nock.source()
+      .headObject('/o1/s1/t/to.html')
+      .thrice()
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+        'x-amz-meta-doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
+      });
+
+    // First copy attempt returns 412 (destination already exists, IfNoneMatch: * fails)
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .reply(412);
+
+    // postVersion copies the existing destination into the versions folder
+    nock.source()
+      .copyObject(/o1\/s1\/.versions\/01KKBSVQJ7N5DWEGMJ6AA7JTN4\/.+/)
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'qqqqqq',
+        },
+      }));
+
+    // Second copy attempt succeeds (overwrite after versioning)
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'abcd',
+        },
+      }));
+
+    const path = '/o1/sites/s1/source/t/to.html';
+    const ctx = setupContext(path, {
+      data: {
+        source: '/s/src.html',
+        collision: 'overwrite',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    const resp = await putSource(ctx, createInfo(path));
+    assert.equal(resp.status, 200);
+
+    const body = await resp.json();
+    assert.deepStrictEqual(body, {
+      copied: [
+        { src: 'o1/s1/s/src.html', dst: 'o1/s1/t/to.html' },
+      ],
+    });
+  });
+
   const BUCKET_LIST_RESULT = `
     <ListBucketResult>
       <Name>my-bucket</Name>

@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import {
+  getDocID,
   getValidHtml,
   getS3Key,
   validateJson,
@@ -212,5 +213,21 @@ describe('Source Utils Tests', () => {
 
   it('test getS3Key', () => {
     assert.equal(getS3Key('org1', 'site2', '/a/b/c/'), 'org1/site2/a/b/c/');
+  });
+
+  it('test getDocID', () => {
+    const head = {
+      Metadata: {
+        'doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
+      },
+    };
+    assert.equal(getDocID(head), '01KKBSVQJ7N5DWEGMJ6AA7JTN4');
+  });
+
+  it('test getDocID failure', () => {
+    const head = {
+      Metadata: {},
+    };
+    assert.throws(() => getDocID(head), new StatusCodeError('Document without ID', 404));
   });
 });

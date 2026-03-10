@@ -17,7 +17,7 @@ import { getVersions, VERSION_FOLDER } from './versions.js';
 async function accessSource(context, info, headRequest) {
   if (info.rawPath.endsWith('/')) {
     return listFolder(context, info, headRequest);
-  } else if (info.rawPath.includes(VERSION_FOLDER)) {
+  } else if (info.rawPath.includes(`/${VERSION_FOLDER}/`)) {
     return getVersions(context, info, headRequest);
   }
 

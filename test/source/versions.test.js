@@ -248,23 +248,4 @@ describe('Versions Tests', () => {
     const versions = await resp.json();
     assert.deepStrictEqual(versions, []);
   });
-
-  it('test get version', async () => {
-    nock.source()
-      .headObject('/myorg/mysite/a/b/c.html')
-      .reply(200, null, {
-        etag: 'foobar',
-        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1E',
-      });
-
-    nock.source()
-      .getObject('/myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1E/01KK1E35DP7EQDG9G99QQAVQ1C')
-      .reply(200, 'Hello, world!', {
-        'last-modified': 'Thu, 01 Jan 2026 00:00:00 GMT',
-      });
-    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions/01KK1E35DP7EQDG9G99QQAVQ1C');
-    const resp = await getVersions(context, info);
-    assert.equal(resp.status, 200);
-    assert.equal('Hello, world!', await resp.text());
-  });
 });

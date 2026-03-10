@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { promisify } from 'util';
+import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
@@ -286,5 +287,62 @@ describe('Source POST Tests', () => {
     const resp = await postSource(setupContext(path), createInfo(path));
     assert.equal(resp.status, 415);
     assert.equal(resp.headers.get('x-error'), 'Unknown file type: .ugh');
+  });
+
+  it('test postSource create version', async () => {
+    let versionId;
+
+    nock.source()
+      .headObject('/org123/999site/testing.json')
+      .twice()
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KKBQXMEVJS21H2SD4DV9PXPT',
+      });
+
+    async function copyFn(u) {
+      const path = u.split('?')[0];
+      const prefix = '/org123/999site/.versions/01KKBQXMEVJS21H2SD4DV9PXPT/';
+      assert(path.startsWith(prefix));
+      versionId = path.slice(prefix.length);
+
+      return new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      });
+    }
+
+    nock.source()
+      .copyObject(/org123\/999site\/.versions\/01KKBQXMEVJS21H2SD4DV9PXPT\/.+/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org123/999site/testing.json')
+      .matchHeader('x-amz-meta-doc-id', '01KKBQXMEVJS21H2SD4DV9PXPT')
+      .matchHeader('x-amz-meta-doc-path-hint', '/testing.json')
+      .matchHeader('x-amz-meta-version-user', 'foo@test.org')
+      .matchHeader('x-amz-meta-version-operation', 'some-op')
+      .matchHeader('x-amz-meta-version-comment', 'some comment')
+      .reply(200, copyFn);
+
+    const p = '/org123/sites/999site/source/testing.json/.versions';
+    const context = setupContext(p, {
+      attributes: {
+        authInfo: {
+          profile: {
+            email: 'foo@test.org',
+            user_id: '999-usr.e',
+          },
+        },
+      },
+      data: {
+        operation: 'some-op',
+        comment: 'some comment',
+      },
+    });
+    context.config.org = 'org123';
+    context.config.site = '999site';
+
+    const resp = await postSource(context, createInfo(p));
+    assert.equal(resp.status, 201);
+    assert.equal(resp.headers.get('location'), `/org123/sites/999site/source/testing.json/.versions/${versionId}`);
   });
 });

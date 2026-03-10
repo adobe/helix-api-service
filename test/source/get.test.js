@@ -160,4 +160,27 @@ describe('Source GET Tests', () => {
       'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
     });
   });
+
+  it('test get version', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KKBMRNGEE0AWR7NZ2547HA51',
+      });
+
+    nock.source()
+      .getObject('/myorg/mysite/.versions/01KKBMRNGEE0AWR7NZ2547HA51/01KK1E35DP7EQDG9G99QQAVQ1C')
+      .reply(200, 'Hello, world!', {
+        'last-modified': 'Thu, 01 Jan 2026 00:00:00 GMT',
+      });
+
+    context.config.org = 'myorg';
+    context.config.site = 'mysite';
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions/01KK1E35DP7EQDG9G99QQAVQ1C');
+    const resp = await getSource(context, info);
+    assert.equal(resp.status, 200);
+    assert.equal('Hello, world!', await resp.text());
+  });
 });

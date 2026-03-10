@@ -23,12 +23,7 @@ import {
   MAX_RETRY_RECURSION,
 } from './utils.js';
 
-export const VERSION_FOLDER = '/.versions';
-
-function getSiteRoot(context) {
-  const { org, site } = context.config;
-  return `${org}/${site}`;
-}
+export const VERSION_FOLDER = '.versions';
 
 function handleNoVersions() {
   const headers = {
@@ -111,28 +106,24 @@ async function getVersion(context, versionDirKey, version, headRequest) {
  */
 export async function getVersions(context, info, headRequest) {
   try {
-    const idx = info.rawPath.indexOf(VERSION_FOLDER);
+    const segments = info.rawPath.split('/');
+    const idx = segments.indexOf(VERSION_FOLDER);
     if (idx === -1) {
       return new Response('', { status: 400 });
     }
 
-    const baseKey = getS3Key(info.org, info.site, info.rawPath.slice(0, idx));
-
+    const baseKey = getS3Key(info.org, info.site, segments.slice(0, idx).join('/'));
     const bucket = HelixStorage.fromContext(context).sourceBus();
     const head = await bucket.head(baseKey);
     const docId = getDocID(head);
-    const versionDirKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${docId}/`;
+    const versionDirKey = `${info.org}/${info.site}/${VERSION_FOLDER}/${docId}/`;
 
-    if (info.rawPath.endsWith(VERSION_FOLDER)) {
+    // if segments ends with VERSION_FOLDER its a listing request
+    if (segments[segments.length - 1] === VERSION_FOLDER) {
       return await listVersions(bucket, versionDirKey);
     }
 
-    // We expect a '/' between '.versions' and the number
-    if (info.rawPath[idx + VERSION_FOLDER.length] !== '/') {
-      return new Response('', { status: 400 });
-    }
-
-    const versionId = info.rawPath.slice(idx + VERSION_FOLDER.length + 1);
+    const versionId = segments[idx + 1];
     if (!isValid(versionId)) {
       // It's not a valid ULID
       return new Response('Not a valid version', { status: 404 });
@@ -169,7 +160,7 @@ export async function postVersion(context, baseKey, operation, comment, recursio
     }
 
     const id = getDocID(head);
-    const versionFolderKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${id}/`;
+    const versionFolderKey = `${context.config.org}/${context.config.site}/${VERSION_FOLDER}/${id}/`;
     const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
 
     const versionId = ulid();
@@ -196,7 +187,7 @@ export async function postVersion(context, baseKey, operation, comment, recursio
       throw e;
     }
     const headers = {
-      Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}${VERSION_FOLDER}/${versionId}`,
+      Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}/${VERSION_FOLDER}/${versionId}`,
     };
 
     return new Response('', { status: 201, headers });

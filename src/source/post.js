@@ -32,8 +32,9 @@ import { postVersion, VERSION_FOLDER } from './versions.js';
 export async function postSource(context, info) {
   if (info.rawPath.endsWith('/')) {
     return createFolder(context, info);
-  } else if (info.rawPath.endsWith(VERSION_FOLDER)) {
-    const baseKey = getS3KeyFromInfo(info).slice(0, -VERSION_FOLDER.length);
+  } else if (info.rawPath.endsWith(`/${VERSION_FOLDER}`)) {
+    const segments = getS3KeyFromInfo(info).split('/');
+    const baseKey = segments.slice(0, -1).join('/');
     const operation = String(context.data.operation || '');
     const comment = String(context.data.comment || '');
 

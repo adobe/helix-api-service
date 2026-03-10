@@ -128,14 +128,14 @@ export function getS3KeyFromInfo(info) {
 }
 
 /**
- * Get the ULID from the head.
+ * Get the document ID from the head, by reading it from the Metadata.
  *
- * @param {import('@adobe/helix-shared-storage').HelixStorageBucketHead} head head response
- * @returns {string} the ULID
- * @throws {Error} with message 'Document without ULID' if the ULID is not found
+ * @param {Object) meta object containins metadata with the doc id
+ * @returns {string} the ID (which is a ULID)
+ * @throws {Error} with message 'Document without ID' if the ID is not found
  */
-export function getDocID(head) {
-  const id = head.Metadata?.['doc-id'];
+export function getDocID(meta) {
+  const id = meta.Metadata?.['doc-id'];
   if (!id) {
     throw new StatusCodeError('Document without ID', 404);
   }
@@ -348,7 +348,7 @@ export async function getValidPayload(context, info, mime, internImages) {
 /**
  * Get the headers for the source file response.
  *
- * @param {*} meta The metadata that contains many of the headers
+ * @param {Object} meta The metadata that contains many of the headers
  * @param {number} length The content length
  * @return {Object} headers
  */

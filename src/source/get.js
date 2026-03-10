@@ -21,13 +21,12 @@ async function accessSource(context, info, headRequest) {
     return getVersions(context, info, headRequest);
   }
 
-  const { log } = context;
   const key = getS3KeyFromInfo(info);
 
   try {
     return await accessSourceFile(context, key, headRequest);
   } catch (e) {
-    const opts = { e, log };
+    const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
     return createErrorResponse(opts);
   }

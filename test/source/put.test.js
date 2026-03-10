@@ -237,20 +237,27 @@ describe('Source PUT Tests', () => {
     // First copy attempt returns 412 (destination already exists, IfNoneMatch: * fails)
     nock.source()
       .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
       .reply(412);
 
     // postVersion copies the existing destination into the versions folder
     nock.source()
       .copyObject(/o1\/s1\/.versions\/01KKBSVQJ7N5DWEGMJ6AA7JTN4\/.+/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/t/to.html')
+      .matchHeader('x-amz-meta-doc-path-hint', '/t/to.html')
+      .matchHeader('x-amz-meta-version-operation', 'copy')
       .reply(200, new xml2js.Builder().buildObject({
         CopyObjectResult: {
           ETag: 'qqqqqq',
         },
       }));
 
-    // Second copy attempt succeeds (overwrite after versioning)
+    // Second copy attempt succeeds (overwrite after versioning), make sure
+    // it now has the existing document ID of the destination.
     nock.source()
       .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('x-amz-meta-doc-id', '01KKBSVQJ7N5DWEGMJ6AA7JTN4')
       .reply(200, new xml2js.Builder().buildObject({
         CopyObjectResult: {
           ETag: 'abcd',

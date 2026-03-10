@@ -93,7 +93,7 @@ async function copyWithRetry(
           const dest = await bucket.head(destKey);
 
           const getDestDocId = getDocID(dest);
-          opts = { ...initialOpts, addMetadata: { ulid: getDestDocId } };
+          opts = { ...initialOpts, addMetadata: { 'doc-id': getDestDocId } };
           copyOpts = { IfMatch: dest.ETag };
         }
       }

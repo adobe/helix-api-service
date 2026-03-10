@@ -71,10 +71,10 @@ async function copyWithRetry(
 
         if (move) {
           // TODO add move collision handling
-          throw new StatusCodeError(409, 'Collision: something is at the destination already');
+          throw new StatusCodeError('Collision: something is at the destination already', 409);
         } else {
           if (collOpts.copy !== 'overwrite') {
-            throw new StatusCodeError(409, 'Collision: something is at the destination already');
+            throw new StatusCodeError('Collision: something is at the destination already', 409);
           }
 
           // version what's there before overwriting it
@@ -82,7 +82,7 @@ async function copyWithRetry(
             // eslint-disable-next-line no-await-in-loop
             const versionResp = await postVersion(context, destKey, 'copy');
             if (versionResp.status !== 201) {
-              throw new StatusCodeError(versionResp.status, 'Failed to version the destination');
+              throw new StatusCodeError('Failed to version the destination', versionResp.status);
             }
             versionCreated = true;
           }

@@ -62,14 +62,14 @@ async function getVersionInfo(item, bucket, versions) {
  *     "date": "2026-02-26T16:04:36.000Z",
  *     "user": "joe@bloggs.org",
  *     "doc-path": "/path/to/file.html",
- *     "op": "preview"
+ *     "operation": "preview"
  *   },
  *   {
  *     "version": "01KJDB2TW1AWCD1P7TMRZMBCT1",
  *     "date": "2026-02-26T16:04:06.000Z",
  *     "user": "mel@bloggs.org",
  *     "doc-path": "/path/to/file.html",
- *     "op": "version",
+ *     "operation": "version",
  *     "comment": "ready for approval"
  *   }
  * ]
@@ -81,7 +81,6 @@ async function getVersionInfo(item, bucket, versions) {
  */
 async function listVersions(bucket, versionDirKey) {
   const list = await bucket.list(versionDirKey, { shallow: true, includePrefixes: false });
-
   if (!list || list.length === 0) {
     return handleNoVersions();
   }
@@ -125,7 +124,7 @@ export async function getVersions(context, info, headRequest) {
     const versionDirKey = `${getSiteRoot(context)}${VERSION_FOLDER}/${docId}/`;
 
     if (info.rawPath.endsWith(VERSION_FOLDER)) {
-      return listVersions(bucket, versionDirKey);
+      return await listVersions(bucket, versionDirKey);
     }
 
     // We expect a '/' between '.versions' and the number
@@ -138,7 +137,7 @@ export async function getVersions(context, info, headRequest) {
       // It's not a valid ULID
       return new Response('Not a valid version', { status: 404 });
     }
-    return getVersion(context, versionDirKey, versionId, headRequest);
+    return await getVersion(context, versionDirKey, versionId, headRequest);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

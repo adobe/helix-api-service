@@ -215,4 +215,56 @@ describe('Versions Tests', () => {
 
     assert.deepStrictEqual(versions, expectedVersion);
   });
+
+  const EMPTY_BUCKET_LIST_RESULT = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1C/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+    </ListBucketResult>`;
+
+  it('test list versions, no versions', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1C',
+      });
+    nock.source()
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1C/',
+      })
+      .reply(200, Buffer.from(EMPTY_BUCKET_LIST_RESULT));
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions');
+    const resp = await getVersions(context, info);
+    assert.equal(resp.status, 200);
+
+    const versions = await resp.json();
+    assert.deepStrictEqual(versions, []);
+  });
+
+  it('test get version', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1E',
+      });
+
+    nock.source()
+      .getObject('/myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1E/01KK1E35DP7EQDG9G99QQAVQ1C')
+      .reply(200, 'Hello, world!', {
+        'last-modified': 'Thu, 01 Jan 2026 00:00:00 GMT',
+      });
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions/01KK1E35DP7EQDG9G99QQAVQ1C');
+    const resp = await getVersions(context, info);
+    assert.equal(resp.status, 200);
+    assert.equal('Hello, world!', await resp.text());
+  });
 });

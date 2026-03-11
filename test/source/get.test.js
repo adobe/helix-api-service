@@ -183,4 +183,62 @@ describe('Source GET Tests', () => {
     assert.equal(resp.status, 200);
     assert.equal('Hello, world!', await resp.text());
   });
+
+  const BUCKET_LIST_RESULT = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+      <Contents>
+        <Key>myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/01KKEW499YXV1RQFZNK271VB5W</Key>
+        <LastModified>2021-01-01T00:00:00.000Z</LastModified>
+        <Size>123</Size>
+        <Path>01KKEW499YXV1RQFZNK271VB5W</Path>
+      </Contents>
+    </ListBucketResult>`;
+
+  it('test list versions', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KKEW3WV6TW3K967GKR89GJZR',
+      });
+    nock.source()
+      .headObject('/myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/01KKEW499YXV1RQFZNK271VB5W')
+      .reply(200, null, {
+        etag: 'blah',
+        'x-amz-meta-doc-path': '/a/b/c.html',
+        'x-amz-meta-version-user': 'hello@example.com',
+        'x-amz-meta-version-operation': 'myop',
+      });
+
+    nock.source()
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions');
+    const resp = await getSource(context, info);
+    assert.equal(resp.status, 200);
+
+    const versions = await resp.json();
+    const expectedVersion = [
+      {
+        version: '01KKEW499YXV1RQFZNK271VB5W',
+        date: '2021-01-01T00:00:00.000Z',
+        user: 'hello@example.com',
+        'doc-path': '/a/b/c.html',
+        operation: 'myop',
+      },
+    ];
+
+    assert.deepStrictEqual(versions, expectedVersion);
+  });
 });

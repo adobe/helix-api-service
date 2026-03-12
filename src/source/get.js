@@ -12,13 +12,13 @@
 import { createErrorResponse } from '../contentbus/utils.js';
 import { listFolder } from './folder.js';
 import { accessSourceFile, getS3KeyFromInfo } from './utils.js';
-import { getVersions, VERSION_FOLDER } from './versions.js';
+import { getOrListVersions, VERSION_FOLDER } from './versions.js';
 
 async function accessSource(context, info, headRequest) {
   if (info.rawPath.endsWith('/')) {
     return listFolder(context, info, headRequest);
   } else if (info.rawPath.includes(`/${VERSION_FOLDER}`)) {
-    return getVersions(context, info, headRequest);
+    return getOrListVersions(context, info, headRequest);
   }
 
   const key = getS3KeyFromInfo(info);

@@ -135,7 +135,7 @@ describe('Source GET Tests', () => {
     const info = createInfo('/test/sites/site/source/error.html');
     const resp = await headSource(context, info);
     assert.equal(resp.status, 500);
-    assert.equal('Oh no!', await resp.headers.get('x-error'));
+    assert.equal('Oh no!', resp.headers.get('x-error'));
   });
 
   it('test getSource with JSON content', async () => {

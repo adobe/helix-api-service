@@ -14,7 +14,8 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import xml2js from 'xml2js';
-import { getVersions, postVersion } from '../../src/source/versions.js';
+import { getOrListVersions, postVersion } from '../../src/source/versions.js';
+import { MAX_BUCKET_RETRY } from '../../src/source/utils.js';
 import { createInfo, Nock } from '../utils.js';
 import { setupContext } from './testutils.js';
 
@@ -104,7 +105,7 @@ describe('Versions Tests', () => {
   it('test postVersion precondition failed, too many retries', async () => {
     nock.source()
       .headObject('/myorg/mysite/a/b/c.html')
-      .twice()
+      .times(MAX_BUCKET_RETRY * 2)
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
@@ -113,9 +114,10 @@ describe('Versions Tests', () => {
 
     nock.source()
       .copyObject(/myorg\/mysite\/.versions\/01KK1E35DP7EQDG9G99QQAVQ1Z\/.+/)
+      .times(MAX_BUCKET_RETRY)
       .reply(412);
 
-    const resp = await postVersion(context, 'myorg/mysite/a/b/c.html', 'abc', 'def', 999);
+    const resp = await postVersion(context, 'myorg/mysite/a/b/c.html', 'abc', 'def');
     assert.equal(resp.status, 412);
   });
 
@@ -199,7 +201,7 @@ describe('Versions Tests', () => {
       .reply(200, Buffer.from(BUCKET_LIST_RESULT));
 
     const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions');
-    const resp = await getVersions(context, info);
+    const resp = await getOrListVersions(context, info);
     assert.equal(resp.status, 200);
 
     const versions = await resp.json();
@@ -251,7 +253,7 @@ describe('Versions Tests', () => {
       .reply(200, Buffer.from(EMPTY_BUCKET_LIST_RESULT));
 
     const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions');
-    const resp = await getVersions(context, info);
+    const resp = await getOrListVersions(context, info);
     assert.equal(resp.status, 200);
 
     const versions = await resp.json();

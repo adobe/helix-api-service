@@ -20,7 +20,7 @@ import {
   getS3Key,
   getDocID,
   getUser,
-  MAX_RETRY_RECURSION,
+  MAX_BUCKET_RETRY,
 } from './utils.js';
 
 export const VERSION_FOLDER = '.versions';
@@ -33,22 +33,6 @@ function handleNoVersions() {
   return new Response('[]', { status: 200, headers });
 }
 
-async function getVersionInfo(item, bucket, versions) {
-  const head = await bucket.head(item.key);
-  if (head) {
-    versions.push({
-      version: item.path,
-      'doc-last-modified': head.Metadata['doc-last-modified'],
-      'doc-path-hint': head.Metadata['doc-path-hint'],
-      'doc-last-modified-by': head.Metadata['doc-last-modified-by'],
-      'version-date': item.lastModified,
-      'version-by': head.Metadata['version-by'],
-      ...(head.Metadata['version-comment'] && { 'version-comment': head.Metadata['version-comment'] }),
-      ...(head.Metadata['version-operation'] && { 'version-operation': head.Metadata['version-operation'] }),
-    });
-  }
-}
-
 /**
  * List all versions of a file returned in order from old to new.
  * The response is a JSON array of objects with version information.
@@ -56,18 +40,22 @@ async function getVersionInfo(item, bucket, versions) {
  * [
  *   {
  *     "version": "01KJDB3QXBAFRRXWRV3W8DBD9R",
- *     "date": "2026-02-26T16:04:36.000Z",
- *     "user": "joe@bloggs.org",
- *     "doc-path": "/path/to/file.html",
- *     "operation": "preview"
+ *     "doc-last-modified": "2026-02-26T16:02:12.000Z",
+ *     "doc-last-modified-by": "joe@bloggs.org",
+ *     "doc-path-hint": "/path/to/file.html",
+ *     "version-date": "2026-02-26T16:04:36.000Z",
+ *     "version-by": "joe@bloggs.org",
+ *     "version-operation": "preview"
  *   },
  *   {
  *     "version": "01KJDB2TW1AWCD1P7TMRZMBCT1",
- *     "date": "2026-02-26T16:04:06.000Z",
- *     "user": "mel@bloggs.org",
- *     "doc-path": "/path/to/file.html",
- *     "operation": "version",
- *     "comment": "ready for approval"
+ *     "doc-last-modified": "2026-02-26T16:04:06.000Z",
+ *     "doc-last-modified-by": "joe@bloggs.org, harry@bloggs.org",
+ *     "doc-path-hint": "/path/to/file.html",
+ *     "version-by": "mel@bloggs.org",
+ *     "version-date": "2026-02-26T16:04:06.000Z",
+ *     "version-operation": "version",
+ *     "version-comment": "ready for approval"
  *   }
  * ]
  *
@@ -83,15 +71,24 @@ async function listVersions(bucket, versionDirKey) {
   }
 
   const versions = [];
-  await processQueue(list, async (item) => getVersionInfo(item, bucket, versions));
+  await processQueue(list, async (item) => {
+    const head = await bucket.head(item.key);
+    if (head) {
+      versions.push({
+        version: item.path,
+        'doc-last-modified': head.Metadata['doc-last-modified'],
+        'doc-path-hint': head.Metadata['doc-path-hint'],
+        'doc-last-modified-by': head.Metadata['doc-last-modified-by'],
+        'version-date': item.lastModified,
+        'version-by': head.Metadata['version-by'],
+        ...(head.Metadata['version-comment'] && { 'version-comment': head.Metadata['version-comment'] }),
+        ...(head.Metadata['version-operation'] && { 'version-operation': head.Metadata['version-operation'] }),
+      });
+    }
+  });
 
   versions.sort((a, b) => a.version.localeCompare(b.version));
   return new Response(JSON.stringify(versions), { status: 200, headers: { 'Content-Type': 'application/json' } });
-}
-
-async function getVersion(context, versionDirKey, version, headRequest) {
-  const versionKey = `${versionDirKey}${version}`;
-  return accessSourceFile(context, versionKey, headRequest);
 }
 
 /**
@@ -104,7 +101,7 @@ async function getVersion(context, versionDirKey, version, headRequest) {
  * @param {boolean} headRequest whether to return the headers only for a HEAD request
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function getVersions(context, info, headRequest) {
+export async function getOrListVersions(context, info, headRequest) {
   try {
     const segments = info.rawPath.split('/');
     const idx = segments.indexOf(VERSION_FOLDER);
@@ -128,7 +125,9 @@ export async function getVersions(context, info, headRequest) {
       // It's not a valid ULID
       return new Response('Not a valid version', { status: 404 });
     }
-    return await getVersion(context, versionDirKey, versionId, headRequest);
+
+    const versionKey = `${versionDirKey}${versionId}`;
+    return await accessSourceFile(context, versionKey, headRequest);
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;
@@ -143,10 +142,9 @@ export async function getVersions(context, info, headRequest) {
  * @param {string} baseKey base key of the source file, must not start with a slash
  * @param {string} operation operation that triggered the version creation
  * @param {string} comment comment for the version
- * @param {number} recursion recursion count
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function postVersion(context, baseKey, operation, comment, recursion = 0) {
+export async function postVersion(context, baseKey, operation, comment) {
   if (baseKey.startsWith('/')) {
     return new Response('', { status: 400 });
   }
@@ -154,47 +152,57 @@ export async function postVersion(context, baseKey, operation, comment, recursio
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
-    const head = await bucket.head(baseKey);
-    if (!head) {
-      return new Response('', { status: 404 });
-    }
+    let attempt = 0;
+    while (true) {
+      attempt += 1;
 
-    const id = getDocID(head);
-    const versionFolderKey = `${context.config.org}/${context.config.site}/${VERSION_FOLDER}/${id}/`;
-    const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const head = await bucket.head(baseKey);
+        if (!head) {
+          return new Response('', { status: 404 });
+        }
 
-    const versionId = ulid();
-    const versionKey = `${versionFolderKey}${versionId}`;
+        const id = getDocID(head);
+        const versionFolderKey = `${context.config.org}/${context.config.site}/${VERSION_FOLDER}/${id}/`;
+        const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
 
-    const addMetadata = {
-      'doc-path-hint': pathName,
-      'doc-last-modified': head.LastModified.toISOString(),
-      'version-by': getUser(context),
-      ...(comment && { 'version-comment': comment }),
-      ...(operation && { 'version-operation': operation }),
-    };
-    const renameMetadata = {
-      'last-modified-by': 'doc-last-modified-by',
-    };
-    const copyOpts = { CopySourceIfMatch: head.ETag };
+        const versionId = ulid();
+        const versionKey = `${versionFolderKey}${versionId}`;
 
-    try {
-      await bucket.copy(baseKey, versionKey, { addMetadata, renameMetadata, copyOpts });
-    } catch (e) {
-      if (recursion >= MAX_RETRY_RECURSION) throw e;
+        const addMetadata = {
+          'doc-path-hint': pathName,
+          'doc-last-modified': head.LastModified.toISOString(),
+          'version-by': getUser(context),
+          ...(comment && { 'version-comment': comment }),
+          ...(operation && { 'version-operation': operation }),
+        };
+        const renameMetadata = {
+          'last-modified-by': 'doc-last-modified-by',
+        };
+        const copyOpts = { CopySourceIfMatch: head.ETag };
 
-      if (e.$metadata?.httpStatusCode === 412) {
-        // The source object has been modified since we last checked, so we need to redo
-        return postVersion(context, baseKey, operation, comment, recursion + 1);
+        // eslint-disable-next-line no-await-in-loop
+        await bucket.copy(baseKey, versionKey, { addMetadata, renameMetadata, copyOpts });
+
+        const headers = {
+          Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}/${VERSION_FOLDER}/${versionId}`,
+        };
+
+        // copy was successful, we're done
+        return new Response('', { status: 201, headers });
+      } catch (e) {
+        if (attempt >= MAX_BUCKET_RETRY) throw e;
+
+        if (e.$metadata?.httpStatusCode !== 412) {
+          throw e;
+        }
+
+        // We end up when the response is a 412 Precondition Failed, which means that
+        // the document that we're about to version has been changed since we obtained
+        // its metadata. We need to redo the operation with fresh metadata.
       }
-
-      throw e;
     }
-    const headers = {
-      Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}/${VERSION_FOLDER}/${versionId}`,
-    };
-
-    return new Response('', { status: 201, headers });
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

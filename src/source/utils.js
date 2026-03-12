@@ -59,7 +59,7 @@ const DEFAULT_MAX_IMAGES = 200;
  * Recursive functions that are used to retry, do this at most for this
  * number of times.
  */
-export const MAX_RETRY_RECURSION = 4;
+export const MAX_BUCKET_RETRY = 4;
 
 /**
  * Error messages from the media validation often start with this prefix.

@@ -23,7 +23,7 @@ import {
   getDocID,
   getValidPayload,
   storeSourceFile,
-  MAX_RETRY_RECURSION,
+  MAX_BUCKET_RETRY,
 } from './utils.js';
 import { postVersion } from './versions.js';
 
@@ -52,7 +52,10 @@ async function copyWithRetry(
   let opts = initialOpts;
   let copyOpts = initialCopyOpts;
 
-  for (let attempt = 0; attempt <= MAX_RETRY_RECURSION; attempt += 1) {
+  let attempt = 0;
+  while (true) {
+    attempt += 1;
+
     try {
       const allOpts = { copyOpts, ...opts };
       // eslint-disable-next-line no-await-in-loop
@@ -60,7 +63,7 @@ async function copyWithRetry(
 
       break; // copy was successful, break out of the loop
     } catch (e) {
-      if (attempt >= MAX_RETRY_RECURSION) throw e;
+      if (attempt >= MAX_BUCKET_RETRY) throw e;
 
       const status = e.$metadata?.httpStatusCode;
 

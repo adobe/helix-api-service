@@ -38,11 +38,13 @@ async function getVersionInfo(item, bucket, versions) {
   if (head) {
     versions.push({
       version: item.path,
-      date: item.lastModified,
-      user: head.Metadata['version-user'],
-      'doc-path': head.Metadata['doc-path'],
-      ...(head.Metadata['version-comment'] && { comment: head.Metadata['version-comment'] }),
-      ...(head.Metadata['version-operation'] && { operation: head.Metadata['version-operation'] }),
+      'doc-last-modified': head.Metadata['doc-last-modified'],
+      'doc-path-hint': head.Metadata['doc-path-hint'],
+      'doc-last-modified-by': head.Metadata['doc-last-modified-by'],
+      'version-date': item.lastModified,
+      'version-by': head.Metadata['version-by'],
+      ...(head.Metadata['version-comment'] && { 'version-comment': head.Metadata['version-comment'] }),
+      ...(head.Metadata['version-operation'] && { 'version-operation': head.Metadata['version-operation'] }),
     });
   }
 }
@@ -83,9 +85,7 @@ async function listVersions(bucket, versionDirKey) {
   const versions = [];
   await processQueue(list, async (item) => getVersionInfo(item, bucket, versions));
 
-  // sort objects in the versions array by date descending
-  versions.sort((a, b) => b.date - a.date);
-
+  versions.sort((a, b) => a.version.localeCompare(b.version));
   return new Response(JSON.stringify(versions), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
@@ -168,14 +168,18 @@ export async function postVersion(context, baseKey, operation, comment, recursio
 
     const addMetadata = {
       'doc-path-hint': pathName,
-      'version-user': getUser(context),
+      'doc-last-modified': head.LastModified.toISOString(),
+      'version-by': getUser(context),
       ...(comment && { 'version-comment': comment }),
       ...(operation && { 'version-operation': operation }),
+    };
+    const renameMetadata = {
+      'last-modified-by': 'doc-last-modified-by',
     };
     const copyOpts = { CopySourceIfMatch: head.ETag };
 
     try {
-      await bucket.copy(baseKey, versionKey, { addMetadata, copyOpts });
+      await bucket.copy(baseKey, versionKey, { addMetadata, renameMetadata, copyOpts });
     } catch (e) {
       if (recursion >= MAX_RETRY_RECURSION) throw e;
 

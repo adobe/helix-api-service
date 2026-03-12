@@ -298,6 +298,7 @@ describe('Source POST Tests', () => {
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KKBQXMEVJS21H2SD4DV9PXPT',
+        'last-modified': 'Mon, 15 Jan 2024 09:30:00 GMT',
       });
 
     async function copyFn(u) {
@@ -318,7 +319,8 @@ describe('Source POST Tests', () => {
       .matchHeader('x-amz-copy-source', 'helix-source-bus/org123/999site/testing.json')
       .matchHeader('x-amz-meta-doc-id', '01KKBQXMEVJS21H2SD4DV9PXPT')
       .matchHeader('x-amz-meta-doc-path-hint', '/testing.json')
-      .matchHeader('x-amz-meta-version-user', 'foo@test.org')
+      .matchHeader('x-amz-meta-doc-last-modified', '2024-01-15T09:30:00.000Z')
+      .matchHeader('x-amz-meta-version-by', 'foo@test.org')
       .matchHeader('x-amz-meta-version-operation', 'some-op')
       .matchHeader('x-amz-meta-version-comment', 'some comment')
       .reply(200, copyFn);

@@ -210,8 +210,8 @@ describe('Source GET Tests', () => {
       .headObject('/myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/01KKEW499YXV1RQFZNK271VB5W')
       .reply(200, null, {
         etag: 'blah',
-        'x-amz-meta-doc-path': '/a/b/c.html',
-        'x-amz-meta-version-user': 'hello@example.com',
+        'x-amz-meta-doc-path-hint': '/a/b/c.html',
+        'x-amz-meta-version-by': 'hello@example.com',
         'x-amz-meta-version-operation': 'myop',
       });
 
@@ -232,10 +232,10 @@ describe('Source GET Tests', () => {
     const expectedVersion = [
       {
         version: '01KKEW499YXV1RQFZNK271VB5W',
-        date: '2021-01-01T00:00:00.000Z',
-        user: 'hello@example.com',
-        'doc-path': '/a/b/c.html',
-        operation: 'myop',
+        'version-date': '2021-01-01T00:00:00.000Z',
+        'version-by': 'hello@example.com',
+        'doc-path-hint': '/a/b/c.html',
+        'version-operation': 'myop',
       },
     ];
 

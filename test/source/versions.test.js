@@ -44,6 +44,7 @@ describe('Versions Tests', () => {
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
       });
 
     async function copyFn(u) {
@@ -65,7 +66,8 @@ describe('Versions Tests', () => {
       .matchHeader('x-amz-metadata-directive', 'REPLACE')
       .matchHeader('x-amz-meta-doc-id', '01KK1E35DP7EQDG9G99QQAVQ1Z')
       .matchHeader('x-amz-meta-doc-path-hint', '/a/b/c.html')
-      .matchHeader('x-amz-meta-version-user', 'anonymous')
+      .matchHeader('x-amz-meta-doc-last-modified', '2005-03-18T01:58:31.000Z')
+      .matchHeader('x-amz-meta-version-by', 'anonymous')
       .matchHeader('x-amz-meta-version-operation', 'testing')
       .matchHeader('x-amz-meta-version-comment', 'test comment')
       .reply(200, copyFn);
@@ -82,6 +84,7 @@ describe('Versions Tests', () => {
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        'last-modified': 'Tue, 04 Jun 2024 14:20:00 GMT',
       });
 
     nock.source()
@@ -105,6 +108,7 @@ describe('Versions Tests', () => {
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        'last-modified': 'Tue, 04 Jun 2024 14:20:00 GMT',
       });
 
     nock.source()
@@ -122,6 +126,7 @@ describe('Versions Tests', () => {
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        'last-modified': 'Tue, 04 Jun 2024 14:20:00 GMT',
       });
 
     nock.source()
@@ -146,7 +151,7 @@ describe('Versions Tests', () => {
       <IsTruncated>false</IsTruncated>
       <Contents>
         <Key>myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1Z</Key>
-        <LastModified>2021-01-01T00:00:00.000Z</LastModified>
+        <LastModified>2025-01-01T00:00:00.000Z</LastModified>
         <Size>123</Size>
         <Path>01KK1E35DP7EQDG9G99QQAVQ1Z</Path>
       </Contents>
@@ -169,8 +174,10 @@ describe('Versions Tests', () => {
       .headObject('/myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1Z')
       .reply(200, null, {
         etag: 'blah',
-        'x-amz-meta-doc-path': '/a/b/c.html',
-        'x-amz-meta-version-user': 'billy@example.com',
+        'x-amz-meta-doc-path-hint': '/a/b/c.html',
+        'x-amz-meta-doc-last-modified': '2021-05-05T00:00:00.000Z',
+        'x-amz-meta-doc-last-modified-by': 'harry@example.com',
+        'x-amz-meta-version-by': 'billy@example.com',
         'x-amz-meta-version-operation': 'preview',
         'x-amz-meta-version-comment': 'test comment',
       });
@@ -178,8 +185,8 @@ describe('Versions Tests', () => {
       .headObject('/myorg/mysite/.versions/01KK1E35DP7EQDG9G99QQAVQ1Z/01KK1E35DP7EQDG9G99QQAVQ1A')
       .reply(200, null, {
         etag: 'boo',
-        'x-amz-meta-doc-path': '/a/b/d.html',
-        'x-amz-meta-version-user': 'jolo@example.com',
+        'x-amz-meta-doc-path-hint': '/a/b/d.html',
+        'x-amz-meta-version-by': 'jolo@example.com',
       });
 
     nock.source()
@@ -199,17 +206,19 @@ describe('Versions Tests', () => {
     const expectedVersion = [
       {
         version: '01KK1E35DP7EQDG9G99QQAVQ1A',
-        date: '2021-02-02T00:00:00.000Z',
-        user: 'jolo@example.com',
-        'doc-path': '/a/b/d.html',
+        'version-date': '2021-02-02T00:00:00.000Z',
+        'version-by': 'jolo@example.com',
+        'doc-path-hint': '/a/b/d.html',
       },
       {
         version: '01KK1E35DP7EQDG9G99QQAVQ1Z',
-        date: '2021-01-01T00:00:00.000Z',
-        user: 'billy@example.com',
-        'doc-path': '/a/b/c.html',
-        comment: 'test comment',
-        operation: 'preview',
+        'version-date': '2025-01-01T00:00:00.000Z',
+        'version-by': 'billy@example.com',
+        'doc-path-hint': '/a/b/c.html',
+        'doc-last-modified': '2021-05-05T00:00:00.000Z',
+        'doc-last-modified-by': 'harry@example.com',
+        'version-comment': 'test comment',
+        'version-operation': 'preview',
       },
     ];
 

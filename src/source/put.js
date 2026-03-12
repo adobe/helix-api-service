@@ -35,7 +35,7 @@ import { postVersion } from './versions.js';
  * @param {Bucket} bucket the S3 bucket
  * @param {boolean} move true if this is a move operation
  * @param {object} opts metadata options for the copy operation
- * @param {object} copyOpts copy options
+ * @param {object} copyOpts copy options (passed to HelixStorage.copy)
  * @param {object} collOpts collision options
  */
 async function copyWithRetry(

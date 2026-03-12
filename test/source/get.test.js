@@ -135,7 +135,7 @@ describe('Source GET Tests', () => {
     const info = createInfo('/test/sites/site/source/error.html');
     const resp = await headSource(context, info);
     assert.equal(resp.status, 500);
-    assert.equal('Oh no!', await resp.headers.get('x-error'));
+    assert.equal('Oh no!', resp.headers.get('x-error'));
   });
 
   it('test getSource with JSON content', async () => {
@@ -159,5 +159,86 @@ describe('Source GET Tests', () => {
       etag: 'myetag',
       'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
     });
+  });
+
+  it('test get version', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KKBMRNGEE0AWR7NZ2547HA51',
+      });
+
+    nock.source()
+      .getObject('/myorg/mysite/.versions/01KKBMRNGEE0AWR7NZ2547HA51/01KK1E35DP7EQDG9G99QQAVQ1C')
+      .reply(200, 'Hello, world!', {
+        'last-modified': 'Thu, 01 Jan 2026 00:00:00 GMT',
+      });
+
+    context.config.org = 'myorg';
+    context.config.site = 'mysite';
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions/01KK1E35DP7EQDG9G99QQAVQ1C');
+    const resp = await getSource(context, info);
+    assert.equal(resp.status, 200);
+    assert.equal('Hello, world!', await resp.text());
+  });
+
+  const BUCKET_LIST_RESULT = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+      <Contents>
+        <Key>myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/01KKEW499YXV1RQFZNK271VB5W</Key>
+        <LastModified>2021-01-01T00:00:00.000Z</LastModified>
+        <Size>123</Size>
+        <Path>01KKEW499YXV1RQFZNK271VB5W</Path>
+      </Contents>
+    </ListBucketResult>`;
+
+  it('test list versions', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KKEW3WV6TW3K967GKR89GJZR',
+      });
+    nock.source()
+      .headObject('/myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/01KKEW499YXV1RQFZNK271VB5W')
+      .reply(200, null, {
+        etag: 'blah',
+        'x-amz-meta-doc-path-hint': '/a/b/c.html',
+        'x-amz-meta-version-by': 'hello@example.com',
+        'x-amz-meta-version-operation': 'myop',
+      });
+
+    nock.source()
+      .get('/')
+      .query({
+        delimiter: '/',
+        'list-type': '2',
+        prefix: 'myorg/mysite/.versions/01KKEW3WV6TW3K967GKR89GJZR/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions');
+    const resp = await getSource(context, info);
+    assert.equal(resp.status, 200);
+
+    const versions = await resp.json();
+    const expectedVersion = [
+      {
+        version: '01KKEW499YXV1RQFZNK271VB5W',
+        'version-date': '2021-01-01T00:00:00.000Z',
+        'version-by': 'hello@example.com',
+        'doc-path-hint': '/a/b/c.html',
+        'version-operation': 'myop',
+      },
+    ];
+
+    assert.deepStrictEqual(versions, expectedVersion);
   });
 });

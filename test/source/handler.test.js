@@ -124,6 +124,9 @@ describe('Source Handler Tests', () => {
     }
 
     nock.source()
+      .headObject('/org/site/a/b/c.html')
+      .reply(404);
+    nock.source()
       .putObject('/org/site/a/b/c.html')
       .matchHeader('x-amz-meta-last-modified-by', 'anonymous')
       .reply(201, putFn);
@@ -238,6 +241,9 @@ describe('Source Handler Tests', () => {
   });
 
   it('handles POST requests to create a folder', async () => {
+    nock.source()
+      .headObject('/org/site/my/folder/newfolder/.props')
+      .reply(404);
     nock.source()
       .putObject('/org/site/my/folder/newfolder/.props')
       .reply(201);

@@ -1,3 +1,10 @@
+## [1.34.6](https://github.com/adobe/helix-api-service/compare/v1.34.5...v1.34.6) (2026-03-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-mediahandler to v3.1.0 ([#148](https://github.com/adobe/helix-api-service/issues/148)) ([300fbcd](https://github.com/adobe/helix-api-service/commit/300fbcdc21cdbb2286129c572ad91eacf758be5a))
+
 ## [1.34.5](https://github.com/adobe/helix-api-service/compare/v1.34.4...v1.34.5) (2026-03-10)
 
 

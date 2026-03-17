@@ -86,12 +86,12 @@ export async function getUserListPaths(context) {
 /**
  * Return the contents of the `.hlx.json` file in a project.
  *
- * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} contentBusId content bus id
- * @returns contents of `.hlx.json` or null
+ * @returns {Promise<object|null>} contents of `.hlx.json` or null
  */
-export async function fetchHlxJson(ctx, contentBusId) {
-  const storage = HelixStorage.fromContext(ctx);
+export async function fetchHlxJson(context, contentBusId) {
+  const storage = HelixStorage.fromContext(context);
   const buf = await storage.contentBus().get(`${contentBusId}/.hlx.json`);
   if (!buf) {
     return null;
@@ -121,15 +121,16 @@ export async function checkPrimarySite(context, contentBusId, info) {
 /**
  * Checks if "this" site's code source is the canonical source of this site.
  * If not, name of the primary code source is returned.
- * @param {import('../support/AdminContext').AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} context
  * @param {import('../support/RequestInfo').RequestInfo} info
  * @returns {string}
  */
-export function checkCanonicalRepo(ctx, info) {
-  if (!ctx.attributes.config?.code) {
+export function checkCanonicalRepo(context, info) {
+  const { config } = context;
+  if (!config?.code) {
     return '';
   }
-  const { code } = ctx.attributes.config;
+  const { code } = context.attributes.config;
   const url = new URL(code.source.url);
   // only check for github repos
   if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {

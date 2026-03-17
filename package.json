@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "start": "nodemon",
-    "test": "c8 mocha --ignore=test/post-deploy.test.js --spec=test/**/*.test.js",
+    "test": "c8 mocha --ignore=test/post-deploy.test.js --spec=test/**/*.test.js --parallel",
     "test-postdeploy": "mocha --spec=test/post-deploy.test.js",
     "lint": "eslint .",
     "semantic-release": "semantic-release",
@@ -53,13 +53,14 @@
     "@adobe/fetch": "4.2.3",
     "@adobe/helix-admin-support": "5.1.0",
     "@adobe/helix-config": "5.10.1",
+    "@adobe/helix-config-storage": "2.12.1",
     "@adobe/helix-google-support": "4.0.1",
     "@adobe/helix-html2md": "2.0.0",
     "@adobe/helix-mediahandler": "3.1.0",
     "@adobe/helix-onedrive-support": "12.3.2",
     "@adobe/helix-shared-body-data": "2.2.3",
-    "@adobe/helix-shared-git": "3.0.21",
     "@adobe/helix-shared-config": "11.1.17",
+    "@adobe/helix-shared-git": "3.0.21",
     "@adobe/helix-shared-indexer": "2.2.6",
     "@adobe/helix-shared-process-queue": "3.1.5",
     "@adobe/helix-shared-secrets": "2.3.0",
@@ -114,7 +115,8 @@
     "nodemon": "3.1.14",
     "semantic-release": "25.0.3",
     "semantic-release-slack-bot": "4.0.2",
-    "sinon": "21.0.1"
+    "sinon": "21.0.1",
+    "yaml": "2.8.2"
   },
   "lint-staged": {
     "*.js": "eslint"

@@ -100,6 +100,25 @@ export async function fetchHlxJson(ctx, contentBusId) {
 }
 
 /**
+ * Checks if "this" site is the primary site and returns an empty string. otherwise the
+ * name of the primary site is returned.
+ * @param {import('../support/AdminContext').AdminContext} context
+ * @param {string} contentBusId
+ * @param {import('../support/RequestInfo').RequestInfo} info
+ * @returns {Promise<string>} empty string if "this" site is the primary site,
+ * otherwise the name of the primary site
+ */
+export async function checkPrimarySite(context, contentBusId, info) {
+  const { org, site } = info;
+
+  const hlx = await fetchHlxJson(context, contentBusId);
+  const project = `${org}/${site}`;
+  const primary = hlx?.['original-site'] ?? hlx?.['original-repository'] ?? 'n/a';
+
+  return primary === project ? '' : primary;
+}
+
+/**
  * Checks if "this" site's code source is the canonical source of this site.
  * If not, name of the primary code source is returned.
  * @param {import('../support/AdminContext').AdminContext} ctx

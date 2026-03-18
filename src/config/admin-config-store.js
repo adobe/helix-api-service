@@ -24,7 +24,6 @@ import { errorResponse, redactObject, resolveAllowList } from '../support/utils.
  * List of properties that are allowed to be included in the redacted config output.
  * This is used by the redactObject function when a config is retrieved with
  * permission "config:read-redacted".
- * @type {string[]}
  */
 const REDACT_ALLOW_LISTS = {
   org: [

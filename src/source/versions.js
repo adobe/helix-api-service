@@ -141,9 +141,10 @@ export async function getOrListVersions(context, info, headRequest) {
  * @param {string} baseKey base key of the source file, must not start with a slash
  * @param {string} operation operation that triggered the version creation
  * @param {string} comment comment for the version
+ * @param {string} etag ETag of the source file to version (optional)
  * @returns {Promise<Response>} response with the file body and metadata
  */
-export async function postVersion(context, baseKey, operation, comment) {
+export async function postVersion(context, baseKey, operation, comment, etag) {
   if (baseKey.startsWith('/')) {
     return new Response('', { status: 400 });
   }
@@ -182,7 +183,7 @@ export async function postVersion(context, baseKey, operation, comment) {
         const renameMetadata = {
           'last-modified-by': 'doc-last-modified-by',
         };
-        const copyOpts = { CopySourceIfMatch: head.ETag };
+        const copyOpts = { CopySourceIfMatch: etag || head.ETag };
 
         // eslint-disable-next-line no-await-in-loop
         await bucket.copy(baseKey, versionKey, { addMetadata, renameMetadata, copyOpts });
@@ -196,7 +197,9 @@ export async function postVersion(context, baseKey, operation, comment) {
       } catch (e) {
         if (attempt >= maxRetry) throw e;
 
-        if (e.$metadata?.httpStatusCode !== 412) {
+        // Retry if we received a 412 precondition failed, but not if the etag was provided to
+        // this function (because in that case looping were won't refesh the etag).
+        if (e.$metadata?.httpStatusCode !== 412 || etag) {
           throw e;
         }
 

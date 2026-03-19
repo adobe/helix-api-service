@@ -81,20 +81,20 @@ async function copyWithRetry(
             throw new StatusCodeError('Collision: something is at the destination already', 409);
           }
 
+          // If something is at the destination already, we copy over that file, but keep
+          // dest ULID from the destination as-is so that the destination keeps its history.
+          // eslint-disable-next-line no-await-in-loop
+          const dest = await bucket.head(destKey);
+
           // version what's there before overwriting it
           if (!versionCreated) {
             // eslint-disable-next-line no-await-in-loop
-            const versionResp = await postVersion(context, destKey, 'copy');
+            const versionResp = await postVersion(context, destKey, 'copy', 'Version created before overwrite', dest.Etag);
             if (versionResp.status !== 201) {
               throw new StatusCodeError('Failed to version the destination', versionResp.status);
             }
             versionCreated = true;
           }
-
-          // If something is at the destination already, we copy over that file, but keep
-          // dest ULID from the destination as-is so that the destination keeps its history.
-          // eslint-disable-next-line no-await-in-loop
-          const dest = await bucket.head(destKey);
 
           const getDestDocId = getDocID(dest);
           opts = { ...initialOpts, addMetadata: { 'doc-id': getDestDocId } };

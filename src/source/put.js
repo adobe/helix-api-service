@@ -23,20 +23,20 @@ import {
   getDocID,
   getValidPayload,
   storeSourceFile,
-  MAX_BUCKET_RETRY,
+  MAX_SOURCE_BUCKET_RETRY,
 } from './utils.js';
 import { postVersion } from './versions.js';
 
 /**
  * Copy an S3 object and handle conflichts.
  *
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} srcKey source S3 key
  * @param {string} destKey destination S3 key
- * @param {Bucket} bucket the S3 bucket
  * @param {boolean} move true if this is a move operation
- * @param {object} opts metadata options for the copy operation
- * @param {object} copyOpts copy options (passed to HelixStorage.copy)
- * @param {object} collOpts collision options
+ * @param {object} initialOpts metadata options for the copy operation
+ * @param {object} initialCopyOpts copy options (passed to HelixStorage.copy)
+ * @param {object} collOpts collision options (e.g { copy: 'overwrite' } )
  */
 async function copyWithRetry(
   context,
@@ -63,7 +63,8 @@ async function copyWithRetry(
 
       break; // copy was successful, break out of the loop
     } catch (e) {
-      if (attempt >= MAX_BUCKET_RETRY) throw e;
+      const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
+      if (attempt >= maxRetry) throw e;
 
       const status = e.$metadata?.httpStatusCode;
 
@@ -121,12 +122,32 @@ async function copyFile(context, srcKey, destKey, move, collOpts) {
   await copyWithRetry(context, srcKey, destKey, move, opts, copyOpts, collOpts);
 }
 
+/**
+ * Copies a document from the source to the destination.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} src source S3 key
+ * @param {import('../support/RequestInfo').RequestInfo} info destination info
+ * @param {boolean} move whether to move the source
+ * @param {object} collOpts collision options
+ * @returns {Promise<Array<{src: string, dst: string}>>} the copied file details
+ */
 async function copyDocument(context, src, info, move, collOpts) {
   const dst = getS3KeyFromInfo(info);
   await copyFile(context, src, dst, move, collOpts);
   return [{ src, dst }];
 }
 
+/**
+ * Copies a folder from the source to the destination.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {string} srcKey source S3 key
+ * @param {import('../support/RequestInfo').RequestInfo} info destination info
+ * @param {boolean} move whether to move the source
+ * @param {object} collOpts collision options
+ * @returns {Promise<Array<{src: string, dst: string}>>} the copied files
+ */
 async function copyFolder(context, srcKey, info, move, collOpts) {
   const tasks = [];
   const destKey = getS3Key(info.org, info.site, info.rawPath);

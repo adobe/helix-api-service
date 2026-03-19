@@ -228,6 +228,6 @@ describe('Source Utils Tests', () => {
     const head = {
       Metadata: {},
     };
-    assert.throws(() => getDocID(head), new StatusCodeError('Document without ID', 404));
+    assert.throws(() => getDocID(head), new StatusCodeError('No Document ID', 404));
   });
 });

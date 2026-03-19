@@ -59,7 +59,7 @@ const DEFAULT_MAX_IMAGES = 200;
  * Recursive functions that are used to retry, do this at most for this
  * number of times.
  */
-export const MAX_BUCKET_RETRY = 4;
+export const MAX_SOURCE_BUCKET_RETRY = 4;
 
 /**
  * Error messages from the media validation often start with this prefix.
@@ -135,9 +135,9 @@ export function getS3KeyFromInfo(info) {
  * @throws {Error} with message 'Document without ID' if the ID is not found
  */
 export function getDocID(meta) {
-  const id = meta.Metadata?.['doc-id'];
+  const id = meta?.Metadata?.['doc-id'];
   if (!id) {
-    throw new StatusCodeError('Document without ID', 404);
+    throw new StatusCodeError('No Document ID', 404);
   }
   return id;
 }

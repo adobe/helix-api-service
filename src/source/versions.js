@@ -20,7 +20,7 @@ import {
   getS3Key,
   getDocID,
   getUser,
-  MAX_BUCKET_RETRY,
+  MAX_SOURCE_BUCKET_RETRY,
 } from './utils.js';
 
 export const VERSION_FOLDER = '.versions';
@@ -28,9 +28,8 @@ export const VERSION_FOLDER = '.versions';
 function handleNoVersions() {
   const headers = {
     'Content-Type': 'application/json',
-    'Content-Length': '2',
   };
-  return new Response('[]', { status: 200, headers });
+  return new Response('[]', { headers });
 }
 
 /**
@@ -149,6 +148,8 @@ export async function postVersion(context, baseKey, operation, comment) {
     return new Response('', { status: 400 });
   }
 
+  const { org, site } = context.config;
+
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
@@ -164,7 +165,7 @@ export async function postVersion(context, baseKey, operation, comment) {
         }
 
         const id = getDocID(head);
-        const versionFolderKey = `${context.config.org}/${context.config.site}/${VERSION_FOLDER}/${id}/`;
+        const versionFolderKey = `${org}/${site}/${VERSION_FOLDER}/${id}/`;
         const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
 
         const versionId = ulid();
@@ -186,13 +187,14 @@ export async function postVersion(context, baseKey, operation, comment) {
         await bucket.copy(baseKey, versionKey, { addMetadata, renameMetadata, copyOpts });
 
         const headers = {
-          Location: `/${context.config.org}/sites/${context.config.site}/source${pathName}/${VERSION_FOLDER}/${versionId}`,
+          Location: `/${org}/sites/${site}/source${pathName}/${VERSION_FOLDER}/${versionId}`,
         };
 
         // copy was successful, we're done
         return new Response('', { status: 201, headers });
       } catch (e) {
-        if (attempt >= MAX_BUCKET_RETRY) throw e;
+        const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
+        if (attempt >= maxRetry) throw e;
 
         if (e.$metadata?.httpStatusCode !== 412) {
           throw e;

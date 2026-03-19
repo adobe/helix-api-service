@@ -48,7 +48,6 @@ async function copyWithRetry(
   collOpts,
 ) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
-  let versionCreated = false;
   let opts = initialOpts;
   let copyOpts = initialCopyOpts;
 
@@ -87,13 +86,10 @@ async function copyWithRetry(
           const dest = await bucket.head(destKey);
 
           // version what's there before overwriting it
-          if (!versionCreated) {
-            // eslint-disable-next-line no-await-in-loop
-            const versionResp = await postVersion(context, destKey, 'copy', 'Version created before overwrite', dest.Etag);
-            if (versionResp.status !== 201) {
-              throw new StatusCodeError('Failed to version the destination', versionResp.status);
-            }
-            versionCreated = true;
+          // eslint-disable-next-line no-await-in-loop
+          const versionResp = await postVersion(context, destKey, 'copy', 'Version created before overwrite', dest.Etag);
+          if (versionResp.status !== 201) {
+            throw new StatusCodeError('Failed to version the destination', versionResp.status);
           }
 
           const getDestDocId = getDocID(dest);

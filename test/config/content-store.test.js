@@ -63,66 +63,201 @@ describe('Content Store Tests', () => {
       };
     }
 
-    it('read returns data from storage', async () => {
-      nock.indexConfig(INDEX);
+    /** @type {ContentStore} */
+    let cs;
 
-      const cs = new ContentStore('query', CONTENT_BUS_ID);
-      const { context } = setupTest();
-      const result = await cs.fetchRead(context);
-
-      assert.strictEqual(result.status, 200);
-      assert.strictEqual(await result.text(), INDEX);
+    beforeEach(() => {
+      cs = new ContentStore('query', CONTENT_BUS_ID);
     });
 
-    it('read returns 404', async () => {
-      nock.indexConfig(null);
+    describe('read', () => {
+      it('returns data from storage', async () => {
+        nock.indexConfig(INDEX);
 
-      const cs = new ContentStore('query', CONTENT_BUS_ID);
-      const { context } = setupTest();
-      const result = await cs.fetchRead(context);
-      assert.strictEqual(result.status, 404);
+        const { context } = setupTest();
+        const result = await cs.fetchRead(context);
+
+        assert.strictEqual(result.status, 200);
+        assert.strictEqual(await result.text(), INDEX);
+      });
+
+      it('returns 404', async () => {
+        nock.indexConfig(null);
+
+        const { context } = setupTest();
+        const result = await cs.fetchRead(context);
+        assert.strictEqual(result.status, 404);
+      });
     });
 
-    it('create stores new data in storage', async () => {
-      nock.content()
-        .headObject('/preview/.helix/query.yaml')
-        .reply(404)
-        .putObject('/preview/.helix/query.yaml')
-        .reply(201);
+    describe('create', () => {
+      it('stores new data in storage', async () => {
+        nock.content()
+          .headObject('/preview/.helix/query.yaml')
+          .reply(404)
+          .putObject('/preview/.helix/query.yaml')
+          .reply(201)
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
 
-      nock.content()
-        .getObject('/.hlx.json')
-        .reply(200, {
-          'original-site': 'org/site',
+        const { context, info } = setupTest(INDEX);
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 201);
+      });
+
+      it('returns 403 when org/site is not the original repository', async () => {
+        nock.content()
+          .headObject('/preview/.helix/query.yaml')
+          .reply(404);
+
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/original-site',
+          });
+
+        const { context, info } = setupTest(INDEX);
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 403);
+        assert.deepStrictEqual(result.headers.plain(), {
+          'cache-control': 'no-store, private, must-revalidate',
+          'content-type': 'text/plain; charset=utf-8',
+          'x-error': 'Content configuration changes are restricted to the primary site: org/original-site',
         });
+      });
 
-      const cs = new ContentStore('query', CONTENT_BUS_ID);
-      const { context, info } = setupTest(INDEX);
+      it('returns 409 if config already exists in storage', async () => {
+        nock.content()
+          .headObject('/preview/.helix/query.yaml')
+          .reply(200);
 
-      const result = await cs.fetchCreate(context, info);
-      assert.strictEqual(result.status, 201);
+        const { context, info } = setupTest(INDEX);
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 409);
+      });
+
+      it('returns 400 when index config passed is invalid', async () => {
+        nock.content()
+          .headObject('/preview/.helix/query.yaml')
+          .reply(404)
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest('indices: ');
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 400);
+      });
+
+      it('returns error when index config passed has errors', async () => {
+        const CONFIG_WITH_ERRORS = `indices:
+  default:
+    target: /query-index
+    properties:
+      lastModified:
+        select: none
+        value: parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
+   other:
+    target: /query-index
+    properties:
+      lastModified:
+        select: none
+        value: parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')`;
+
+        nock.content()
+          .headObject('/preview/.helix/query.yaml')
+          .reply(404)
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest(CONFIG_WITH_ERRORS);
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 400);
+        assert.match(result.headers.get('x-error'), /All mapping items must start at the same column/);
+      });
+
+      it('returns 400 when no index config is passed', async () => {
+        nock.content()
+          .headObject('/preview/.helix/query.yaml')
+          .reply(404)
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest(null);
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 400);
+        assert.deepStrictEqual(result.headers.plain(), {
+          'cache-control': 'no-store, private, must-revalidate',
+          'content-type': 'text/plain; charset=utf-8',
+          'x-error': "No 'query' config in body or bad content type",
+          'x-error-code': 'AEM_BACKEND_CONFIG_TYPE_MISSING',
+        });
+      });
     });
 
-    it('create returns 403 when org/site is not the original repository', async () => {
-      nock.content()
-        .headObject('/preview/.helix/query.yaml')
-        .reply(404);
+    describe('update', () => {
+      it('query config in storage', async () => {
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          })
+          .putObject('/preview/.helix/query.yaml')
+          .reply(201);
 
-      nock.content()
-        .getObject('/.hlx.json')
-        .reply(200, {
-          'original-site': 'org/original-site',
+        const { context, info } = setupTest(INDEX);
+
+        const result = await cs.fetchUpdate(context, info);
+        assert.strictEqual(result.status, 204);
+      });
+    });
+
+    describe('delete', () => {
+      it('removes query config from storage', async () => {
+        nock.indexConfig(INDEX);
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          })
+          .deleteObject('/preview/.helix/query.yaml')
+          .reply(204);
+
+        const { context, info } = setupTest();
+
+        const result = await cs.fetchRemove(context, info);
+        assert.strictEqual(result.status, 204);
+      });
+
+      it('returns 403 when org/site is not the original repository', async () => {
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/original-site',
+          });
+
+        const { context, info } = setupTest(INDEX);
+
+        const result = await cs.fetchRemove(context, info);
+        assert.strictEqual(result.status, 403);
+        assert.deepStrictEqual(result.headers.plain(), {
+          'cache-control': 'no-store, private, must-revalidate',
+          'content-type': 'text/plain; charset=utf-8',
+          'x-error': 'Content configuration changes are restricted to the primary site: org/original-site',
         });
-
-      const cs = new ContentStore('query', CONTENT_BUS_ID);
-      const { context, info } = setupTest(INDEX);
-
-      const result = await cs.fetchCreate(context, info);
-      assert.strictEqual(result.status, 403);
-      assert.deepStrictEqual(result.headers.plain(), {
-        'cache-control': 'no-store, private, must-revalidate',
-        'content-type': 'text/plain; charset=utf-8',
-        'x-error': 'Content configuration changes are restricted to the primary site: org/original-site',
       });
     });
   });
@@ -148,281 +283,156 @@ describe('Content Store Tests', () => {
       };
     }
 
-    it('create returns 403 when org/site is not the original repository', async () => {
-      nock.content()
-        .headObject('/preview/.helix/sitemap.yaml')
-        .reply(404);
+    /** @type {ContentStore} */
+    let cs;
 
-      nock.content()
-        .getObject('/.hlx.json')
-        .reply(200, {
-          'original-repository': 'org/original-site',
+    beforeEach(() => {
+      cs = new ContentStore('sitemap', CONTENT_BUS_ID);
+    });
+
+    describe('create', () => {
+      it('returns 403 when org/site is not the original repository', async () => {
+        nock.content()
+          .headObject('/preview/.helix/sitemap.yaml')
+          .reply(404);
+
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-repository': 'org/original-site',
+          });
+
+        const { context, info } = setupTest(SITEMAP);
+
+        const result = await cs.fetchCreate(context, info);
+        assert.strictEqual(result.status, 403);
+        assert.deepStrictEqual(result.headers.plain(), {
+          'cache-control': 'no-store, private, must-revalidate',
+          'content-type': 'text/plain; charset=utf-8',
+          'x-error': 'Content configuration changes are restricted to the primary site: org/original-site',
         });
+      });
+    });
 
-      const cs = new ContentStore('sitemap', CONTENT_BUS_ID);
-      const { context, info } = setupTest(SITEMAP);
+    describe('update', () => {
+      it('sitemap config in storage', async () => {
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          })
+          .putObject('/preview/.helix/sitemap.yaml')
+          .reply(201);
 
-      const result = await cs.fetchCreate(context, info);
-      assert.strictEqual(result.status, 403);
-      assert.deepStrictEqual(result.headers.plain(), {
-        'cache-control': 'no-store, private, must-revalidate',
-        'content-type': 'text/plain; charset=utf-8',
-        'x-error': 'Content configuration changes are restricted to the primary site: org/original-site',
+        const { context, info } = setupTest(SITEMAP);
+
+        const result = await cs.fetchUpdate(context, info);
+        assert.strictEqual(result.status, 204);
+      });
+
+      it('returns 403 when org/site is not the original repository', async () => {
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(404);
+
+        const { context, info } = setupTest(SITEMAP);
+
+        const result = await cs.fetchUpdate(context, info);
+        assert.strictEqual(result.status, 403);
+      });
+
+      it('returns 400 when sitemap config passed is invalid', async () => {
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest('sitemaps: ');
+
+        const result = await cs.fetchUpdate(context, info);
+        assert.strictEqual(result.status, 400);
+      });
+
+      it('returns 400 when no sitemap config is passed', async () => {
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest(null);
+
+        const result = await cs.fetchUpdate(context, info);
+        assert.strictEqual(result.status, 400);
+        assert.deepStrictEqual(result.headers.plain(), {
+          'cache-control': 'no-store, private, must-revalidate',
+          'content-type': 'text/plain; charset=utf-8',
+          'x-error': "No 'sitemap' config in body or bad content type",
+          'x-error-code': 'AEM_BACKEND_CONFIG_TYPE_MISSING',
+        });
+      });
+
+      it('returns error when sitemap config passed has errors', async () => {
+        const CONFIG_WITH_ERRORS = `sitemaps:
+  default:
+    source: /query-index.json
+    destination: /sitemap.xml
+
+   other:
+    source: /other-index.json
+    destination: /other-sitemap.xml`;
+
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest(CONFIG_WITH_ERRORS);
+
+        const result = await cs.fetchUpdate(context, info);
+        assert.strictEqual(result.status, 400);
+        assert.match(result.headers.get('x-error'), /All mapping items must start at the same column/);
+      });
+    });
+
+    describe('delete', () => {
+      it('removes sitemap config from storage', async () => {
+        nock.sitemapConfig(SITEMAP);
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          })
+          .deleteObject('/preview/.helix/sitemap.yaml')
+          .reply(204);
+
+        const { context, info } = setupTest();
+
+        const result = await cs.fetchRemove(context, info);
+        assert.strictEqual(result.status, 204);
+      });
+
+      it('returns 404 if config not found', async () => {
+        nock.sitemapConfig(null);
+        nock.content()
+          .getObject('/.hlx.json')
+          .reply(200, {
+            'original-site': 'org/site',
+          });
+
+        const { context, info } = setupTest();
+
+        const result = await cs.fetchRemove(context, info);
+        assert.strictEqual(result.status, 404);
+        assert.deepStrictEqual(result.headers.plain(), {
+          'cache-control': 'no-store, private, must-revalidate',
+          'content-type': 'text/plain; charset=utf-8',
+          'x-error': 'Config not found',
+          'x-error-code': 'AEM_BACKEND_CONFIG_MISSING',
+        });
       });
     });
   });
 });
-
-//   it('create returns 403 when org/site is not the original site or repository', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .head('/foo-id/preview/.helix/query.yaml')
-//       .reply(404)
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//       });
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchCreate(DEFAULT_CONTEXT(), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 403);
-//     assert.deepStrictEqual(result.headers.plain(), {
-//       'cache-control': 'no-store, private, must-revalidate',
-//       'content-type': 'text/plain; charset=utf-8',
-//       'x-error': 'Content configuration changes are restricted to the primary site: n/a',
-//     });
-//   });
-
-//   it('create returns 409 if already exists new data in storage', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .head('/foo-id/preview/.helix/query.yaml')
-//       .reply(200);
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchCreate(DEFAULT_CONTEXT());
-//     assert.strictEqual(result.status, 409);
-//   });
-
-//   it('create returns 400 when index config passed is invalid', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .head('/foo-id/preview/.helix/query.yaml')
-//       .reply(404)
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       });
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchCreate(DEFAULT_CONTEXT({
-//       data: 'indices: ',
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 400);
-//   });
-
-//   it('create returns error when index config passed has errors', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .head('/foo-id/preview/.helix/query.yaml')
-//       .reply(404)
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       });
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const resp = await cs.fetchCreate(DEFAULT_CONTEXT({
-//       data: `indices:
-//   default:
-//     target: /query-index
-//     properties:
-//       lastModified:
-//         select: none
-//         value: parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
-//    other:
-//     target: /query-index
-//     properties:
-//       lastModified:
-//         select: none
-//         value: parseTimestamp(headers['last-modified'], 'ddd, DD MMM YYYY hh:mm:ss GMT')
-// `,
-//     }), DEFAULT_INFO());
-
-//     assert.strictEqual(resp.status, 400);
-//     assert.match(resp.headers.get('x-error'), /All mapping items must start at the same column/);
-//   });
-
-//   it('create returns 400 when no index config is passed', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .head('/foo-id/preview/.helix/query.yaml')
-//       .reply(404)
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       });
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchCreate(DEFAULT_CONTEXT({
-//       data: {},
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 400);
-//     assert.deepStrictEqual(result.headers.plain(), {
-//       'cache-control': 'no-store, private, must-revalidate',
-//       'content-type': 'text/plain; charset=utf-8',
-//       'x-error': "No 'query' config in body or bad content type",
-//       'x-error-code': 'AEM_BACKEND_CONFIG_TYPE_MISSING',
-//     });
-//   });
-
-//   it('updates query config in storage', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       })
-//       .put('/foo-id/preview/.helix/query.yaml?x-id=PutObject')
-//       .reply(201);
-//     nock('https://helix-content-bus.fake-account-id.r2.cloudflarestorage.com')
-//       .put('/foo-id/preview/.helix/query.yaml?x-id=PutObject')
-//       .reply(201);
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchUpdate(DEFAULT_CONTEXT({
-//       data: INDEX,
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 204);
-//   });
-
-//   it('updates sitemap config in storage', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       })
-//       .put('/foo-id/preview/.helix/sitemap.yaml?x-id=PutObject')
-//       .reply(201);
-//     nock('https://helix-content-bus.fake-account-id.r2.cloudflarestorage.com')
-//       .put('/foo-id/preview/.helix/sitemap.yaml?x-id=PutObject')
-//       .reply(201);
-
-//     const cs = new ContentStore('sitemap', 'foo-id');
-//     const result = await cs.fetchUpdate(DEFAULT_CONTEXT({
-//       data: SITEMAP,
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 204);
-//   });
-
-//   it('update returns 403 when org/site is not the original repository', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'something/else',
-//       });
-
-//     const cs = new ContentStore('sitemap', 'foo-id');
-//     const result = await cs.fetchUpdate(DEFAULT_CONTEXT({
-//       data: SITEMAP,
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 403);
-//   });
-
-//   it('update returns error when sitemap config passed is invalid', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       });
-
-//     const cs = new ContentStore('sitemap', 'foo-id');
-//     const result = await cs.fetchUpdate(DEFAULT_CONTEXT({
-//       data: 'sitemaps: ',
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 400);
-//   });
-
-//   it('update returns error when sitemap config passed has errors', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       });
-
-//     const cs = new ContentStore('sitemap', 'foo-id');
-//     const resp = await cs.fetchUpdate(DEFAULT_CONTEXT({
-//       data: `sitemaps:
-//   default:
-//     source: /query-index.json
-//     destination: /sitemap.xml
-//     source: /query-index.json
-// `,
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(resp.status, 400);
-//     assert.match(resp.headers.get('x-error'), /Map keys must be unique/);
-//   });
-
-//   it('update returns error when no sitemap config is passed', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       });
-
-//     const cs = new ContentStore('sitemap', 'foo-id');
-//     const result = await cs.fetchUpdate(DEFAULT_CONTEXT({
-//       data: {},
-//     }), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 400);
-//     assert.deepStrictEqual(result.headers.plain(), {
-//       'cache-control': 'no-store, private, must-revalidate',
-//       'content-type': 'text/plain; charset=utf-8',
-//       'x-error': "No 'sitemap' config in body or bad content type",
-//       'x-error-code': 'AEM_BACKEND_CONFIG_TYPE_MISSING',
-//     });
-//   });
-
-//   it('removes query config from storage', async () => {
-//     nock.index(INDEX);
-
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       })
-//       .delete('/foo-id/preview/.helix/query.yaml?x-id=DeleteObject')
-//       .reply(204);
-//     nock('https://helix-content-bus.fake-account-id.r2.cloudflarestorage.com')
-//       .delete('/foo-id/preview/.helix/query.yaml?x-id=DeleteObject')
-//       .reply(204);
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchRemove(DEFAULT_CONTEXT(), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 204);
-//   });
-
-//   it('remove returns 403 when org/site is not the original repository', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'something/else',
-//       });
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchRemove(DEFAULT_CONTEXT(), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 403);
-//   });
-
-//   it('removes sends 404 if config not found', async () => {
-//     nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-//       .get('/foo-id/.hlx.json?x-id=GetObject')
-//       .reply(200, {
-//         'original-site': 'owner/repo',
-//       })
-//       .get('/foo-id/preview/.helix/query.yaml?x-id=GetObject')
-//       .reply(404, notFound);
-
-//     const cs = new ContentStore('query', 'foo-id');
-//     const result = await cs.fetchRemove(DEFAULT_CONTEXT(), DEFAULT_INFO());
-//     assert.strictEqual(result.status, 404);
-//     assert.deepStrictEqual(result.headers.plain(), {
-//       'cache-control': 'no-store, private, must-revalidate',
-//       'content-type': 'text/plain; charset=utf-8',
-//       'x-error': 'Config not found',
-//       'x-error-code': 'AEM_BACKEND_CONFIG_MISSING',
-//     });
-//   });

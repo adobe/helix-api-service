@@ -153,6 +153,7 @@ export async function postVersion(context, baseKey, operation, comment) {
   try {
     const bucket = HelixStorage.fromContext(context).sourceBus();
 
+    const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
     let attempt = 0;
     while (true) {
       attempt += 1;
@@ -193,7 +194,6 @@ export async function postVersion(context, baseKey, operation, comment) {
         // copy was successful, we're done
         return new Response('', { status: 201, headers });
       } catch (e) {
-        const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
         if (attempt >= maxRetry) throw e;
 
         if (e.$metadata?.httpStatusCode !== 412) {

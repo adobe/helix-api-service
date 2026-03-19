@@ -52,6 +52,7 @@ async function copyWithRetry(
   let opts = initialOpts;
   let copyOpts = initialCopyOpts;
 
+  const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
   let attempt = 0;
   while (true) {
     attempt += 1;
@@ -63,7 +64,6 @@ async function copyWithRetry(
 
       break; // copy was successful, break out of the loop
     } catch (e) {
-      const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
       if (attempt >= maxRetry) throw e;
 
       const status = e.$metadata?.httpStatusCode;

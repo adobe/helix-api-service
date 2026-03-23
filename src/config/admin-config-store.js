@@ -77,8 +77,8 @@ export class AdminConfigStore extends ConfigStore {
     return JSON.stringify(result, null, 2);
   }
 
-  async validate(ctx, data) {
-    await super.validate(ctx, data);
+  async validate(context, data) {
+    await super.validate(context, data);
     if (this.type === 'sites' || this.type === 'profiles') {
       const sourceUrl = data.content?.source?.url;
       if (sourceUrl) {
@@ -86,7 +86,7 @@ export class AdminConfigStore extends ConfigStore {
         const {
           allowed,
           reason,
-        } = await sourceLock.evaluateUrl(ctx, org, site, new URL(sourceUrl));
+        } = await sourceLock.evaluateUrl(context, org, site, new URL(sourceUrl));
         if (!allowed) {
           throw new StatusCodeError(reason, 400);
         }
@@ -105,14 +105,15 @@ export class AdminConfigStore extends ConfigStore {
   }
 
   /**
-   * reads config object from the store
-   * @param ctx
-   * @param relPath
+   * Reads a config object from the store
+   *
+   * @param {import('../support/AdminContext').AdminContext} context admin context
+   * @param {string} relPath relative path to the config object
    * @returns {Promise<Response>}
    */
-  async fetchRead(ctx, relPath) {
+  async fetchRead(context, relPath) {
     try {
-      if (String(ctx.data?.details) === 'true' && (this.type === 'sites' || this.type === 'profiles')) {
+      if (String(context.data?.details) === 'true' && (this.type === 'sites' || this.type === 'profiles')) {
         this.withListDetails(({ content, code, cdn }) => {
           const ret = {
             content,
@@ -128,7 +129,7 @@ export class AdminConfigStore extends ConfigStore {
           return ret;
         });
       }
-      const obj = await this.read(ctx, relPath);
+      const obj = await this.read(context, relPath);
       if (!obj) {
         return new Response(null, { status: 404 });
       }
@@ -139,39 +140,41 @@ export class AdminConfigStore extends ConfigStore {
       });
     } catch (e) {
       /* c8 ignore next */
-      return errorResponse(ctx.log, e.statusCode || 500, error('Error reading config: $1', e.message));
+      return errorResponse(context.log, e.statusCode || 500, error('Error reading config: $1', e.message));
     }
   }
 
   /**
-   * creates config object in the store
-   * @param ctx
-   * @param relPath
+   * Creates a config object in the store
+   *
+   * @param {import('../support/AdminContext').AdminContext} context admin context
+   * @param {string} relPath relative path to the config object
    * @returns {Promise<Response>}
    */
-  async fetchCreate(ctx, relPath) {
+  async fetchCreate(context, relPath) {
     try {
-      await this.create(ctx, ctx.data, relPath);
+      await this.create(context, context.data, relPath);
       return new Response(null, { status: 201 });
     } catch (e) {
       if (e instanceof ValidationError) {
         e.statusCode = 400;
       }
       /* c8 ignore next */
-      return errorResponse(ctx.log, e.statusCode || 400, error('Error creating config: $1', e.message));
+      return errorResponse(context.log, e.statusCode || 400, error('Error creating config: $1', e.message));
     }
   }
 
   /**
-   * updates config object in the store
-   * @param ctx
-   * @param relPath
+   * Updates a config object in the store
+   *
+   * @param {import('../support/AdminContext').AdminContext} context admin context
+   * @param {string} relPath relative path to the config object
    * @returns {Promise<Response>}
    */
-  async fetchUpdate(ctx, relPath) {
+  async fetchUpdate(context, relPath) {
     try {
-      const { jwt } = ctx.data;
-      const obj = await this.update(ctx, ctx.data, relPath);
+      const { jwt } = context.data;
+      const obj = await this.update(context, context.data, relPath);
       // this might not be the best place, but include the apiKey jwt in the response as `value`
       // if it was passed as input (when generated in the handler)
       if (jwt && relPath === 'apiKeys') {
@@ -184,34 +187,36 @@ export class AdminConfigStore extends ConfigStore {
       });
     } catch (e) {
       /* c8 ignore next */
-      return errorResponse(ctx.log, e.statusCode || 400, error('Error updating config: $1', e.message));
+      return errorResponse(context.log, e.statusCode || 400, error('Error updating config: $1', e.message));
     }
   }
 
   /**
-   * removes config object from the store
-   * @param ctx
-   * @param relPath
+   * Removes a config object from the store
+   *
+   * @param {import('../support/AdminContext').AdminContext} context admin context
+   * @param {string} relPath relative path to the config object
    * @returns {Promise<Response>}
    */
-  async fetchRemove(ctx, relPath) {
+  async fetchRemove(context, relPath) {
     try {
-      await this.remove(ctx, relPath);
+      await this.remove(context, relPath);
       return new Response(null, { status: 204 });
     } catch (e) {
       /* c8 ignore next */
-      return errorResponse(ctx.log, e.statusCode || 500, error('Error removing config: $1', e.message));
+      return errorResponse(context.log, e.statusCode || 500, error('Error removing config: $1', e.message));
     }
   }
 
   /**
-   * Purges the cache based on the old and new config
-   * @param ctx
-   * @param oldConfig
-   * @param newConfig
+   * Purges the cache based on the old and new config (internal implementation).
+   *
+   * @param {import('../support/AdminContext').AdminContext} context admin context
+   * @param {object} oldConfig old config object
+   * @param {object} newConfig new config object
    * @returns {Promise<void>}
    */
-  async doPurge(ctx, oldConfig, newConfig) {
+  async #doPurge(context, oldConfig, newConfig) {
     const opts = {
       org: this.org,
       site: this.name,
@@ -222,7 +227,7 @@ export class AdminConfigStore extends ConfigStore {
     if (oldConfig === null && newConfig !== null) {
       // new config created, purge new code and content
       const newKey = `main--${newConfig.code.repo}--${newConfig.code.owner}_code`;
-      ctx.log.info(`config created. purging code of ${newKey} and content of ${newConfig.content.contentBusId}`);
+      context.log.info(`config created. purging code of ${newKey} and content of ${newConfig.content.contentBusId}`);
       opts.keys.push(newKey);
       if (newConfig.content.contentBusId) {
         opts.keys.push(newConfig.content.contentBusId);
@@ -231,7 +236,7 @@ export class AdminConfigStore extends ConfigStore {
     } else if (oldConfig != null && newConfig === null) {
       // config removed, purge old code and content
       const oldKey = `main--${oldConfig.code.repo}--${oldConfig.code.owner}_code`;
-      ctx.log.info(`config removed. purging code of ${oldKey} and content of ${oldConfig.content.contentBusId}`);
+      context.log.info(`config removed. purging code of ${oldKey} and content of ${oldConfig.content.contentBusId}`);
       opts.keys.push(oldKey);
       if (oldConfig.content.contentBusId) {
         opts.keys.push(oldConfig.content.contentBusId);
@@ -287,11 +292,11 @@ export class AdminConfigStore extends ConfigStore {
       }
 
       if (purgeCode) {
-        ctx.log.info(`config change affects code. purging code of ${newKey}`);
+        context.log.info(`config change affects code. purging code of ${newKey}`);
         opts.keys.push(newKey);
       }
       if (purgeContent) {
-        ctx.log.info(`config change affects content. purging content of ${newConfig.content.contentBusId}`);
+        context.log.info(`config change affects content. purging content of ${newConfig.content.contentBusId}`);
         if (newConfig.content.contentBusId) {
           opts.keys.push(newConfig.content.contentBusId);
           opts.keys.push(`p_${newConfig.content.contentBusId}`);
@@ -315,8 +320,8 @@ export class AdminConfigStore extends ConfigStore {
 
       // ensure the info marker is set in the content bus for new projects
       if (!oldConfig) {
-        const storage = HelixStorage.fromContext(ctx).contentBus();
-        await ctx.ensureInfoMarker(
+        const storage = HelixStorage.fromContext(context).contentBus();
+        await context.ensureInfoMarker(
           info,
           storage,
           newConfig.content.source.url,
@@ -325,7 +330,7 @@ export class AdminConfigStore extends ConfigStore {
     }
     // note that in case of production cdn change, the old cdn is not purged. this is intentional,
     // so that the old cdn can still serve the old content while the new cdn is warming up.
-    await purge.config(ctx, opts);
+    await purge.config(context, opts);
 
     if (changed.cdn) {
       const info = {
@@ -334,22 +339,24 @@ export class AdminConfigStore extends ConfigStore {
         owner: this.org,
         repo: this.name,
       };
-      await hostUpdated(ctx, info, changed.cdn.prod.host);
+      await hostUpdated(context, info, changed.cdn.prod.host);
     }
   }
 
   /**
-   * Purges the cache based on the old and new config
-   * @param ctx
-   * @param oldConfig
-   * @param newConfig
+   * Purges the cache based on the old and new config.
+   *
+   * @override
+   * @param {import('../support/AdminContext').AdminContext} context admin context
+   * @param {object} oldConfig old config object
+   * @param {object} newConfig new config object
    * @returns {Promise<void>}
    */
-  async purge(ctx, oldConfig, newConfig) {
+  async purge(context, oldConfig, newConfig) {
     if (this.type === 'org' || this.type === 'profiles') {
       // for org and profile changes, invalidate all site configs
       // todo: only purge sites that use the profile?
-      await purge.config(ctx, {
+      await purge.config(context, {
         org: this.org,
         site: 'default',
         keys: [],
@@ -359,9 +366,9 @@ export class AdminConfigStore extends ConfigStore {
     }
 
     // first purge the config
-    await this.doPurge(ctx, oldConfig, newConfig);
+    await this.#doPurge(context, oldConfig, newConfig);
 
     // inform discovery about project change
-    await projectChanged(ctx, oldConfig, newConfig, this.org, this.name);
+    await projectChanged(context, oldConfig, newConfig, this.org, this.name);
   }
 }

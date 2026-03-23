@@ -291,11 +291,38 @@ describe('Source PUT Tests', () => {
     });
   });
 
+  it('test putSource copies a file with 412 collision and no overwrite permission', async () => {
+    nock.source()
+      .headObject('/o1/s1/s/src.html')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
+      .reply(412);
+
+    const path = '/o1/sites/s1/source/t/to.html';
+    const ctx = setupContext(path, {
+      data: {
+        source: '/s/src.html',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    const resp = await putSource(ctx, createInfo(path));
+    assert.equal(resp.status, 409);
+    assert.equal(resp.headers.get('x-error'), 'Collision: something is at the destination already, no overwrite option provided');
+  });
+
   async function copyTooManyRetries(context, retries) {
     // This is called by bucket.copy() as part of the metadata copy function
     nock.source()
       .headObject('/o1/s1/s/src.html')
-      .times(retries)
+      .times(retries + 1)
       .reply(200, null, {
         'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
       });
@@ -304,7 +331,7 @@ describe('Source PUT Tests', () => {
     // in postVersion() as well as during the copy operation itself.
     nock.source()
       .headObject('/o1/s1/t/to.html')
-      .times((retries - 1) * 3)
+      .times(retries * 3)
       .reply(200, null, {
         'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
         'x-amz-meta-doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
@@ -324,7 +351,7 @@ describe('Source PUT Tests', () => {
       .copyObject('/o1/s1/t/to.html')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
       .matchHeader('if-match', 'my etag')
-      .times(retries - 1)
+      .times(retries)
       .reply(412);
 
     // This is the copy operation used to create a version of the destination before overwriting it.
@@ -334,7 +361,7 @@ describe('Source PUT Tests', () => {
       .matchHeader('x-amz-copy-source-if-match', 'my etag')
       .matchHeader('x-amz-meta-doc-path-hint', '/t/to.html')
       .matchHeader('x-amz-meta-version-operation', 'copy')
-      .times(retries - 1)
+      .times(retries)
       .reply(200, new xml2js.Builder().buildObject({
         CopyObjectResult: {
           ETag: 'qqqqqq',
@@ -372,6 +399,85 @@ describe('Source PUT Tests', () => {
     ctx.attributes.maxSourceBucketRetry = 7;
 
     await copyTooManyRetries(ctx, 7);
+  });
+
+  it('test putSource copy file fails with 412 and versioning fails with 412 too', async () => {
+    nock.source()
+      .headObject('/o1/s1/s/src.html')
+      .times(3)
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+
+    nock.source()
+      .headObject('/o1/s1/t/to.html')
+      .times(6)
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+        'x-amz-meta-doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
+        etag: 'my etag',
+      });
+
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .times(3)
+      .reply(412);
+
+    nock.source()
+      .copyObject(/o1\/s1\/.versions\/01KKBSVQJ7N5DWEGMJ6AA7JTN4\/.+/)
+      .times(2)
+      .reply(412);
+
+    const ctx = setupContext('/o1/sites/s1/source/t/to.html', {
+      data: {
+        source: '/s/src.html',
+        collision: 'overwrite',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    const resp = await putSource(ctx, createInfo('/o1/sites/s1/source/t/to.html'));
+    assert.equal(412, resp.status);
+  });
+
+  it('test putSource copy file fails with 412 and versioning fails with 500', async () => {
+    nock.source()
+      .headObject('/o1/s1/s/src.html')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+
+    nock.source()
+      .headObject('/o1/s1/t/to.html')
+      .times(3)
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+        'x-amz-meta-doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
+        etag: 'my etag',
+      });
+
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .reply(412);
+
+    nock.source()
+      .copyObject(/o1\/s1\/.versions\/01KKBSVQJ7N5DWEGMJ6AA7JTN4\/.+/)
+      .reply(500);
+
+    const ctx = setupContext('/o1/sites/s1/source/t/to.html', {
+      data: {
+        source: '/s/src.html',
+        collision: 'overwrite',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    const resp = await putSource(ctx, createInfo('/o1/sites/s1/source/t/to.html'));
+    assert.equal(500, resp.status);
   });
 
   const BUCKET_LIST_RESULT = `

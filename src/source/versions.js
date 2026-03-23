@@ -157,8 +157,6 @@ export async function postVersion(context, baseKey, operation, comment, etag) {
     const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
     let attempt = 0;
     while (true) {
-      attempt += 1;
-
       try {
         // eslint-disable-next-line no-await-in-loop
         const head = await bucket.head(baseKey);
@@ -195,7 +193,8 @@ export async function postVersion(context, baseKey, operation, comment, etag) {
         // copy was successful, we're done
         return new Response('', { status: 201, headers });
       } catch (e) {
-        if (attempt >= maxRetry) throw e;
+        attempt += 1;
+        if (attempt > maxRetry) throw e;
 
         // Retry if we received a 412 precondition failed, but not if the etag was provided to
         // this function (because in that case looping were won't refesh the etag).

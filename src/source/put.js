@@ -54,8 +54,6 @@ async function copyWithRetry(
   const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
   let attempt = 0;
   while (true) {
-    attempt += 1;
-
     try {
       const allOpts = { copyOpts, ...opts };
       // eslint-disable-next-line no-await-in-loop
@@ -63,7 +61,8 @@ async function copyWithRetry(
 
       break; // copy was successful, break out of the loop - we're done!
     } catch (e) {
-      if (attempt >= maxRetry) {
+      attempt += 1;
+      if (attempt > maxRetry) {
         throw e;
       }
 
@@ -79,7 +78,7 @@ async function copyWithRetry(
           throw new StatusCodeError('Collision: something is at the destination already', 409);
         } else {
           if (collOpts.copy !== 'overwrite') {
-            throw new StatusCodeError('Collision: something is at the destination already', 409);
+            throw new StatusCodeError('Collision: something is at the destination already, no overwrite option provided', 409);
           }
 
           // eslint-disable-next-line no-await-in-loop

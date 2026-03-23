@@ -105,7 +105,7 @@ describe('Versions Tests', () => {
   it('test postVersion precondition failed, too many retries', async () => {
     nock.source()
       .headObject('/myorg/mysite/a/b/c.html')
-      .times(MAX_SOURCE_BUCKET_RETRY * 2)
+      .times((MAX_SOURCE_BUCKET_RETRY + 1) * 2)
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
@@ -114,7 +114,7 @@ describe('Versions Tests', () => {
 
     nock.source()
       .copyObject(/myorg\/mysite\/.versions\/01KK1E35DP7EQDG9G99QQAVQ1Z\/.+/)
-      .times(MAX_SOURCE_BUCKET_RETRY)
+      .times(MAX_SOURCE_BUCKET_RETRY + 1)
       .reply(412);
 
     const resp = await postVersion(context, 'myorg/mysite/a/b/c.html', 'abc', 'def');
@@ -126,7 +126,7 @@ describe('Versions Tests', () => {
 
     nock.source()
       .headObject('/myorg/mysite/a/b/c.html')
-      .times(4)
+      .times(6)
       .reply(200, null, {
         etag: 'foobar',
         'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
@@ -135,7 +135,7 @@ describe('Versions Tests', () => {
 
     nock.source()
       .copyObject(/myorg\/mysite\/.versions\/01KK1E35DP7EQDG9G99QQAVQ1Z\/.+/)
-      .times(2)
+      .times(3)
       .reply(412);
 
     const resp = await postVersion(context, 'myorg/mysite/a/b/c.html', 'abc', 'def');

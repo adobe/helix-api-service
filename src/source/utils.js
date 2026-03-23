@@ -56,10 +56,12 @@ const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 const DEFAULT_MAX_IMAGES = 200;
 
 /**
- * Recursive functions that are used to retry, do this at most for this
- * number of times.
+ * Certain bucket operations (e.g. copy) may fail with a 412 or 409 error code. In
+ * those cases we can retry the operation. This is the maximum number of retries that
+ * will be attempted. So this value is in addition to the initial attempt (which is not
+ * a retry).
  */
-export const MAX_SOURCE_BUCKET_RETRY = 4;
+export const MAX_SOURCE_BUCKET_RETRY = 2;
 
 /**
  * Error messages from the media validation often start with this prefix.

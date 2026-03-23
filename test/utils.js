@@ -187,6 +187,8 @@ export function Nock() {
     return nocker.s3('helix-code-bus', prefix);
   };
 
+  nocker.config = () => nocker.s3('helix-config-bus', '');
+
   nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);

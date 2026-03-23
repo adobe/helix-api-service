@@ -50,6 +50,7 @@ declare interface Nock {
   google(source: any): GoogleNock
   onedrive(source: any): OneDriveNock
   code(ref?: string): S3Nock;
+  config(): S3Nock;
   content(contentBusId?: string): S3Nock;
   media(contentBusId?: string): S3Nock;
   source(): S3Nock;

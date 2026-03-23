@@ -31,9 +31,9 @@ describe('Content Store Tests', () => {
   });
 
   it('constructor uses arguments', async () => {
-    const cs = new ContentStore('query', 'foo-id');
-    assert.strictEqual(cs.contentBusId, 'foo-id');
+    const cs = new ContentStore('query', CONTENT_BUS_ID);
     assert.strictEqual(cs.type, 'query');
+    assert.strictEqual(cs.contentBusId, CONTENT_BUS_ID);
   });
 
   describe('query config', () => {

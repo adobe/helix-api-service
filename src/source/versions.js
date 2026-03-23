@@ -15,6 +15,8 @@ import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { isValid, ulid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { StatusCodeError } from '../support/StatusCodeError.js';
+
 import {
   accessSourceFile,
   getS3Key,
@@ -122,7 +124,7 @@ export async function getOrListVersions(context, info, headRequest) {
     const versionId = segments[idx + 1];
     if (!isValid(versionId)) {
       // It's not a valid ULID
-      return new Response('Not a valid version', { status: 404 });
+      throw new StatusCodeError('Not a valid version', 404);
     }
 
     const versionKey = `${versionDirKey}${versionId}`;

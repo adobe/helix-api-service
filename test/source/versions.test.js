@@ -195,6 +195,15 @@ describe('Versions Tests', () => {
     assert.equal(resp.status, 201);
   });
 
+  it('test postVersion on non-existing document gives 404', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/hello.html')
+      .reply(404);
+
+    const resp = await postVersion(context, 'myorg/mysite/hello.html');
+    assert.equal(resp.status, 404);
+  });
+
   it('test postVersion with etag, does not retry on failure', async () => {
     nock.source()
       .headObject('/myorg/mysite/hello.html')
@@ -327,5 +336,25 @@ describe('Versions Tests', () => {
 
     const versions = await resp.json();
     assert.deepStrictEqual(versions, []);
+  });
+
+  it('test getOrListVersionsCalled on wrong path', async () => {
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html');
+    const resp = await getOrListVersions(context, info);
+    assert.equal(resp.status, 400);
+  });
+
+  it('test getOrListVersionsCalled on with invalid ID', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1C',
+      });
+
+    const info = createInfo('/myorg/sites/mysite/source/a/b/c.html/.versions/not_a_ulid');
+    const resp = await getOrListVersions(context, info);
+    assert.equal(resp.status, 404);
+    assert.equal(resp.headers.get('x-error'), 'Not a valid version');
   });
 });

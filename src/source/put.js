@@ -35,7 +35,6 @@ import { postVersion } from './versions.js';
  * @param {string} destKey destination S3 key
  * @param {boolean} move true if this is a move operation
  * @param {object} initialOpts metadata options for the copy operation
- * @param {object} initialCopyOpts copy options (passed to HelixStorage.copy)
  * @param {object} collOpts collision options (e.g { copy: 'overwrite' } )
  */
 async function copyWithRetry(
@@ -44,12 +43,13 @@ async function copyWithRetry(
   destKey,
   move,
   initialOpts,
-  initialCopyOpts,
   collOpts,
 ) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
   let opts = initialOpts;
-  let copyOpts = initialCopyOpts;
+
+  // We start with assuming that there is nothing at the destination, the happy path
+  let copyOpts = { IfNoneMatch: '*' };
 
   const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
   let attempt = 0;
@@ -61,9 +61,11 @@ async function copyWithRetry(
       // eslint-disable-next-line no-await-in-loop
       await bucket.copy(srcKey, destKey, allOpts);
 
-      break; // copy was successful, break out of the loop
+      break; // copy was successful, break out of the loop - we're done!
     } catch (e) {
-      if (attempt >= maxRetry) throw e;
+      if (attempt >= maxRetry) {
+        throw e;
+      }
 
       const status = e.$metadata?.httpStatusCode;
 
@@ -80,21 +82,29 @@ async function copyWithRetry(
             throw new StatusCodeError('Collision: something is at the destination already', 409);
           }
 
-          // If something is at the destination already, we copy over that file, but keep
-          // dest ULID from the destination as-is so that the destination keeps its history.
           // eslint-disable-next-line no-await-in-loop
           const dest = await bucket.head(destKey);
 
-          // version what's there before overwriting it
+          // version what's there before overwriting it, provide the destination ETag so that we
+          // know we're versioning what we just did a head() of.
           // eslint-disable-next-line no-await-in-loop
-          const versionResp = await postVersion(context, destKey, 'copy', 'Version created before overwrite', dest.Etag);
+          const versionResp = await postVersion(context, destKey, 'copy', 'Version created before overwrite', dest.ETag);
           if (versionResp.status !== 201) {
-            throw new StatusCodeError('Failed to version the destination', versionResp.status);
-          }
+            if (versionResp.status !== 412 && versionResp.status !== 409) {
+              throw new StatusCodeError('Failed to version the destination', versionResp.status);
+            }
+          } else {
+            // Creating the version was successful, so we can now copy over the destination.
 
-          const getDestDocId = getDocID(dest);
-          opts = { ...initialOpts, addMetadata: { 'doc-id': getDestDocId } };
-          copyOpts = { IfMatch: dest.ETag };
+            const getDestDocId = getDocID(dest);
+
+            // If something is at the destination already, we copy over that file, but keep
+            // the doc ID from the destination as-is so that the destination keeps its history.
+            opts = { ...initialOpts, addMetadata: { 'doc-id': getDestDocId } };
+
+            // Now only copy over the destination if it's still the same as what we did a head() of
+            copyOpts = { IfMatch: dest.ETag };
+          }
         }
       }
     }
@@ -110,12 +120,10 @@ async function copyWithRetry(
 
 async function copyFile(context, srcKey, destKey, move, collOpts) {
   const opts = {};
-  const copyOpts = {};
   if (!move) {
     opts.addMetadata = { 'doc-id': ulid() };
-    copyOpts.IfNoneMatch = '*';
   }
-  await copyWithRetry(context, srcKey, destKey, move, opts, copyOpts, collOpts);
+  await copyWithRetry(context, srcKey, destKey, move, opts, collOpts);
 }
 
 /**

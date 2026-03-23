@@ -121,6 +121,27 @@ describe('Versions Tests', () => {
     assert.equal(resp.status, 412);
   });
 
+  it('test postVersion precondition failed, configured max retries', async () => {
+    context.attributes.maxSourceBucketRetry = 2;
+
+    nock.source()
+      .headObject('/myorg/mysite/a/b/c.html')
+      .times(4)
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        'last-modified': 'Tue, 04 Jun 2024 14:20:00 GMT',
+      });
+
+    nock.source()
+      .copyObject(/myorg\/mysite\/.versions\/01KK1E35DP7EQDG9G99QQAVQ1Z\/.+/)
+      .times(2)
+      .reply(412);
+
+    const resp = await postVersion(context, 'myorg/mysite/a/b/c.html', 'abc', 'def');
+    assert.equal(resp.status, 412);
+  });
+
   it('test postVersion error', async () => {
     nock.source()
       .headObject('/myorg/mysite/a/b/c.html')
@@ -142,6 +163,54 @@ describe('Versions Tests', () => {
   it('test postVersion invalid base key', async () => {
     const resp = await postVersion(context, '/myorg/mysite/a/b/c.html');
     assert.equal(resp.status, 400);
+  });
+
+  it('test postVersion with etag', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/hello.html')
+      .twice()
+      .reply(200, null, {
+        etag: 'mwhaha',
+        'x-amz-meta-doc-id': '01KMD45QKPY7S9Y7BDKP0E019Q',
+        'last-modified': 'Fri, 18 Mar 2005 01:58:31 GMT',
+      });
+
+    const etag = 'foobar';
+    nock.source()
+      .copyObject(/myorg\/mysite\/.versions\/01KMD45QKPY7S9Y7BDKP0E019Q\/.+/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/myorg/mysite/hello.html')
+      .matchHeader('x-amz-copy-source-if-match', etag)
+      .matchHeader('x-amz-meta-doc-id', '01KMD45QKPY7S9Y7BDKP0E019Q')
+      .matchHeader('x-amz-meta-doc-path-hint', '/hello.html')
+      .matchHeader('x-amz-meta-doc-last-modified', '2005-03-18T01:58:31.000Z')
+      .matchHeader('x-amz-meta-version-operation', 'test-op')
+      .matchHeader('x-amz-meta-version-comment', 'test 123')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '987789',
+        },
+      }));
+
+    const resp = await postVersion(context, 'myorg/mysite/hello.html', 'test-op', 'test 123', etag);
+    assert.equal(resp.status, 201);
+  });
+
+  it('test postVersion with etag, does not retry on failure', async () => {
+    nock.source()
+      .headObject('/myorg/mysite/hello.html')
+      .twice()
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KK1E35DP7EQDG9G99QQAVQ1Z',
+        'last-modified': 'Tue, 04 Jun 2024 14:20:00 GMT',
+      });
+
+    nock.source()
+      .copyObject(/myorg\/mysite\/.versions\/01KK1E35DP7EQDG9G99QQAVQ1Z\/.+/)
+      .reply(412);
+
+    const resp = await postVersion(context, 'myorg/mysite/hello.html', 'abc', 'def', 'someetag');
+    assert.equal(resp.status, 412);
   });
 
   const BUCKET_LIST_RESULT = `

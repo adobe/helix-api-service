@@ -17,6 +17,7 @@ import { promisify } from 'util';
 import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { putSource } from '../../src/source/put.js';
+import { MAX_SOURCE_BUCKET_RETRY } from '../../src/source/utils.js';
 import { createInfo, Nock } from '../utils.js';
 import { setupContext } from './testutils.js';
 
@@ -181,6 +182,7 @@ describe('Source PUT Tests', () => {
     nock.source()
       .copyObject('/testorg/testsite/dst.html')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/testorg/testsite/src.html')
+      .matchHeader('if-none-match', '*')
       .reply(200, new xml2js.Builder().buildObject({
         CopyObjectResult: {
           ETag: '123',
@@ -232,18 +234,21 @@ describe('Source PUT Tests', () => {
       .reply(200, null, {
         'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
         'x-amz-meta-doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
+        etag: 'etag123',
       });
 
     // First copy attempt returns 412 (destination already exists, IfNoneMatch: * fails)
     nock.source()
       .copyObject('/o1/s1/t/to.html')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
       .reply(412);
 
-    // postVersion copies the existing destination into the versions folder
+    // postVersion versions what was at the destination before overwriting it
     nock.source()
       .copyObject(/o1\/s1\/.versions\/01KKBSVQJ7N5DWEGMJ6AA7JTN4\/.+/)
       .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source-if-match', 'etag123')
       .matchHeader('x-amz-meta-doc-path-hint', '/t/to.html')
       .matchHeader('x-amz-meta-version-operation', 'copy')
       .reply(200, new xml2js.Builder().buildObject({
@@ -258,6 +263,7 @@ describe('Source PUT Tests', () => {
       .copyObject('/o1/s1/t/to.html')
       .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
       .matchHeader('x-amz-meta-doc-id', '01KKBSVQJ7N5DWEGMJ6AA7JTN4')
+      .matchHeader('if-match', 'etag123')
       .reply(200, new xml2js.Builder().buildObject({
         CopyObjectResult: {
           ETag: 'abcd',
@@ -283,6 +289,89 @@ describe('Source PUT Tests', () => {
         { src: 'o1/s1/s/src.html', dst: 'o1/s1/t/to.html' },
       ],
     });
+  });
+
+  async function copyTooManyRetries(context, retries) {
+    // This is called by bucket.copy() as part of the metadata copy function
+    nock.source()
+      .headObject('/o1/s1/s/src.html')
+      .times(retries)
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+
+    // This is called during the retry piece in copyWithRetry() as well as during the versioning
+    // in postVersion() as well as during the copy operation itself.
+    nock.source()
+      .headObject('/o1/s1/t/to.html')
+      .times((retries - 1) * 3)
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+        'x-amz-meta-doc-id': '01KKBSVQJ7N5DWEGMJ6AA7JTN4',
+        etag: 'my etag',
+      });
+
+    // The first time it copies with the if-none-match header, assuming there is nothing at the
+    // destination.
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
+      .reply(412);
+    // Subsequent times it uses the if-match header to ensure that what it copied over is the
+    // same as what was at the destination before overwriting it.
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-match', 'my etag')
+      .times(retries - 1)
+      .reply(412);
+
+    // This is the copy operation used to create a version of the destination before overwriting it.
+    nock.source()
+      .copyObject(/o1\/s1\/.versions\/01KKBSVQJ7N5DWEGMJ6AA7JTN4\/.+/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source-if-match', 'my etag')
+      .matchHeader('x-amz-meta-doc-path-hint', '/t/to.html')
+      .matchHeader('x-amz-meta-version-operation', 'copy')
+      .times(retries - 1)
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'qqqqqq',
+        },
+      }));
+
+    const resp = await putSource(context, createInfo('/o1/sites/s1/source/t/to.html'));
+    assert.equal(412, resp.status);
+  }
+
+  it('test putSource copies a file too many retries', async () => {
+    const ctx = setupContext('/o1/sites/s1/source/t/to.html', {
+      data: {
+        source: '/s/src.html',
+        collision: 'overwrite',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    await copyTooManyRetries(ctx, MAX_SOURCE_BUCKET_RETRY);
+  });
+
+  it('test putSource copies a file too many configured retries', async () => {
+    const ctx = setupContext('/o1/sites/s1/source/t/to.html', {
+      data: {
+        source: '/s/src.html',
+        collision: 'overwrite',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    // configure retries to be 7 rather than the default
+    ctx.attributes.maxSourceBucketRetry = 7;
+
+    await copyTooManyRetries(ctx, 7);
   });
 
   const BUCKET_LIST_RESULT = `

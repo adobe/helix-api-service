@@ -54,6 +54,8 @@ The central context object passed to every handler. It wraps the Helix Universal
 - Auth state and token caching
 - Redirect helpers
 
+**Naming convention**: The `AdminContext` parameter must always be named `context`, not `ctx`.
+
 ### RequestInfo (`src/support/RequestInfo.js`)
 
 Parses route variables (`org`, `site`, `ref`, path, extension) and computes web vs. resource paths. Passed alongside context to every handler.

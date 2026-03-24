@@ -128,17 +128,11 @@ describe('Bulk Preview Tests', () => {
   });
 
   it('returns 400 when trying to preview a subtree with a markup content source', async () => {
-    const origMarkup = HANDLERS.markup;
-    HANDLERS.markup = { name: 'markup', list() {} };
     ctx.data.paths = ['/foo/*'];
     ctx.attributes.config.content.source = { type: 'markup', url: 'https://byom.example.com' };
-    try {
-      const result = await bulkPreview(ctx, info);
-      assert.strictEqual(result.status, 400);
-      assert.strictEqual(result.headers.get('x-error'), 'wildcard paths are not supported with a markup content source.');
-    } finally {
-      HANDLERS.markup = origMarkup;
-    }
+    const result = await bulkPreview(ctx, info);
+    assert.strictEqual(result.status, 400);
+    assert.strictEqual(result.headers.get('x-error'), 'wildcard paths are not supported with a markup content source.');
   });
 
   it('requires edit:list permission for wildcard paths', async () => {
@@ -169,6 +163,27 @@ describe('Bulk Preview Tests', () => {
       () => bulkPreview(ctxNoPerms, info),
       { message: 'edit:list' },
     );
+  });
+
+  it('returns 400 when paths exceed the sync limit for the content source', async () => {
+    ctx.attributes.config.content.source = { type: 'onedrive', url: 'https://example.sharepoint.com' };
+    // onedrive limit is 15; send 16 paths without forceAsync
+    ctx.data.paths = Array.from({ length: 16 }, (_, i) => `/doc-${i}`);
+    const result = await bulkPreview(ctx, info);
+    assert.strictEqual(result.status, 400);
+    assert.strictEqual(result.headers.get('x-error'), 'Number of paths for synchronous bulk-preview exceeds allowed max for onedrive content source: 16 > 15. Use forceAsync=true');
+  });
+
+  it('bypasses the sync limit when forceAsync=true', async () => {
+    ctx.attributes.config.content.source = { type: 'onedrive', url: 'https://example.sharepoint.com' };
+    ctx.data.paths = Array.from({ length: 16 }, (_, i) => `/doc-${i}`);
+    ctx.data.forceAsync = 'true';
+    const createStub = sandbox.stub(Job, 'create').resolves(
+      new Response('{}', { status: 202 }),
+    );
+    const result = await bulkPreview(ctx, info);
+    assert.strictEqual(result.status, 202);
+    assert.ok(createStub.calledOnce);
   });
 
   it('creates the preview job with correct parameters', async () => {

@@ -13,6 +13,17 @@ import { getContentSourceHandler } from '../contentproxy/index.js';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
 import { Job } from '../job/job.js';
 import { PreviewJob } from './preview-job.js';
+import { error } from '../contentproxy/errors.js';
+
+/**
+ * Maximum number of paths that can be supported with a synchronous bulk-preview
+ */
+const MAX_SYNC_PATHS = {
+  google: 30,
+  onedrive: 15,
+  markup: 30,
+  sourcebus: 150,
+};
 
 /**
  * Handles recursive bulk preview. Note that bulk preview only respects 'normal' content resources,
@@ -66,8 +77,18 @@ export default async function bulkPreview(context, info) {
     context.attributes.authInfo.assertPermissions('edit:list');
   }
 
+  if (paths.length > MAX_SYNC_PATHS[handler.name] && String(context.data?.forceAsync) !== 'true') {
+    return errorResponse(log, 400, error(
+      'Number of paths for synchronous bulk-preview exceeds allowed max for $1 content source: $2 > $3. Use forceAsync=true',
+      handler.name,
+      paths.length,
+      MAX_SYNC_PATHS[handler.name],
+    ));
+  }
+
   // create new preview job
   return Job.create(context, info, 'preview', {
+    transient: true,
     jobClass: PreviewJob,
     data: {
       paths: paths.map((p) => String(p)), // ensure strings

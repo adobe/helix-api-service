@@ -14,7 +14,7 @@ import { ConfigStore, ValidationError } from '@adobe/helix-config-storage';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import purge from '../cache/purge.js';
 import { error } from '../contentproxy/errors.js';
-import { projectChanged } from '../discover/reindex.js';
+import discover from '../discover/reindex.js';
 import { hostUpdated } from '../sitemap/config-update.js';
 import sourceLock from '../support/source-lock.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
@@ -369,6 +369,6 @@ export class AdminConfigStore extends ConfigStore {
     await this.#doPurge(context, oldConfig, newConfig);
 
     // inform discovery about project change
-    await projectChanged(context, oldConfig, newConfig, this.org, this.name);
+    await discover.projectChanged(context, oldConfig, newConfig, this.org, this.name);
   }
 }

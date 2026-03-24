@@ -1035,7 +1035,7 @@ describe('IMS Authentication Test', () => {
       headers: {
         authorization: `bearer ${accessToken}`,
       },
-      suffix: '/org/sites/site/config',
+      suffix: '/org/sites/site/config.json',
     });
     const authInfo = await context.authenticate(info);
 

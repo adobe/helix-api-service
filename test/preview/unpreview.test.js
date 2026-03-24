@@ -95,7 +95,7 @@ describe('Preview Remove Tests', () => {
     assert.deepStrictEqual(purgeInfos, [
       { path: '/' },
       { path: '/index.plain.html' },
-      { key: 'p_DiyvKbkf2MaZORJJ' },
+      { key: 'p_IHu7-5Mz7pLcJch8' },
       { key: '8lnjgOWBwsoqAQXB' },
     ]);
   });
@@ -146,7 +146,7 @@ describe('Preview Remove Tests', () => {
 
     assert.strictEqual(response.status, 204);
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_DmtUcbOVSbg9dZSu' },
+      { key: 'p_WSqt6qEhav4fH2sa' },
       { key: 'x2iMHA9EUgMOMASW' },
       { path: '/redirects.json' },
     ]);

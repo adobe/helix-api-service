@@ -171,45 +171,49 @@ export async function reindexProject(context, org, site) {
   return new Response(entry, { status: 200 });
 }
 
-/**
- * Called when the configuration of a Helix 5 project has changed. Eventually
- * reindexes or removes the project from our inventory.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {object|null} oldConfig old configuration, may be `null`
- * @param {object|null} newConfig new configuration, may be `null`
- * @param {string} org org
- * @param {string} site site
- */
-export async function projectChanged(context, oldConfig, newConfig, org, site) {
-  const { log } = context;
+const discover = {
+  /**
+   * Called when the configuration of a Helix 5 project has changed. Eventually
+   * reindexes or removes the project from our inventory.
+   *
+   * @param {import('../support/AdminContext').AdminContext} context context
+   * @param {object|null} oldConfig old configuration, may be `null`
+   * @param {object|null} newConfig new configuration, may be `null`
+   * @param {string} org org
+   * @param {string} site site
+   */
+  projectChanged: async (context, oldConfig, newConfig, org, site) => {
+    const { log } = context;
 
-  if (oldConfig != null && newConfig === null) {
-    // configuration removed, so remove project from discovery
-    await removeProject(context, org, site);
-    return;
-  }
-  if (oldConfig === null) {
-    // configuration created, so add that project
-    await reindexProject(context, org, site);
-    return;
-  }
+    if (oldConfig != null && newConfig === null) {
+      // configuration removed, so remove project from discovery
+      await removeProject(context, org, site);
+      return;
+    }
+    if (oldConfig === null) {
+      // configuration created, so add that project
+      await reindexProject(context, org, site);
+      return;
+    }
 
-  // at this point, we have both an old and a new configuration
-  const signature = (config) => [
-    config.content.contentBusId,
-    config.code.owner,
-    config.code.repo,
-    generate(config)].join();
-  const oldSig = signature(oldConfig);
-  const newSig = signature(newConfig);
-  if (oldSig !== newSig) {
-    log.info(`[discover] project signature changed: ${oldSig} -> ${newSig}`);
-    await reindexProject(context, org, site);
-  } else {
-    log.info(`[discover] project signature stable : ${oldSig}`);
-  }
-}
+    // at this point, we have both an old and a new configuration
+    const signature = (config) => [
+      config.content.contentBusId,
+      config.code.owner,
+      config.code.repo,
+      generate(config)].join();
+    const oldSig = signature(oldConfig);
+    const newSig = signature(newConfig);
+    if (oldSig !== newSig) {
+      log.info(`[discover] project signature changed: ${oldSig} -> ${newSig}`);
+      await reindexProject(context, org, site);
+    } else {
+      log.info(`[discover] project signature stable : ${oldSig}`);
+    }
+  },
+};
+
+export default discover;
 
 /**
  * Sets the original site information in the content bus metadata.
@@ -246,7 +250,7 @@ export async function setOriginalSite(context, org, site) {
  * @param {import('../support/AdminContext').AdminContext} context context
  * @returns {Promise<Response>} response
  */
-export default async function reindex(context) {
+export async function reindex(context) {
   const { attributes: { authInfo }, data } = context;
   if (data.org === '*') {
     return reindexAll(context);

@@ -187,7 +187,7 @@ describe('Source Bus Content Proxy Tests', () => {
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/300.png'))
       .get('/image2.jpg')
       .replyWithFile(200, resolve(__testdir, 'contentproxy/fixtures/sourcebus/300.png'));
-    nock.media('853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f')
+    nock.media()
       .head('/1c2e2c6c049ccf4b583431e14919687f3a39cc227')
       .times(2)
       .reply(404)

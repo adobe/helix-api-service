@@ -257,7 +257,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -270,7 +270,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(201, (_uri, body) => {
         assert.deepStrictEqual(body, {
           objects: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -356,7 +356,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'lAKEj4mgHHLiyxX6',
+            'ucCjUwnLJUsOFQxY',
             'fhy7zxoNym_6JoRo',
           ],
         });
@@ -370,7 +370,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(201, (_uri, body) => {
         assert.deepStrictEqual(body, {
           objects: [
-            'lAKEj4mgHHLiyxX6',
+            'ucCjUwnLJUsOFQxY',
             'fhy7zxoNym_6JoRo',
           ],
         });
@@ -417,7 +417,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -430,7 +430,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -515,7 +515,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -528,7 +528,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -553,7 +553,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -577,7 +577,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -606,7 +606,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -619,7 +619,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -643,7 +643,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -695,7 +695,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -708,7 +708,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -728,7 +728,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -752,7 +752,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -779,7 +779,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            '5ufrCpX0uu5ELNnu',
+            'FOHsvFI1biNQRgYn',
           ],
         });
         assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -856,7 +856,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });
@@ -894,7 +894,7 @@ describe('BYO CDN Purge Tests', () => {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
             `${SITE_CONFIG.content.contentBusId}_metadata`,
-            '0BbXqRmqgStJ7irR',
+            'bu2SqxB_sPgGHVxe',
           ],
         });
         assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -931,7 +931,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -943,7 +943,7 @@ describe('BYO CDN Purge Tests', () => {
       .post('/purge/demo.helix3.page')
       .reply(function f() {
         assert.strictEqual(this.req.headers['x-aem-purge-key'], '654321');
-        assert.strictEqual(this.req.headers['surrogate-key'], 'DiyvKbkf2MaZORJJ 8lnjgOWBwsoqAQXB');
+        assert.strictEqual(this.req.headers['surrogate-key'], 'IHu7-5Mz7pLcJch8 8lnjgOWBwsoqAQXB');
         return [200];
       });
 
@@ -959,7 +959,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             '8lnjgOWBwsoqAQXB',
           ],
         });
@@ -970,7 +970,7 @@ describe('BYO CDN Purge Tests', () => {
     nock('https://purgeproxy.adobeaemcloud.com')
       .post('/purge/p1234-e5678')
       .reply(function f() {
-        assert.strictEqual(this.req.headers['surrogate-key'], 'DiyvKbkf2MaZORJJ 8lnjgOWBwsoqAQXB');
+        assert.strictEqual(this.req.headers['surrogate-key'], 'IHu7-5Mz7pLcJch8 8lnjgOWBwsoqAQXB');
         return [200];
       });
 
@@ -989,7 +989,7 @@ describe('BYO CDN Purge Tests', () => {
       .post('/purge/demo.helix3.page')
       .reply(function f() {
         assert.strictEqual(this.req.headers['x-aem-purge-key'], '654321');
-        assert.strictEqual(this.req.headers['surrogate-key'], 'DiyvKbkf2MaZORJJ 8lnjgOWBwsoqAQXB');
+        assert.strictEqual(this.req.headers['surrogate-key'], 'IHu7-5Mz7pLcJch8 8lnjgOWBwsoqAQXB');
         return [500];
       });
 
@@ -1037,7 +1037,7 @@ describe('BYO CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'wljKxsUcFS6-GGCx',
           ],
         });

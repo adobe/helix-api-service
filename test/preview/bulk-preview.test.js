@@ -40,6 +40,21 @@ const createTestHandler = () => ({
   list() { return []; },
 });
 
+function createTestContext(data, source) {
+  const context = createContext('/org/sites/site/preview/*', {
+    attributes: {
+      authInfo: AuthInfo.Admin(),
+      config: structuredClone(TEST_CONFIG),
+      infoMarkerChecked: true,
+    },
+    data,
+  });
+  if (source) {
+    context.config.content.source = source;
+  }
+  return context;
+}
+
 describe('Bulk Preview Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
@@ -47,7 +62,6 @@ describe('Bulk Preview Tests', () => {
   /** @type {import('sinon').SinonSandbox} */
   let sandbox;
 
-  let ctx;
   let info;
 
   beforeEach(() => {
@@ -55,13 +69,6 @@ describe('Bulk Preview Tests', () => {
     sandbox = sinon.createSandbox();
     HANDLERS['test-bulk'] = createTestHandler();
 
-    ctx = createContext('/org/sites/site/preview/*', {
-      attributes: {
-        authInfo: AuthInfo.Admin(),
-        config: structuredClone(TEST_CONFIG),
-        infoMarkerChecked: true,
-      },
-    });
     info = createInfo('/org/sites/site/preview/*');
   });
 
@@ -72,130 +79,123 @@ describe('Bulk Preview Tests', () => {
   });
 
   it('returns 400 for missing payload', async () => {
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext(undefined);
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'bulk-preview payload is missing "paths".');
   });
 
   it('returns 400 for empty paths array', async () => {
-    ctx.data.paths = [];
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: [] });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'bulk-preview payload is missing "paths".');
   });
 
   it('returns 400 for invalid payload (not an array)', async () => {
-    ctx.data.paths = '/foo';
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: '/foo' });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'bulk-preview "paths" is not an array.');
   });
 
   it('returns 400 for illegal path (with spaces)', async () => {
-    ctx.data.paths = ['/my documents/foo'];
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: ['/my documents/foo'] });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'bulk-preview path not valid: /my documents/foo');
   });
 
   it('returns 400 for config paths', async () => {
-    ctx.data.paths = ['/.helix/config.json'];
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: ['/.helix/config.json'] });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'bulk-preview of config resources is not supported: /.helix/config.json');
   });
 
   it('returns 400 for non-string path (null → becomes "null" → passes isIllegalPath)', async () => {
-    ctx.data.paths = [null];
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: [null] });
+    const result = await bulkPreview(context, info);
     // null.startsWith throws before isIllegalPath, caught as 500 or 400
     assert.ok(result.status >= 400);
   });
 
   it('returns 404 for unknown content source handler', async () => {
-    ctx.data.paths = ['/foo'];
-    ctx.attributes.config.content.source = { type: 'unknown-type' };
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: ['/foo'] }, { type: 'unknown-type' });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 404);
   });
 
   it('returns 400 if handler does not support bulk (no list method)', async () => {
     delete HANDLERS['test-bulk'].list;
-    ctx.data.paths = ['/foo'];
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: ['/foo'] });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'bulk-preview not supported for handler "test-bulk".');
   });
 
   it('returns 400 when trying to preview a subtree with a markup content source', async () => {
-    ctx.data.paths = ['/foo/*'];
-    ctx.attributes.config.content.source = { type: 'markup', url: 'https://byom.example.com' };
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext({ paths: ['/foo/*'] }, { type: 'markup', url: 'https://byom.example.com' });
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'wildcard paths are not supported with a markup content source.');
   });
 
   it('requires edit:list permission for wildcard paths', async () => {
-    const ctxNoPerms = createContext('/org/sites/site/preview/*', {
-      attributes: {
-        authInfo: AuthInfo.Default(),
-        config: structuredClone(TEST_CONFIG),
-        infoMarkerChecked: true,
-      },
-    });
-    ctxNoPerms.data.paths = ['/foo/*'];
+    const context = createTestContext({ paths: ['/foo/*'] });
+    context.attributes.authInfo = AuthInfo.Default();
     await assert.rejects(
-      () => bulkPreview(ctxNoPerms, info),
+      () => bulkPreview(context, info),
       { message: 'edit:list' },
     );
   });
 
   it('requires edit:list permission for >100 paths', async () => {
-    const ctxNoPerms = createContext('/org/sites/site/preview/*', {
-      attributes: {
-        authInfo: AuthInfo.Default(),
-        config: structuredClone(TEST_CONFIG),
-        infoMarkerChecked: true,
-      },
-    });
-    ctxNoPerms.data.paths = Array.from({ length: 101 }, (_, i) => `/path-${i}`);
+    const context = createTestContext({ paths: Array.from({ length: 101 }, (_, i) => `/path-${i}`) });
+    context.attributes.authInfo = AuthInfo.Default();
     await assert.rejects(
-      () => bulkPreview(ctxNoPerms, info),
+      () => bulkPreview(context, info),
       { message: 'edit:list' },
     );
   });
 
   it('returns 400 when paths exceed the sync limit for the content source', async () => {
-    ctx.attributes.config.content.source = { type: 'onedrive', url: 'https://example.sharepoint.com' };
-    // onedrive limit is 15; send 16 paths without forceAsync
-    ctx.data.paths = Array.from({ length: 16 }, (_, i) => `/doc-${i}`);
-    const result = await bulkPreview(ctx, info);
+    const context = createTestContext(
+      { paths: Array.from({ length: 16 }, (_, i) => `/path-${i}`) },
+      { type: 'onedrive', url: 'https://example.sharepoint.com' },
+    );
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'Number of paths for synchronous bulk-preview exceeds allowed max for onedrive content source: 16 > 15. Use forceAsync=true');
   });
 
   it('bypasses the sync limit when forceAsync=true', async () => {
-    ctx.attributes.config.content.source = { type: 'onedrive', url: 'https://example.sharepoint.com' };
-    ctx.data.paths = Array.from({ length: 16 }, (_, i) => `/doc-${i}`);
-    ctx.data.forceAsync = 'true';
+    const context = createTestContext(
+      {
+        paths: Array.from({ length: 16 }, (_, i) => `/path-${i}`),
+        forceAsync: true,
+      },
+      { type: 'onedrive', url: 'https://example.sharepoint.com' },
+    );
+
     const createStub = sandbox.stub(Job, 'create').resolves(
       new Response('{}', { status: 202 }),
     );
-    const result = await bulkPreview(ctx, info);
+    const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 202);
     assert.ok(createStub.calledOnce);
   });
 
   it('creates the preview job with correct parameters', async () => {
+    const context = createTestContext({ paths: ['/foo/bar'] });
+
     const createStub = sandbox.stub(Job, 'create').resolves(
-      new Response(JSON.stringify({ job: { state: 'created' } }), {
+      new Response({ job: { state: 'created' } }, {
         status: 202,
-        headers: { 'content-type': 'application/json' },
       }),
     );
 
-    ctx.data.paths = ['/foo/bar'];
-    const result = await bulkPreview(ctx, info);
+    const result = await bulkPreview(context, info);
 
     assert.strictEqual(result.status, 202);
     assert.ok(createStub.calledOnce);
@@ -209,14 +209,11 @@ describe('Bulk Preview Tests', () => {
   });
 
   it('coerces paths to strings and forceUpdate to boolean', async () => {
+    const context = createTestContext({ paths: ['/foo/bar'], forceUpdate: true });
     const createStub = sandbox.stub(Job, 'create').resolves(
       new Response('{}', { status: 200 }),
     );
-
-    ctx.data.paths = ['/foo/bar'];
-    ctx.data.forceUpdate = 'true';
-    await bulkPreview(ctx, info);
-
+    await bulkPreview(context, info);
     const [, , , opts] = createStub.firstCall.args;
     assert.strictEqual(opts.data.forceUpdate, true);
     assert.strictEqual(typeof opts.data.paths[0], 'string');

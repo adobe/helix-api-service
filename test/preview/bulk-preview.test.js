@@ -116,8 +116,8 @@ describe('Bulk Preview Tests', () => {
   it('returns 400 for non-string path (null → becomes "null" → passes isIllegalPath)', async () => {
     const context = createTestContext({ paths: [null] });
     const result = await bulkPreview(context, info);
-    // null.startsWith throws before isIllegalPath, caught as 500 or 400
-    assert.ok(result.status >= 400);
+    assert.strictEqual(result.status, 400);
+    assert.strictEqual(result.headers.get('x-error'), 'bulk-preview path not valid: null');
   });
 
   it('returns 404 for unknown content source handler', async () => {

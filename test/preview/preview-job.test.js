@@ -97,9 +97,9 @@ const createTestHandler = (fileList = DEFAULT_FILE_LIST) => ({
  * - writeState / writeStateLazy / setPhase / trackProgress / checkStopped / audit are all stubbed
  * - purge.perform / purge.config / purge.redirects are stubbed via sinon sandbox
  */
-const createJob = async (ctx, info, paths = ['/foo/new', '/foo/old', '/foo/modified', '/foo/missing']) => {
-  const storage = await JobStorage.create(ctx, info, PreviewJob);
-  const job = new PreviewJob(ctx, info, 'preview', 'job-123', storage);
+export const createJob = async (context, info, paths = ['/foo/new', '/foo/old', '/foo/modified', '/foo/missing']) => {
+  const storage = await JobStorage.create(context, info, PreviewJob);
+  const job = new PreviewJob(context, info, 'preview', 'job-123', storage);
   job.state = {
     data: {
       forceUpdate: false,
@@ -133,7 +133,6 @@ const createJob = async (ctx, info, paths = ['/foo/new', '/foo/old', '/foo/modif
   job.audit = async function audit() {
     return true;
   };
-
   return job;
 };
 

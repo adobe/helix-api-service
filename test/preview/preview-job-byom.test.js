@@ -18,10 +18,9 @@ import sinon from 'sinon';
 
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
-import { JobStorage } from '../../src/job/storage.js';
-import { PreviewJob } from '../../src/preview/preview-job.js';
 import purge from '../../src/cache/purge.js';
 import { createContext, createInfo, Nock } from '../utils.js';
+import { createJob as createPreviewJob } from './preview-job.test.js';
 
 const CONTENT_BUS_ID = 'foo-id';
 
@@ -119,33 +118,7 @@ const makeConfig = (sourceType, overlay) => ({
 });
 
 const createJob = async (context, info, paths) => {
-  const storage = await JobStorage.create(context, info, PreviewJob);
-  const job = new PreviewJob(context, info, 'preview', 'job-123', storage);
-  job.state = {
-    data: { forceUpdate: false, paths },
-    progress: {
-      total: 0, processed: 0, success: 0, failed: 0, notmodified: 0,
-    },
-  };
-  job.writeState = function writeState(s = this.state) {
-    this.state = s;
-    this.lastSaveTime = Date.now();
-  };
-  job.writeStateLazy = async function writeStateLazy() { /* no-op */ };
-  job.setPhase = async function setPhase(phase) {
-    this.state.data.phase = phase;
-  };
-  job.trackProgress = async function trackProgress(stat) {
-    if (stat.total !== undefined) this.state.progress.total = stat.total;
-    if (stat.processed !== undefined) this.state.progress.processed += stat.processed;
-    if (stat.failed !== undefined) this.state.progress.failed += stat.failed;
-  };
-  job.checkStopped = async function checkStopped() {
-    return false;
-  };
-  job.audit = async function audit() {
-    return true;
-  };
+  const job = await createPreviewJob(context, info, paths);
   // Stub processFile to avoid real S3 calls; just marks the file as updated
   job.processFile = async function processFile(file) {
     // eslint-disable-next-line no-param-reassign

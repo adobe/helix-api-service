@@ -97,7 +97,7 @@ const createTestHandler = (fileList = DEFAULT_FILE_LIST) => ({
  * - writeState / writeStateLazy / setPhase / trackProgress / checkStopped / audit are all stubbed
  * - purge.perform / purge.config / purge.redirects are stubbed via sinon sandbox
  */
-const createJob = async (ctx, info, sandbox, paths = ['/foo/new', '/foo/old', '/foo/modified', '/foo/missing']) => {
+const createJob = async (ctx, info, paths = ['/foo/new', '/foo/old', '/foo/modified', '/foo/missing']) => {
   const storage = await JobStorage.create(ctx, info, PreviewJob);
   const job = new PreviewJob(ctx, info, 'preview', 'job-123', storage);
   job.state = {
@@ -167,8 +167,6 @@ describe('PreviewJob Tests', () => {
     sandbox.stub(purge, 'perform').callsFake((c, i, infos) => {
       purgeInfos.push(...infos);
     });
-    sandbox.stub(purge, 'config').resolves();
-    sandbox.stub(purge, 'redirects').resolves();
   });
 
   afterEach(() => {
@@ -178,7 +176,7 @@ describe('PreviewJob Tests', () => {
   });
 
   it('rejects resume during collect phase', async () => {
-    const job = await createJob(ctx, info, sandbox);
+    const job = await createJob(ctx, info);
     job.state.data.phase = 'collect';
     await assert.rejects(
       () => job.run(),
@@ -187,7 +185,7 @@ describe('PreviewJob Tests', () => {
   });
 
   it('collects resources from content source', async () => {
-    const job = await createJob(ctx, info, sandbox);
+    const job = await createJob(ctx, info);
     await job.collect(['/foo/new', '/foo/old', '/foo/modified', '/foo/missing']);
 
     assert.strictEqual(job.state.data.resources.length, 4);
@@ -213,7 +211,7 @@ describe('PreviewJob Tests', () => {
       return fileListWithRedirects;
     };
 
-    const job = await createJob(ctx, info, sandbox, ['/foo/new', '/redirects.json']);
+    const job = await createJob(ctx, info, ['/foo/new', '/redirects.json']);
     await job.collect(['/foo/new', '/redirects.json']);
 
     assert.strictEqual(job.state.data.resources[0].resourcePath, '/redirects.json');
@@ -221,7 +219,7 @@ describe('PreviewJob Tests', () => {
   });
 
   it('stops early during collect when checkStopped returns true', async () => {
-    const job = await createJob(ctx, info, sandbox);
+    const job = await createJob(ctx, info);
     job.checkStopped = sinon.stub().resolves(true);
 
     await job.collect(['/foo/new']);
@@ -229,7 +227,7 @@ describe('PreviewJob Tests', () => {
   });
 
   it('getRateLimit returns DOCBASED for non-markup sources', async () => {
-    const job = await createJob(ctx, info, sandbox);
+    const job = await createJob(ctx, info);
     job.state.data.resources = [{ source: { type: 'onedrive' } }];
     const rateLimit = job.getRateLimit();
     assert.strictEqual(rateLimit.maxConcurrent, 4);
@@ -237,7 +235,7 @@ describe('PreviewJob Tests', () => {
   });
 
   it('getRateLimit returns BYOM for markup-only sources', async () => {
-    const job = await createJob(ctx, info, sandbox);
+    const job = await createJob(ctx, info);
     job.state.data.resources = [{ source: { type: 'markup' } }];
     const rateLimit = job.getRateLimit();
     assert.strictEqual(rateLimit.maxConcurrent, 100);
@@ -277,11 +275,16 @@ describe('PreviewJob Tests', () => {
         return [200, SNS_RESPONSE_BODY];
       });
 
-    const job = await createJob(ctx, info, sandbox);
+    const job = await createJob(ctx, info);
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
-    assert.ok(purge.perform.called);
+    assert.deepStrictEqual(purgeInfos, [
+      { key: 'p_Ho7PLekudFPmskD4' },
+      { key: 'p_bDG6BvDACXvgEGBX' },
+      { key: 'p_1STMRI8ti52RMAhD' },
+      { key: 'p_F33f078hL3sq9AGu' },
+    ]);
   });
 
   it('run() purges with contentBusId key when resources exceed threshold', async () => {
@@ -320,11 +323,13 @@ describe('PreviewJob Tests', () => {
     nock('https://sns.us-east-1.amazonaws.com:443').post('/').reply(200, SNS_RESPONSE_BODY);
 
     const largePaths = largeFileList.map(({ path }) => path);
-    const job = await createJob(ctx, info, sandbox, largePaths);
+    const job = await createJob(ctx, info, largePaths);
     await job.run();
 
     // When > threshold, should purge with the bulk key
-    assert.ok(purgeInfos.some(({ key }) => key === `p_${CONTENT_BUS_ID}`));
+    assert.deepStrictEqual(purgeInfos, [
+      { key: 'p_foo-id' },
+    ]);
   });
 
   it('processFile() retries on 429 rate limit response', async function retries429() {
@@ -346,7 +351,7 @@ describe('PreviewJob Tests', () => {
       .putObject('/preview/foo/new.md')
       .reply(201);
 
-    const job = await createJob(ctx, info, sandbox, ['/foo/new']);
+    const job = await createJob(ctx, info, ['/foo/new']);
     const file = {
       path: '/foo/new',
       resourcePath: '/foo/new.md',
@@ -372,9 +377,22 @@ describe('PreviewJob Tests', () => {
       .putObject('/preview/redirects.json')
       .reply(201)
       .getObject('/preview/redirects.json')
-      .reply(404); // getRedirects() after cache invalidation
+      .reply(200, { data: [{ source: '/foo', destination: '/foo/new2' }] }) // getRedirects() after preview
+      .headObject('/preview/foo.md')
+      .reply(200) // redirected path
+      .copyObject('/preview/foo.md')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      }));
 
-    const job = await createJob(ctx, info, sandbox, ['/redirects.json']);
+    ctx.attributes.redirects = {
+      preview: {
+        '/foo.md': '/foo2',
+      },
+    };
+    const job = await createJob(ctx, info, ['/redirects.json']);
     const file = {
       path: '/redirects.json',
       resourcePath: '/redirects.json',
@@ -386,18 +404,17 @@ describe('PreviewJob Tests', () => {
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.status, 200);
-    assert.ok(purge.redirects.called);
+    assert.deepStrictEqual(purgeInfos, [{ key: 'p_q_WwvA4cJdubPLB2' }, { path: '/foo' }]);
   });
 
   it('processConfigFiles() calls purge.config when a metadata resource was updated', async () => {
-    const job = await createJob(ctx, info, sandbox, ['/metadata.json']);
+    const job = await createJob(ctx, info, ['/metadata.json']);
     job.state.data.resources = [
       { path: '/metadata.json', resourcePath: '/metadata.json', status: 200 },
     ];
 
     await job.processConfigFiles();
-
-    assert.ok(purge.config.called);
+    assert.deepStrictEqual(purgeInfos, [{ key: 'U_NW4adJU7Qazf-I' }]);
   });
 
   it('processFile() records errorCode when x-error-code header is present', async () => {
@@ -407,7 +424,7 @@ describe('PreviewJob Tests', () => {
 
     nock.content(CONTENT_BUS_ID).headObject('/preview/foo/new.md').reply(404); // isNotModified
 
-    const job = await createJob(ctx, info, sandbox, ['/foo/new']);
+    const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [];
     const file = {
       path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
@@ -426,7 +443,7 @@ describe('PreviewJob Tests', () => {
 
     nock.content(CONTENT_BUS_ID).headObject('/preview/foo/new.md').reply(404); // isNotModified
 
-    const job = await createJob(ctx, info, sandbox, ['/foo/new']);
+    const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [];
     const file = {
       path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
@@ -438,7 +455,7 @@ describe('PreviewJob Tests', () => {
   });
 
   it('preview() aborts without calling processFile when checkStopped returns true', async () => {
-    const job = await createJob(ctx, info, sandbox, ['/foo/new']);
+    const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [{
       path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
     }];

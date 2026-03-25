@@ -134,7 +134,13 @@ describe('Notifications Test', () => {
 
   describe('publishBulkResourceNotification', () => {
     it('does not publish if notifications are disabled', async () => {
-      await publishBulkResourceNotification({ data: { disableNotifications: true } }, 'foo', {}, [], []);
+      await publishBulkResourceNotification(
+        { data: { disableNotifications: true } },
+        'bar',
+        {},
+        ['/doc1'],
+        [{ path: '/doc1', status: 200 }],
+      );
     });
 
     it('handles fatal errors', async () => {

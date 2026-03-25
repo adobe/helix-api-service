@@ -77,7 +77,7 @@ export default async function bulkPreview(context, info) {
     context.attributes.authInfo.assertPermissions('edit:list');
   }
 
-  if (paths.length > MAX_SYNC_PATHS[handler.name] && String(context.data?.forceAsync) !== 'true') {
+  if (paths.length > MAX_SYNC_PATHS[handler.name] && String(context.data.forceAsync) !== 'true') {
     return errorResponse(log, 400, error(
       'Number of paths for synchronous bulk-preview exceeds allowed max for $1 content source: $2 > $3. Use forceAsync=true',
       handler.name,

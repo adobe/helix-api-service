@@ -1,3 +1,10 @@
+# [1.35.0](https://github.com/adobe/helix-api-service/compare/v1.34.11...v1.35.0) (2026-03-26)
+
+
+### Features
+
+* **source:** document versioning ([#137](https://github.com/adobe/helix-api-service/issues/137)) ([f4f7a16](https://github.com/adobe/helix-api-service/commit/f4f7a16b0eecc0596bfb2bb2faa2483f69db974e))
+
 ## [1.34.11](https://github.com/adobe/helix-api-service/compare/v1.34.10...v1.34.11) (2026-03-24)
 
 

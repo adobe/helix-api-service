@@ -331,14 +331,13 @@ describe('PreviewJob Tests', () => {
     ]);
   });
 
-  it('processFile() retries on 429 rate limit response', async function retries429() {
-    // eslint-disable-next-line no-invalid-this
-    this.timeout(5000); // sleep(1000) is called once by the retry logic
-
+  it('processFile() retries on 429 rate limit response', async () => {
     const handleStub = sandbox.stub(HANDLERS['test-pj'], 'handle');
     handleStub.onFirstCall().returns(new Response('', {
       status: 429,
-      headers: { 'retry-after': '0' }, // parseInt('0') || 1 = 1 → sleep(1000ms)
+      // -1 → parseInt('-1') = -1 (truthy, so skip || 1) → sleep(-1000ms)
+      // Node.js clamps negative setTimeout delays to 0, so no real wait
+      headers: { 'retry-after': '-1' },
     }));
     handleStub.onSecondCall().callsFake(() => Promise.resolve(new Response('# content')));
 

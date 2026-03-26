@@ -1,3 +1,10 @@
+## [1.36.1](https://github.com/adobe/helix-api-service/compare/v1.36.0...v1.36.1) (2026-03-26)
+
+
+### Bug Fixes
+
+* bulk preview '/' ([#156](https://github.com/adobe/helix-api-service/issues/156)) ([8f194d0](https://github.com/adobe/helix-api-service/commit/8f194d0971eab6664cf3aa3d70dc73d85f61b7c2))
+
 # [1.36.0](https://github.com/adobe/helix-api-service/compare/v1.35.0...v1.36.0) (2026-03-26)
 
 

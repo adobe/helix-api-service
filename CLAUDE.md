@@ -54,6 +54,8 @@ The central context object passed to every handler. It wraps the Helix Universal
 - Auth state and token caching
 - Redirect helpers
 
+**Naming convention**: The `AdminContext` parameter must always be named `context`, not `ctx`.
+
 ### RequestInfo (`src/support/RequestInfo.js`)
 
 Parses route variables (`org`, `site`, `ref`, path, extension) and computes web vs. resource paths. Passed alongside context to every handler.
@@ -80,6 +82,21 @@ Each feature area is a subdirectory with its own handler module:
 - Session cookies (secure, httponly, samesite)
 - Role mapping from site/org config files
 - CSRF protection for sidekick integration
+
+### Code Style
+
+- Use destructuring for variable bindings. Prefer deep destructuring to collapse chains:
+  ```js
+  // preferred
+  const { ctx, info, state: { data } } = this;
+  // avoid
+  const { ctx, info, state } = this;
+  const { data } = state;
+  ```
+  When the intermediate binding is also needed, name it explicitly alongside the deep form:
+  ```js
+  const { state, state: { data: { forceUpdate, resources } } } = this;
+  ```
 
 ### Error Handling
 

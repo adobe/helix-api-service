@@ -1,3 +1,10 @@
+# [1.36.0](https://github.com/adobe/helix-api-service/compare/v1.35.0...v1.36.0) (2026-03-26)
+
+
+### Features
+
+* **preview:** add bulk preview job support  ([1e7773a](https://github.com/adobe/helix-api-service/commit/1e7773ab016c70e6a9933ec3b78917fb5ca6f05e))
+
 # [1.35.0](https://github.com/adobe/helix-api-service/compare/v1.34.11...v1.35.0) (2026-03-26)
 
 

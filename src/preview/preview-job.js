@@ -75,7 +75,7 @@ export class PreviewJob extends Job {
    * @return {Promise<void>}
    */
   async collect(paths, overlay) {
-    const { ctx, info } = this;
+    const { ctx, info, state: { data } } = this;
 
     const source = overlay ?? ctx.config.content.source;
     const handler = getContentSourceHandler(source);
@@ -105,14 +105,14 @@ export class PreviewJob extends Job {
       }
     }
 
-    // If we are overlaying, append the resources to this.state.data.resources
-    this.state.data.resources = overlay
-      ? [...this.state.data.resources, ...resources]
+    // If we are overlaying, append the resources to data.resources
+    data.resources = overlay
+      ? [...data.resources, ...resources]
       : resources;
 
     const notFound = resources.filter(({ status }) => status === 404).length;
     await this.trackProgress({
-      total: this.state.data.resources.length,
+      total: data.resources.length,
       notmodified: 0,
       success: 0,
       failed: notFound,
@@ -128,13 +128,13 @@ export class PreviewJob extends Job {
    * @param {import('@adobe/helix-shared-process-queue').Token} token the task token
    */
   async processFile(file, forceUpdate, token) {
-    const { ctx, info } = this;
+    const { ctx, info, state } = this;
     const { log } = ctx;
 
     if (!forceUpdate && await isNotModified(ctx, file)) {
       log.info(`ignored preview update for not modified ${file.path}`);
       file.status = 304;
-      this.state.progress.notmodified += 1;
+      state.progress.notmodified += 1;
       token.release();
       return;
     }
@@ -198,7 +198,7 @@ export class PreviewJob extends Job {
         file.errorCode = errorCode;
       }
       log.warn(`error from content bus: ${response.status} ${err}`);
-      this.state.progress.failed += 1;
+      state.progress.failed += 1;
     }
 
     const stop = Date.now();
@@ -248,21 +248,21 @@ export class PreviewJob extends Job {
    * @return {Promise<void>}
    */
   async preview() {
-    const { forceUpdate } = this.state.data;
+    const { state, state: { data: { forceUpdate, resources } } } = this;
 
     const rateLimit = this.getRateLimit();
     const { abortController } = rateLimit;
 
-    await processQueue([...this.state.data.resources], async (file, queue, results, token) => {
+    await processQueue([...resources], async (file, queue, results, token) => {
       if (await this.checkStopped()) {
         abortController.abort();
         return;
       }
       if (!file.status) {
         await this.processFile(file, forceUpdate, token);
-        this.state.progress.processed += 1;
+        state.progress.processed += 1;
         if (file.status === 200) {
-          this.state.progress.success += 1;
+          state.progress.success += 1;
         }
         await this.writeStateLazy();
       }
@@ -276,20 +276,20 @@ export class PreviewJob extends Job {
    * @return {Promise<void>}
    */
   async run() {
-    const { ctx, info } = this;
+    const { ctx, info, state: { data } } = this;
     const { contentBusId } = ctx;
 
-    if (this.state.data.phase === 'collect') {
+    if (data.phase === 'collect') {
       // todo: implement resume for content-source listing
       throw new Error('job cannot be resumed during the collect phase. please provide a smaller input set.');
     }
-    if (!this.state.data.phase) {
+    if (!data.phase) {
       await this.setPhase('collect');
 
       // Start by collecting the paths from the source
-      await this.collect(this.state.data.paths);
+      await this.collect(data.paths);
 
-      const unresolvedPaths = this.state.data.resources
+      const unresolvedPaths = data.resources
         .filter(({ status, path }) => status === 404 && !path.endsWith('/*'))
         .map(({ path }) => path);
 
@@ -297,18 +297,17 @@ export class PreviewJob extends Job {
       const overlay = ctx.attributes.config?.content?.overlay;
       if (overlay && unresolvedPaths.length > 0) {
         // Remove the paths that were not found
-        this.state.data.resources = this.state.data.resources
-          .filter(({ status }) => status !== 404);
+        data.resources = data.resources.filter(({ status }) => status !== 404);
 
         await this.collect(unresolvedPaths, overlay);
       }
 
       await this.setPhase('preview');
     }
-    if (this.state.data.phase === 'preview') {
+    if (data.phase === 'preview') {
       await this.preview();
 
-      const previewedResources = this.state.data.resources.filter(({ status }) => status === 200);
+      const previewedResources = data.resources.filter(({ status }) => status === 200);
       const previewedPaths = previewedResources.map(({ path }) => path);
       const resourcePaths = previewedResources.map(({ resourcePath }) => resourcePath);
 
@@ -329,7 +328,7 @@ export class PreviewJob extends Job {
         await purge.perform(ctx, info, infos, PURGE_PREVIEW, 'main');
       }
 
-      await publishBulkResourceNotification(ctx, 'resources-previewed', info, resourcePaths, this.state.data.resources);
+      await publishBulkResourceNotification(ctx, 'resources-previewed', info, resourcePaths, data.resources);
 
       await this.setPhase('completed');
     }

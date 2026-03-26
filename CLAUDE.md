@@ -83,6 +83,21 @@ Each feature area is a subdirectory with its own handler module:
 - Role mapping from site/org config files
 - CSRF protection for sidekick integration
 
+### Code Style
+
+- Use destructuring for variable bindings. Prefer deep destructuring to collapse chains:
+  ```js
+  // preferred
+  const { ctx, info, state: { data } } = this;
+  // avoid
+  const { ctx, info, state } = this;
+  const { data } = state;
+  ```
+  When the intermediate binding is also needed, name it explicitly alongside the deep form:
+  ```js
+  const { state, state: { data: { forceUpdate, resources } } } = this;
+  ```
+
 ### Error Handling
 
 Use `StatusCodeError` for HTTP error responses and `AccessDeniedError` for authorization failures. The `catchAll` wrapper converts unhandled errors to HTTP responses.

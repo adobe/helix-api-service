@@ -21,6 +21,7 @@ import { HANDLERS } from '../../src/contentproxy/index.js';
 import purge from '../../src/cache/purge.js';
 import { createContext, createInfo, Nock } from '../utils.js';
 import { createJob as createPreviewJob } from './preview-job.test.js';
+import { toResourcePath } from '../../src/support/RequestInfo.js';
 
 const CONTENT_BUS_ID = 'foo-id';
 
@@ -94,7 +95,7 @@ const createByomHandler = () => ({
       .filter((p) => !p.endsWith('/*'))
       .map((p) => ({
         path: p,
-        resourcePath: `${p.endsWith('.json') ? p : `${p}.md`}`,
+        resourcePath: toResourcePath(p),
         source: {
           contentType: 'application/octet-stream',
           lastModified: 1000,
@@ -252,6 +253,17 @@ describe('BYOM PreviewJob Tests', () => {
 
       assert.strictEqual(job.state.data.resources.length, 3);
       assert.ok(job.state.data.resources.every(({ source }) => source?.type === 'markup'));
+    });
+
+    it('collect() correctly maps / path to resourcePath /index.md', async () => {
+      const job = await createJob(context, info, ['/']);
+
+      await job.collect(['/']);
+
+      assert.strictEqual(job.state.data.resources.length, 1);
+      const [resource] = job.state.data.resources;
+      assert.strictEqual(resource.path, '/');
+      assert.strictEqual(resource.resourcePath, '/index.md');
     });
   });
 

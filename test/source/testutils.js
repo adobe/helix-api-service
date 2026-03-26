@@ -11,9 +11,10 @@
  */
 import { createContext } from '../utils.js';
 
-export function setupContext(suffix, { attributes = {} } = {}) {
+export function setupContext(suffix, { attributes = {}, data = {} } = {}) {
   return createContext(suffix, {
     attributes,
+    data,
     env: {
       HELIX_STORAGE_DISABLE_R2: 'true',
     },

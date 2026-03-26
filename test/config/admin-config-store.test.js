@@ -14,6 +14,7 @@ import assert from 'assert';
 import sinon from 'sinon';
 import purge from '../../src/cache/purge.js';
 import discover from '../../src/discover/reindex.js';
+import sitemap from '../../src/sitemap/config-update.js';
 import { AdminConfigStore } from '../../src/config/admin-config-store.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
@@ -38,6 +39,9 @@ describe('Admin Config Store Tests', () => {
   /** @type {object} */
   let projectInfo;
 
+  /** @type {object} */
+  let sitemapInfo;
+
   beforeEach(() => {
     nock = new Nock().env();
     sandbox = sinon.createSandbox();
@@ -48,6 +52,11 @@ describe('Admin Config Store Tests', () => {
     sandbox.stub(discover, 'projectChanged').callsFake((context, oldConfig, newConfig, org, site) => {
       projectInfo = {
         oldConfig, newConfig, org, site,
+      };
+    });
+    sandbox.stub(sitemap, 'hostUpdated').callsFake((context, info, host) => {
+      sitemapInfo = {
+        host,
       };
     });
   });
@@ -324,6 +333,436 @@ describe('Admin Config Store Tests', () => {
       assert.ok(res.created);
       assert.ok(res.id);
       assert.ok(res.value);
+    });
+
+    it('returns 404 if config not found in storage with rel path', async () => {
+      nock.config()
+        .getObject('/orgs/org/sites/site1.json')
+        .reply(404);
+
+      const cs = new AdminConfigStore('org', 'sites', 'site1');
+      const { context } = setupTest('/org/sites/site1/config.json', {
+        data: {
+          title: 'my profile',
+        },
+      });
+      const result = await cs.fetchUpdate(context, 'content');
+
+      assert.strictEqual(result.status, 404);
+      assert.deepStrictEqual(result.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Error updating config: config not found.',
+        'x-error-code': 'AEM_BACKEND_CONFIG_UPDATE',
+      });
+    });
+
+    it('responds with a 400 for invalid config update', async () => {
+      nock.config()
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(404)
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, SITE_CONFIG);
+
+      const cs = new AdminConfigStore('org', 'sites', 'site');
+
+      const { context } = setupTest('/org/sites/site/config.json', {
+        data: { invalid: 'config' },
+      });
+      const result = await cs.fetchUpdate(context);
+
+      assert.strictEqual(result.status, 400);
+      assert.deepStrictEqual(result.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'Error updating config: data must have required properties: [content, code]; data must NOT have additional properties',
+        'x-error-code': 'AEM_BACKEND_CONFIG_UPDATE',
+      });
+    });
+
+    it('users in org', async () => {
+      let newId;
+      nock.versions('org', 'myorg');
+      nock.config()
+        .getObject('/orgs/myorg/config.json')
+        .reply(200, {
+          users: [{
+            id: 'user1',
+            email: 'user1@example.com',
+            roles: [],
+          }],
+        })
+        .putObject('/orgs/myorg/config.json')
+        .reply((uri, body) => {
+          newId = body.users[1].id;
+          // eslint-disable-next-line no-param-reassign
+          delete body.users[1].id;
+          assert.deepStrictEqual(body, {
+            version: 1,
+            created: '2024-01-01T00:00:00.000Z',
+            lastModified: '2024-01-01T00:00:00.000Z',
+            users: [{
+              id: 'user1',
+              email: 'user1@example.com',
+              roles: [],
+            }, {
+              email: 'user2@example.com',
+              roles: [],
+            }],
+          });
+          return [201];
+        });
+
+      const cs = new AdminConfigStore('myorg', 'org');
+      cs.now = new Date(Date.UTC(2024, 0, 1));
+
+      const { context } = setupTest('/myorg/config.json', {
+        data: {
+          email: 'user2@example.com',
+          roles: [],
+        },
+      });
+      const result = await cs.fetchUpdate(context, 'users');
+
+      assert.strictEqual(result.status, 200);
+      const res = await result.json();
+      assert.deepStrictEqual(res, {
+        id: newId,
+        email: 'user2@example.com',
+        roles: [],
+      });
+    });
+
+    it('groups in org', async () => {
+      nock.versions('org', 'myorg');
+      nock.config()
+        .getObject('/orgs/myorg/config.json')
+        .reply(200, {})
+        .putObject('/orgs/myorg/config.json')
+        .reply((uri, body) => {
+          assert.deepStrictEqual(body, {
+            version: 1,
+            created: '2024-01-01T00:00:00.000Z',
+            lastModified: '2024-01-01T00:00:00.000Z',
+            groups: {
+              qa: {
+                members: [
+                  { email: 'user1@example.com' },
+                  { email: 'user2@example.com' },
+                ],
+              },
+            },
+          });
+          return [201];
+        });
+
+      const cs = new AdminConfigStore('myorg', 'org');
+      cs.now = new Date(Date.UTC(2024, 0, 1));
+
+      const { context } = setupTest('/myorg/config.json', {
+        data: {
+          members: [
+            { email: 'user1@example.com' },
+            { email: 'user2@example.com' },
+          ],
+        },
+      });
+      const result = await cs.fetchUpdate(context, 'groups/qa');
+
+      assert.strictEqual(result.status, 200);
+      const res = await result.json();
+      assert.deepStrictEqual(res, {
+        members: [
+          { email: 'user1@example.com' },
+          { email: 'user2@example.com' },
+        ],
+      });
+    });
+
+    describe('other types', () => {
+      const SITE_1D_CONFIG = {
+        version: 1,
+        title: 'Helix Test Site 1',
+        content: {
+          contentBusId: '974cfbd09701a7cbb6d26994cbc2fd1245ca5927966789be34ff45ad2be',
+          source: {
+            type: 'onedrive',
+            url: 'https://adobe.sharepoint.com/sites/cg-helix/Shared%20Documents/helix-test-content-onedrive1',
+          },
+        },
+        code: {
+          owner: 'adobe',
+          repo: 'my-repo',
+          source: {
+            type: 'github',
+            url: 'https://github.com/adobe/my-repo',
+          },
+        },
+        cdn: {
+          prod: {
+            host: 'www.example.com',
+          },
+        },
+      };
+
+      beforeEach(() => {
+        nock.versions('sites', 'org', 'site');
+        nock.config()
+          .getObject('/orgs/org/profiles/default.json')
+          .reply(404)
+          .getObject('/orgs/org/sites/site.json')
+          .reply(200, SITE_CONFIG)
+          .putObject('/orgs/org/sites/site.json')
+          .reply(201);
+      });
+
+      it('sites in storage', async () => {
+        const cs = new AdminConfigStore('org', 'sites', 'site');
+        cs.now = new Date(Date.UTC(2024, 0, 1));
+
+        const { context } = setupTest('/org/sites/site/config.json', {
+          data: copyDeep(SITE_1D_CONFIG),
+        });
+        const result = await cs.fetchUpdate(context);
+
+        assert.strictEqual(result.status, 200);
+        assert.deepStrictEqual(purgeInfos, {
+          org: 'org',
+          site: 'site',
+          owner: 'adobe',
+          repo: 'my-repo',
+          keys: [
+            'main--repo--owner_code',
+            CONTENT_BUS_ID,
+            `p_${CONTENT_BUS_ID}`,
+            'main--my-repo--adobe_code',
+            SITE_1D_CONFIG.content.contentBusId,
+            `p_${SITE_1D_CONFIG.content.contentBusId}`,
+          ],
+        });
+        assert.deepStrictEqual(projectInfo, {
+          oldConfig: SITE_CONFIG,
+          newConfig: {
+            ...SITE_1D_CONFIG,
+            created: cs.now.toISOString(),
+            lastModified: cs.now.toISOString(),
+          },
+          org: 'org',
+          site: 'site',
+        });
+      });
+
+      const SITE_CONFIG_WITH_HEADERS = {
+        ...SITE_CONFIG,
+        headers: {
+          '/**': [
+            { key: 'Cache-Control', value: 'max-age=3600' },
+          ],
+        },
+      };
+
+      it('headers purges cache', async () => {
+        const cs = new AdminConfigStore('org', 'sites', 'site');
+        cs.now = new Date(Date.UTC(2024, 0, 1));
+
+        const { context } = setupTest('/org/sites/site/config.json', {
+          data: copyDeep(SITE_CONFIG_WITH_HEADERS),
+        });
+        const result = await cs.fetchUpdate(context);
+
+        assert.strictEqual(result.status, 200);
+        const newConfig = copyDeep({
+          ...SITE_CONFIG_WITH_HEADERS,
+          created: cs.now.toISOString(),
+          lastModified: cs.now.toISOString(),
+        });
+        assert.deepStrictEqual(await result.json(), newConfig);
+      });
+
+      it('code purges cache', async () => {
+        const cs = new AdminConfigStore('org', 'sites', 'site');
+        cs.now = new Date(Date.UTC(2024, 0, 1));
+
+        const { context } = setupTest('/org/sites/site/config.json', {
+          data: {
+            owner: 'adobe',
+            repo: 'my-repo',
+          },
+        });
+        const result = await cs.fetchUpdate(context, 'code');
+
+        assert.strictEqual(result.status, 200);
+        assert.deepStrictEqual(projectInfo, {
+          oldConfig: SITE_CONFIG,
+          newConfig: {
+            ...SITE_CONFIG,
+            code: {
+              ...SITE_CONFIG.code,
+              owner: 'adobe',
+              repo: 'my-repo',
+              source: {
+                ...SITE_CONFIG.code.source,
+                url: 'https://github.com/adobe/my-repo',
+              },
+            },
+            created: cs.now.toISOString(),
+            lastModified: cs.now.toISOString(),
+          },
+          org: 'org',
+          site: 'site',
+        });
+      });
+
+      const SITE_CONFIG_WITH_CDN_TOKEN = {
+        ...SITE_CONFIG,
+        cdn: {
+          prod: {
+            type: 'fastly',
+            host: 'www.example.com',
+            authToken: 'foo',
+            serviceId: '123456',
+          },
+        },
+      };
+
+      it('cdn token only purges config cache', async () => {
+        const cs = new AdminConfigStore('org', 'sites', 'site');
+        cs.now = new Date(Date.UTC(2024, 0, 1));
+
+        const { context } = setupTest('/org/sites/site/config.json', {
+          data: copyDeep(SITE_CONFIG_WITH_CDN_TOKEN),
+        });
+        const result = await cs.fetchUpdate(context);
+
+        assert.strictEqual(result.status, 200);
+        assert.deepStrictEqual(projectInfo, {
+          oldConfig: SITE_CONFIG,
+          newConfig: {
+            ...SITE_CONFIG_WITH_CDN_TOKEN,
+            created: cs.now.toISOString(),
+            lastModified: cs.now.toISOString(),
+          },
+          org: 'org',
+          site: 'site',
+        });
+      });
+
+      const SITE_CONFIG_WITH_FOLDERS = {
+        ...SITE_CONFIG,
+        folders: {
+          '/products': '/products/default',
+        },
+        cdn: {
+          prod: {
+            type: 'fastly',
+            host: 'www.example.com',
+            serviceId: '123456',
+            authToken: 'example',
+          },
+        },
+      };
+
+      it('folders only purges content cache (and on prod)', async () => {
+        const cs = new AdminConfigStore('org', 'sites', 'site');
+        cs.now = new Date(Date.UTC(2024, 0, 1));
+
+        const { context } = setupTest('/org/sites/site/config.json', {
+          data: copyDeep(SITE_CONFIG_WITH_FOLDERS),
+        });
+        const result = await cs.fetchUpdate(context);
+
+        assert.strictEqual(result.status, 200);
+        assert.deepStrictEqual(projectInfo, {
+          oldConfig: SITE_CONFIG,
+          newConfig: {
+            ...SITE_CONFIG_WITH_FOLDERS,
+            created: cs.now.toISOString(),
+            lastModified: cs.now.toISOString(),
+          },
+          org: 'org',
+          site: 'site',
+        });
+      });
+
+      const SITE_CONFIG_WITH_HOST = {
+        ...SITE_CONFIG,
+        cdn: {
+          prod: {
+            host: 'other.example.com',
+          },
+        },
+      };
+
+      it('cdn prod host purges content cache', async () => {
+        const cs = new AdminConfigStore('org', 'sites', 'site');
+        cs.now = new Date(Date.UTC(2024, 0, 1));
+
+        const { context } = setupTest('/org/sites/site/config.json', {
+          data: copyDeep(SITE_CONFIG_WITH_HOST),
+        });
+        const result = await cs.fetchUpdate(context);
+
+        assert.strictEqual(result.status, 200);
+        assert.deepStrictEqual(projectInfo, {
+          oldConfig: SITE_CONFIG,
+          newConfig: {
+            ...SITE_CONFIG_WITH_HOST,
+            created: cs.now.toISOString(),
+            lastModified: cs.now.toISOString(),
+          },
+          org: 'org',
+          site: 'site',
+        });
+        assert.deepStrictEqual(sitemapInfo, {
+          host: {
+            old: SITE_CONFIG.cdn.prod.host,
+            new: SITE_CONFIG_WITH_HOST.cdn.prod.host,
+          },
+        });
+      });
+    });
+  });
+
+  describe('delete', () => {
+    it('removes data from storage', async () => {
+      nock.config()
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(404)
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, SITE_CONFIG)
+        .deleteObject('/orgs/org/sites/site.json')
+        .reply(204);
+
+      const cs = new AdminConfigStore('org', 'sites', 'site');
+
+      const { context } = setupTest('/org/sites/site/config.json');
+      const result = await cs.fetchRemove(context, '');
+
+      assert.strictEqual(result.status, 204);
+      assert.deepStrictEqual(purgeInfos, {
+        org: 'org',
+        site: 'site',
+        owner: SITE_CONFIG.code.owner,
+        repo: SITE_CONFIG.code.repo,
+        keys: [
+          'main--repo--owner_code',
+          CONTENT_BUS_ID,
+          `p_${CONTENT_BUS_ID}`,
+        ],
+      });
+    });
+
+    it('returns 404 if config not found', async () => {
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(404);
+
+      const cs = new AdminConfigStore('org', 'sites', 'site');
+
+      const { context } = setupTest('/org/sites/site/config.json');
+      const result = await cs.fetchRemove(context, '');
+
+      assert.strictEqual(result.status, 404);
     });
   });
 });

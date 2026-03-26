@@ -14,65 +14,67 @@ import { SitemapConfig } from '@adobe/helix-shared-config';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import SitemapBuilder from './builder.js';
 
-/**
- * Triggered when the production hostname for a project changes.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {Object} host changed host
- * @returns {Promise<boolean>}
- */
-export async function hostUpdated(context, info, host) {
-  const { attributes, contentBusId, log } = context;
-  const fetchTimeout = 5000;
+export default {
+  /**
+   * Triggered when the production hostname for a project changes.
+   *
+   * @param {import('../support/AdminContext').AdminContext} context context
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   * @param {Object} host changed host
+   * @returns {Promise<boolean>}
+   */
+  hostUpdated: async (context, info, host) => {
+    const { attributes, contentBusId, log } = context;
+    const fetchTimeout = 5000;
 
-  if (!host.new) {
-    log.info('No new hostname provided, ignoring CDN prod host update');
-    return false;
-  }
-
-  let config;
-
-  try {
-    config = await context.fetchSitemap(info);
-    if (!config) {
+    if (!host.new) {
+      log.info('No new hostname provided, ignoring CDN prod host update');
       return false;
     }
-  } catch (e) {
-    log.info(`Unable to fetch sitemap configuration: ${e.message}`);
-    return false;
-  }
 
-  const storage = HelixStorage.fromContext(context).contentBus();
-  if (config['auto-generated'] === true) {
-    const newOrigin = `https://${host.new}`;
-    const oldOrigin = config.sitemaps[0]?.origin;
+    let config;
 
-    if (newOrigin !== oldOrigin) {
-      const clone = await new SitemapConfig().withSource(config.toYAML()).init();
-      for (const sitemap of clone.sitemaps) {
-        clone.setOrigin(sitemap.name, newOrigin);
-      }
-
-      const key = `/${contentBusId}/preview/.helix/sitemap.yaml`;
-      await storage.put(key, clone.toYAML(), 'text/yaml; charset=utf-8');
-      attributes.sitemapConfig = await new SitemapConfig().withSource(clone.toYAML()).init();
-
-      log.info(`Stored generated sitemap configuration in: ${key}`);
-    }
-  }
-
-  // generate new sitemaps
-  await Promise.allSettled(config.sitemaps.map(async (sitemap) => {
     try {
-      const builder = new SitemapBuilder({ config: sitemap });
-      await builder.build(context, fetchTimeout);
-      const result = await builder.store(context, true);
-
-      log.info(`Sitemap for ${config.name} rebuilt: ${result.paths}.`);
+      config = await context.fetchSitemap(info);
+      if (!config) {
+        return false;
+      }
     } catch (e) {
-      log.warn(`Unable to generate sitemap: ${e.message}`);
+      log.info(`Unable to fetch sitemap configuration: ${e.message}`);
+      return false;
     }
-  }));
-  return true;
-}
+
+    const storage = HelixStorage.fromContext(context).contentBus();
+    if (config['auto-generated'] === true) {
+      const newOrigin = `https://${host.new}`;
+      const oldOrigin = config.sitemaps[0]?.origin;
+
+      if (newOrigin !== oldOrigin) {
+        const clone = await new SitemapConfig().withSource(config.toYAML()).init();
+        for (const sitemap of clone.sitemaps) {
+          clone.setOrigin(sitemap.name, newOrigin);
+        }
+
+        const key = `/${contentBusId}/preview/.helix/sitemap.yaml`;
+        await storage.put(key, clone.toYAML(), 'text/yaml; charset=utf-8');
+        attributes.sitemapConfig = await new SitemapConfig().withSource(clone.toYAML()).init();
+
+        log.info(`Stored generated sitemap configuration in: ${key}`);
+      }
+    }
+
+    // generate new sitemaps
+    await Promise.allSettled(config.sitemaps.map(async (sitemap) => {
+      try {
+        const builder = new SitemapBuilder({ config: sitemap });
+        await builder.build(context, fetchTimeout);
+        const result = await builder.store(context, true);
+
+        log.info(`Sitemap for ${config.name} rebuilt: ${result.paths}.`);
+      } catch (e) {
+        log.warn(`Unable to generate sitemap: ${e.message}`);
+      }
+    }));
+    return true;
+  },
+};

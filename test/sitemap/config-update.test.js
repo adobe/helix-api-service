@@ -16,7 +16,7 @@ import assert from 'assert';
 import YAML from 'yaml';
 import zlib from 'zlib';
 
-import { hostUpdated } from '../../src/sitemap/config-update.js';
+import sitemap from '../../src/sitemap/config-update.js';
 import { Nock, createContext, createInfo } from '../utils.js';
 
 describe('Sitemap Config Update Tests', () => {
@@ -45,7 +45,7 @@ describe('Sitemap Config Update Tests', () => {
     it('when new hostname is not provided', async () => {
       const { context, info } = setupTest();
 
-      const result = await hostUpdated(context, info, { new: undefined });
+      const result = await sitemap.hostUpdated(context, info, { new: undefined });
       assert.strictEqual(result, false);
     });
 
@@ -53,7 +53,7 @@ describe('Sitemap Config Update Tests', () => {
       nock.sitemapConfig(null);
       const { context, info } = setupTest();
 
-      const result = await hostUpdated(context, info, { new: 'www.example.com' });
+      const result = await sitemap.hostUpdated(context, info, { new: 'www.example.com' });
       assert.strictEqual(result, false);
     });
 
@@ -65,7 +65,7 @@ describe('Sitemap Config Update Tests', () => {
       });
       const { context, info } = setupTest();
 
-      const result = await hostUpdated(context, info, { new: 'www.example.com' });
+      const result = await sitemap.hostUpdated(context, info, { new: 'www.example.com' });
       assert.strictEqual(result, false);
     });
   });
@@ -107,14 +107,14 @@ describe('Sitemap Config Update Tests', () => {
         });
       const { context, info } = setupTest();
 
-      const result = await hostUpdated(context, info, { new: 'www.neworigin.com' });
+      const result = await sitemap.hostUpdated(context, info, { new: 'www.neworigin.com' });
       assert.strictEqual(result, true);
     });
 
     it('is left as-is when origin did not change', async () => {
       const { context, info } = setupTest();
 
-      const result = await hostUpdated(context, info, { new: 'www.example.com' });
+      const result = await sitemap.hostUpdated(context, info, { new: 'www.example.com' });
       assert.strictEqual(result, true);
     });
   });
@@ -149,7 +149,7 @@ describe('Sitemap Config Update Tests', () => {
     it('is rebuilt', async () => {
       const { context, info } = setupTest();
 
-      const result = await hostUpdated(context, info, { new: 'www.neworigin.com' });
+      const result = await sitemap.hostUpdated(context, info, { new: 'www.neworigin.com' });
       assert.strictEqual(result, true);
     });
   });

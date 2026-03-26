@@ -619,6 +619,8 @@ describe('Authentication Test', () => {
   });
 
   describe('Org API Token', () => {
+    const suffix = '/org/config.json';
+
     it('supports api tokens with permissions but on no org/site route', async () => {
       const accessToken = await new SignJWT({
         email: 'helix@adobe.com',
@@ -683,7 +685,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
       });
       const authInfo = await context.authenticate(info);
 
@@ -725,7 +727,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
       });
       const authInfo = await context.authenticate(info);
 
@@ -767,7 +769,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
       });
       const authInfo = await context.authenticate(info);
 
@@ -802,7 +804,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: 'allowed-jti-123, another-allowed-jti',
         },
@@ -840,7 +842,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: 'allowed-jti-123, another-allowed-jti',
         },
@@ -878,7 +880,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
       });
       const authInfo = await context.authenticate(info);
 
@@ -913,7 +915,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: '',
         },
@@ -951,7 +953,7 @@ describe('Authentication Test', () => {
         headers: {
           authorization: `token ${accessToken}`,
         },
-        suffix: '/org/config',
+        suffix,
         env: {
           HLX_GLOBAL_API_KEY_ALLOWLIST: ' first-jti , spaced-jti , third-jti ',
         },

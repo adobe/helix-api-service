@@ -15,7 +15,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import purge from '../cache/purge.js';
 import { error } from '../contentproxy/errors.js';
 import discover from '../discover/reindex.js';
-import { hostUpdated } from '../sitemap/config-update.js';
+import sitemap from '../sitemap/config-update.js';
 import sourceLock from '../support/source-lock.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { errorResponse, redactObject, resolveAllowList } from '../support/utils.js';
@@ -339,7 +339,7 @@ export class AdminConfigStore extends ConfigStore {
         owner: this.org,
         repo: this.name,
       };
-      await hostUpdated(context, info, changed.cdn.prod.host);
+      await sitemap.hostUpdated(context, info, changed.cdn.prod.host);
     }
   }
 

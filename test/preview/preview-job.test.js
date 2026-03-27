@@ -331,6 +331,29 @@ describe('PreviewJob Tests', () => {
     ]);
   });
 
+  it('processFile() retries on 429 with missing retry-after (falls back to 1s)', async () => {
+    const handleStub = sandbox.stub(HANDLERS['test-pj'], 'handle');
+    handleStub.onFirstCall().returns(new Response('', { status: 429 })); // no retry-after header → NaN || 1
+    handleStub.onSecondCall().callsFake(() => Promise.resolve(new Response('# content')));
+
+    nock.content(CONTENT_BUS_ID)
+      .headObject('/preview/foo/new.md').reply(404) // isNotModified
+      .headObject('/preview/foo/new.md')
+      .optionally()
+      .reply(404) // storage.metadata
+      .putObject('/preview/foo/new.md')
+      .reply(201);
+
+    const job = await createJob(ctx, info, ['/foo/new']);
+    const file = {
+      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
+    };
+    await job.processFile(file, false, { release() {} });
+
+    assert.strictEqual(file.status, 200);
+    assert.strictEqual(handleStub.callCount, 2);
+  });
+
   it('processFile() retries on 429 rate limit response', async () => {
     const handleStub = sandbox.stub(HANDLERS['test-pj'], 'handle');
     handleStub.onFirstCall().returns(new Response('', {

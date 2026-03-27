@@ -15,6 +15,7 @@ import assert from 'assert';
 import xml2js from 'xml2js';
 import sinon from 'sinon';
 
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { METADATA_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { RemoveJob } from '../../src/preview/remove-job.js';
@@ -238,6 +239,31 @@ describe('RemoveJob Tests', () => {
     // stopped before processing, document should have no status set
     const doc = job.state.data.resources.find((r) => r.resourcePath === '/documents/document.md');
     assert.ok(!doc?.status);
+  });
+
+  it('prepare converts index.md and non-.md paths via toWebPath', async () => {
+    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      .get('/?list-type=2&prefix=foo-id%2Fpreview%2F')
+      .reply(() => [200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          Name: 'helix-content-bus',
+          Prefix: `${CONTENT_BUS_ID}/preview/`,
+          KeyCount: 2,
+          Contents: [
+            { Key: `${CONTENT_BUS_ID}/preview/folder/index.md`, LastModified: '2023-01-01T00:00:00.000Z' },
+            { Key: `${CONTENT_BUS_ID}/preview/image.png`, LastModified: '2023-01-01T00:00:00.000Z' },
+          ],
+        },
+      })]);
+
+    const job = await createJob(ctx, info, [{ prefix: '/' }]);
+    const resources = await job.prepare([{ prefix: '/' }], CONTENT_BUS_ID, HelixStorage.fromContext(ctx).contentBus());
+
+    const indexEntry = resources.find((r) => r.resourcePath === '/folder/index.md');
+    assert.strictEqual(indexEntry.path, '/folder/');
+
+    const imgEntry = resources.find((r) => r.resourcePath === '/image.png');
+    assert.strictEqual(imgEntry.path, '/image.png');
   });
 
   it('skips excluded paths (metadata, redirects, .helix) during prepare', async () => {

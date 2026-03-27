@@ -108,8 +108,7 @@ export class RemoveJob extends Job {
    * @param {Resource} resource resource
    */
   async processResource(resource) {
-    const { ctx, info } = this;
-    const { log } = ctx;
+    const { ctx, ctx: { log }, info } = this;
     const { path } = resource;
 
     const start = Date.now();
@@ -138,32 +137,32 @@ export class RemoveJob extends Job {
    * @return {Promise<void>}
    */
   async run() {
-    const { ctx, info } = this;
+    const { ctx, info, state } = this;
     const { contentBusId } = ctx;
-    const { paths } = this.state.data;
+    const { data, data: { paths } } = state;
 
     const storage = HelixStorage.fromContext(ctx).contentBus();
 
     await this.setPhase('collecting');
 
-    this.state.data.resources = await this.prepare(paths, contentBusId, storage);
+    data.resources = await this.prepare(paths, contentBusId, storage);
     await this.trackProgress({
-      total: this.state.data.resources.length,
+      total: data.resources.length,
     });
 
     await this.setPhase('deleting');
 
-    await processQueue([...this.state.data.resources], async (/** @type {Resource} */ resource) => {
+    await processQueue([...data.resources], async (/** @type {Resource} */ resource) => {
       if (await this.checkStopped()) {
         return;
       }
       await this.processResource(resource);
 
-      this.state.progress.processed += 1;
+      state.progress.processed += 1;
       await this.writeStateLazy();
     }, JOB_CONCURRENCY);
 
-    const removedResources = this.state.data.resources.filter(({ status }) => status === 204);
+    const removedResources = data.resources.filter(({ status }) => status === 204);
     const removedPaths = removedResources.map(({ path }) => path);
     const resourcePaths = removedResources.map(({ resourcePath }) => resourcePath);
 
@@ -174,7 +173,7 @@ export class RemoveJob extends Job {
       await purge.content(ctx, info, removedPaths, PURGE_PREVIEW);
     }
 
-    await publishBulkResourceNotification(ctx, 'resources-unpreviewed', info, resourcePaths, this.state.data.resources);
+    await publishBulkResourceNotification(ctx, 'resources-unpreviewed', info, resourcePaths, data.resources);
 
     await this.setPhase('completed');
   }

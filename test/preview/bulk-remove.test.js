@@ -98,7 +98,25 @@ describe('Bulk Remove Tests', () => {
     assert.strictEqual(result.headers.get('x-error'), 'bulk-remove of config resources is not supported: /.helix/config.json');
   });
 
-  it('creates the job with correct topic and deduplicated paths', async () => {
+  it('returns 400 when paths exceed the sync limit', async () => {
+    const context = createTestContext({ paths: Array.from({ length: 201 }, (_, i) => `/path-${i}`) });
+    const result = await bulkRemove(context, info);
+    assert.strictEqual(result.status, 400);
+    assert.strictEqual(result.headers.get('x-error'), 'Number of paths for synchronous bulk-remove exceeds limit: 201 > 200. Use forceAsync=true');
+  });
+
+  it('bypasses the sync limit when forceAsync=true', async () => {
+    const context = createTestContext({
+      paths: Array.from({ length: 201 }, (_, i) => `/path-${i}`),
+      forceAsync: true,
+    });
+    const createStub = sandbox.stub(Job, 'create').resolves(new Response('', { status: 202 }));
+    const result = await bulkRemove(context, info);
+    assert.strictEqual(result.status, 202);
+    assert.ok(createStub.calledOnce);
+  });
+
+  it('creates the job with correct topic, transient flag, and deduplicated paths', async () => {
     const context = createTestContext({ paths: ['/foo/bar', '/foo/baz/*', '/foo/*', '/bar'] });
 
     const createStub = sandbox.stub(Job, 'create').resolves(new Response('', { status: 202 }));
@@ -109,6 +127,7 @@ describe('Bulk Remove Tests', () => {
 
     const [, , topic, opts] = createStub.firstCall.args;
     assert.strictEqual(topic, RemoveJob.TOPIC);
+    assert.strictEqual(opts.transient, true);
     assert.deepStrictEqual(opts.data, {
       paths: [
         { prefix: '/foo/' },

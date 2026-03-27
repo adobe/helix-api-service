@@ -14,6 +14,11 @@ import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/u
 import { RemoveJob } from './remove-job.js';
 
 /**
+ * Maximum number of paths supported for a synchronous bulk-remove.
+ */
+const MAX_SYNC_PATHS = 200;
+
+/**
  * Handles recursive bulk remove.
  *
  * @param {import('../support/AdminContext').AdminContext} context the universal context
@@ -39,7 +44,12 @@ export default async function bulkRemove(context, info) {
     }
   }
 
+  if (paths.length > MAX_SYNC_PATHS && String(context.data.forceAsync) !== 'true') {
+    return errorResponse(log, 400, `Number of paths for synchronous bulk-remove exceeds limit: ${paths.length} > ${MAX_SYNC_PATHS}. Use forceAsync=true`);
+  }
+
   return Job.create(context, info, RemoveJob.TOPIC, {
+    transient: true,
     jobClass: RemoveJob,
     data: {
       paths: processPrefixedPaths(paths),

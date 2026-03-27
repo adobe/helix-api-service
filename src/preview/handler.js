@@ -15,6 +15,7 @@ import preview from './preview.js';
 import status from './status.js';
 import unpreview from './unpreview.js';
 import bulkPreview from './bulk-preview.js';
+import bulkRemove from './bulk-remove.js';
 
 /**
  * Allowed methods for that handler
@@ -48,6 +49,10 @@ export default async function previewHandler(context, info) {
   if (info.method === 'POST') {
     authInfo.assertPermissions('preview:write');
     if (info.webPath === '/*') {
+      if (context.data?.delete) {
+        authInfo.assertPermissions('preview:delete');
+        return bulkRemove(context, info);
+      }
       return bulkPreview(context, info);
     }
     return preview(context, info);

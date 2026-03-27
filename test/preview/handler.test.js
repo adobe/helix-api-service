@@ -171,6 +171,54 @@ describe('Preview Handler Tests', () => {
     assert.strictEqual(response.headers.get('x-error'), 'bulk-preview payload is missing "paths".');
   });
 
+  it('routes POST /* with delete:true to bulk remove and returns 202', async () => {
+    const suffix = '/org/sites/site/preview/*';
+    sandbox.stub(Job, 'create').resolves(
+      new Response(JSON.stringify({ job: { name: 'job-123', state: { status: 'created' } } }), {
+        status: 202,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ delete: true, paths: ['/foo/bar'] }),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+
+    assert.strictEqual(response.status, 202);
+    assert.ok(Job.create.calledOnce);
+    const [, , topic] = Job.create.firstCall.args;
+    assert.strictEqual(topic, 'preview-remove');
+  });
+
+  it('bulk remove returns 403 if preview:delete permission missing', async () => {
+    const suffix = '/org/sites/site/preview/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ delete: true, paths: ['/foo/bar'] }),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
+
+    assert.strictEqual(response.status, 403);
+  });
+
   it('bulk preview returns 403 if preview:write permission missing', async () => {
     const suffix = '/org/sites/site/preview/*';
 

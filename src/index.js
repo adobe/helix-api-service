@@ -17,6 +17,9 @@ import { helixStatus } from '@adobe/helix-status';
 
 import cache from './cache/handler.js';
 import code from './code/handler.js';
+import {
+  orgConfigHandler as orgConfig,
+} from './config/handler.js';
 import contentproxy from './contentproxy/handler.js';
 import discover from './discover/handler.js';
 import index from './index/handler.js';
@@ -68,31 +71,29 @@ export const router = new Router(nameSelector)
   .add('/login', login)
   .add('/logout', logout)
   .add('/profile?org,site', profile)
-  .add('/:org', notImplemented)
-  .add('/:org/config.json', notImplemented)
-  .add('/:org/config/access', notImplemented)
-  .add('/:org/config/versions', notImplemented)
-  .add('/:org/profiles', notImplemented)
-  .add('/:org/profiles/:profile', notImplemented)
-  .add('/:org/profiles/:profile/versions', notImplemented)
-  .add('/:org/sites', notImplemented)
-  .add('/:org/sites/:site/status/*', status)
+  .add('/:org/config.json', orgConfig)
+  .add('/:org/config/*', orgConfig)
+  .add('/:org/profiles', orgConfig)
+  .add('/:org/sites', orgConfig)
+  .add('/:org/profiles/:profile/config.json', notImplemented)
+  .add('/:org/profiles/:profile/config/*', notImplemented)
+  .add('/:org/sites/:site/cache/*', cache)
+  .add('/:org/repos/:site/code/:ref', code) // this should be owner/repo (not org/site)
+  .add('/:org/repos/:site/code/:ref/*', code) // this should be owner/repo (not org/site)
   .add('/:org/sites/:site/config.json', notImplemented)
   .add('/:org/sites/:site/config/*', notImplemented)
   .add('/:org/sites/:site/contentproxy/*', contentproxy)
-  .add('/:org/sites/:site/preview/*', preview)
+  .add('/:org/sites/:site/index/*', index)
   .add('/:org/sites/:site/live/*', live)
   .add('/:org/sites/:site/log', log)
   .add('/:org/sites/:site/login', login)
   .add('/:org/sites/:site/media/*', media)
-  .add('/:org/repos/:site/code/:ref', code) // this should be owner/repo (not org/site)
-  .add('/:org/repos/:site/code/:ref/*', code) // this should be owner/repo (not org/site)
-  .add('/:org/sites/:site/cache/*', cache)
-  .add('/:org/sites/:site/index/*', index)
+  .add('/:org/sites/:site/preview/*', preview)
   .add('/:org/sites/:site/sidekick', sidekick)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', source)
+  .add('/:org/sites/:site/status/*', status)
   .add('/:org/sites/:site/jobs/:topic/*', job);
 
 /**

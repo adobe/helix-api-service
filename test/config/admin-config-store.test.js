@@ -134,7 +134,7 @@ describe('Admin Config Store Tests', () => {
         .reply(200, '{}');
 
       const cs = new AdminConfigStore('org', 'profiles', 'profile1');
-      const { context } = setupTest('/org/profiles/profile1.json');
+      const { context } = setupTest('/org/profiles/profile1/config.json');
       const result = await cs.fetchRead(context);
 
       assert.strictEqual(result.status, 200);
@@ -172,7 +172,7 @@ describe('Admin Config Store Tests', () => {
         .reply(404);
 
       const cs = new AdminConfigStore('org', 'profiles', 'profile1');
-      const { context } = setupTest('/org/profiles/profile1.json');
+      const { context } = setupTest('/org/profiles/profile1/config.json');
       const result = await cs.fetchRead(context);
 
       assert.strictEqual(result.status, 404);

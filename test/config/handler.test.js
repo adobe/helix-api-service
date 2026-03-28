@@ -12,12 +12,59 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import sinon from 'sinon';
-import { Request, Response } from '@adobe/fetch';
+import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { AdminConfigStore } from '../../src/config/admin-config-store.js';
 import { main } from '../../src/index.js';
-import { Nock, ORG_CONFIG } from '../utils.js';
+import { Nock } from '../utils.js';
+
+/**
+ * Stub for the base methods in `AdminConfigStore`.
+ */
+class ConfigStoreStub {
+  /** @type {object} */
+  options = null;
+
+  /** @type {Number} */
+  created = [];
+
+  /** @type {string[]} */
+  updated = [];
+
+  /** @type {string[]} */
+  removed = [];
+
+  /** @type {import('sinon').SinonSandbox} */
+  constructor(sandbox) {
+    const self = this;
+    ['create', 'update', 'remove'].forEach((method) => {
+      sandbox.stub(AdminConfigStore.prototype, method)
+        .callsFake(function fn(...args) {
+          if (self.options === null) {
+            const { org, type, name } = this;
+            self.options = { org, type, name };
+          }
+          return self[method](...args.slice(1));
+        });
+    });
+  }
+
+  create(data, relPath) {
+    this.created.push(relPath);
+  }
+
+  update(data, relPath) {
+    this.updated.push(relPath);
+
+    return {};
+  }
+
+  remove(relPath) {
+    this.removed.push(relPath);
+  }
+}
 
 describe('Config Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -26,9 +73,13 @@ describe('Config Handler Tests', () => {
   /** @type {import('sinon').SinonSandbox} */
   let sandbox;
 
+  /** @type {ConfigStoreStub} */
+  let cs;
+
   beforeEach(() => {
     nock = new Nock().env();
     sandbox = sinon.createSandbox();
+    cs = new ConfigStoreStub(sandbox);
   });
 
   afterEach(() => {
@@ -39,6 +90,7 @@ describe('Config Handler Tests', () => {
   function setupTest(suffix, {
     authInfo = AuthInfo.Admin().withAuthenticated(true),
     data = {},
+    env = {},
     method = 'GET',
   } = {}) {
     const query = new URLSearchParams(data);
@@ -56,6 +108,7 @@ describe('Config Handler Tests', () => {
       },
       runtime: { region: 'us-east-1' },
       env: {
+        ...env,
         HELIX_STORAGE_DISABLE_R2: 'true',
         HELIX_STORAGE_MAX_ATTEMPTS: '1',
       },
@@ -64,8 +117,11 @@ describe('Config Handler Tests', () => {
   }
 
   describe('orgs', () => {
+    beforeEach(() => {
+      nock.orgConfig().reply(404);
+    });
+
     it('read config', async () => {
-      nock.orgConfig(ORG_CONFIG);
       nock.config()
         .getObject('/orgs/org/config.json')
         .reply(200, { version: 1 });
@@ -83,7 +139,6 @@ describe('Config Handler Tests', () => {
     });
 
     it('list sites', async () => {
-      nock.orgConfig().reply(404);
       nock.listObjects('helix-config-bus', 'orgs/org/sites/', [
         { Key: 'site1.json' },
         { Key: 'site2.json' },
@@ -102,25 +157,23 @@ describe('Config Handler Tests', () => {
       });
     });
 
-    const SITE_1_CONFIG = {
+    const SITE_CONFIGS = [{
       content: {
         url: '123',
       },
       code: {
         owner: 'adobe', repo: 'repo-1',
       },
-    };
-    const SITE_2_CONFIG = {
+    }, {
       content: {
         url: '345',
       },
       code: {
         owner: 'adobe', repo: 'repo-2',
       },
-    };
+    }];
 
     it('list sites with details', async () => {
-      nock.orgConfig().reply(404);
       nock.listObjects('helix-config-bus', 'orgs/org/sites/', [
         { Key: 'site1.json' },
         { Key: 'site2.json' },
@@ -128,9 +181,9 @@ describe('Config Handler Tests', () => {
       ]);
       nock.config()
         .getObject('/orgs/org/sites/site1.json')
-        .reply(200, SITE_1_CONFIG)
+        .reply(200, SITE_CONFIGS[0])
         .getObject('/orgs/org/sites/site2.json')
-        .reply(200, SITE_2_CONFIG);
+        .reply(200, SITE_CONFIGS[1]);
 
       const { request, context } = setupTest('/org/sites', {
         data: { details: true },
@@ -141,12 +194,12 @@ describe('Config Handler Tests', () => {
       assert.deepStrictEqual(await response.json(), {
         sites: [
           {
-            ...SITE_1_CONFIG,
+            ...SITE_CONFIGS[0],
             name: 'site1',
             path: '/config/org/sites/site1.json',
           },
           {
-            ...SITE_2_CONFIG,
+            ...SITE_CONFIGS[1],
             name: 'site2',
             path: '/config/org/sites/site2.json',
           },
@@ -154,22 +207,76 @@ describe('Config Handler Tests', () => {
       });
     });
 
+    const ORG_VERSIONS = [{
+      version: 1,
+      created: '2024-01-01T00:00:00.000Z',
+      lastModified: '2024-01-01T00:00:00.000Z',
+    }, {
+      version: 2,
+      created: '2024-01-02T00:00:00.000Z',
+      name: 'Latest',
+      lastModified: '2024-01-02T00:00:00.000Z',
+    }];
+
+    it('list org versions', async () => {
+      nock.config()
+        .getObject('/orgs/org/versions.json')
+        .reply(200, {
+          current: 2,
+          versions: ORG_VERSIONS,
+        });
+
+      const { request, context } = setupTest('/org/config/versions.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        current: 2,
+        versions: ORG_VERSIONS,
+      });
+    });
+
     it('store a secret', async () => {
-      sandbox.stub(AdminConfigStore.prototype, 'fetchUpdate').resolves(
-        new Response({
-          secret: 'secret',
-        }),
-      );
-      nock.orgConfig().reply(404);
       const { request, context } = setupTest('/org/config/secrets.json', {
         method: 'POST',
       });
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
-      assert.deepStrictEqual(await response.json(), {
-        secret: 'secret',
+      assert.deepStrictEqual(cs.options, { org: 'org', type: 'org', name: '' });
+      assert.deepStrictEqual(cs.updated, ['secrets']);
+    });
+
+    it('create an api key', async () => {
+      const keyPair = await generateKeyPair('RS256', { extractable: true });
+      const privateJwk = await exportJWK(keyPair.privateKey);
+
+      const { request, context } = setupTest('/org/config/apiKeys.json', {
+        method: 'POST',
+        env: {
+          HLX_ADMIN_IDP_PRIVATE_KEY: JSON.stringify(privateJwk),
+        },
       });
+      const response = await main(request, context);
+      assert.strictEqual(response.status, 200);
+
+      const json = await response.json();
+      const { payload } = await jwtVerify(json.value, keyPair.publicKey);
+      assert.deepStrictEqual(payload, {
+        email: 'helix@adobe.com',
+        exp: payload.exp,
+        iat: payload.iat,
+        iss: 'https://admin.hlx.page/',
+        jti: payload.jti,
+        name: 'Helix Admin',
+        roles: [
+          'author',
+        ],
+        sub: 'org/',
+      });
+
+      assert.deepStrictEqual(cs.options, { org: 'org', type: 'org', name: '' });
+      assert.deepStrictEqual(cs.updated, ['apiKeys']);
     });
   });
 

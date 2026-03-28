@@ -255,7 +255,7 @@ describe('Admin Config Store Tests', () => {
         .reply(200);
 
       const cs = new AdminConfigStore('org', 'profiles', 'profile1');
-      const { context } = setupTest('/org/profiles/profile1.json');
+      const { context } = setupTest('/org/profiles/profile1/config.json');
       const result = await cs.fetchCreate(context);
 
       assert.strictEqual(result.status, 409);
@@ -296,7 +296,7 @@ describe('Admin Config Store Tests', () => {
       const cs = new AdminConfigStore('org', 'profiles', 'profile1');
       cs.now = new Date(Date.UTC(2024, 0, 1));
 
-      const { context } = setupTest('/org/profiles/profile1.json', {
+      const { context } = setupTest('/org/profiles/profile1/config.json', {
         data: {
           title: 'my profile',
         },

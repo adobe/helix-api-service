@@ -70,14 +70,14 @@ const NAMES = [
 ];
 
 function determineConfigType(info) {
-  const { webPath, route, ext } = info;
-  if (webPath === undefined) {
+  const { rawPath, route, ext } = info;
+  if (rawPath === undefined) {
     // either a request to the org config itself or its sites or its profiles
     const type = route !== 'config.json' ? route : undefined;
     return { type };
   }
   if (ext === '.json') {
-    const [, name, ...rest] = webPath.substring(0, webPath.length - 5).split('/');
+    const [, name, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
     if (NAMES.includes(name)) {
       rest.unshift(name);
       return { type: 'org', name: '', rest };

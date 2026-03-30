@@ -17,9 +17,10 @@ import { helixStatus } from '@adobe/helix-status';
 
 import cache from './cache/handler.js';
 import code from './code/handler.js';
-import {
-  orgConfigHandler as orgConfig,
-} from './config/handler.js';
+import orgConfig from './config/org-handler.js';
+import aggregatedConfig from './config/aggregated-handler.js';
+import siteConfig from './config/site-handler.js';
+import profileConfig from './config/profile-handler.js';
 import contentproxy from './contentproxy/handler.js';
 import discover from './discover/handler.js';
 import index from './index/handler.js';
@@ -75,13 +76,14 @@ export const router = new Router(nameSelector)
   .add('/:org/config/*', orgConfig)
   .add('/:org/profiles', orgConfig)
   .add('/:org/sites', orgConfig)
-  .add('/:org/profiles/:profile/config.json', notImplemented)
-  .add('/:org/profiles/:profile/config/*', notImplemented)
+  .add('/:org/aggregated/:site/config.json', aggregatedConfig)
+  .add('/:org/profiles/:profile/config.json', profileConfig)
+  .add('/:org/profiles/:profile/config/*', profileConfig)
   .add('/:org/sites/:site/cache/*', cache)
   .add('/:org/repos/:site/code/:ref', code) // this should be owner/repo (not org/site)
   .add('/:org/repos/:site/code/:ref/*', code) // this should be owner/repo (not org/site)
-  .add('/:org/sites/:site/config.json', notImplemented)
-  .add('/:org/sites/:site/config/*', notImplemented)
+  .add('/:org/sites/:site/config.json', siteConfig)
+  .add('/:org/sites/:site/config/*', siteConfig)
   .add('/:org/sites/:site/contentproxy/*', contentproxy)
   .add('/:org/sites/:site/index/*', index)
   .add('/:org/sites/:site/live/*', live)

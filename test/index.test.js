@@ -218,7 +218,7 @@ describe('Index Tests', () => {
     });
     const result = await main(request, context);
 
-    assert.strictEqual(result.status, 405);
+    assert.strictEqual(result.status, 403);
     assert.strictEqual(await result.text(), '');
   });
 
@@ -309,9 +309,9 @@ describe('Index Tests', () => {
       suffix: '/login/no/suffix',
       variables: undefined,
     }, {
-      suffix: '/owner',
+      suffix: '/owner/config.json',
       variables: {
-        route: 'org', org: 'owner',
+        route: 'config.json', org: 'owner',
       },
     }, {
       suffix: '/owner/sites',

@@ -171,11 +171,12 @@ class HttpRequest {
  * Class containing the aspects of the decomposed path.
  */
 class PathInfo {
-  constructor(route, org, site, path) {
+  constructor(route, org, site, path, profile) {
     this.route = route;
     this.org = org;
     this.site = site;
     this.path = path;
+    this.profile = profile;
 
     if (path) {
       const { webPath, resourcePath, ext } = computePaths(path);
@@ -307,6 +308,10 @@ export class RequestInfo {
     return this.#pathInfo.site;
   }
 
+  get profile() {
+    return this.#pathInfo.profile;
+  }
+
   get rawPath() {
     return this.#pathInfo.rawPath;
   }
@@ -342,10 +347,10 @@ export class RequestInfo {
    */
   static create(request, router, variables = {}) {
     const {
-      org, site, path, ref, route,
+      org, site, path, profile, ref, route,
     } = variables;
     const httpRequest = new HttpRequest(request);
-    const pathInfo = new PathInfo(route, org, site, path);
+    const pathInfo = new PathInfo(route, org, site, path, profile);
 
     return Object.freeze(new RequestInfo(httpRequest, router, pathInfo, variables).withRef(ref));
   }

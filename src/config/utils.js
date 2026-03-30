@@ -9,8 +9,11 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { importJWK, SignJWT } from 'jose';
+import crypto from 'crypto';
 import { AbortError } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import localJWKS from '../idp-configs/jwks-json.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
@@ -139,4 +142,40 @@ export function checkCanonicalRepo(context, info) {
     }
   }
   return '';
+}
+
+/**
+ * Creates a new admin API JWT for the given org and site (name). Optionally sets the roles.
+ *
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {string} org organization name
+ * @param {string} site site name
+ * @param {string[]} [roles] roles to assign
+ * @returns {Promise<string>} JWT token
+ */
+export async function createAdminJWT(context, org, site = '*', roles = ['author']) {
+  const { env, log } = context;
+  const privateKey = await importJWK(JSON.parse(env.HLX_ADMIN_IDP_PRIVATE_KEY), 'RS256');
+  const publicKey = localJWKS.keys[0];
+  const jti = crypto.randomBytes(33).toString('base64');
+
+  const adminToken = await new SignJWT({
+    email: 'helix@adobe.com',
+    name: 'Helix Admin',
+    roles,
+  })
+    .setProtectedHeader({
+      alg: 'RS256',
+      kid: publicKey.kid,
+    })
+    .setIssuedAt()
+    .setIssuer(publicKey.issuer)
+    .setAudience(env.HLX_SITE_APP_AZURE_CLIENT_ID)
+    .setSubject(`${org}/${site}`)
+    .setExpirationTime('365 days')
+    .setJti(jti)
+    .sign(privateKey);
+
+  log.info(`created admin token for %s/%s with roles: ${roles}. apiKeyId=${jti}`, org, site);
+  return adminToken;
 }

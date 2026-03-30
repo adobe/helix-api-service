@@ -32,8 +32,10 @@ describe('Index Utils Tests', () => {
     nock.done();
   });
 
+  const suffix = '/org/sites/site/index/document';
+
   it('checks `getFetchHeaders`', async () => {
-    const context = createContext('/', {
+    const context = createContext(suffix, {
       attributes: {
         config: {
           ...SITE_CONFIG,
@@ -76,8 +78,8 @@ describe('Index Utils Tests', () => {
 
       nock.indexConfig(INDEX_CONFIG);
 
-      const context = createContext('/');
-      const info = createInfo('/');
+      const context = createContext(suffix);
+      const info = createInfo(suffix);
 
       const index = await fetchExtendedIndex(context, info);
       assert.throws(() => index.toYAML(), /Document with errors cannot be stringified/);
@@ -100,8 +102,8 @@ describe('Index Utils Tests', () => {
         .head('/live/sitemap.json')
         .reply(200);
 
-      const context = createContext('/');
-      const info = createInfo('/');
+      const context = createContext(suffix);
+      const info = createInfo(suffix);
 
       const index = await fetchExtendedIndex(context, info);
       assert.strictEqual(index.indices[1].name, '#internal-sitemap-index');
@@ -126,8 +128,8 @@ describe('Index Utils Tests', () => {
     `;
 
     function setupTest() {
-      const context = createContext('/');
-      const info = createInfo('/');
+      const context = createContext(suffix);
+      const info = createInfo(suffix);
       return { context, info };
     }
 

@@ -18,7 +18,7 @@ import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { AdminConfigStore } from '../../src/config/admin-config-store.js';
 import { main } from '../../src/index.js';
-import { Nock } from '../utils.js';
+import { Nock, SITE_CONFIG } from '../utils.js';
 
 /**
  * Stub for the base methods in `AdminConfigStore`.
@@ -43,6 +43,7 @@ class ConfigStoreStub {
       sandbox.stub(AdminConfigStore.prototype, method)
         .callsFake(function fn(...args) {
           if (self.options === null) {
+            // remember the constructor arguments of that store
             const { org, type, name } = this;
             self.options = { org, type, name };
           }
@@ -207,6 +208,25 @@ describe('Config Handler Tests', () => {
       });
     });
 
+    it('list profiles', async () => {
+      nock.listObjects('helix-config-bus', 'orgs/org/profiles/', [
+        { Key: 'default.json' },
+        { Key: 'admin.json' },
+        { Key: 'debug.txt' },
+      ]);
+
+      const { request, context } = setupTest('/org/profiles');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        profiles: [
+          { name: 'default', path: '/config/org/profiles/default.json' },
+          { name: 'admin', path: '/config/org/profiles/admin.json' },
+        ],
+      });
+    });
+
     const ORG_VERSIONS = [{
       version: 1,
       created: '2024-01-01T00:00:00.000Z',
@@ -281,5 +301,105 @@ describe('Config Handler Tests', () => {
   });
 
   describe('sites', () => {
+    it('read config', async () => {
+      nock.siteConfig(SITE_CONFIG);
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, {
+          version: 1,
+          ...SITE_CONFIG,
+        });
+
+      const { request, context } = setupTest('/org/sites/site/config.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.json(), SITE_CONFIG);
+    });
+
+    it('read fragment', async () => {
+      nock.siteConfig(SITE_CONFIG);
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, {
+          version: 1,
+          ...SITE_CONFIG,
+        });
+
+      const { request, context } = setupTest('/org/sites/site/config/content.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.json(), SITE_CONFIG.content);
+    });
+
+    it('read query.yaml', async () => {
+      nock.siteConfig(SITE_CONFIG);
+      nock.indexConfig('version 1');
+
+      const { request, context } = setupTest('/org/sites/site/config/query.yaml');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/yaml',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.text(), 'version 1');
+    });
+
+    it('read sitemap.yaml', async () => {
+      nock.siteConfig(SITE_CONFIG);
+      nock.sitemapConfig('version 2');
+
+      const { request, context } = setupTest('/org/sites/site/config/sitemap.yaml');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/yaml',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.text(), 'version 2');
+    });
+  });
+
+  describe('profiles', () => {
+    beforeEach(() => {
+      nock.orgConfig().reply(404);
+    });
+
+    it('read config', async () => {
+      nock.config()
+        .getObject('/orgs/org/profiles/profile.json')
+        .reply(200, {
+          version: 2,
+        });
+
+      const { request, context } = setupTest('/org/profiles/profile/config.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.json(), {
+        version: 2,
+      });
+    });
   });
 });

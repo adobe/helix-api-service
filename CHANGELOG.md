@@ -1,3 +1,10 @@
+# [1.37.0](https://github.com/adobe/helix-api-service/compare/v1.36.3...v1.37.0) (2026-03-31)
+
+
+### Features
+
+* **preview:** migrate bulk-remove from helix-admin ([#157](https://github.com/adobe/helix-api-service/issues/157)) ([e38a485](https://github.com/adobe/helix-api-service/commit/e38a485ef6b26f633e3134907705213bf7e3dbd9))
+
 ## [1.36.3](https://github.com/adobe/helix-api-service/compare/v1.36.2...v1.36.3) (2026-03-31)
 
 

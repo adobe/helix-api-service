@@ -174,6 +174,33 @@ describe('Config Handler Tests', () => {
       });
     });
 
+    it('reject unknown method', async () => {
+      const { request, context } = setupTest('/org/config.json', {
+        method: 'PROPPATCH',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 405);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'method not allowed',
+      });
+    });
+
+    it('reject unknown extension', async () => {
+      const { request, context } = setupTest('/org/config/content.xml');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        vary: 'Accept-Encoding',
+        'x-error': 'invalid config type',
+      });
+    });
+
     it('list sites', async () => {
       nock.listObjects('helix-config-bus', 'orgs/org/sites/', [
         { Key: 'site1.json' },
@@ -262,6 +289,40 @@ describe('Config Handler Tests', () => {
       });
     });
 
+    const PROFILE_DETAILS = [{
+      cdn: {
+        prod: {
+          host: 'some-cdn-host',
+        },
+      },
+    }];
+
+    it('list profiles with details', async () => {
+      nock.listObjects('helix-config-bus', 'orgs/org/profiles/', [
+        { Key: 'default.json' },
+        { Key: 'debug.txt' },
+      ]);
+      nock.config()
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(200, PROFILE_DETAILS[0]);
+
+      const { request, context } = setupTest('/org/profiles', {
+        data: { details: true },
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(await response.json(), {
+        profiles: [
+          {
+            ...PROFILE_DETAILS[0],
+            name: 'default',
+            path: '/config/org/profiles/default.json',
+          },
+        ],
+      });
+    });
+
     const ORG_VERSIONS = [{
       version: 1,
       created: '2024-01-01T00:00:00.000Z',
@@ -335,15 +396,67 @@ describe('Config Handler Tests', () => {
     });
   });
 
-  describe('sites', () => {
+  describe('profiles', () => {
+    beforeEach(() => {
+      nock.orgConfig(ORG_CONFIG);
+    });
+
+    const PROFILE_CONFIG = {
+      version: 2,
+      cdn: {
+        prod: {
+          type: 'some-cdn-type',
+          host: 'some-cdn-host',
+          authToken: 'some-auth-token',
+          serviceId: '123456',
+        },
+      },
+    };
+
     it('read config', async () => {
+      nock.config()
+        .getObject('/orgs/org/profiles/profile.json')
+        .reply(200, PROFILE_CONFIG);
+
+      const { request, context } = setupTest('/org/profiles/profile/config.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.json(), PROFILE_CONFIG);
+    });
+
+    it('read fragment', async () => {
+      nock.config()
+        .getObject('/orgs/org/profiles/profile.json')
+        .reply(200, PROFILE_CONFIG);
+
+      const { request, context } = setupTest('/org/profiles/profile/config/cdn.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.json(), PROFILE_CONFIG.cdn);
+    });
+  });
+
+  describe('sites', () => {
+    beforeEach(() => {
       nock.siteConfig(SITE_CONFIG);
+    });
+
+    it('read config', async () => {
       nock.config()
         .getObject('/orgs/org/sites/site.json')
-        .reply(200, {
-          version: 1,
-          ...SITE_CONFIG,
-        });
+        .reply(200, SITE_CONFIG);
 
       const { request, context } = setupTest('/org/sites/site/config.json');
       const response = await main(request, context);
@@ -358,13 +471,9 @@ describe('Config Handler Tests', () => {
     });
 
     it('read fragment', async () => {
-      nock.siteConfig(SITE_CONFIG);
       nock.config()
         .getObject('/orgs/org/sites/site.json')
-        .reply(200, {
-          version: 1,
-          ...SITE_CONFIG,
-        });
+        .reply(200, SITE_CONFIG);
 
       const { request, context } = setupTest('/org/sites/site/config/content.json');
       const response = await main(request, context);
@@ -379,7 +488,6 @@ describe('Config Handler Tests', () => {
     });
 
     it('read query.yaml', async () => {
-      nock.siteConfig(SITE_CONFIG);
       nock.indexConfig('version 1');
 
       const { request, context } = setupTest('/org/sites/site/config/query.yaml');
@@ -395,7 +503,6 @@ describe('Config Handler Tests', () => {
     });
 
     it('read sitemap.yaml', async () => {
-      nock.siteConfig(SITE_CONFIG);
       nock.sitemapConfig('version 2');
 
       const { request, context } = setupTest('/org/sites/site/config/sitemap.yaml');
@@ -409,21 +516,62 @@ describe('Config Handler Tests', () => {
       });
       assert.deepStrictEqual(await response.text(), 'version 2');
     });
+
+    it('reject unknown yaml type', async () => {
+      const { request, context } = setupTest('/org/sites/site/config/fstab.yaml');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        vary: 'Accept-Encoding',
+        'x-error': 'invalid config type',
+      });
+    });
+
+    it.skip('store robots.txt', async () => {
+      const { request, context } = setupTest('/org/sites/site/config/robots.txt', {
+        method: 'POST',
+        data: {
+          body: 'User-agent: *\nDisallow: /',
+        },
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+    });
   });
 
-  describe('profiles', () => {
+  describe('aggregated', () => {
     beforeEach(() => {
-      nock.orgConfig().reply(404);
+      nock.siteConfig({
+        ...SITE_CONFIG,
+        access: {
+          admin: {
+            role: {
+              config: [
+                'spacecat@example.com',
+              ],
+            },
+          },
+        },
+      });
     });
 
     it('read config', async () => {
       nock.config()
-        .getObject('/orgs/org/profiles/profile.json')
+        .getObject('/orgs/org/sites/site.json')
         .reply(200, {
-          version: 2,
-        });
+          extends: {
+            profile: 'default',
+          },
+          ...SITE_CONFIG,
+        })
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(200, {});
 
-      const { request, context } = setupTest('/org/profiles/profile/config.json');
+      const { request, context } = setupTest('/org/aggregated/site/config.json');
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
@@ -433,7 +581,108 @@ describe('Config Handler Tests', () => {
         vary: 'Accept-Encoding',
       });
       assert.deepStrictEqual(await response.json(), {
-        version: 2,
+        extends: {
+          profile: 'default',
+        },
+        ...SITE_CONFIG,
+      });
+    });
+
+    it('read redacted config', async () => {
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, SITE_CONFIG)
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(404);
+
+      const { request, context } = setupTest('/org/aggregated/site/config.json', {
+        authInfo: AuthInfo.Default()
+          .withProfile({ email: 'spacecat@example.com' })
+          .withAuthenticated(true),
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      const json = await response.json();
+      assert.deepStrictEqual(json, SITE_CONFIG);
+    });
+
+    it('return 404 if site not found', async () => {
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(404);
+
+      const { request, context } = setupTest('/org/aggregated/site/config.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        vary: 'Accept-Encoding',
+        'x-error': 'no such config',
+      });
+    });
+
+    it('read robots.txt', async () => {
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, {
+          ...SITE_CONFIG,
+          robots: {
+            txt: 'User-agent: *\nDisallow: /',
+          },
+        })
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(404);
+
+      const { request, context } = setupTest('/org/aggregated/site/config/robots.txt');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain',
+        vary: 'Accept-Encoding',
+      });
+      assert.strictEqual(await response.text(), 'User-agent: *\nDisallow: /');
+    });
+
+    it('return 404 if robots.txt not found', async () => {
+      nock.config()
+        .getObject('/orgs/org/sites/site.json')
+        .reply(200, SITE_CONFIG)
+        .getObject('/orgs/org/profiles/default.json')
+        .reply(404);
+
+      const { request, context } = setupTest('/org/aggregated/site/config/robots.txt');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'no such config',
+        vary: 'Accept-Encoding',
+      });
+    });
+
+    it('reject every method but GET', async () => {
+      const { request, context } = setupTest('/org/aggregated/site/config.json', {
+        method: 'PUT',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 405);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'method not allowed',
       });
     });
   });

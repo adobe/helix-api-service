@@ -46,18 +46,42 @@ class AggregatedHandler extends BaseHandler {
     return siteConfig;
   }
 
-  async doHandle(context, info, op) {
+  async handleJSON(context, info) {
     const { log } = context;
     const { org, site } = info;
 
-    if (op !== 'fetchRead') {
-      return createErrorResponse({ log, status: 405, msg: 'method not allowed' });
-    }
     const siteConfig = await this.getAggregatedSite(context, org, site);
     if (!siteConfig) {
       return createErrorResponse({ log, status: 404, msg: 'no such config' });
     }
     return new Response(siteConfig);
+  }
+
+  async handleRobots(context, info) {
+    const { log } = context;
+    const { org, site } = info;
+
+    const siteConfig = await this.getAggregatedSite(context, org, site);
+    const robots = siteConfig?.robots?.txt;
+    if (!robots) {
+      return createErrorResponse({ log, status: 404, msg: 'no such config' });
+    }
+    return new Response(robots, {
+      headers: { 'content-type': 'text/plain' },
+    });
+  }
+
+  async doHandle(context, info, op) {
+    const { log } = context;
+    const { route } = info;
+
+    if (op !== 'fetchRead') {
+      return createErrorResponse({ log, status: 405, msg: 'method not allowed' });
+    }
+    if (route?.endsWith('robots.txt')) {
+      return this.handleRobots(context, info);
+    }
+    return super.doHandle(context, info, op);
   }
 }
 

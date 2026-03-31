@@ -11,39 +11,20 @@
  */
 import { BaseHandler } from './handler.js';
 
-const NAMES = [
-  'versions',
-  'tokens',
-  'secrets',
-  'users',
-  'access',
-  'groups',
-  'apiKeys',
-];
-
 class OrgHandler extends BaseHandler {
   constructor() {
     super('org', { supportsApiKeys: true });
   }
 
   determineConfigType(info) {
-    const { rawPath, route, ext } = info;
+    const { rawPath, route } = info;
     if (rawPath === undefined) {
       // either a request to the org config itself or its sites or its profiles
       const type = route !== 'config.json' ? route : this.type;
       return { type };
     }
-    if (ext === '.json') {
-      const [, name, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
-      if (NAMES.includes(name)) {
-        rest.unshift(name);
-        return { type: this.type, name: '', rest };
-      } else {
-        // TODO: there never seems to be a sub type not present in NAMES
-        return { type: this.type, name, rest };
-      }
-    }
-    return { rest: null };
+    const [, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
+    return { type: this.type, name: '', rest };
   }
 }
 

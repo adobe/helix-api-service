@@ -19,17 +19,14 @@ class SiteHandler extends BaseHandler {
   }
 
   determineConfigType(info) {
-    const { rawPath, ext, site } = info;
+    const { rawPath, site } = info;
     if (rawPath === undefined) {
       return {
         type: this.type, name: site,
       };
     }
-    if (ext === '.json') {
-      const [, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
-      return { type: this.type, name: site, rest };
-    }
-    return { rest: null };
+    const [, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
+    return { type: this.type, name: site, rest };
   }
 
   /**
@@ -50,15 +47,18 @@ class SiteHandler extends BaseHandler {
 
     const config = CONFIG_TYPES[type];
     if (!config) {
-      return createErrorResponse({ log, status: 400, msg: 'invalid config type' });
+      return createErrorResponse({ log, status: 404, msg: 'invalid config type' });
     }
     return new ContentStore(type, contentBusId)[op](context, info);
   }
 
   async doHandle(context, info, op) {
-    const { ext } = info;
+    const { rawPath, ext } = info;
     if (ext === '.yaml') {
       return this.handleYAML(context, info, op);
+    }
+    if (rawPath === '/robots.txt') {
+      return this.handleRobots(context, info, op);
     }
     return super.doHandle(context, info, op);
   }

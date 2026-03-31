@@ -57,6 +57,8 @@ declare interface Nock {
   sqs(queueName: string, entries?: any[]): nock.Scope;
   orgConfig(config?: any): nock.Scope;
   siteConfig(config?: any): nock.Scope;
+  indexConfig(config?: any): nock.Scope;
+  sitemapConfig(config?: any): nock.Scope;
 }
 
 type NockEnv = Nock & typeof nocker;

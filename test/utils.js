@@ -25,7 +25,6 @@ import { SQSNock } from './nocks/sqs.js';
 
 export const SITE_CONFIG = {
   version: 1,
-  title: 'Sample site',
   content: {
     contentBusId: 'f91dc973384e4a9acd3aaa481979cb11db9652ff3a07e1e85c5f75e60e8',
     source: {

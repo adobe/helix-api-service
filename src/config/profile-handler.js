@@ -17,17 +17,22 @@ class ProfileHandler extends BaseHandler {
   }
 
   determineConfigType(info) {
-    const { rawPath, ext, profile } = info;
+    const { rawPath, profile } = info;
     if (rawPath === undefined) {
       return {
         type: this.type, name: profile,
       };
     }
-    if (ext === '.json') {
-      const [, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
-      return { type: this.type, name: profile, rest };
+    const [, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
+    return { type: this.type, name: profile, rest };
+  }
+
+  async doHandle(context, info, op) {
+    const { rawPath } = info;
+    if (rawPath === '/robots.txt') {
+      return this.handleRobots(context, info, op);
     }
-    return { rest: null };
+    return super.doHandle(context, info, op);
   }
 }
 

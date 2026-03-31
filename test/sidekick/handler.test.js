@@ -131,7 +131,6 @@ describe('Sidekick Handler Tests', () => {
 
     assert.strictEqual(result.status, 200);
     assert.deepStrictEqual(await result.json(), {
-      project: 'Sample site',
       previewHost: 'main--site--org.aem.page',
       liveHost: 'main--site--org.aem.live',
       contentSourceType: 'google',

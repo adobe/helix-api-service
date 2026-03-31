@@ -37,9 +37,8 @@ export class BaseHandler {
    * @param {string} [info.rawPath] raw path from the request URL (may be undefined)
    * @param {string} [info.route] route portion of the request
    * @param {string} [info.ext] extension of the requested file
-   * @returns {{type?: string, name?: string, rest: string[]|null}} object describing
-   *   the config type, optional config name, and the remaining path parts;
-   *   returns `{ rest: null }` if the type could not be determined
+   * @returns {{type?: string, name?: string, rest: string[]}} object describing
+   *   the config type, optional config name, and the remaining path parts
    * @abstract
    */
   /* c8 ignore next 4 */
@@ -48,27 +47,14 @@ export class BaseHandler {
     throw new Error('not implemented');
   }
 
-  async doHandle(context, info, op) {
-    const { attributes: { authInfo }, data, log } = context;
+  async handleJSON(context, info, op) {
+    const { attributes: { authInfo }, data } = context;
     const { org } = info;
 
     const { type, name, rest = [] } = this.determineConfigType(info);
-    if (!rest) {
-      return errorResponse(log, 404, 'invalid config type');
-    }
-
-    let store;
-    try {
-      store = new AdminConfigStore(org, type, name);
-    } catch (e) {
-      return createErrorResponse({ log, status: 400, msg: e.message });
-    }
-    if (authInfo.hasPermissions('config:ops')) {
-      store.withAllowOps(true);
-    }
-    if (authInfo.hasPermissions('config:admin-acl')) {
-      store.withAllowAdmin(true);
-    }
+    const store = new AdminConfigStore(org, type, name)
+      .withAllowOps(authInfo.hasPermissions('config:ops'))
+      .withAllowAdmin(authInfo.hasPermissions('config:admin-acl'));
 
     if (this.supportsApiKeys && op === 'fetchUpdate' && rest.at(-1) === 'apiKeys') {
       // only allow admins to set api keys
@@ -80,6 +66,39 @@ export class BaseHandler {
 
     const relPath = rest.join('/');
     return store[op](context, relPath);
+  }
+
+  async handleRobots(context, info, op) {
+    const { data, log } = context;
+    const { org, site } = info;
+
+    if (op === 'fetchUpdate') {
+      if (!data.body) {
+        return createErrorResponse({ log, status: 400, msg: 'missing body' });
+      }
+      context.data = {
+        txt: data.body,
+      };
+    }
+    const store = new AdminConfigStore(org, this.type, site);
+    let response = await store[op](context, 'robots');
+    if (op !== 'fetchRemove' && response.status === 200) {
+      const json = await response.json();
+      response = new Response(json.txt, {
+        headers: { 'content-type': 'text/plain' },
+      });
+    }
+    return response;
+  }
+
+  async doHandle(context, info, op) {
+    const { log } = context;
+    const { rawPath, ext } = info;
+
+    if (rawPath === undefined || ext === '.json') {
+      return this.handleJSON(context, info, op);
+    }
+    return errorResponse(log, 404, 'invalid config type');
   }
 
   async handle(context, info) {
@@ -95,7 +114,6 @@ export class BaseHandler {
     } else {
       authInfo.assertAnyPermission(...this.permissions);
     }
-
     return this.doHandle(context, info, op);
   }
 }

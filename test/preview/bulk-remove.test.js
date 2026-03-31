@@ -18,25 +18,15 @@ import { AuthInfo } from '../../src/auth/auth-info.js';
 import bulkRemove from '../../src/preview/bulk-remove.js';
 import { RemoveJob } from '../../src/preview/remove-job.js';
 import { Job } from '../../src/job/job.js';
-import { createContext, createInfo, Nock } from '../utils.js';
-
-const TEST_CONFIG = {
-  content: {
-    contentBusId: 'foo-id',
-    source: { type: 'onedrive', url: 'https://example.sharepoint.com' },
-  },
-  code: {
-    owner: 'owner',
-    repo: 'repo',
-    source: { type: 'github', url: 'https://github.com/owner/repo' },
-  },
-};
+import {
+  createContext, createInfo, Nock, SITE_CONFIG,
+} from '../utils.js';
 
 function createTestContext(data) {
   return createContext('/org/sites/site/preview/*', {
     attributes: {
       authInfo: AuthInfo.Admin(),
-      config: structuredClone(TEST_CONFIG),
+      config: structuredClone(SITE_CONFIG),
       infoMarkerChecked: true,
     },
     data,

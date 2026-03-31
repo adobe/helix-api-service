@@ -40,7 +40,7 @@ export class SourceForest extends Forest {
         "contentType": "text/html",
         "path": "/index.html"
        */
-      if (!item.contentLength && !item.contentType) {
+      if (item.path.endsWith('/')) {
         // skip "folder" objects
         return null;
       }

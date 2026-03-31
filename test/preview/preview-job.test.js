@@ -22,23 +22,11 @@ import { JobStorage } from '../../src/job/storage.js';
 import { PURGE_ALL_CONTENT_THRESHOLD } from '../../src/contentbus/contentbus.js';
 import { PreviewJob } from '../../src/preview/preview-job.js';
 import purge from '../../src/cache/purge.js';
-import { createContext, createInfo, Nock } from '../utils.js';
-
-const CONTENT_BUS_ID = 'foo-id';
+import {
+  createContext, createInfo, Nock, SITE_CONFIG,
+} from '../utils.js';
 
 const TEST_SOURCE = { type: 'test-pj', url: 'test://foo-bar' };
-
-const TEST_CONFIG = {
-  content: {
-    contentBusId: CONTENT_BUS_ID,
-    source: TEST_SOURCE,
-  },
-  code: {
-    owner: 'owner',
-    repo: 'repo',
-    source: { type: 'github', url: 'https://github.com/owner/repo' },
-  },
-};
 
 const SNS_RESPONSE_BODY = new xml2js.Builder().buildObject({
   PublishResponse: {
@@ -156,7 +144,10 @@ describe('PreviewJob Tests', () => {
       env: { HELIX_STORAGE_DISABLE_R2: 'true' },
       attributes: {
         authInfo: AuthInfo.Admin(),
-        config: structuredClone(TEST_CONFIG),
+        config: {
+          ...structuredClone(SITE_CONFIG),
+          content: { ...SITE_CONFIG.content, source: TEST_SOURCE },
+        },
         infoMarkerChecked: true,
         redirects: { preview: {} },
       },
@@ -243,7 +234,7 @@ describe('PreviewJob Tests', () => {
 
   it('run() collects, previews, purges, and notifies', async () => {
     // Head requests for isNotModified checks
-    nock.content(CONTENT_BUS_ID)
+    nock.content()
       .headObject('/preview/foo/new.md').reply(404) // new → update
       .headObject('/preview/foo/old.md')
       .reply(200, '', { 'last-modified': 'Thu, 01 Jan 1970 00:00:00 GMT' }) // old, not modified
@@ -254,7 +245,7 @@ describe('PreviewJob Tests', () => {
     sandbox.stub(HANDLERS['test-pj'], 'handle').callsFake(() => Promise.resolve(new Response('# content')));
 
     // S3 store calls for update
-    nock.content(CONTENT_BUS_ID)
+    nock.content()
       .headObject('/preview/foo/new.md').optionally().reply(404) // infoMarker check
       .putObject('/preview/foo/new.md')
       .reply(201)
@@ -279,10 +270,10 @@ describe('PreviewJob Tests', () => {
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_Ho7PLekudFPmskD4' },
-      { key: 'p_bDG6BvDACXvgEGBX' },
-      { key: 'p_1STMRI8ti52RMAhD' },
-      { key: 'p_F33f078hL3sq9AGu' },
+      { key: 'p_pSKj2mQkyH1eSehP' },
+      { key: 'p_iZ0xNI3YLOd8zXlo' },
+      { key: 'p_qePwwdPws3hnLWF8' },
+      { key: 'p_YoGLcSIZab1NDHOk' },
     ]);
   });
 
@@ -311,12 +302,12 @@ describe('PreviewJob Tests', () => {
 
     // head requests: twice per file (isNotModified + storage.metadata in update)
     for (let i = 0; i < PURGE_ALL_CONTENT_THRESHOLD + 5; i += 1) {
-      nock.content(CONTENT_BUS_ID).headObject(`/preview/doc${i}.md`).times(2).reply(404);
+      nock.content().headObject(`/preview/doc${i}.md`).times(2).reply(404);
     }
 
     // S3 put requests for all documents
     for (let i = 0; i < PURGE_ALL_CONTENT_THRESHOLD + 5; i += 1) {
-      nock.content(CONTENT_BUS_ID).putObject(`/preview/doc${i}.md`).reply(201);
+      nock.content().putObject(`/preview/doc${i}.md`).reply(201);
     }
 
     nock('https://sns.us-east-1.amazonaws.com:443').post('/').reply(200, SNS_RESPONSE_BODY);
@@ -327,7 +318,7 @@ describe('PreviewJob Tests', () => {
 
     // When > threshold, should purge with the bulk key
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_foo-id' },
+      { key: 'p_853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f' },
     ]);
   });
 
@@ -336,7 +327,7 @@ describe('PreviewJob Tests', () => {
     handleStub.onFirstCall().returns(new Response('', { status: 429 })); // no retry-after header → NaN || 1
     handleStub.onSecondCall().callsFake(() => Promise.resolve(new Response('# content')));
 
-    nock.content(CONTENT_BUS_ID)
+    nock.content()
       .headObject('/preview/foo/new.md').reply(404) // isNotModified
       .headObject('/preview/foo/new.md')
       .optionally()
@@ -364,7 +355,7 @@ describe('PreviewJob Tests', () => {
     }));
     handleStub.onSecondCall().callsFake(() => Promise.resolve(new Response('# content')));
 
-    nock.content(CONTENT_BUS_ID)
+    nock.content()
       .headObject('/preview/foo/new.md').reply(404) // isNotModified
       .headObject('/preview/foo/new.md')
       .optionally()
@@ -390,7 +381,7 @@ describe('PreviewJob Tests', () => {
       new Response('{"data":[]}', { headers: { 'content-type': 'application/json' } }),
     ));
 
-    nock.content(CONTENT_BUS_ID)
+    nock.content()
       .headObject('/preview/redirects.json').reply(404) // isNotModified
       .headObject('/preview/redirects.json')
       .optionally()
@@ -425,7 +416,7 @@ describe('PreviewJob Tests', () => {
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.status, 200);
-    assert.deepStrictEqual(purgeInfos, [{ key: 'p_q_WwvA4cJdubPLB2' }, { path: '/foo' }]);
+    assert.deepStrictEqual(purgeInfos, [{ key: 'p_FbbV3_MU1QmJqhfF' }, { path: '/foo' }]);
   });
 
   it('processConfigFiles() calls purge.config when a metadata resource was updated', async () => {
@@ -443,7 +434,7 @@ describe('PreviewJob Tests', () => {
       new Response('err', { status: 500, headers: { 'x-error': 'upstream error', 'x-error-code': 'ERR_CODE' } }),
     );
 
-    nock.content(CONTENT_BUS_ID).headObject('/preview/foo/new.md').reply(404); // isNotModified
+    nock.content().headObject('/preview/foo/new.md').reply(404); // isNotModified
 
     const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [];
@@ -462,7 +453,7 @@ describe('PreviewJob Tests', () => {
       new Response('err', { status: 500, headers: { 'x-error': 'upstream error' } }),
     );
 
-    nock.content(CONTENT_BUS_ID).headObject('/preview/foo/new.md').reply(404); // isNotModified
+    nock.content().headObject('/preview/foo/new.md').reply(404); // isNotModified
 
     const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [];

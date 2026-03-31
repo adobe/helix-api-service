@@ -19,11 +19,11 @@ import sinon from 'sinon';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
 import purge from '../../src/cache/purge.js';
-import { createContext, createInfo, Nock } from '../utils.js';
+import {
+  createContext, createInfo, Nock, SITE_CONFIG,
+} from '../utils.js';
 import { createJob as createPreviewJob } from './preview-job.test.js';
 import { toResourcePath } from '../../src/support/RequestInfo.js';
-
-const CONTENT_BUS_ID = 'foo-id';
 
 const SNS_RESPONSE_BODY = new xml2js.Builder().buildObject({
   PublishResponse: {
@@ -107,7 +107,7 @@ const createByomHandler = () => ({
 
 const makeConfig = (sourceType, overlay) => ({
   content: {
-    contentBusId: CONTENT_BUS_ID,
+    contentBusId: SITE_CONFIG.content.contentBusId,
     source: { type: sourceType, url: `${sourceType}://example.com` },
     ...(overlay ? { overlay } : {}),
   },

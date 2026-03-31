@@ -40,6 +40,10 @@ export class SourceForest extends Forest {
         "contentType": "text/html",
         "path": "/index.html"
        */
+      if (!item.contentLength && !item.contentLength) {
+        // skip "folder" objects
+        return null;
+      }
       const path = `${rootPath}${relPath}${item.path}`;
       const name = basename(item.path);
       if (name === '.props') {
@@ -55,7 +59,7 @@ export class SourceForest extends Forest {
         ext,
       };
       if (name === 'index.html') {
-        ret.path = `${dirname(path)}/`;
+        ret.path = path === '/index.html' ? '/' : `${dirname(path)}/`;
         ret.resourcePath = `${baseName}.md`;
         ret.ext = '.md';
       } else if (ext === 'html') {

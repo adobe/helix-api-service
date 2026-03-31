@@ -102,7 +102,8 @@ describe('Bulk Remove Tests', () => {
     const context = createTestContext({ paths: Array.from({ length: 201 }, (_, i) => `/path-${i}`) });
     const result = await bulkRemove(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), 'Number of paths for synchronous bulk-remove exceeds limit: 201 > 200. Use forceAsync=true');
+    assert.strictEqual(result.headers.get('x-error'), 'Bulk path limit exceeded for this content source (201 > 200). Use forceAsync=true');
+    assert.strictEqual(result.headers.get('x-error-code'), 'AEM_BACKEND_TOO_MANY_BULK_PATHS');
   });
 
   it('bypasses the sync limit when forceAsync=true', async () => {

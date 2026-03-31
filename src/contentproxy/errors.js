@@ -66,6 +66,10 @@ const errors = [
     code: 'AEM_BACKEND_RESOURCE_TOO_BIG',
     template: 'Files larger than 500mb are not supported: $1',
   },
+  {
+    code: 'AEM_BACKEND_TOO_MANY_BULK_PATHS',
+    template: 'Bulk path limit exceeded for $1 content source ($2 > $3). Use forceAsync=true',
+  },
 
   // mp4 media upload
   {

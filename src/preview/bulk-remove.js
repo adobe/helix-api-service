@@ -12,6 +12,7 @@
 import { Job } from '../job/job.js';
 import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { RemoveJob } from './remove-job.js';
+import { error } from '../contentproxy/errors.js';
 
 /**
  * Maximum number of paths supported for a synchronous bulk-remove.
@@ -45,7 +46,12 @@ export default async function bulkRemove(context, info) {
   }
 
   if (paths.length > MAX_SYNC_PATHS && String(context.data.forceAsync) !== 'true') {
-    return errorResponse(log, 400, `Number of paths for synchronous bulk-remove exceeds limit: ${paths.length} > ${MAX_SYNC_PATHS}. Use forceAsync=true`);
+    return errorResponse(log, 400, error(
+      'Bulk path limit exceeded for $1 content source ($2 > $3). Use forceAsync=true',
+      'this',
+      paths.length,
+      MAX_SYNC_PATHS,
+    ));
   }
 
   return Job.create(context, info, RemoveJob.TOPIC, {

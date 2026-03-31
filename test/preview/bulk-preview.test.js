@@ -166,7 +166,8 @@ describe('Bulk Preview Tests', () => {
     );
     const result = await bulkPreview(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), 'Number of paths for synchronous bulk-preview exceeds allowed max for onedrive content source: 16 > 15. Use forceAsync=true');
+    assert.strictEqual(result.headers.get('x-error'), 'Bulk path limit exceeded for onedrive content source (16 > 15). Use forceAsync=true');
+    assert.strictEqual(result.headers.get('x-error-code'), 'AEM_BACKEND_TOO_MANY_BULK_PATHS');
   });
 
   it('bypasses the sync limit when forceAsync=true', async () => {

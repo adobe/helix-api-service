@@ -79,7 +79,7 @@ export default async function bulkPreview(context, info) {
 
   if (paths.length > MAX_SYNC_PATHS[handler.name] && String(context.data.forceAsync) !== 'true') {
     return errorResponse(log, 400, error(
-      'Number of paths for synchronous bulk-preview exceeds allowed max for $1 content source: $2 > $3. Use forceAsync=true',
+      'Bulk path limit exceeded for $1 content source ($2 > $3). Use forceAsync=true',
       handler.name,
       paths.length,
       MAX_SYNC_PATHS[handler.name],

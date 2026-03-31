@@ -22,7 +22,7 @@ const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
 
 export const JOB_CLASS = {
   test: TestJob,
-  code: CodeJob,
+  [CodeJob.TOPIC]: CodeJob,
   [PreviewJob.TOPIC]: PreviewJob,
   [RemoveJob.TOPIC]: RemoveJob,
   [PublishJob.TOPIC]: PublishJob,

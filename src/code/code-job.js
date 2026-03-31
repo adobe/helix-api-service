@@ -191,6 +191,8 @@ async function storeSha(ctx, codeSource, evt) {
  * Implements a code-sync job
  */
 export class CodeJob extends Job {
+  static TOPIC = 'code';
+
   /**
    * Whether we use the code bus.
    */

@@ -57,9 +57,6 @@ const notImplemented = () => new Response('', { status: 405 });
  */
 const nameSelector = (segs) => {
   const literals = segs.filter((seg) => seg !== '*' && !seg.startsWith(':'));
-  if (literals.length === 0) {
-    return 'org';
-  }
   if (literals.at(0) === 'sites' && literals.length > 1) {
     literals.shift();
   }

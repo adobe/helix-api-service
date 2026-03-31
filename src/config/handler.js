@@ -42,6 +42,7 @@ export class BaseHandler {
    *   returns `{ rest: null }` if the type could not be determined
    * @abstract
    */
+  /* c8 ignore next 4 */
   // eslint-disable-next-line class-methods-use-this
   determineConfigType() {
     throw new Error('not implemented');

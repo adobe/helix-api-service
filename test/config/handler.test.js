@@ -18,7 +18,7 @@ import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { AdminConfigStore } from '../../src/config/admin-config-store.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
+import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
 
 /**
  * Stub for the base methods in `AdminConfigStore`.
@@ -119,7 +119,7 @@ describe('Config Handler Tests', () => {
 
   describe('orgs', () => {
     beforeEach(() => {
-      nock.orgConfig().reply(404);
+      nock.orgConfig(ORG_CONFIG);
     });
 
     it('read config', async () => {
@@ -127,7 +127,11 @@ describe('Config Handler Tests', () => {
         .getObject('/orgs/org/config.json')
         .reply(200, { version: 1 });
 
-      const { request, context } = setupTest('/org/config.json');
+      const { request, context } = setupTest('/org/config.json', {
+        authInfo: AuthInfo.Default().withProfile({
+          email: 'bob@example.com',
+        }).withAuthenticated(true),
+      });
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
@@ -136,6 +140,37 @@ describe('Config Handler Tests', () => {
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'application/json',
         vary: 'Accept-Encoding',
+      });
+    });
+
+    it('read fragment', async () => {
+      nock.config()
+        .getObject('/orgs/org/config.json')
+        .reply(200, ORG_CONFIG);
+
+      const { request, context } = setupTest('/org/config/access/admin.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'application/json',
+        vary: 'Accept-Encoding',
+      });
+      assert.deepStrictEqual(await response.json(), ORG_CONFIG.access.admin);
+    });
+
+    it('denies unauthorized access', async () => {
+      const { request, context } = setupTest('/org/config.json', {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 403);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'not authorized',
       });
     });
 
@@ -158,7 +193,7 @@ describe('Config Handler Tests', () => {
       });
     });
 
-    const SITE_CONFIGS = [{
+    const SITE_DETAILS = [{
       content: {
         url: '123',
       },
@@ -182,9 +217,9 @@ describe('Config Handler Tests', () => {
       ]);
       nock.config()
         .getObject('/orgs/org/sites/site1.json')
-        .reply(200, SITE_CONFIGS[0])
+        .reply(200, SITE_DETAILS[0])
         .getObject('/orgs/org/sites/site2.json')
-        .reply(200, SITE_CONFIGS[1]);
+        .reply(200, SITE_DETAILS[1]);
 
       const { request, context } = setupTest('/org/sites', {
         data: { details: true },
@@ -195,12 +230,12 @@ describe('Config Handler Tests', () => {
       assert.deepStrictEqual(await response.json(), {
         sites: [
           {
-            ...SITE_CONFIGS[0],
+            ...SITE_DETAILS[0],
             name: 'site1',
             path: '/config/org/sites/site1.json',
           },
           {
-            ...SITE_CONFIGS[1],
+            ...SITE_DETAILS[1],
             name: 'site2',
             path: '/config/org/sites/site2.json',
           },

@@ -25,40 +25,40 @@
   },
   {
     "org": "company",
-    "site": "subsiteA",
-    "codeBusId": "company/subsiteA",
+    "site": "subsite1",
+    "codeBusId": "company/subsite1",
     "contentSourceUrl": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA",
     "contentBusId": "4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c",
     "url": "https://www.company.com",
     "routes": [
       "**/A/**"
     ],
-    "originalSite": "company/subsiteA",
+    "originalSite": "company/subsite1",
     "sharepointSite": "https://company.sharepoint.com/sites/subsites/Shared%20Documents/subsiteA"
   },
   {
     "org": "company",
-    "site": "subsiteB",
-    "codeBusId": "company/subsiteB",
+    "site": "subsite2",
+    "codeBusId": "company/subsite2",
     "contentSourceUrl": "https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1",
     "contentBusId": "76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
     "url": "https://www.company.com",
     "routes": [
       "**/B/**"
     ],
-    "originalSite": "company/subsiteB",
-    "originalRepository": "company/subsiteB",
+    "originalSite": "company/subsite2",
+    "originalRepository": "company/subsite2",
     "gdriveId": "1N2zij7EMeS95cIFiRuxfjY0OxllX8my1"
   },
   {
     "org": "company",
-    "site": "subsiteC",
-    "codeBusId": "company/subsiteC",
+    "site": "subsite3",
+    "codeBusId": "company/subsite3",
     "contentSourceUrl": "https://drive.google.com/drive/folders/abczij7EMeS95cIFiRuxfjY0OxllX8my1",
     "contentBusId": "96c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb",
     "url": "https://www.company.com",
-    "originalSite": "company/subsiteC",
-    "originalRepository": "company/subsiteC",
+    "originalSite": "company/subsite3",
+    "originalRepository": "company/subsite3",
     "gdriveId": "abczij7EMeS95cIFiRuxfjY0OxllX8my1",
     "customUser": true
   },

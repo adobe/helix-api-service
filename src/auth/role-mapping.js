@@ -56,7 +56,13 @@ export class RoleMapping {
   }
 
   static async load(context, defaultRole) {
-    const { attributes: { config } } = context;
+    const { attributes } = context;
+    let { config } = attributes;
+    // TODO: checking either `config` or `orgConfig`, depending on the request type
+    //       might be used elsewhere in the codebase, so we should refactor this
+    if (config === null) {
+      config = attributes.orgConfig;
+    }
     if (!config) {
       return null;
     }

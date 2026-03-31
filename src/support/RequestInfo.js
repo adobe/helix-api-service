@@ -349,6 +349,12 @@ export class RequestInfo {
     const {
       org, site, path, profile, ref, route,
     } = variables;
+
+    ['org', 'site', 'profile'].forEach((key) => {
+      if (variables[key] && variables[key].toLowerCase() !== variables[key]) {
+        throw new StatusCodeError('', 400, `${key} must be lowercase`);
+      }
+    });
     const httpRequest = new HttpRequest(request);
     const pathInfo = new PathInfo(route, org, site, path, profile);
 

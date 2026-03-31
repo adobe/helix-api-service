@@ -109,6 +109,7 @@ Use `StatusCodeError` for HTTP error responses and `AccessDeniedError` for autho
 - Test environment setup in `test/setup-env.js` and `test/setup-test-idp.js`
 - Dev server for integration testing at `test/dev/server.mjs`
 - Coverage thresholds: 95% for lines, branches, statements, and functions
+- Always use `SITE_CONFIG` (and `ORG_CONFIG`) from `test/utils.js` for site/org config fixtures instead of defining local `TEST_CONFIG` constants. If a test needs a different content source type (e.g. a custom test handler), override only that field: `{ ...structuredClone(SITE_CONFIG), content: { ...SITE_CONFIG.content, source: TEST_SOURCE } }`
 
 ### Key Integrations
 

@@ -98,6 +98,7 @@ export /* abstract */ class Forest {
             itemList.set(infoPath, { status: 404, path: infoPath });
             items = [];
           }
+          // TODO: add else similar to above
         } catch (e) {
           const infoPath = `${folderPath}/*`;
           itemList.set(infoPath, {

@@ -378,6 +378,37 @@ describe('Job Handler Tests', () => {
     });
   });
 
+  it('GET returns preview-remove job status', async () => {
+    nock.siteConfig(SITE_CONFIG);
+    nock.content()
+      .getObject('/preview/.helix/admin-jobs/preview-remove/incoming/job-24.json')
+      .reply(200, {
+        state: 'running',
+        data: {
+          paths: ['/document'],
+        },
+      });
+
+    const result = await main(new Request('https://api.aem.live/'), {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+      pathInfo: {
+        suffix: '/org/sites/site/jobs/preview-remove/job-24',
+      },
+    });
+
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(await result.json(), {
+      links: {
+        list: 'https://api.aem.live/org/sites/site/jobs/preview-remove/',
+        self: 'https://api.aem.live/org/sites/site/jobs/preview-remove/job-24',
+        details: 'https://api.aem.live/org/sites/site/jobs/preview-remove/job-24/details',
+      },
+      state: 'running',
+    });
+  });
+
   it('GET returns live-publish job status', async () => {
     nock.siteConfig(SITE_CONFIG);
     nock.content()

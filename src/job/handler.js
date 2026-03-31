@@ -15,6 +15,7 @@ import { TestJob } from './test-job.js';
 import { JobStorage } from './storage.js';
 import { CodeJob } from '../code/code-job.js';
 import { PreviewJob } from '../preview/preview-job.js';
+import { RemoveJob } from '../preview/remove-job.js';
 import { PublishJob } from '../live/publish-job.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
@@ -22,8 +23,9 @@ const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
 export const JOB_CLASS = {
   test: TestJob,
   code: CodeJob,
-  preview: PreviewJob,
-  'live-publish': PublishJob,
+  [PreviewJob.TOPIC]: PreviewJob,
+  [RemoveJob.TOPIC]: RemoveJob,
+  [PublishJob.TOPIC]: PublishJob,
 };
 
 /**

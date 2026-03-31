@@ -67,6 +67,8 @@ async function isNotModified(context, file) {
  * Job that previews a bulk of resources in the background.
  */
 export class PreviewJob extends Job {
+  static TOPIC = 'preview';
+
   /**
    * Collect the resources from onedrive
    *

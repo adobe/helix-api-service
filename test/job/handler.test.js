@@ -11,11 +11,16 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
+import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { JOB_CLASS } from '../../src/job/handler.js';
 import { Job } from '../../src/job/job.js';
 import { TestJob } from '../../src/job/test-job.js';
+import { CodeJob } from '../../src/code/code-job.js';
+import { PreviewJob } from '../../src/preview/preview-job.js';
+import { RemoveJob } from '../../src/preview/remove-job.js';
+import { PublishJob } from '../../src/live/publish-job.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
@@ -378,68 +383,6 @@ describe('Job Handler Tests', () => {
     });
   });
 
-  it('GET returns preview-remove job status', async () => {
-    nock.siteConfig(SITE_CONFIG);
-    nock.content()
-      .getObject('/preview/.helix/admin-jobs/preview-remove/incoming/job-24.json')
-      .reply(200, {
-        state: 'running',
-        data: {
-          paths: ['/document'],
-        },
-      });
-
-    const result = await main(new Request('https://api.aem.live/'), {
-      attributes: {
-        authInfo: AuthInfo.Default().withAuthenticated(true),
-      },
-      pathInfo: {
-        suffix: '/org/sites/site/jobs/preview-remove/job-24',
-      },
-    });
-
-    assert.strictEqual(result.status, 200);
-    assert.deepStrictEqual(await result.json(), {
-      links: {
-        list: 'https://api.aem.live/org/sites/site/jobs/preview-remove/',
-        self: 'https://api.aem.live/org/sites/site/jobs/preview-remove/job-24',
-        details: 'https://api.aem.live/org/sites/site/jobs/preview-remove/job-24/details',
-      },
-      state: 'running',
-    });
-  });
-
-  it('GET returns live-publish job status', async () => {
-    nock.siteConfig(SITE_CONFIG);
-    nock.content()
-      .getObject('/preview/.helix/admin-jobs/live-publish/incoming/job-24.json')
-      .reply(200, {
-        state: 'running',
-        data: {
-          paths: ['/document'],
-        },
-      });
-
-    const result = await main(new Request('https://api.aem.live/'), {
-      attributes: {
-        authInfo: AuthInfo.Default().withAuthenticated(true),
-      },
-      pathInfo: {
-        suffix: '/org/sites/site/jobs/live-publish/job-24',
-      },
-    });
-
-    assert.strictEqual(result.status, 200);
-    assert.deepStrictEqual(await result.json(), {
-      links: {
-        list: 'https://api.aem.live/org/sites/site/jobs/live-publish/',
-        self: 'https://api.aem.live/org/sites/site/jobs/live-publish/job-24',
-        details: 'https://api.aem.live/org/sites/site/jobs/live-publish/job-24/details',
-      },
-      state: 'running',
-    });
-  });
-
   it('DELETE stops the job', async () => {
     nock.siteConfig(SITE_CONFIG);
     nock.content()
@@ -535,4 +478,51 @@ describe('Job Handler Tests', () => {
       'content-type': 'application/json',
     });
   });
+});
+
+describe('Job Handler — RUN dispatches to correct job class', () => {
+  let nock;
+
+  beforeEach(() => {
+    nock = new Nock().env();
+  });
+
+  afterEach(() => {
+    nock.done();
+  });
+
+  for (const [JobClass, topic, statePath] of [
+    [CodeJob, CodeJob.TOPIC, (t) => `/.helix/admin-jobs/${t}/incoming/job-24.json`],
+    [PreviewJob, PreviewJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
+    [RemoveJob, RemoveJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
+    [PublishJob, PublishJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
+  ]) {
+    // eslint-disable-next-line no-loop-func
+    it(`RUN invokes ${topic} job`, async () => {
+      nock.siteConfig(SITE_CONFIG);
+      const bucket = JobClass.USE_CODE_BUS
+        ? nock.s3('helix-code-bus', `${SITE_CONFIG.code.owner}/${SITE_CONFIG.code.repo}`)
+        : nock.content();
+      bucket
+        .getObject(statePath(topic))
+        .reply(200, { state: 'running' });
+
+      const stub = sinon.stub(JobClass.prototype, 'invoke').resolves();
+      try {
+        const result = await main(new Request('https://api.aem.live/', { method: 'RUN' }), {
+          attributes: {
+            authInfo: AuthInfo.Default().withAuthenticated(true),
+          },
+          pathInfo: {
+            suffix: `/org/sites/site/jobs/${topic}/job-24`,
+          },
+        });
+
+        assert.strictEqual(result.status, 204);
+        assert.ok(stub.calledOnce, `expected ${topic} job invoke() to be called`);
+      } finally {
+        stub.restore();
+      }
+    });
+  }
 });

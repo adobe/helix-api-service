@@ -11,6 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
+import bulkPublish from './bulk-publish.js';
 import publish from './publish.js';
 import status from './status.js';
 import unpublish from './unpublish.js';
@@ -47,6 +48,9 @@ export default async function liveHandler(context, info) {
 
   if (info.method === 'POST') {
     authInfo.assertPermissions('live:write');
+    if (info.webPath === '/*') {
+      return bulkPublish(context, info);
+    }
     return publish(context, info);
   }
 

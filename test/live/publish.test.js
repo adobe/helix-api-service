@@ -227,6 +227,28 @@ describe('Publish Action Tests', () => {
       assert.deepStrictEqual(surrogates, ['U_NW4adJU7Qazf-I']);
     });
 
+    it('publish metadata with simple sitemap installed enters TODO block', async () => {
+      nock.content()
+        .head('/preview/metadata.json')
+        .reply(200)
+        .copyObject('/live/metadata.json')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
+        .head('/live/metadata.json')
+        .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
+
+      const { request, context } = setupTest(METADATA_JSON_PATH);
+      // pre-seed so hasSimpleSitemap returns true, covering the TODO block in liveUpdate
+      context.attributes.hasSimpleSitemap = true;
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+    });
+
     it('tweaks status when `contentBusCopy` returns 404 and a redirect matches', async () => {
       nock.content()
         .head('/preview/index.md')

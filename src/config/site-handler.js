@@ -18,19 +18,6 @@ class SiteHandler extends BaseHandler {
     super('sites', { supportsApiKeys: true });
   }
 
-  /**
-   * Determines the configuration type and additional parameters based on the
-   * incoming request information; interprets the request path and file extension
-   * to resolve which site config is being targeted
-   *
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
-   * @param {string} [info.rawPath] raw path from the request URL (may be undefined)
-   * @param {string} [info.ext] extension of the requested file
-   * @param {string} [info.site] site name
-   * @returns {{type?: string, name?: string, rest: string[]|null}} object describing
-   *   the config type, optional config name, and the remaining path parts;
-   *   returns `{ rest: null }` if the type could not be determined
-   */
   determineConfigType(info) {
     const { rawPath, ext, site } = info;
     if (rawPath === undefined) {

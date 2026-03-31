@@ -26,19 +26,6 @@ class OrgHandler extends BaseHandler {
     super('org', { supportsApiKeys: true });
   }
 
-  /**
-   * Determines the configuration type and additional parameters based on the
-   * incoming request information; interprets the request path and file extension
-   * to resolve which organizational config is being targeted
-   *
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
-   * @param {string} [info.rawPath] raw path from the request URL (may be undefined)
-   * @param {string} [info.route] route portion of the request
-   * @param {string} [info.ext] extension of the requested file
-   * @returns {{type?: string, name?: string, rest: string[]|null}} object describing
-   *   the config type, optional config name, and the remaining path parts;
-   *   returns `{ rest: null }` if the type could not be determined
-   */
   determineConfigType(info) {
     const { rawPath, route, ext } = info;
     if (rawPath === undefined) {

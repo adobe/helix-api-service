@@ -21,21 +21,11 @@ import { METADATA_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD, REDIRECTS_JSON_PATH } 
 import { RemoveJob } from '../../src/preview/remove-job.js';
 import { JobStorage } from '../../src/job/storage.js';
 import purge from '../../src/cache/purge.js';
-import { createContext, createInfo, Nock } from '../utils.js';
+import {
+  createContext, createInfo, Nock, SITE_CONFIG,
+} from '../utils.js';
 
-const CONTENT_BUS_ID = 'foo-id';
-
-const TEST_CONFIG = {
-  content: {
-    contentBusId: CONTENT_BUS_ID,
-    source: { type: 'onedrive', url: 'https://example.sharepoint.com' },
-  },
-  code: {
-    owner: 'owner',
-    repo: 'repo',
-    source: { type: 'github', url: 'https://github.com/owner/repo' },
-  },
-};
+const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
 
 const SNS_RESPONSE_BODY = new xml2js.Builder().buildObject({
   PublishResponse: {
@@ -107,7 +97,7 @@ describe('RemoveJob Tests', () => {
       env: { HELIX_STORAGE_DISABLE_R2: 'true' },
       attributes: {
         authInfo: AuthInfo.Admin(),
-        config: structuredClone(TEST_CONFIG),
+        config: structuredClone(SITE_CONFIG),
         infoMarkerChecked: true,
       },
     });
@@ -120,37 +110,27 @@ describe('RemoveJob Tests', () => {
   });
 
   it('runs job successfully', async () => {
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      // List /documents/ prefix → returns one document
-      .get('/?list-type=2&prefix=foo-id%2Fpreview%2Fdocuments%2F')
-      .reply(() => [200, new xml2js.Builder().buildObject({
-        ListBucketResult: {
-          Name: 'helix-content-bus',
-          Prefix: `${CONTENT_BUS_ID}/preview/documents/`,
-          KeyCount: 1,
-          Contents: [{
-            Key: `${CONTENT_BUS_ID}/preview/documents/document.md`,
-            LastModified: '2023-10-06T08:05:00.000Z',
-          }],
-        },
-      })])
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/preview/documents/`, [
+      { Key: 'document.md', LastModified: '2023-10-06T08:05:00.000Z' },
+    ], '');
+    nock.content()
       // HEAD for single path /topics/topic1 → not found (prepare)
-      .head(`/${CONTENT_BUS_ID}/preview/topics/topic1.md`)
+      .headObject('/preview/topics/topic1.md')
       .reply(404)
       // HEAD for single path /topics/topic2 → found (prepare)
-      .head(`/${CONTENT_BUS_ID}/preview/topics/topic2.md`)
+      .headObject('/preview/topics/topic2.md')
       .reply(200, '', { 'last-modified': 'Thu, 01 Jan 1970 00:00:00 GMT' })
       // HEAD for document metadata check (contentbusRemove) → no redirect
-      .head(`/${CONTENT_BUS_ID}/preview/documents/document.md`)
+      .headObject('/preview/documents/document.md')
       .reply(404)
       // DELETE for document
-      .delete(`/${CONTENT_BUS_ID}/preview/documents/document.md?x-id=DeleteObject`)
+      .deleteObject('/preview/documents/document.md')
       .reply(204)
       // HEAD for topic2 metadata check (contentbusRemove) → no redirect
-      .head(`/${CONTENT_BUS_ID}/preview/topics/topic2.md`)
+      .headObject('/preview/topics/topic2.md')
       .reply(404)
       // DELETE for topic2 → fails
-      .delete(`/${CONTENT_BUS_ID}/preview/topics/topic2.md?x-id=DeleteObject`)
+      .deleteObject('/preview/topics/topic2.md')
       .reply(500);
 
     // SNS notification
@@ -181,7 +161,7 @@ describe('RemoveJob Tests', () => {
     assert.strictEqual(job.state.data.resources[0].status, 204);
     assert.ok(!job.state.data.resources[1].ok); // topic2 delete failed
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_uCDmuSDA2elicHDI' },
+      { key: 'p_eI7cO88L3yedH2Zt' },
       { path: '/documents/document' },
     ]);
   });
@@ -190,16 +170,17 @@ describe('RemoveJob Tests', () => {
     const count = PURGE_ALL_CONTENT_THRESHOLD + 10;
     const paths = Array.from({ length: count }, (_, i) => ({ path: `/documents/doc${String(i).padStart(4, '0')}` }));
 
+    const content = nock.content();
     for (let i = 0; i < count; i += 1) {
       const key = `/documents/doc${String(i).padStart(4, '0')}`;
-      nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
+      content
         // HEAD for prepare (single-path existence check)
-        .head(`/${CONTENT_BUS_ID}/preview${key}.md`)
+        .headObject(`/preview${key}.md`)
         .reply(200, '', { 'last-modified': 'Thu, 01 Jan 1970 00:00:00 GMT' })
         // HEAD for contentbusRemove metadata check (no redirect-location)
-        .head(`/${CONTENT_BUS_ID}/preview${key}.md`)
+        .headObject(`/preview${key}.md`)
         .reply(404)
-        .delete(`/${CONTENT_BUS_ID}/preview${key}.md?x-id=DeleteObject`)
+        .deleteObject(`/preview${key}.md`)
         .reply(204);
     }
     nock('https://sns.us-east-1.amazonaws.com:443')
@@ -211,22 +192,14 @@ describe('RemoveJob Tests', () => {
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_foo-id' },
+      { key: 'p_853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f' },
     ]);
   });
 
   it('stops job when stop signal received during processing', async () => {
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/?list-type=2&prefix=foo-id%2Fpreview%2Fdocuments%2F')
-      .reply(() => [200, new xml2js.Builder().buildObject({
-        ListBucketResult: {
-          Name: 'helix-content-bus',
-          Prefix: `${CONTENT_BUS_ID}/preview/documents/`,
-          KeyCount: 1,
-          Contents: [{ Key: `${CONTENT_BUS_ID}/preview/documents/document.md` }],
-        },
-      })]);
-
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/preview/documents/`, [
+      { Key: 'document.md', LastModified: '2023-10-06T08:05:00.000Z' },
+    ], '');
     nock('https://sns.us-east-1.amazonaws.com:443')
       .post('/')
       .reply(200, SNS_RESPONSE_BODY);
@@ -242,19 +215,10 @@ describe('RemoveJob Tests', () => {
   });
 
   it('prepare converts index.md and non-.md paths via toWebPath', async () => {
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/?list-type=2&prefix=foo-id%2Fpreview%2F')
-      .reply(() => [200, new xml2js.Builder().buildObject({
-        ListBucketResult: {
-          Name: 'helix-content-bus',
-          Prefix: `${CONTENT_BUS_ID}/preview/`,
-          KeyCount: 2,
-          Contents: [
-            { Key: `${CONTENT_BUS_ID}/preview/folder/index.md`, LastModified: '2023-01-01T00:00:00.000Z' },
-            { Key: `${CONTENT_BUS_ID}/preview/image.png`, LastModified: '2023-01-01T00:00:00.000Z' },
-          ],
-        },
-      })]);
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/preview/`, [
+      { Key: 'folder/index.md', LastModified: '2023-01-01T00:00:00.000Z' },
+      { Key: 'image.png', LastModified: '2023-01-01T00:00:00.000Z' },
+    ], '');
 
     const job = await createJob(ctx, info, [{ prefix: '/' }]);
     const resources = await job.prepare([{ prefix: '/' }], CONTENT_BUS_ID, HelixStorage.fromContext(ctx).contentBus());

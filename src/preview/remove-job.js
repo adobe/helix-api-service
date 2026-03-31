@@ -17,27 +17,12 @@ import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } fr
 import contentbusRemove from '../contentbus/remove.js';
 import { Job } from '../job/job.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
-import { RequestInfo } from '../support/RequestInfo.js';
+import { RequestInfo, toWebPath } from '../support/RequestInfo.js';
 
 /**
  * Concurrency to use when deleting previews.
  */
 const JOB_CONCURRENCY = 4;
-
-/**
- * Converts a resource path to a web path.
- * @param {string} resourcePath resource path
- * @returns {string} web path
- */
-function toWebPath(resourcePath) {
-  if (resourcePath.endsWith('/index.md')) {
-    return resourcePath.substring(0, resourcePath.length - '/index.md'.length + 1);
-  }
-  if (resourcePath.endsWith('.md')) {
-    return resourcePath.substring(0, resourcePath.length - '.md'.length);
-  }
-  return resourcePath;
-}
 
 /**
  * @typedef Resource

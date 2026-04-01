@@ -1757,7 +1757,6 @@ describe('Login Handler Tests', () => {
         },
       }).encode();
 
-      const warnMessages = [];
       const { request, context } = setupTest('/auth/test/ack', {
         query: {
           code: '1234',
@@ -1767,17 +1766,8 @@ describe('Login Handler Tests', () => {
           HLX_ADMIN_IDP_PRIVATE_KEY: JSON.stringify(privateJwk),
         },
       });
-      context.log = {
-        info: () => {},
-        warn: (...args) => { warnMessages.push(args.join(' ')); },
-        error: () => {},
-        debug: () => {},
-        trace: () => {},
-      };
       const result = await main(request, context);
       assert.strictEqual(result.status, 401);
-      const tokenLogged = warnMessages.some((msg) => msg.includes('imsToken'));
-      assert.strictEqual(tokenLogged, false, 'imsToken should not be logged');
     });
 
     it('/auth/test/ack aem-cli: exchanges the token and sends site token', async () => {

@@ -135,7 +135,7 @@ async function createExtensionResponse(context, info, idp, extensionId, {
   let siteTokenInfo = null;
   const ids = [payload.email, payload.user_id, payload.preferred_username].filter((user) => !!user);
   if (!ids.length) {
-    const { imsToken: _, ...safePayload } = payload;
+    const safePayload = { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
     log.warn(`Decoded id token from ${iss} does not contain email: ${JSON.stringify(safePayload, 0, 2)}`);
   } else {
     siteTokenInfo = await getTransientSiteTokenInfo(context, info, ids);
@@ -213,7 +213,7 @@ async function createAEMCLILoginInfoResponse(context, info, {
 
   const ids = [payload.email, payload.user_id, payload.preferred_username].filter((user) => !!user);
   if (!ids.length) {
-    const { imsToken: _, ...safePayload } = payload;
+    const safePayload = { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
     log.warn(`${clientId}: Decoded id token from ${iss} does not contain email: ${JSON.stringify(safePayload, 0, 2)}`);
     return new Response('', { status: 401 });
   } else {

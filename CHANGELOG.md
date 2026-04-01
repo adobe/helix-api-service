@@ -1,3 +1,10 @@
+# [1.38.0](https://github.com/adobe/helix-api-service/compare/v1.37.1...v1.38.0) (2026-04-01)
+
+
+### Features
+
+* implement `config` route ([#151](https://github.com/adobe/helix-api-service/issues/151)) ([2083dc3](https://github.com/adobe/helix-api-service/commit/2083dc3277ddffdf7383b28d8a785bfaf1b8b460))
+
 ## [1.37.1](https://github.com/adobe/helix-api-service/compare/v1.37.0...v1.37.1) (2026-04-01)
 
 

@@ -19,7 +19,7 @@ import { Job } from '../job/job.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex } from '../index/utils.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
-import { RequestInfo } from '../support/RequestInfo.js';
+import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
 import { hasSimpleSitemap, installSimpleSitemap } from '../sitemap/utils.js';
 import { updateRedirects } from '../redirects/update.js';
 import { liveUpdate } from './publish.js';
@@ -60,7 +60,7 @@ export class PublishJob extends Job {
    * @param {HelixStorage} storage storage to use
    */
   async prepare(paths, contentBusId, storage) {
-    const { ctx, info } = this;
+    const { ctx } = this;
     const { data, data: { forceUpdate } } = this.state;
     const metadataPaths = getMetadataPaths(ctx);
 
@@ -71,7 +71,7 @@ export class PublishJob extends Job {
       if (excluded(path)) {
         return;
       }
-      const { resourcePath } = RequestInfo.clone(info, { path, route: 'live' });
+      const resourcePath = toResourcePath(path);
       const resource = { resourcePath, path };
 
       if (!forceUpdate) {

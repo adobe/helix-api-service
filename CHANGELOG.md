@@ -1,3 +1,10 @@
+# [1.39.0](https://github.com/adobe/helix-api-service/compare/v1.38.1...v1.39.0) (2026-04-01)
+
+
+### Features
+
+* pretty-format HTML when stored using POST ([#165](https://github.com/adobe/helix-api-service/issues/165)) ([c72b941](https://github.com/adobe/helix-api-service/commit/c72b941d7132b27c640f35c99e6d00cfc410dbb8))
+
 ## [1.38.1](https://github.com/adobe/helix-api-service/compare/v1.38.0...v1.38.1) (2026-04-01)
 
 

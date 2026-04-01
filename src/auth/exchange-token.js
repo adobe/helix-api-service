@@ -24,6 +24,16 @@ import { setAuthCookie } from './cookie.js';
 import localJWKS from '../idp-configs/jwks-json.js';
 
 /**
+ * Returns a copy of the decoded token payload with sensitive data masked.
+ *
+ * @param {object} payload the decoded token payload
+ * @returns {object} payload safe for logging
+ */
+function redactPayload(payload) {
+  return { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
+}
+
+/**
  * Fetch tokens from IDP.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
@@ -135,8 +145,7 @@ async function createExtensionResponse(context, info, idp, extensionId, {
   let siteTokenInfo = null;
   const ids = [payload.email, payload.user_id, payload.preferred_username].filter((user) => !!user);
   if (!ids.length) {
-    const safePayload = { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
-    log.warn(`Decoded id token from ${iss} does not contain email: ${JSON.stringify(safePayload, 0, 2)}`);
+    log.warn(`Decoded id token from ${iss} does not contain email: ${JSON.stringify(redactPayload(payload), 0, 2)}`);
   } else {
     siteTokenInfo = await getTransientSiteTokenInfo(context, info, ids);
   }
@@ -213,8 +222,7 @@ async function createAEMCLILoginInfoResponse(context, info, {
 
   const ids = [payload.email, payload.user_id, payload.preferred_username].filter((user) => !!user);
   if (!ids.length) {
-    const safePayload = { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
-    log.warn(`${clientId}: Decoded id token from ${iss} does not contain email: ${JSON.stringify(safePayload, 0, 2)}`);
+    log.warn(`${clientId}: Decoded id token from ${iss} does not contain email: ${JSON.stringify(redactPayload(payload), 0, 2)}`);
     return new Response('', { status: 401 });
   } else {
     siteTokenInfo = await getTransientSiteTokenInfo(context, info, ids);

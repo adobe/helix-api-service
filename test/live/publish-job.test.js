@@ -98,6 +98,7 @@ describe('PublishJob Tests', () => {
   let ctx;
   let info;
   let purgeInfos;
+  let notified;
 
   beforeEach(() => {
     nock = new Nock().env();
@@ -125,6 +126,18 @@ describe('PublishJob Tests', () => {
       },
     });
     info = createInfo('/org/sites/site/live/*');
+
+    notified = 0;
+    nock('https://sns.us-east-1.amazonaws.com:443')
+      .post('/')
+      .optionally(true)
+      .reply((_, body) => {
+        const params = new URLSearchParams(body);
+        const msg = JSON.parse(params.get('Message'));
+        assert.strictEqual(msg.op, 'resources-published');
+        notified += 1;
+        return [200, SNS_RESPONSE_BODY];
+      });
   });
 
   afterEach(() => {
@@ -149,15 +162,6 @@ describe('PublishJob Tests', () => {
       .headObject('/live/documents/document.md')
       .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply((_, body) => {
-        const params = new URLSearchParams(body);
-        const msg = JSON.parse(params.get('Message'));
-        assert.strictEqual(msg.op, 'resources-published');
-        return [200, SNS_RESPONSE_BODY];
-      });
-
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
 
@@ -166,6 +170,7 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(job.state.data.resources[0].status, 200);
 
     assert.deepStrictEqual(purgeInfos, [{ key: 'eI7cO88L3yedH2Zt' }, { key: 'X3g3ca3tWVPsAJgl' }]);
+    assert.strictEqual(notified, 1);
   });
 
   it('skips a resource that is not modified on live', async () => {
@@ -176,8 +181,6 @@ describe('PublishJob Tests', () => {
       .headObject('/live/documents/document.md')
       .reply(200, '', { 'last-modified': LAST_MODIFIED_LIVE_NEWER });
 
-    // 304 resources are excluded from notification — no SNS
-
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
 
@@ -185,17 +188,14 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(job.state.data.resources[0].status, 304);
     assert.strictEqual(job.state.progress.notmodified, 1);
     assert.strictEqual(purgeInfos.length, 0, '304 resources should not be purged');
+    // 304 resources are excluded from notification — no SNS
+    assert.strictEqual(notified, 0);
   });
 
   it('marks resource as 404 when not found on preview during prepare', async () => {
     nock.content()
       .headObject('/preview/documents/document.md')
       .reply(404);
-
-    // 404 resource is still purged and indexed (status !== 304), triggering a notification
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
 
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
@@ -204,6 +204,8 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(job.state.data.resources[0].status, 404);
     // failed counter is set during trackProgress from prepare (not from liveUpdate)
     assert.strictEqual(job.state.progress.failed, 1);
+    // 404 resource is still purged and indexed (status !== 304), triggering a notification
+    assert.strictEqual(notified, 1);
   });
 
   it('skips preview HEAD and isModified check when forceUpdate=true', async () => {
@@ -217,15 +219,12 @@ describe('PublishJob Tests', () => {
       .headObject('/live/documents/document.md')
       .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, ['/documents/document'], { forceUpdate: true });
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.strictEqual(job.state.data.resources[0].status, 200);
+    assert.strictEqual(notified, 1);
   });
 
   it('records error and increments failed counter when liveUpdate fails', async () => {
@@ -239,11 +238,6 @@ describe('PublishJob Tests', () => {
       .copyObject('/live/documents/document.md')
       .reply(500); // contentBusCopy fails — publishStatus not reached
 
-    // failed resources are still purged/indexed (status !== 304), triggering a notification
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
 
@@ -251,6 +245,8 @@ describe('PublishJob Tests', () => {
     const resource = job.state.data.resources[0];
     assert.ok(resource.status && resource.status !== 200, 'resource should have an error status');
     assert.strictEqual(job.state.progress.failed, 1);
+    // failed resources are still purged/indexed (status !== 304), triggering a notification
+    assert.strictEqual(notified, 1);
   });
 
   it('excludes /.helix/ and /.snapshots/ paths during prepare', async () => {
@@ -263,6 +259,7 @@ describe('PublishJob Tests', () => {
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.strictEqual(job.state.data.resources.length, 0);
+    assert.strictEqual(notified, 0);
   });
 
   it('uses purge-all when more than PURGE_ALL_CONTENT_THRESHOLD resources are published', async () => {
@@ -286,16 +283,13 @@ describe('PublishJob Tests', () => {
         .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
     }
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, paths);
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
     // purge-all: single entry for the entire content bus ID
     assert.deepStrictEqual(purgeInfos, [{ key: CONTENT_BUS_ID }]);
+    assert.strictEqual(notified, 1);
   });
 
   it('places metadata resource first and calls purge.config after publish', async () => {
@@ -311,10 +305,6 @@ describe('PublishJob Tests', () => {
       .headObject(`/live${METADATA_JSON_PATH}`)
       .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'application/json' });
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, [METADATA_JSON_PATH]);
     await job.run();
 
@@ -324,6 +314,7 @@ describe('PublishJob Tests', () => {
       { key: 'U_NW4adJU7Qazf-I' },
       { key: '0BbXqRmqgStJ7irR' },
     ]);
+    assert.strictEqual(notified, 1);
   });
 
   it('processes redirects.json first and purges updated redirect paths', async () => {
@@ -342,15 +333,12 @@ describe('PublishJob Tests', () => {
       .getObject(`/live${REDIRECTS_JSON_PATH}`)
       .reply(404); // no redirects on live
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, [REDIRECTS_JSON_PATH]);
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.deepStrictEqual(purgeInfos, [{ key: 'DmtUcbOVSbg9dZSu' }]);
+    assert.strictEqual(notified, 1);
   });
 
   it('stops job when stop signal received during processing', async () => {
@@ -367,6 +355,7 @@ describe('PublishJob Tests', () => {
     const resource = job.state.data.resources.find((r) => r.resourcePath === '/documents/document.md');
     assert.ok(!resource?.status, 'resource should have no publish status when stopped before processing');
     assert.strictEqual(purgeInfos.length, 0, 'no purge should happen when stopped');
+    assert.strictEqual(notified, 0);
   });
 
   it('warns but continues when storage.head throws for one resource during prepare', async () => {
@@ -396,10 +385,6 @@ describe('PublishJob Tests', () => {
       .headObject('/live/documents/doc2.md')
       .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, ['/documents/doc1', '/documents/doc2']);
     await job.run();
 
@@ -413,6 +398,7 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(doc1.status, 200, 'doc1 should still be published after storage error in prepare');
     const doc2 = job.state.data.resources.find((r) => r.resourcePath === '/documents/doc2.md');
     assert.strictEqual(doc2.status, 200, 'doc2 should be published normally');
+    assert.strictEqual(notified, 1);
   });
 
   it('warns and treats resource as modified when isModified storage.head throws', async () => {
@@ -433,10 +419,6 @@ describe('PublishJob Tests', () => {
       .headObject('/live/documents/document.md')
       .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
 
@@ -446,6 +428,14 @@ describe('PublishJob Tests', () => {
       warnSpy.calledWithMatch('unable to get lastModified for /documents/document.md'),
       'should warn about the isModified storage error',
     );
+    assert.strictEqual(notified, 1);
+  });
+
+  it('rejects resumes from prepare phase', async () => {
+    const job = await createJob(ctx, info, ['/documents/document']);
+    job.state.data.phase = 'prepare';
+    job.state.data.resources = [{ path: '/documents/document', resourcePath: '/documents/document.md' }];
+    await assert.rejects(job.run(), Error('job cannot be resumed during the prepare phase. please provide a smaller input set.'));
   });
 
   it('sets needsBulkIndex when metadata is published and simple sitemap exists', async () => {
@@ -466,10 +456,6 @@ describe('PublishJob Tests', () => {
       .headObject(`/live${METADATA_JSON_PATH}`)
       .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'application/json' });
 
-    nock('https://sns.us-east-1.amazonaws.com:443')
-      .post('/')
-      .reply(200, SNS_RESPONSE_BODY);
-
     const job = await createJob(ctx, info, [METADATA_JSON_PATH]);
     await job.run();
 
@@ -477,5 +463,6 @@ describe('PublishJob Tests', () => {
     // needsBulkIndex was set then deleted — confirm it's gone and job completed normally
     assert.strictEqual(job.state.data.needsBulkIndex, undefined);
     assert.ok(configStub.calledOnce, 'purge.config should be called after metadata publish');
+    assert.strictEqual(notified, 1);
   });
 });

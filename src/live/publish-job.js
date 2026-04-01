@@ -58,11 +58,10 @@ export class PublishJob extends Job {
    * @param {string[]} paths web paths to publish
    * @param {string} contentBusId content bus ID
    * @param {HelixStorage} storage storage to use
-   * @returns {Promise<Array<Resource>>} resources to publish
    */
   async prepare(paths, contentBusId, storage) {
     const { ctx, info } = this;
-    const { forceUpdate } = this.state.data;
+    const { data, data: { forceUpdate } } = this.state;
     const metadataPaths = getMetadataPaths(ctx);
 
     const excluded = (path) => path.startsWith('/.helix/') || path.startsWith('/.snapshots/');
@@ -101,7 +100,14 @@ export class PublishJob extends Job {
         resources.push(resource);
       }
     }, JOB_CONCURRENCY);
-    return resources;
+
+    data.resources = resources;
+    await this.trackProgress({
+      total: data.resources.length,
+      failed: data.resources.filter((r) => r.status === 404).length,
+      notmodified: 0,
+      success: 0,
+    });
   }
 
   /**
@@ -140,7 +146,7 @@ export class PublishJob extends Job {
    */
   async processResource(resource, contentBusId, storage) {
     const { ctx, ctx: { log }, info } = this;
-    const { forceUpdate } = this.state.data;
+    const { progress, data: { forceUpdate } } = this.state;
     const { path } = resource;
 
     if (resource.status) {
@@ -152,7 +158,7 @@ export class PublishJob extends Job {
       log.info(`ignored live update for not modified: ${resource.resourcePath}`);
       // eslint-disable-next-line no-param-reassign
       resource.status = 304;
-      this.state.progress.notmodified += 1;
+      progress.notmodified += 1;
       return;
     }
 
@@ -171,7 +177,7 @@ export class PublishJob extends Job {
         // eslint-disable-next-line no-param-reassign
         resource.error = err;
       }
-      this.state.progress.failed += 1;
+      progress.failed += 1;
       return;
     }
 
@@ -199,17 +205,6 @@ export class PublishJob extends Job {
       const updated = await updateRedirects(ctx, 'live', oldRedirects, newRedirects);
       await purge.redirects(ctx, info, updated, PURGE_LIVE);
       // TODO: await removePages(ctx, info, updated);
-    }
-  }
-
-  /**
-   * Process metadata files after a bulk publish: purge config cache and flag
-   * whether the simple sitemap needs a full re-index.
-   */
-  async processMetadataFiles() {
-    const { ctx, info } = this;
-    if (ctx.attributes.config) {
-      await purge.config(ctx, info);
     }
   }
 
@@ -261,115 +256,136 @@ export class PublishJob extends Job {
   }
 
   /**
+   * Publish all resources from preview to live.
+   *
+   * @param {string} contentBusId content bus id
+   * @param {HelixStorage} storage content bus storage
+   * @returns {Promise<void>}
+   */
+  async publish(contentBusId, storage) {
+    const { ctx, info, state: { data } } = this;
+
+    await installSimpleSitemap(ctx, info, true);
+
+    // process redirects.json first so redirect purging happens before the main batch
+    const redirectsResource = data.resources.find((r) => r.redirects);
+    if (redirectsResource && !redirectsResource.status) {
+      await this.processRedirects(redirectsResource, contentBusId, storage);
+      this.state.progress.processed += 1;
+      if (redirectsResource.status === 200) {
+        this.state.progress.success += 1;
+      }
+      await this.writeStateLazy();
+    }
+
+    await processQueue([...data.resources], async (/** @type {Resource} */ resource) => {
+      if (await this.checkStopped()) {
+        return;
+      }
+      if (resource.redirects) {
+        return; // already processed above
+      }
+      await this.processResource(resource, contentBusId, storage);
+      this.state.progress.processed += 1;
+      if (resource.status === 200) {
+        this.state.progress.success += 1;
+      }
+      await this.writeStateLazy();
+    }, JOB_CONCURRENCY);
+
+    if (data.resources.some((r) => r.metadata && r.status === 200)) {
+      await purge.config(ctx, info);
+      if (await hasSimpleSitemap(ctx, info)) {
+        data.needsBulkIndex = true;
+      }
+    }
+  }
+
+  /**
+   * Purge the CDN cache and index all successfully published resources.
+   *
+   * @param {string} contentBusId content bus id
+   * @returns {Promise<void>}
+   */
+  async index(contentBusId) {
+    if (await this.checkStopped()) {
+      return;
+    }
+
+    const { ctx, info, state: { data: { resources, needsBulkIndex } } } = this;
+
+    // compute per-resource surrogate keys and perform a single bulk CDN purge
+    const infos = [];
+    if (resources.length > PURGE_ALL_CONTENT_THRESHOLD) {
+      infos.push({ key: contentBusId });
+      for (const resource of resources) {
+        // eslint-disable-next-line no-param-reassign
+        resource.purged = true;
+      }
+    } else {
+      for (const resource of resources) {
+        if (!resource.purged && resource.status !== 304) {
+          // eslint-disable-next-line no-param-reassign
+          resource.purged = true;
+          const { path } = resource;
+          if (path.endsWith('.json')) {
+            // eslint-disable-next-line no-await-in-loop
+            infos.push({ key: await computeSurrogateKey(`${contentBusId}${path}`) });
+          } else {
+            // eslint-disable-next-line no-await-in-loop
+            const variantInfos = await Promise.all(
+              getPurgePathVariants(path)
+                .map(async (variant) => ({ key: await computeSurrogateKey(`${contentBusId}${variant}`) })),
+            );
+            infos.push(...variantInfos);
+          }
+        }
+      }
+    }
+    await purge.perform(ctx, info, infos, PURGE_LIVE, 'main');
+    await this.writeStateLazy();
+
+    await this.indexBatch(ctx, info, resources);
+    await this.notifyBatch(ctx, info, resources);
+    await this.writeStateLazy();
+
+    // re-index simple sitemap if any metadata file was published
+    if (needsBulkIndex) {
+      // TODO: await bulkIndex(ctx, info, ['/*'], { indexNames: ['#simple'] });
+      delete this.state.data.needsBulkIndex;
+    }
+  }
+
+  /**
    * Runs the bulk publish job.
    *
    * @returns {Promise<void>}
    */
   async run() {
-    const { ctx, info } = this;
+    const { ctx } = this;
     const { contentBusId } = ctx;
     const { data, data: { paths } } = this.state;
 
     const storage = HelixStorage.fromContext(ctx).contentBus();
 
+    if (data.phase === 'prepare') {
+      // todo: implement resume for content-source listing
+      throw new Error('job cannot be resumed during the prepare phase. please provide a smaller input set.');
+    }
+
     if (!data.phase) {
       await this.setPhase('prepare');
-      data.resources = await this.prepare(paths, contentBusId, storage);
-      await this.trackProgress({
-        total: data.resources.length,
-        failed: data.resources.filter((r) => r.status === 404).length,
-        notmodified: 0,
-        success: 0,
-      });
+      await this.prepare(paths, contentBusId, storage);
       await this.setPhase('publish');
     }
 
     if (data.phase === 'publish') {
-      await installSimpleSitemap(ctx, info, true);
-
-      // process redirects.json first so redirect purging happens before the main batch
-      const redirectsResource = data.resources.find((r) => r.redirects);
-      if (redirectsResource && !redirectsResource.status) {
-        await this.processRedirects(redirectsResource, contentBusId, storage);
-        this.state.progress.processed += 1;
-        if (redirectsResource.status === 200) {
-          this.state.progress.success += 1;
-        }
-        await this.writeStateLazy();
-      }
-
-      await processQueue([...data.resources], async (/** @type {Resource} */ resource) => {
-        if (await this.checkStopped()) {
-          return;
-        }
-        if (resource.redirects) {
-          return; // already processed above
-        }
-        await this.processResource(resource, contentBusId, storage);
-        this.state.progress.processed += 1;
-        if (resource.status === 200) {
-          this.state.progress.success += 1;
-        }
-        await this.writeStateLazy();
-      }, JOB_CONCURRENCY);
-
-      if (data.resources.some((r) => r.metadata && r.status === 200)) {
-        await this.processMetadataFiles();
-        if (await hasSimpleSitemap(ctx, info)) {
-          data.needsBulkIndex = true;
-        }
-      }
+      await this.publish(contentBusId, storage);
       await this.setPhase('index');
     }
 
-    if (await this.checkStopped()) {
-      return;
-    }
-
     if (data.phase === 'index') {
-      const { resources } = data;
-
-      // compute per-resource surrogate keys and perform a single bulk CDN purge
-      const infos = [];
-      if (resources.length > PURGE_ALL_CONTENT_THRESHOLD) {
-        infos.push({ key: contentBusId });
-        for (const resource of resources) {
-          // eslint-disable-next-line no-param-reassign
-          resource.purged = true;
-        }
-      } else {
-        for (const resource of resources) {
-          if (!resource.purged && resource.status !== 304) {
-            // eslint-disable-next-line no-param-reassign
-            resource.purged = true;
-            const { path } = resource;
-            if (path.endsWith('.json')) {
-              // eslint-disable-next-line no-await-in-loop
-              infos.push({ key: await computeSurrogateKey(`${contentBusId}${path}`) });
-            } else {
-              // eslint-disable-next-line no-await-in-loop
-              const variantInfos = await Promise.all(
-                getPurgePathVariants(path)
-                  .map(async (variant) => ({ key: await computeSurrogateKey(`${contentBusId}${variant}`) })),
-              );
-              infos.push(...variantInfos);
-            }
-          }
-        }
-      }
-      await purge.perform(ctx, info, infos, PURGE_LIVE, 'main');
-      await this.writeStateLazy();
-
-      await this.indexBatch(ctx, info, resources);
-      await this.notifyBatch(ctx, info, resources);
-      await this.writeStateLazy();
-
-      // re-index simple sitemap if any metadata file was published
-      if (data.needsBulkIndex) {
-        // TODO: await bulkIndex(ctx, info, ['/*'], { indexNames: ['#simple'] });
-        delete data.needsBulkIndex;
-      }
-
+      await this.index(contentBusId);
       await this.setPhase('completed');
     }
   }

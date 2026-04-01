@@ -42,7 +42,7 @@ export default async function bulkPublish(context, info) {
     }
   }
   // disallow tree publish — see https://github.com/adobe/helix-admin/issues/1969
-  if (paths.some((path) => String(path).endsWith('/*'))) {
+  if (paths.some((path) => path.endsWith('/*'))) {
     return errorResponse(log, 400, 'bulk-publish does not support publishing of subtrees due to security reasons.');
   }
 

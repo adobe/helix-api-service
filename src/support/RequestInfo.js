@@ -79,6 +79,21 @@ export function toResourcePath(path) {
 }
 
 /**
+ * Converts a resource path to a web path.
+ * @param {string} resourcePath resource path
+ * @returns {string} web path
+ */
+export function toWebPath(resourcePath) {
+  if (resourcePath.endsWith('/index.md')) {
+    return resourcePath.substring(0, resourcePath.length - '/index.md'.length + 1);
+  }
+  if (resourcePath.endsWith('.md')) {
+    return resourcePath.substring(0, resourcePath.length - '.md'.length);
+  }
+  return resourcePath;
+}
+
+/**
  * Compute web path, resource path and extension.
  *
  * @param {string} path path

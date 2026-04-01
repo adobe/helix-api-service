@@ -138,11 +138,11 @@ export function Nock() {
     return scope;
   };
 
-  nocker.listObjects = (bucket, prefix, keys) => {
+  nocker.listObjects = (bucket, prefix, keys, delimiter = '/') => {
     nock(`https://${bucket}.s3.us-east-1.amazonaws.com`)
       .get('/')
       .query({
-        delimiter: '/',
+        ...delimiter && { delimiter },
         'list-type': '2',
         prefix,
       })

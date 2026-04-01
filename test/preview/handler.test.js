@@ -12,8 +12,10 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Request } from '@adobe/fetch';
+import sinon from 'sinon';
+import { Request, Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
+import { Job } from '../../src/job/job.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
@@ -21,13 +23,18 @@ describe('Preview Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
+    sandbox = sinon.createSandbox();
 
     nock.siteConfig(SITE_CONFIG);
   });
 
   afterEach(() => {
+    sandbox.restore();
     nock.done();
   });
 
@@ -111,5 +118,123 @@ describe('Preview Handler Tests', () => {
       'content-type': 'text/plain; charset=utf-8',
       'x-error': 'error while fetching: 403',
     });
+  });
+
+  it('routes POST /* to bulk preview and returns 202', async () => {
+    const suffix = '/org/sites/site/preview/*';
+    sandbox.stub(Job, 'create').resolves(
+      new Response(JSON.stringify({ job: { name: 'job-123', state: { status: 'created' } } }), {
+        status: 202,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ paths: ['/foo/bar'] }),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+
+    assert.strictEqual(response.status, 202);
+    assert.ok(Job.create.calledOnce);
+    const [, , topic, opts] = Job.create.firstCall.args;
+    assert.strictEqual(topic, 'preview');
+    assert.deepStrictEqual(opts.data.paths, ['/foo/bar']);
+  });
+
+  it('bulk preview returns 400 for missing paths', async () => {
+    const suffix = '/org/sites/site/preview/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.headers.get('x-error'), 'bulk-preview payload is missing "paths".');
+  });
+
+  it('routes POST /* with delete:true to bulk remove and returns 202', async () => {
+    const suffix = '/org/sites/site/preview/*';
+    sandbox.stub(Job, 'create').resolves(
+      new Response(JSON.stringify({ job: { name: 'job-123', state: { status: 'created' } } }), {
+        status: 202,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ delete: true, paths: ['/foo/bar'] }),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+
+    assert.strictEqual(response.status, 202);
+    assert.ok(Job.create.calledOnce);
+    const [, , topic] = Job.create.firstCall.args;
+    assert.strictEqual(topic, 'preview-remove');
+  });
+
+  it('bulk remove returns 403 if preview:delete permission missing', async () => {
+    const suffix = '/org/sites/site/preview/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ delete: true, paths: ['/foo/bar'] }),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
+
+    assert.strictEqual(response.status, 403);
+  });
+
+  it('bulk preview returns 403 if preview:write permission missing', async () => {
+    const suffix = '/org/sites/site/preview/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ paths: ['/foo/bar'] }),
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withProfile({ defaultRole: 'media_author' }),
+      },
+    });
+
+    assert.strictEqual(response.status, 403);
   });
 });

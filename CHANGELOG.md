@@ -1,3 +1,73 @@
+## [1.37.1](https://github.com/adobe/helix-api-service/compare/v1.37.0...v1.37.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#161](https://github.com/adobe/helix-api-service/issues/161)) ([565ac4f](https://github.com/adobe/helix-api-service/commit/565ac4f35b60574466a7b73f86e5a6cba85a1364))
+
+# [1.37.0](https://github.com/adobe/helix-api-service/compare/v1.36.3...v1.37.0) (2026-03-31)
+
+
+### Features
+
+* **preview:** migrate bulk-remove from helix-admin ([#157](https://github.com/adobe/helix-api-service/issues/157)) ([e38a485](https://github.com/adobe/helix-api-service/commit/e38a485ef6b26f633e3134907705213bf7e3dbd9))
+
+## [1.36.3](https://github.com/adobe/helix-api-service/compare/v1.36.2...v1.36.3) (2026-03-31)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#159](https://github.com/adobe/helix-api-service/issues/159)) ([2854cb4](https://github.com/adobe/helix-api-service/commit/2854cb4fbb30b07855a4aa82caf7478011514a7b))
+
+## [1.36.2](https://github.com/adobe/helix-api-service/compare/v1.36.1...v1.36.2) (2026-03-31)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#158](https://github.com/adobe/helix-api-service/issues/158)) ([e592cc2](https://github.com/adobe/helix-api-service/commit/e592cc25ddb42fdba9153e00fe38bd58536ea6ad))
+
+## [1.36.1](https://github.com/adobe/helix-api-service/compare/v1.36.0...v1.36.1) (2026-03-26)
+
+
+### Bug Fixes
+
+* bulk preview '/' ([#156](https://github.com/adobe/helix-api-service/issues/156)) ([8f194d0](https://github.com/adobe/helix-api-service/commit/8f194d0971eab6664cf3aa3d70dc73d85f61b7c2))
+
+# [1.36.0](https://github.com/adobe/helix-api-service/compare/v1.35.0...v1.36.0) (2026-03-26)
+
+
+### Features
+
+* **preview:** add bulk preview job support  ([1e7773a](https://github.com/adobe/helix-api-service/commit/1e7773ab016c70e6a9933ec3b78917fb5ca6f05e))
+
+# [1.35.0](https://github.com/adobe/helix-api-service/compare/v1.34.11...v1.35.0) (2026-03-26)
+
+
+### Features
+
+* **source:** document versioning ([#137](https://github.com/adobe/helix-api-service/issues/137)) ([f4f7a16](https://github.com/adobe/helix-api-service/commit/f4f7a16b0eecc0596bfb2bb2faa2483f69db974e))
+
+## [1.34.11](https://github.com/adobe/helix-api-service/compare/v1.34.10...v1.34.11) (2026-03-24)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#153](https://github.com/adobe/helix-api-service/issues/153)) ([1406106](https://github.com/adobe/helix-api-service/commit/1406106b87c01d793081a3fa503d95cbff80083e))
+
+## [1.34.10](https://github.com/adobe/helix-api-service/compare/v1.34.9...v1.34.10) (2026-03-24)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes to v3.1005.0 ([#154](https://github.com/adobe/helix-api-service/issues/154)) ([837db99](https://github.com/adobe/helix-api-service/commit/837db99894ef0c610d2bf5000e7163bc70800180))
+
+## [1.34.9](https://github.com/adobe/helix-api-service/compare/v1.34.8...v1.34.9) (2026-03-23)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#152](https://github.com/adobe/helix-api-service/issues/152)) ([04a31b8](https://github.com/adobe/helix-api-service/commit/04a31b81c58d04caaa842026412f5845873aebcc))
+
 ## [1.34.8](https://github.com/adobe/helix-api-service/compare/v1.34.7...v1.34.8) (2026-03-17)
 
 

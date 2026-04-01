@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { promisify } from 'util';
+import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
@@ -42,6 +43,9 @@ describe('Source POST Tests', () => {
     }
 
     nock.source()
+      .headObject('/test/rest/toast/jam.html')
+      .reply(404);
+    nock.source()
       .putObject('/test/rest/toast/jam.html')
       .matchHeader('content-type', 'text/html')
       .reply(201, postFn);
@@ -61,9 +65,16 @@ describe('Source POST Tests', () => {
       assert.equal(b.toString(), '<body><main>Hello</main></body>');
     }
 
+    const docId = '01KK1E35DP7EQDG9G99QT437VH';
+    nock.source()
+      .headObject('/test/rest/toast/index.html')
+      .reply(200, null, {
+        'x-amz-meta-doc-id': docId,
+      });
     nock.source()
       .putObject('/test/rest/toast/index.html')
       .matchHeader('content-type', 'text/html')
+      .matchHeader('x-amz-meta-doc-id', docId)
       .reply(201, postFn);
 
     const resp = await postSource(setupContext(), createInfo(
@@ -122,6 +133,9 @@ describe('Source POST Tests', () => {
       .putObject(`/${imageHash}`)
       .reply(201, imgPutFn);
     nock.source()
+      .headObject('/test/rest/toast/jam.html')
+      .reply(404);
+    nock.source()
       .putObject('/test/rest/toast/jam.html')
       .reply(201, htmlPutFn);
 
@@ -167,6 +181,7 @@ describe('Source POST Tests', () => {
 
     nock.source()
       .headObject('/myorg/mysite/my-page.html')
+      .twice()
       .reply(200, null, {
         etag: '"yeehaa"',
         'last-modified': 'Tue, 29 Oct 2024 02:57:46 GMT',
@@ -206,6 +221,9 @@ describe('Source POST Tests', () => {
     }
 
     nock.source()
+      .headObject('/t/s/abc.json')
+      .reply(404);
+    nock.source()
       .putObject('/t/s/abc.json')
       .matchHeader('content-type', 'application/json')
       .reply(201, postFn);
@@ -235,6 +253,9 @@ describe('Source POST Tests', () => {
       assert.equal(b.toString(), 'somepdf');
     }
 
+    nock.source()
+      .headObject('/org-x/site-y/my.pdf')
+      .reply(404);
     nock.source()
       .putObject('/org-x/site-y/my.pdf')
       .matchHeader('content-type', 'application/pdf')
@@ -266,5 +287,64 @@ describe('Source POST Tests', () => {
     const resp = await postSource(setupContext(path), createInfo(path));
     assert.equal(resp.status, 415);
     assert.equal(resp.headers.get('x-error'), 'Unknown file type: .ugh');
+  });
+
+  it('test postSource create version', async () => {
+    let versionId;
+
+    nock.source()
+      .headObject('/org123/999site/testing.json')
+      .twice()
+      .reply(200, null, {
+        etag: 'foobar',
+        'x-amz-meta-doc-id': '01KKBQXMEVJS21H2SD4DV9PXPT',
+        'last-modified': 'Mon, 15 Jan 2024 09:30:00 GMT',
+      });
+
+    async function copyFn(u) {
+      const path = u.split('?')[0];
+      const prefix = '/org123/999site/.versions/01KKBQXMEVJS21H2SD4DV9PXPT/';
+      assert(path.startsWith(prefix));
+      versionId = path.slice(prefix.length);
+
+      return new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      });
+    }
+
+    nock.source()
+      .copyObject(/org123\/999site\/.versions\/01KKBQXMEVJS21H2SD4DV9PXPT\/.+/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org123/999site/testing.json')
+      .matchHeader('x-amz-meta-doc-id', '01KKBQXMEVJS21H2SD4DV9PXPT')
+      .matchHeader('x-amz-meta-doc-path-hint', '/testing.json')
+      .matchHeader('x-amz-meta-doc-last-modified', '2024-01-15T09:30:00.000Z')
+      .matchHeader('x-amz-meta-version-by', 'foo@test.org')
+      .matchHeader('x-amz-meta-version-operation', 'some-op')
+      .matchHeader('x-amz-meta-version-comment', 'some comment')
+      .reply(200, copyFn);
+
+    const p = '/org123/sites/999site/source/testing.json/.versions';
+    const context = setupContext(p, {
+      attributes: {
+        authInfo: {
+          profile: {
+            email: 'foo@test.org',
+            user_id: '999-usr.e',
+          },
+        },
+      },
+      data: {
+        operation: 'some-op',
+        comment: 'some comment',
+      },
+    });
+    context.config.org = 'org123';
+    context.config.site = '999site';
+
+    const resp = await postSource(context, createInfo(p));
+    assert.equal(resp.status, 201);
+    assert.equal(resp.headers.get('location'), `/org123/sites/999site/source/testing.json/.versions/${versionId}`);
   });
 });

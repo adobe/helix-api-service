@@ -75,7 +75,7 @@ export async function list(context, info, paths) {
 
   const map = new Map();
   for (const path of paths) {
-    if (!path || path.endsWith('*')) {
+    if (path.endsWith('*')) {
       continue;
     }
 

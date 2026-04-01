@@ -1,3 +1,10 @@
+## [1.39.1](https://github.com/adobe/helix-api-service/compare/v1.39.0...v1.39.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* remove token from codeSource before logging ([#164](https://github.com/adobe/helix-api-service/issues/164)) ([8074e77](https://github.com/adobe/helix-api-service/commit/8074e7716ff32d33c812b0440e63eed81756c184))
+
 # [1.39.0](https://github.com/adobe/helix-api-service/compare/v1.38.1...v1.39.0) (2026-04-01)
 
 

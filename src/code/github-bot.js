@@ -181,8 +181,8 @@ export async function getCodeSource(ctx, event) {
       codeSource.octokit = setTokenOctokit(ctx, codeSource);
       // eslint-disable-next-line no-param-reassign
       event.installationId = codeSource.installationId;
-      const { token: _, ...loggableCodeSource } = codeSource;
-      ctx.log.info(`byogit detected for ${event.owner}/${event.repo}:`, loggableCodeSource);
+      const { token: _, ...safeCodeSource } = codeSource;
+      ctx.log.info(`byogit detected for ${event.owner}/${event.repo}:`, safeCodeSource);
     }
   }
 

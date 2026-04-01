@@ -302,17 +302,13 @@ export class PublishJob extends Job {
   }
 
   /**
-   * Purge the CDN cache and index all successfully published resources.
+   * Purge the CDN cache for all successfully published resources.
    *
    * @param {string} contentBusId content bus id
    * @returns {Promise<void>}
    */
-  async index(contentBusId) {
-    if (await this.checkStopped()) {
-      return;
-    }
-
-    const { ctx, info, state: { data: { resources, needsBulkIndex } } } = this;
+  async purge(contentBusId) {
+    const { ctx, info, state: { data: { resources } } } = this;
 
     // compute per-resource surrogate keys and perform a single bulk CDN purge
     const infos = [];
@@ -344,6 +340,16 @@ export class PublishJob extends Job {
     }
     await purge.perform(ctx, info, infos, PURGE_LIVE, 'main');
     await this.writeStateLazy();
+  }
+
+  /**
+   * Index and notify for all successfully published resources.
+   *
+   * @returns {Promise<void>}
+   */
+  async index() {
+    const { ctx, info, state: { data } } = this;
+    const { resources, needsBulkIndex } = data;
 
     await this.indexBatch(ctx, info, resources);
     await this.notifyBatch(ctx, info, resources);
@@ -352,7 +358,7 @@ export class PublishJob extends Job {
     // re-index simple sitemap if any metadata file was published
     if (needsBulkIndex) {
       // TODO: await bulkIndex(ctx, info, ['/*'], { indexNames: ['#simple'] });
-      delete this.state.data.needsBulkIndex;
+      delete data.needsBulkIndex;
     }
   }
 
@@ -381,11 +387,20 @@ export class PublishJob extends Job {
 
     if (data.phase === 'publish') {
       await this.publish(contentBusId, storage);
+      await this.setPhase('purge');
+    }
+
+    if (await this.checkStopped()) {
+      return;
+    }
+
+    if (data.phase === 'purge') {
+      await this.purge(contentBusId);
       await this.setPhase('index');
     }
 
     if (data.phase === 'index') {
-      await this.index(contentBusId);
+      await this.index();
       await this.setPhase('completed');
     }
   }

@@ -1783,6 +1783,28 @@ describe('Code Job tests', () => {
       });
     });
 
+    it('getCodeSource() does not log the token', async () => {
+      const logSpy = sandbox.spy(ctx.log, 'info');
+      ctx.attributes.config = {
+        code: {
+          source: {
+            url: 'https://my.github.com',
+            raw_url: 'https://my-raw.github.com',
+            secret: 'my-secret',
+          },
+        },
+      };
+      await getCodeSource(ctx, {
+        owner: 'owner',
+        repo: 'repo',
+        installationId: 'fake-installationid',
+      });
+      const byogitLog = logSpy.getCalls().find((call) => call.args[0].includes('byogit detected'));
+      assert.ok(byogitLog, 'expected byogit detected log message');
+      const loggedObject = byogitLog.args[1];
+      assert.strictEqual('token' in loggedObject, false, 'token should not be logged');
+    });
+
     it('getCodeSource() warns about missing secret', async () => {
       ctx.attributes.config = {
         code: {

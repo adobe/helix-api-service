@@ -1,3 +1,10 @@
+## [1.39.2](https://github.com/adobe/helix-api-service/compare/v1.39.1...v1.39.2) (2026-04-01)
+
+
+### Bug Fixes
+
+* remove imsToken from payload before logging ([#167](https://github.com/adobe/helix-api-service/issues/167)) ([196ace3](https://github.com/adobe/helix-api-service/commit/196ace3242651e26b75ea0e2b92395a68c661184))
+
 ## [1.39.1](https://github.com/adobe/helix-api-service/compare/v1.39.0...v1.39.1) (2026-04-01)
 
 

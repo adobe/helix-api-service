@@ -12,12 +12,16 @@
 import { Response } from '@adobe/fetch';
 import { getMergedConfig } from '@adobe/helix-config-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { errorResponse } from '../support/utils.js';
 import { AdminConfigStore } from './admin-config-store.js';
 import { BaseHandler } from './handler.js';
 
 class AggregatedHandler extends BaseHandler {
   constructor() {
-    super('aggregated', { permissions: ['config:read', 'config:read-redacted'] });
+    super('aggregated', {
+      permissions: ['config:read', 'config:read-redacted'],
+      supportsRobots: true,
+    });
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -48,7 +52,11 @@ class AggregatedHandler extends BaseHandler {
 
   async handleJSON(context, info) {
     const { log } = context;
-    const { org, site } = info;
+    const { org, site, rawPath } = info;
+
+    if (rawPath !== undefined) {
+      return errorResponse(log, 404, 'invalid config type');
+    }
 
     const siteConfig = await this.getAggregatedSite(context, org, site);
     if (!siteConfig) {
@@ -73,13 +81,9 @@ class AggregatedHandler extends BaseHandler {
 
   async doHandle(context, info, op) {
     const { log } = context;
-    const { route } = info;
 
     if (op !== 'fetchRead') {
       return createErrorResponse({ log, status: 405, msg: 'method not allowed' });
-    }
-    if (route?.endsWith('robots.txt')) {
-      return this.handleRobots(context, info);
     }
     return super.doHandle(context, info, op);
   }

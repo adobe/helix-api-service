@@ -22,10 +22,11 @@ const OPERATIONS = {
 };
 
 export class BaseHandler {
-  constructor(type, { permissions = ['config:read'], supportsApiKeys = false } = {}) {
+  constructor(type, { permissions = ['config:read'], supportsApiKeys = false, supportsRobots = false } = {}) {
     this.type = type;
     this.permissions = permissions;
     this.supportsApiKeys = supportsApiKeys;
+    this.supportsRobots = supportsRobots;
   }
 
   /**
@@ -76,9 +77,8 @@ export class BaseHandler {
       if (!data.body) {
         return createErrorResponse({ log, status: 400, msg: 'missing body' });
       }
-      context.data = {
-        txt: data.body,
-      };
+      data.txt = data.body;
+      delete data.body;
     }
     const store = new AdminConfigStore(org, this.type, site);
     let response = await store[op](context, 'robots');
@@ -95,6 +95,9 @@ export class BaseHandler {
     const { log } = context;
     const { rawPath, ext } = info;
 
+    if (this.supportsRobots && info.rawPath === '/robots.txt') {
+      return this.handleRobots(context, info, op);
+    }
     if (rawPath === undefined || ext === '.json') {
       return this.handleJSON(context, info, op);
     }

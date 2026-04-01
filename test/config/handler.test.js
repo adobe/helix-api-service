@@ -530,7 +530,7 @@ describe('Config Handler Tests', () => {
       });
     });
 
-    it.skip('store robots.txt', async () => {
+    it('store `robots.txt`', async () => {
       const { request, context } = setupTest('/org/sites/site/config/robots.txt', {
         method: 'POST',
         data: {
@@ -540,6 +540,20 @@ describe('Config Handler Tests', () => {
       const response = await main(request, context);
 
       assert.strictEqual(response.status, 200);
+    });
+
+    it('reject missing body when storing `robots.txt`', async () => {
+      const { request, context } = setupTest('/org/sites/site/config/robots.txt', {
+        method: 'POST',
+      });
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 400);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'missing body',
+      });
     });
   });
 
@@ -629,7 +643,7 @@ describe('Config Handler Tests', () => {
       });
     });
 
-    it('read robots.txt', async () => {
+    it('read `robots.txt`', async () => {
       nock.config()
         .getObject('/orgs/org/sites/site.json')
         .reply(200, {
@@ -653,7 +667,7 @@ describe('Config Handler Tests', () => {
       assert.strictEqual(await response.text(), 'User-agent: *\nDisallow: /');
     });
 
-    it('return 404 if robots.txt not found', async () => {
+    it('return 404 if `robots.txt` not found', async () => {
       nock.config()
         .getObject('/orgs/org/sites/site.json')
         .reply(200, SITE_CONFIG)
@@ -683,6 +697,19 @@ describe('Config Handler Tests', () => {
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'text/plain; charset=utf-8',
         'x-error': 'method not allowed',
+      });
+    });
+
+    it('reject any subtype but `robots.txt`', async () => {
+      const { request, context } = setupTest('/org/aggregated/site/config/content.json');
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 404);
+      assert.deepStrictEqual(response.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        vary: 'Accept-Encoding',
+        'x-error': 'invalid config type',
       });
     });
   });

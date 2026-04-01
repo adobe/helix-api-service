@@ -15,7 +15,10 @@ import { createErrorResponse } from '../contentbus/utils.js';
 
 class SiteHandler extends BaseHandler {
   constructor() {
-    super('sites', { supportsApiKeys: true });
+    super('sites', {
+      supportsApiKeys: true,
+      supportsRobots: true,
+    });
   }
 
   determineConfigType(info) {
@@ -53,12 +56,9 @@ class SiteHandler extends BaseHandler {
   }
 
   async doHandle(context, info, op) {
-    const { rawPath, ext } = info;
+    const { ext } = info;
     if (ext === '.yaml') {
       return this.handleYAML(context, info, op);
-    }
-    if (rawPath === '/robots.txt') {
-      return this.handleRobots(context, info, op);
     }
     return super.doHandle(context, info, op);
   }

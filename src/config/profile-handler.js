@@ -13,7 +13,7 @@ import { BaseHandler } from './handler.js';
 
 class ProfileHandler extends BaseHandler {
   constructor() {
-    super('profiles');
+    super('profiles', { supportsRobots: true });
   }
 
   determineConfigType(info) {
@@ -25,14 +25,6 @@ class ProfileHandler extends BaseHandler {
     }
     const [, ...rest] = rawPath.substring(0, rawPath.length - 5).split('/');
     return { type: this.type, name: profile, rest };
-  }
-
-  async doHandle(context, info, op) {
-    const { rawPath } = info;
-    if (rawPath === '/robots.txt') {
-      return this.handleRobots(context, info, op);
-    }
-    return super.doHandle(context, info, op);
   }
 }
 

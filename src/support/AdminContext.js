@@ -113,6 +113,9 @@ export class AdminContext {
 
     if (attributes.authInfo === undefined) {
       attributes.authInfo = await getAuthInfo(this, info);
+      if (process.env.HELIX_SUDO) {
+        attributes.authInfo.withRole('ops').withAuthenticated(true);
+      }
     }
     return attributes.authInfo;
   }

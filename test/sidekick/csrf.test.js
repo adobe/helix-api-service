@@ -142,7 +142,7 @@ describe('Sidekick CSRF Protection', () => {
         nock.orgConfig(ORG_CONFIG);
 
         const { request, context } = setupTest({
-          suffix: '/org/config',
+          suffix: '/org/config.json',
           headers: { origin: 'https://evil.com' },
         });
         const result = await main(request, context);
@@ -363,7 +363,7 @@ describe('Sidekick CSRF Protection', () => {
         it(`${origin}`, async () => {
           const { context, info } = setupTest({
             headers: { origin },
-            suffix: '/org/config',
+            suffix: '/org/config.json',
           });
           await sidekickCSRFProtection(context, info);
         });
@@ -374,7 +374,7 @@ describe('Sidekick CSRF Protection', () => {
       it('No origin', async () => {
         const { context, info } = setupTest({
           headers: { 'sec-fetch-mode': 'no-cors' },
-          suffix: '/org/config',
+          suffix: '/org/config.json',
         });
         await assert.rejects(
           sidekickCSRFProtection(context, info),
@@ -392,7 +392,7 @@ describe('Sidekick CSRF Protection', () => {
         it(`${origin}`, async () => {
           const { context, info } = setupTest({
             headers: { origin },
-            suffix: '/org/config',
+            suffix: '/org/config.json',
           });
           await assert.rejects(
             sidekickCSRFProtection(context, info),

@@ -120,6 +120,14 @@ export class PreviewJob extends Job {
     });
   }
 
+  async sleep(retry) {
+    const { ctx } = this;
+    const { log } = ctx;
+
+    log.info(`rate limit exceeded. sleeping for ${retry}s`);
+    await sleep(retry * 1000);
+  }
+
   /**
    * Process a single file that should be previewed.
    *
@@ -159,9 +167,8 @@ export class PreviewJob extends Job {
       if (response.status === 429) {
         // we run the queue with a concurrency of 1, so we don't need to do a group sleep.
         retry = Number.parseInt(response.headers.get('retry-after'), 10) || 1;
-        log.info(`rate limit exceeded. sleeping for ${retry}s`);
         // eslint-disable-next-line no-await-in-loop
-        await sleep(retry * 1000);
+        await this.sleep(retry);
       }
     } while (retry);
 

@@ -25,10 +25,8 @@ import { SQSNock } from './nocks/sqs.js';
 
 export const SITE_CONFIG = {
   version: 1,
-  title: 'Sample site',
   content: {
-    name: 'sample-site',
-    contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
+    contentBusId: 'f91dc973384e4a9acd3aaa481979cb11db9652ff3a07e1e85c5f75e60e8',
     source: {
       type: 'google',
       url: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
@@ -187,6 +185,28 @@ export function Nock() {
     return nocker.s3('helix-code-bus', prefix);
   };
 
+  nocker.config = () => nocker.s3('helix-config-bus', '');
+
+  nocker.versions = (type = 'sites', org = 'org', site = 'site') => {
+    if (type === 'org') {
+      nocker.config()
+        .getObject(`/orgs/${org}/versions.json`)
+        .reply(404)
+        .putObject(`/orgs/${org}/versions.json`)
+        .reply(201)
+        .putObject(`/orgs/${org}/versions/1.json`)
+        .reply(201);
+    } else {
+      nocker.config()
+        .getObject(`/orgs/${org}/${type}/${site}/versions.json`)
+        .reply(404)
+        .putObject(`/orgs/${org}/${type}/${site}/versions.json`)
+        .reply(201)
+        .putObject(`/orgs/${org}/${type}/${site}/versions/1.json`)
+        .reply(201);
+    }
+  };
+
   nocker.content = (contentBusId) => nocker.s3('helix-content-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
 
   nocker.media = (contentBusId) => nocker.s3('helix-media-bus', contentBusId ?? SITE_CONFIG.content.contentBusId);
@@ -209,20 +229,24 @@ export function Nock() {
     return scope;
   };
 
-  nocker.indexConfig = (config) => {
+  nocker.indexConfig = (config, error = {
+    code: 'NoSuchKey',
+    message: 'The specified key does not exist.',
+    status: 404,
+  }) => {
     const scope = nocker.content()
       .getObject('/preview/.helix/query.yaml');
 
     if (config) {
       scope.reply(200, config);
     } else {
-      const notFound = new xml2js.Builder().buildObject({
+      const errorXml = new xml2js.Builder().buildObject({
         Error: {
-          Code: 'NoSuchKey',
-          Message: 'The specified key does not exist.',
+          Code: error.code,
+          Message: error.message,
         },
       });
-      scope.reply(404, notFound);
+      scope.reply(error.status, errorXml);
     }
   };
 

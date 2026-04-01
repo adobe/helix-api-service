@@ -238,8 +238,8 @@ describe('Discover reindex tests', () => {
       .reply(200);
 
     nock.inventory([{
-      contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-      contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
+      contentBusId: SITE_CONFIG.content.contentBusId,
+      contentSourceUrl: SITE_CONFIG.content.source.url,
       org: 'org',
       site: 'site',
       codeBusId: 'owner/repo',
@@ -259,9 +259,9 @@ describe('Discover reindex tests', () => {
           cdnId: 'fastly:1234',
           codeBusId: 'owner/repo',
           contentBusId: SITE_CONFIG.content.contentBusId,
-          contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          contentSourceUrl: SITE_CONFIG.content.source.url,
           customUser: true,
-          gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          gdriveId: SITE_CONFIG.content.source.id,
           org: 'org',
           originalSite: 'org/site',
           site: 'site',
@@ -307,9 +307,9 @@ describe('Discover reindex tests', () => {
     assert.deepStrictEqual(inventory, {
       entries: [{
         codeBusId: 'owner/repo',
-        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-        contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-        gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        contentBusId: SITE_CONFIG.content.contentBusId,
+        contentSourceUrl: SITE_CONFIG.content.source.url,
+        gdriveId: SITE_CONFIG.content.source.id,
         originalSite: 'org/site',
         org: 'org',
         site: 'site',
@@ -347,9 +347,9 @@ describe('Discover reindex tests', () => {
       .reply(200, {
         entries: [{
           codeBusId: 'owner/repo',
-          contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-          contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-          gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+          contentBusId: SITE_CONFIG.content.contentBusId,
+          contentSourceUrl: SITE_CONFIG.content.source.url,
+          gdriveId: SITE_CONFIG.content.source.id,
           originalSite: 'org/old-site',
           org: 'org',
           site: 'old-site',
@@ -377,17 +377,17 @@ describe('Discover reindex tests', () => {
     assert.deepStrictEqual(inventory, {
       entries: [{
         codeBusId: 'owner/repo',
-        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-        contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-        gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        contentBusId: SITE_CONFIG.content.contentBusId,
+        contentSourceUrl: SITE_CONFIG.content.source.url,
+        gdriveId: SITE_CONFIG.content.source.id,
         originalSite: 'org/site',
         org: 'org',
         site: 'old-site',
       }, {
         codeBusId: 'owner/repo',
-        contentBusId: '853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f',
-        contentSourceUrl: 'https://drive.google.com/drive/u/0/folders/18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
-        gdriveId: '18G2V_SZflhaBrSo_0fMYqhGaEF9Vetky',
+        contentBusId: SITE_CONFIG.content.contentBusId,
+        contentSourceUrl: SITE_CONFIG.content.source.url,
+        gdriveId: SITE_CONFIG.content.source.id,
         originalSite: 'org/site',
         org: 'org',
         site: 'site',

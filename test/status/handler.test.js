@@ -17,6 +17,8 @@ import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
+const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
+
 describe('Status Handler Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
@@ -367,7 +369,7 @@ describe('Status Handler Tests', () => {
           status: 'https://api.aem.live/org/sites/site/status/scripts/scripts.js',
         },
         live: {
-          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/scripts/scripts.js',
+          contentBusId: `helix-content-bus/${CONTENT_BUS_ID}/live/scripts/scripts.js`,
           permissions: [
             'read',
             'write',
@@ -376,7 +378,7 @@ describe('Status Handler Tests', () => {
           url: 'https://main--site--org.aem.live/scripts/scripts.js',
         },
         preview: {
-          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/scripts/scripts.js',
+          contentBusId: `helix-content-bus/${CONTENT_BUS_ID}/preview/scripts/scripts.js`,
           permissions: [
             'read',
             'write',
@@ -439,7 +441,7 @@ describe('Status Handler Tests', () => {
           status: 'https://api.aem.live/org/sites/site/status/scripts/scripts.js',
         },
         live: {
-          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/scripts/scripts.js',
+          contentBusId: `helix-content-bus/${CONTENT_BUS_ID}/live/scripts/scripts.js`,
           permissions: [
             'read',
             'write',
@@ -448,7 +450,7 @@ describe('Status Handler Tests', () => {
           url: 'https://my-issue--site--org.aem.live/scripts/scripts.js',
         },
         preview: {
-          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/scripts/scripts.js',
+          contentBusId: `helix-content-bus/${CONTENT_BUS_ID}/preview/scripts/scripts.js`,
           permissions: [
             'read',
             'write',
@@ -506,7 +508,7 @@ describe('Status Handler Tests', () => {
           status: 'https://api.aem.live/org/sites/site/status/scripts/scripts.js',
         },
         live: {
-          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/live/scripts/scripts.js',
+          contentBusId: `helix-content-bus/${CONTENT_BUS_ID}/live/scripts/scripts.js`,
           permissions: [
             'read',
             'write',
@@ -515,7 +517,7 @@ describe('Status Handler Tests', () => {
           url: 'https://main--site--org.aem.live/scripts/scripts.js',
         },
         preview: {
-          contentBusId: 'helix-content-bus/853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f/preview/scripts/scripts.js',
+          contentBusId: `helix-content-bus/${CONTENT_BUS_ID}/preview/scripts/scripts.js`,
           permissions: [
             'read',
             'write',

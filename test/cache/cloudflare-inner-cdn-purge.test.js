@@ -62,7 +62,7 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'p_ymBV5ftMfiPjMqpI',
+            'p_1rRFjvY247Vejl9A',
             'gkhFlQmxUslocIjx',
           ],
         });
@@ -76,7 +76,7 @@ describe('Cloudflare Inner CDN Purge Tests', () => {
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
-            'p_ymBV5ftMfiPjMqpI',
+            'p_1rRFjvY247Vejl9A',
             'gkhFlQmxUslocIjx',
           ],
         });

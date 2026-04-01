@@ -514,16 +514,16 @@ describe('Discover query tests', () => {
 
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [{
-        codeBusId: 'company/subsiteB',
+        codeBusId: 'company/subsite2',
         contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
         contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
-        githubUrl: 'https://github.com/company/subsiteB',
+        githubUrl: 'https://github.com/company/subsite2',
         originalRepository: true,
         originalSite: true,
         owner: 'company',
-        repo: 'subsiteB',
+        repo: 'subsite2',
         org: 'company',
-        site: 'subsiteB',
+        site: 'subsite2',
         routes: [
           '**/B/**',
         ],
@@ -594,16 +594,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteB',
+          codeBusId: 'company/subsite2',
           contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
           contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
-          githubUrl: 'https://github.com/company/subsiteB',
+          githubUrl: 'https://github.com/company/subsite2',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteB',
+          site: 'subsite2',
           owner: 'company',
-          repo: 'subsiteB',
+          repo: 'subsite2',
           routes: [
             '**/B/**',
           ],
@@ -636,7 +636,7 @@ describe('Discover query tests', () => {
         .get('/drive/v3/files/abczij7EMeS95cIFiRuxfjY0OxllX8my1')
         .query(true)
         .reply(200, {
-          name: 'subsiteBC',
+          name: 'subsiteC',
           mimeType: 'application/vnd.google-apps.folder',
           modifiedTime: '2022-04-12T08:30:18.845Z',
         });
@@ -651,16 +651,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteC',
+          codeBusId: 'company/subsite3',
           contentBusId: '96c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
           contentSourceUrl: 'https://drive.google.com/drive/folders/abczij7EMeS95cIFiRuxfjY0OxllX8my1',
-          githubUrl: 'https://github.com/company/subsiteC',
+          githubUrl: 'https://github.com/company/subsite3',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteC',
+          site: 'subsite3',
           owner: 'company',
-          repo: 'subsiteC',
+          repo: 'subsite3',
           url: 'https://www.company.com',
           customUser: true,
         },
@@ -768,16 +768,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteB',
+          codeBusId: 'company/subsite2',
           contentBusId: '76c485f687b82bface8b7f4e9e7a47f146eab10b3c6e0ee21418f5112bb',
           contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my1',
-          githubUrl: 'https://github.com/company/subsiteB',
+          githubUrl: 'https://github.com/company/subsite2',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteB',
+          site: 'subsite2',
           owner: 'company',
-          repo: 'subsiteB',
+          repo: 'subsite2',
           routes: [
             '**/B/**',
           ],
@@ -801,7 +801,7 @@ describe('Discover query tests', () => {
 
       const { request, context } = setupTest(url, {
         env: {
-          HLX_CUSTOM_GOOGLE_USERS: 'company/subsiteC',
+          HLX_CUSTOM_GOOGLE_USERS: 'company/subsite3',
         },
       });
       const response = await main(request, context);
@@ -857,16 +857,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteA',
+          codeBusId: 'company/subsite1',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
           contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA',
-          githubUrl: 'https://github.com/company/subsiteA',
+          githubUrl: 'https://github.com/company/subsite1',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteA',
+          site: 'subsite1',
           owner: 'company',
-          repo: 'subsiteA',
+          repo: 'subsite1',
           routes: [
             '**/A/**',
           ],
@@ -884,16 +884,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteA',
+          codeBusId: 'company/subsite1',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
           contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA',
-          githubUrl: 'https://github.com/company/subsiteA',
+          githubUrl: 'https://github.com/company/subsite1',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteA',
+          site: 'subsite1',
           owner: 'company',
-          repo: 'subsiteA',
+          repo: 'subsite1',
           routes: [
             '**/A/**',
           ],
@@ -911,16 +911,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteA',
+          codeBusId: 'company/subsite1',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
           contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA',
-          githubUrl: 'https://github.com/company/subsiteA',
+          githubUrl: 'https://github.com/company/subsite1',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteA',
+          site: 'subsite1',
           owner: 'company',
-          repo: 'subsiteA',
+          repo: 'subsite1',
           routes: [
             '**/A/**',
           ],
@@ -948,16 +948,16 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [
         {
-          codeBusId: 'company/subsiteA',
+          codeBusId: 'company/subsite1',
           contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
           contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA',
-          githubUrl: 'https://github.com/company/subsiteA',
+          githubUrl: 'https://github.com/company/subsite1',
           originalRepository: true,
           originalSite: true,
           org: 'company',
-          site: 'subsiteA',
+          site: 'subsite1',
           owner: 'company',
-          repo: 'subsiteA',
+          repo: 'subsite1',
           routes: [
             '**/A/**',
           ],
@@ -1001,16 +1001,16 @@ describe('Discover query tests', () => {
 
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [{
-        codeBusId: 'company/subsiteA',
+        codeBusId: 'company/subsite1',
         contentBusId: '4732a86215d664eacc536e38d2e96d7235485443c83764ebd2dd7c3156c',
         contentSourceUrl: 'https://company.sharepoint.com/sites/subsites/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fsubsites%2FShared%20Documents%2FsubsiteA',
-        githubUrl: 'https://github.com/company/subsiteA',
+        githubUrl: 'https://github.com/company/subsite1',
         originalRepository: true,
         originalSite: true,
         org: 'company',
-        site: 'subsiteA',
+        site: 'subsite1',
         owner: 'company',
-        repo: 'subsiteA',
+        repo: 'subsite1',
         routes: [
           '**/A/**',
         ],
@@ -1109,11 +1109,11 @@ describe('Discover query tests', () => {
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(await response.json(), [{
         org: 'company',
-        site: 'subsiteA',
+        site: 'subsite1',
         originalRepository: true,
         originalSite: true,
         owner: 'company',
-        repo: 'subsiteA',
+        repo: 'subsite1',
       }]);
     });
   });

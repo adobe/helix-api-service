@@ -50,10 +50,15 @@ declare interface Nock {
   google(source: any): GoogleNock
   onedrive(source: any): OneDriveNock
   code(ref?: string): S3Nock;
+  config(): S3Nock;
   content(contentBusId?: string): S3Nock;
   media(contentBusId?: string): S3Nock;
   source(): S3Nock;
   sqs(queueName: string, entries?: any[]): nock.Scope;
+  orgConfig(config?: any): nock.Scope;
+  siteConfig(config?: any): nock.Scope;
+  indexConfig(config?: any): nock.Scope;
+  sitemapConfig(config?: any): nock.Scope;
 }
 
 type NockEnv = Nock & typeof nocker;

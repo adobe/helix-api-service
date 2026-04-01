@@ -201,7 +201,7 @@ describe('Publish Action Tests', () => {
       assert.deepStrictEqual(purgeInfos, [
         { path: '/' },
         { path: '/index.plain.html' },
-        { key: 'DiyvKbkf2MaZORJJ' },
+        { key: 'IHu7-5Mz7pLcJch8' },
         { key: '8lnjgOWBwsoqAQXB' },
       ]);
     });
@@ -412,8 +412,8 @@ describe('Publish Action Tests', () => {
 
       assert.strictEqual(response.status, 200);
       assert.deepStrictEqual(purgeInfos, [
-        { key: 'sby9rtkIBtNieA0T' },
-        { key: 'p_sby9rtkIBtNieA0T' },
+        { key: 'ikRawb-8LlqCZunb' },
+        { key: 'p_ikRawb-8LlqCZunb' },
         { path: '/sitemap.xml' },
       ]);
     });

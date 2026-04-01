@@ -1,50 +1,50 @@
 [
   {
     "org": "org",
-    "site": "siteA",
+    "site": "site1",
     "contentSourceUrl": "https://org.sharepoint.com/sites/subsites/Shared%20Documents/siteA",
     "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c60",
     "codeBusId": "owner/repo",
-    "originalSite": "org/siteA",
+    "originalSite": "org/site1",
     "cdnId": "fastly:1234"
   },
   {
     "org": "org",
-    "site": "siteB",
+    "site": "site2",
     "description": "has same code and cdn id as siteA",
     "contentSourceUrl": "https://org.sharepoint.com/sites/subsites/Shared%20Documents/siteB",
     "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c61",
     "codeBusId": "owner/repo",
-    "originalSite": "org/siteB",
+    "originalSite": "org/site2",
     "cdnId": "fastly:1234"
   },
   {
     "org": "org",
-    "site": "siteC",
+    "site": "site3",
     "description": "has same code as siteA, but a different cdn id",
     "contentSourceUrl": "https://org.sharepoint.com/sites/subsites/Shared%20Documents/siteC",
     "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c62",
     "codeBusId": "owner/repo",
-    "originalSite": "org/siteC",
+    "originalSite": "org/site3",
     "cdnId": "fastly:4567"
   },
   {
     "org": "org",
-    "site": "siteD",
+    "site": "site4",
     "description": "has a different code than siteA",
     "contentSourceUrl": "https://org.sharepoint.com/sites/subsites/Shared%20Documents/siteD",
     "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c63",
     "codeBusId": "owner/repo2",
-    "originalSite": "org/siteD",
+    "originalSite": "org/site4",
     "cdnId": "fastly:4567"
   },
   {
     "org": "org",
-    "site": "siteE",
+    "site": "site5",
     "description": "has same code as siteA, but no production cdn config",
     "contentSourceUrl": "https://org.sharepoint.com/sites/subsites/Shared%20Documents/siteE",
     "contentBusId": "9b08ed882cc3217ceb23a3e71d769dbe47576312869465a0a302ed29c64",
     "codeBusId": "owner/repo",
-    "originalSite": "org/siteE"
+    "originalSite": "org/site5"
   }
 ]

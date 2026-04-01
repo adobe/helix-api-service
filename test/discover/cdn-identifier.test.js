@@ -68,41 +68,41 @@ describe('Discover CDN identifier tests', () => {
     });
 
     it('returns sibling sites for siteA', async () => {
-      const info = createInfo('/org/sites/siteA/status/').withCode('owner', 'repo');
+      const info = createInfo('/org/sites/site1/status/').withCode('owner', 'repo');
       const entries = await querySiblingSites(context, info);
 
       assert.deepStrictEqual(entries, [
-        { org: 'org', site: 'siteB' },
-        { org: 'org', site: 'siteC' },
+        { org: 'org', site: 'site2' },
+        { org: 'org', site: 'site3' },
       ]);
     });
 
     it('returns sibling sites for siteB', async () => {
-      const info = createInfo('/org/sites/siteB/status/').withCode('owner', 'repo');
+      const info = createInfo('/org/sites/site2/status/').withCode('owner', 'repo');
       const entries = await querySiblingSites(context, info);
 
       assert.deepStrictEqual(entries, [
-        { org: 'org', site: 'siteA' },
-        { org: 'org', site: 'siteC' },
+        { org: 'org', site: 'site1' },
+        { org: 'org', site: 'site3' },
       ]);
     });
 
     it('returns sibling sites for siteC', async () => {
-      const info = createInfo('/org/sites/siteC/status/').withCode('owner', 'repo');
+      const info = createInfo('/org/sites/site3/status/').withCode('owner', 'repo');
       const entries = await querySiblingSites(context, info);
 
       assert.deepStrictEqual(entries, [
-        { org: 'org', site: 'siteA' },
+        { org: 'org', site: 'site1' },
       ]);
     });
 
     it('returns production sites for a site that has no production CDN configured', async () => {
-      const info = createInfo('/org/sites/siteE/status/').withCode('owner', 'repo');
+      const info = createInfo('/org/sites/site5/status/').withCode('owner', 'repo');
       const entries = await querySiblingSites(context, info);
 
       assert.deepStrictEqual(entries, [
-        { org: 'org', site: 'siteA' },
-        { org: 'org', site: 'siteC' },
+        { org: 'org', site: 'site1' },
+        { org: 'org', site: 'site3' },
       ]);
     });
   });

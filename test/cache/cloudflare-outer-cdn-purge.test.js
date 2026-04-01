@@ -59,7 +59,7 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
-            'DiyvKbkf2MaZORJJ',
+            'IHu7-5Mz7pLcJch8',
             'fVmOUzFkRxTl6DpU',
           ],
         });
@@ -112,7 +112,7 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'gkhFlQmxUslocIjx',
           ],
         });
@@ -126,7 +126,7 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .reply(200, function f(uri, body) {
         assert.deepStrictEqual(body, {
           tags: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'gkhFlQmxUslocIjx',
           ],
         });
@@ -154,7 +154,7 @@ describe('Cloudflare Outer CDN Purge Tests', () => {
       .reply(function f(uri, body) {
         assert.deepStrictEqual(body, {
           surrogate_keys: [
-            'ymBV5ftMfiPjMqpI',
+            '1rRFjvY247Vejl9A',
             'gkhFlQmxUslocIjx',
           ],
         });

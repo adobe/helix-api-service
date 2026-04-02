@@ -14,6 +14,7 @@ import { Job } from './job.js';
 import { TestJob } from './test-job.js';
 import { JobStorage } from './storage.js';
 import { CodeJob } from '../code/code-job.js';
+import { IndexJob } from '../index/IndexJob.js';
 import { PreviewJob } from '../preview/preview-job.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
@@ -22,6 +23,7 @@ export const JOB_CLASS = {
   test: TestJob,
   code: CodeJob,
   preview: PreviewJob,
+  index: IndexJob,
 };
 
 /**

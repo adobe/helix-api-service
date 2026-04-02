@@ -9,6 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import crypto from 'crypto';
 
 /**
  * @typedef IndexRecord
@@ -70,7 +71,7 @@ export class IndexMap {
       map.set(row.path, indexRecord);
     }
     // remember the hashed record for that index
-    indexRecord.indexHash[name] = this.hash(row);
+    indexRecord.indexHash[name] = IndexMap.hash(row);
   }
 
   entries() {

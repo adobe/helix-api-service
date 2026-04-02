@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import bulkIndex from './bulk-index.js';
 import remove from './remove.js';
 import status from './status.js';
 import update from './update.js';
@@ -28,7 +29,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function indexHandler(context, info) {
-  const { log, attributes: { authInfo } } = context;
+  const { log, attributes: { authInfo }, data } = context;
   const { org, site, webPath } = info;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
@@ -59,6 +60,9 @@ export default async function indexHandler(context, info) {
 
   authInfo.assertPermissions('index:write');
   if (info.method === 'POST') {
+    if (webPath === '/*') {
+      return bulkIndex(context, info, data?.paths ?? [webPath], { indexNames: data?.indexNames });
+    }
     return update(context, info, index);
   }
   return remove(context, info, index);

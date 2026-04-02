@@ -12,7 +12,7 @@
 import util from 'util';
 import { contains } from '@adobe/helix-shared-indexer';
 import processQueue from '@adobe/helix-shared-process-queue';
-
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { Job } from '../job/job.js';
 import { fetchPage } from './fetch-page.js';
 import { indexPageInIndex } from './index-page.js';
@@ -26,7 +26,7 @@ import {
   getIndexTargets, getFetchHeaders,
 } from './utils.js';
 import { installSimpleSitemap } from '../sitemap/utils.js';
-import { RequestInfo } from '../support/RequestInfo.js';
+import { RequestInfo, splitExtension, toWebPath } from '../support/RequestInfo.js';
 
 /**
  * Concurrency to use when indexing pages.
@@ -46,6 +46,7 @@ const MAXIMUM_NUM_PATHS = 50000;
  * @property {Array<string>} excludes excludes to ignore
  * @property {IndexMessages} messages messages to send with the queue client
  * @property {object} headers headers to pass when fetching
+ * @property {HelixStorage} storage storage to use
  * @property {string} type backend type
  */
 
@@ -108,6 +109,7 @@ export class IndexJob extends Job {
     const excludes = getIndexTargets(index);
     const messages = new IndexMessages(org, site);
     const headers = await getFetchHeaders(context, info);
+    const storage = HelixStorage.fromContext(context).contentBus();
 
     return {
       index,
@@ -116,6 +118,7 @@ export class IndexJob extends Job {
       excludes,
       headers,
       messages,
+      storage,
       type: config.content.source.type,
     };
   }
@@ -163,8 +166,8 @@ export class IndexJob extends Job {
 
     // add all resources we found in live storage
     resourcePaths.forEach((resourcePath) => {
-      const { ext } = RequestInfo.splitExtension(resourcePath);
-      const webPath = RequestInfo.toWebPath(resourcePath);
+      const { ext } = splitExtension(resourcePath);
+      const webPath = toWebPath(resourcePath);
 
       if (containsPath(index, webPath)) {
         if (shouldIndex(includeOther, ext) && !excludes.includes(resourcePath)) {
@@ -233,7 +236,7 @@ export class IndexJob extends Job {
 
     if (indexRecord.live) {
       log.info(`Reindexing: ${webPath}`);
-      this.reindexRecord(bulkContext, webPath, indexRecord);
+      await this.reindexRecord(bulkContext, webPath, indexRecord);
       return;
     }
     log.info(`Reindexing: ${webPath} (deleted)`);

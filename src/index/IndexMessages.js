@@ -61,7 +61,7 @@ export class IndexMessages {
   }
 
   appendChanged(name, type, record, log) {
-    const { org, site } = this.info;
+    const { org, site } = this;
     const message = BatchedQueueClient.createMessage(org, site, {
       index: name,
       record,
@@ -72,7 +72,7 @@ export class IndexMessages {
   }
 
   appendDeleted(name, webPath, type, log) {
-    const { org, site } = this.info;
+    const { org, site } = this;
     const message = BatchedQueueClient.createMessage(org, site, {
       index: name,
       deleted: true,

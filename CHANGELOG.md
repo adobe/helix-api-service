@@ -1,3 +1,15 @@
+# [1.40.0](https://github.com/adobe/helix-api-service/compare/v1.39.3...v1.40.0) (2026-04-02)
+
+
+### Bug Fixes
+
+* tests ([c717673](https://github.com/adobe/helix-api-service/commit/c7176733f184fe5f22844e8fe9e971f0f55a8932))
+
+
+### Features
+
+* **live:** add bulk publish job via POST /live/* ([#160](https://github.com/adobe/helix-api-service/issues/160)) ([ab025df](https://github.com/adobe/helix-api-service/commit/ab025dff0cf6552e0426c44349090490dac887f4))
+
 ## [1.39.3](https://github.com/adobe/helix-api-service/compare/v1.39.2...v1.39.3) (2026-04-02)
 
 

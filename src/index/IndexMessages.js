@@ -24,7 +24,7 @@ export const MAX_MESSAGE_SIZE = 100_000;
 const THRESHOLD_FIFO = 50;
 
 /**
- * Represents a map of index records, keyed by path.
+ * Collects messages for index updates and sends them to the appropriate queue.
  * @class
  */
 export class IndexMessages {
@@ -145,6 +145,12 @@ export class IndexMessages {
     }
   }
 
+  /**
+   * Send the messages to the appropriate queue.
+   *
+   * @param {import('../support/AdminContext').AdminContext} context context
+   * @returns {Promise<void>}
+   */
   async send(context) {
     const { messages } = this;
     if (messages.length > THRESHOLD_FIFO) {

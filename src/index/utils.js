@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { BatchedQueueClient, hsize } from '@adobe/helix-admin-support';
+import { BatchedQueueClient } from '@adobe/helix-admin-support';
 import { IndexConfig } from '@adobe/helix-shared-config';
 import { contains } from '@adobe/helix-shared-indexer';
 import processQueue from '@adobe/helix-shared-process-queue';
@@ -290,22 +290,4 @@ export async function loadIndexData(context, index) {
     }
   });
   return indexData;
-}
-
-/**
- * Maximum size of a message to append to the batched queue.
- */
-export const MAX_MESSAGE_SIZE = 100_000;
-
-/**
- * Append a message for the {BatchedQueueClient} and push it to an array of messages. Skip
- * the message if it exceeds a certain size and log a warning.
- */
-export function appendMessage(messages, msg, log) {
-  const size = Buffer.from(JSON.stringify(msg), 'utf8').length;
-  if (size > MAX_MESSAGE_SIZE) {
-    log.warn(`Message too big: ${hsize(size)} bytes. Skipping...`);
-  } else {
-    messages.push(msg);
-  }
 }

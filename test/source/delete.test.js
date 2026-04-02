@@ -13,6 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
+import xml2js from 'xml2js';
 import { deleteSource } from '../../src/source/delete.js';
 import { createInfo, Nock } from '../utils.js';
 import { setupContext } from './testutils.js';
@@ -31,7 +32,21 @@ describe('Source Delete Tests', () => {
     nock.done();
   });
 
-  it('test deleteSource', async () => {
+  it('test deleteSource moves to trash', async () => {
+    nock.source()
+      .headObject('/test/rest/toast/jam.html')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .copyObject('/test/rest/.trash/jam.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/test/rest/toast/jam.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
     nock.source()
       .deleteObject('/test/rest/toast/jam.html')
       .reply(204);
@@ -43,7 +58,7 @@ describe('Source Delete Tests', () => {
 
   it('test deleteSource propagates S3 errors', async () => {
     nock.source()
-      .deleteObject('/test/rest/toast/error.html')
+      .headObject('/test/rest/toast/error.html')
       .reply(503);
 
     const info = createInfo('/test/sites/rest/source/toast/error.html');

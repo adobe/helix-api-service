@@ -14,6 +14,7 @@
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
 import { promisify } from 'util';
+import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { Headers, Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
@@ -142,6 +143,20 @@ describe('Source Handler Tests', () => {
 
   it('handles DELETE requests', async () => {
     nock.source()
+      .headObject('/org/site/to/be/deleted.html')
+      .reply(200, null, {
+        'last-modified': 'Thu, 2 Apr 2026 08:34:46 GMT',
+      });
+    nock.source()
+      .copyObject('/org/site/.trash/deleted.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org/site/to/be/deleted.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: 'abaca',
+        },
+      }));
+    nock.source()
       .deleteObject('/org/site/to/be/deleted.html')
       .reply(204);
     const resp = await main(new Request('https://api.aem.live/', {
@@ -150,7 +165,24 @@ describe('Source Handler Tests', () => {
     assert.equal(resp.status, 204);
   });
 
+  const BUCKET_LIST_EMPTY_TRASH = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Prefix>org/site/.trash/myfolder/</Prefix>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+    </ListBucketResult>`;
+
   it('handles DELETE requests to delete a folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        delimiter: '/',
+        prefix: 'org/site/.trash/myfolder/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
     nock.source()
       .get('/')
       .query({
@@ -158,6 +190,36 @@ describe('Source Handler Tests', () => {
         prefix: 'org/site/myfolder/',
       })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+
+    nock.source()
+      .headObject('/org/site/myfolder/sub/abc.pdf')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .headObject('/org/site/myfolder/xyz.html')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .copyObject('/org/site/.trash/myfolder/sub/abc.pdf')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org/site/myfolder/sub/abc.pdf')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+    nock.source()
+      .copyObject('/org/site/.trash/myfolder/xyz.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org/site/myfolder/xyz.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+
     nock.source()
       .deleteObject('/org/site/myfolder/sub/abc.pdf')
       .reply(204);

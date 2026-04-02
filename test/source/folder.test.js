@@ -13,6 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
+import xml2js from 'xml2js';
 import { deleteSource } from '../../src/source/delete.js';
 import { getSource, headSource } from '../../src/source/get.js';
 import { postSource } from '../../src/source/post.js';
@@ -256,7 +257,23 @@ describe('Source List Tests', () => {
     assert.equal(resp.status, 401);
   });
 
+  const BUCKET_LIST_EMPTY_TRASH = `
+    <ListBucketResult>
+      <Name>my-bucket</Name>
+      <Marker></Marker>
+      <MaxKeys>1000</MaxKeys>
+      <IsTruncated>false</IsTruncated>
+    </ListBucketResult>`;
+
   it('test delete folder', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        delimiter: '/',
+        prefix: 'org1/site2/.trash/b/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
     nock.source()
       .get('/')
       .query({
@@ -264,6 +281,50 @@ describe('Source List Tests', () => {
         prefix: 'org1/site2/a/b/',
       })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT3));
+
+    nock.source()
+      .headObject('/org1/site2/a/b/c/some.json')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .headObject('/org1/site2/a/b/c/my.pdf')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .headObject('/org1/site2/a/b/page.html')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .copyObject('/org1/site2/.trash/b/c/some.json')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/some.json')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+    nock.source()
+      .copyObject('/org1/site2/.trash/b/c/my.pdf')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/my.pdf')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+    nock.source()
+      .copyObject('/org1/site2/.trash/b/page.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/page.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+
     nock.source()
       .deleteObject('/org1/site2/a/b/c/some.json')
       .reply(204);
@@ -283,6 +344,14 @@ describe('Source List Tests', () => {
       .get('/')
       .query({
         'list-type': '2',
+        delimiter: '/',
+        prefix: 'org1/site2/.trash/nope/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
         prefix: 'org1/site2/nope/',
       })
       .reply(200, Buffer.from('<ListBucketResult><Name>abc</Name></ListBucketResult>'));
@@ -296,9 +365,61 @@ describe('Source List Tests', () => {
       .get('/')
       .query({
         'list-type': '2',
+        delimiter: '/',
+        prefix: 'org1/site2/.trash/b/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
         prefix: 'org1/site2/a/b/',
       })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT3));
+
+    nock.source()
+      .headObject('/org1/site2/a/b/c/some.json')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .headObject('/org1/site2/a/b/c/my.pdf')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .headObject('/org1/site2/a/b/page.html')
+      .reply(200, null, {
+        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
+      });
+    nock.source()
+      .copyObject('/org1/site2/.trash/b/c/some.json')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/some.json')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+    nock.source()
+      .copyObject('/org1/site2/.trash/b/c/my.pdf')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/my.pdf')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+    nock.source()
+      .copyObject('/org1/site2/.trash/b/page.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/page.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '314159',
+        },
+      }));
+
     nock.source()
       .deleteObject('/org1/site2/a/b/c/some.json')
       .reply(500);
@@ -314,6 +435,14 @@ describe('Source List Tests', () => {
   });
 
   it('test delete folder error', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        delimiter: '/',
+        prefix: 'org1/site2/.trash/nope/',
+      })
+      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
     nock.source()
       .get('/')
       .query({

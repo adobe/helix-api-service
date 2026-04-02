@@ -198,7 +198,7 @@ describe('Source PUT Tests', () => {
     // filter json so that only the src and dst keys are present (so that we only compare those)
     const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
     assert.deepStrictEqual(json, [
-      { src: 'testorg/testsite/src.html', dst: 'testorg/testsite/dst.html' },
+      { src: '/src.html', dst: '/dst.html' },
     ]);
     assert.equal(resp.status, 200);
     assert.equal('application/json', resp.headers.get('content-type'));
@@ -286,7 +286,7 @@ describe('Source PUT Tests', () => {
     const body = await resp.json();
     assert.deepStrictEqual(body, {
       copied: [
-        { src: 'o1/s1/s/src.html', dst: 'o1/s1/t/to.html' },
+        { src: '/s/src.html', dst: '/t/to.html' },
       ],
     });
   });
@@ -315,7 +315,7 @@ describe('Source PUT Tests', () => {
 
     const resp = await putSource(ctx, createInfo(path));
     assert.equal(resp.status, 409);
-    assert.equal(resp.headers.get('x-error'), 'Collision: something is at the destination already, no overwrite option provided');
+    assert.equal(resp.headers.get('x-error'), 'Collision: something is at the destination already');
   });
 
   async function copyTooManyRetries(context, retries) {
@@ -565,9 +565,9 @@ describe('Source PUT Tests', () => {
     // filter json so that only the src and dst keys are present (so that we only compare those)
     const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
     assert.deepStrictEqual(json, [
-      { src: 'org1/site2/a/b/c/somejson.json', dst: 'org1/site2/dest/somejson.json' },
-      { src: 'org1/site2/a/b/c/d1.html', dst: 'org1/site2/dest/d1.html' },
-      { src: 'org1/site2/a/b/c/d/d2.html', dst: 'org1/site2/dest/d/d2.html' },
+      { src: '/a/b/c/somejson.json', dst: '/dest/somejson.json' },
+      { src: '/a/b/c/d1.html', dst: '/dest/d1.html' },
+      { src: '/a/b/c/d/d2.html', dst: '/dest/d/d2.html' },
     ]);
     assert.equal(resp.status, 200);
     assert.equal('application/json', resp.headers.get('content-type'));
@@ -615,7 +615,7 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 200);
     const body = await resp.json();
     assert.deepStrictEqual(body.moved, [
-      { src: 'org123/456site/foo/bar/src.html', dst: 'org123/456site/lala/dst.html' },
+      { src: '/foo/bar/src.html', dst: '/lala/dst.html' },
     ]);
     assert.equal('application/json', resp.headers.get('content-type'));
   });
@@ -707,8 +707,8 @@ describe('Source PUT Tests', () => {
     // remove all keys from body except src and dst, for comparison
     const cmp = body.moved.map((item) => ({ src: item.src, dst: item.dst }));
     assert.deepStrictEqual(cmp, [
-      { src: 'o/s/x/x.html', dst: 'o/s/hello/dest/x.html' },
-      { src: 'o/s/x/sub/x.pdf', dst: 'o/s/hello/dest/sub/x.pdf' },
+      { src: '/x/x.html', dst: '/hello/dest/x.html' },
+      { src: '/x/sub/x.pdf', dst: '/hello/dest/sub/x.pdf' },
     ]);
     assert.equal('application/json', resp.headers.get('content-type'));
   });

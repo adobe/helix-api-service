@@ -87,7 +87,7 @@ export default async function bulkPreview(context, info) {
   }
 
   // create new preview job
-  return Job.create(context, info, 'preview', {
+  return Job.create(context, info, PreviewJob.TOPIC, {
     transient: true,
     jobClass: PreviewJob,
     data: {

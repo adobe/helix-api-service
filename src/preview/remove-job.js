@@ -18,20 +18,12 @@ import contentbusRemove from '../contentbus/remove.js';
 import { Job } from '../job/job.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
 import { RequestInfo, toWebPath } from '../support/RequestInfo.js';
+import { RemoveResource } from './RemoveResource.js';
 
 /**
  * Concurrency to use when deleting previews.
  */
 const JOB_CONCURRENCY = 4;
-
-/**
- * @typedef Resource
- * @property {Date} lastModified last modified date
- * @property {string} resourcePath resource path
- * @property {string} path web path
- * @property {string} status status of update
- * @property {string} error error on update
- */
 
 /**
  * Job that deletes a bulk of previews in the background.
@@ -65,12 +57,11 @@ export class RemoveJob extends Job {
       if (prefix) {
         // eslint-disable-next-line no-await-in-loop
         const entries = await storage.list(`${contentBusId}/preview${prefix}`);
-        resources.push(...entries
+        const mapped = entries
           .map((entry) => ({ ...entry, path: `${prefix}${entry.path}` }))
           .filter(({ path }) => !excluded(path))
-          .map(({ lastModified, path }) => ({
-            lastModified, resourcePath: path, path: toWebPath(path),
-          })));
+          .map(({ lastModified, path }) => new RemoveResource(path, toWebPath(path), lastModified));
+        resources.push(...mapped);
       } else if (!excluded(webPath)) {
         const { resourcePath } = RequestInfo.clone(info, { path: webPath });
         const key = `${contentBusId}/preview${resourcePath}`;
@@ -78,9 +69,7 @@ export class RemoveJob extends Job {
         // eslint-disable-next-line no-await-in-loop
         const { LastModified: lastModified } = await storage.head(key) ?? {};
         if (lastModified) {
-          resources.push({
-            lastModified, resourcePath, path: webPath,
-          });
+          resources.push(new RemoveResource(resourcePath, webPath, lastModified));
         }
       }
     }
@@ -90,27 +79,25 @@ export class RemoveJob extends Job {
   /**
    * Process a single resource that should be deleted from preview.
    *
-   * @param {Resource} resource resource
+   * @param {RemoveResource} resource resource
    */
   async processResource(resource) {
     const { ctx, ctx: { log }, info } = this;
-    const { path } = resource;
+    const { webPath } = resource;
 
     const start = Date.now();
-    const localInfo = RequestInfo.clone(info, { path, route: 'preview' });
+    const localInfo = RequestInfo.clone(info, { path: webPath, route: 'preview' });
 
     const res = await contentbusRemove(ctx, localInfo, 'preview');
     const { status } = res;
-    // eslint-disable-next-line no-param-reassign
-    resource.status = status;
 
     if (!res.ok) {
       const err = res.headers.get('x-error');
-      log.warn(`unable to delete preview of ${path}: (${res.status}) ${err}`);
-      // eslint-disable-next-line no-param-reassign
-      resource.error = err;
+      log.warn(`unable to delete preview of ${webPath}: (${res.status}) ${err}`);
+      resource.setStatus(status, err);
       return;
     }
+    resource.setStatus(status);
 
     const stop = Date.now();
     await this.audit(ctx, localInfo, { res, start, stop });
@@ -137,7 +124,7 @@ export class RemoveJob extends Job {
 
     await this.setPhase('deleting');
 
-    await processQueue([...data.resources], async (/** @type {Resource} */ resource) => {
+    await processQueue([...data.resources], async (/** @type {RemoveResource} */ resource) => {
       if (await this.checkStopped()) {
         return;
       }
@@ -147,8 +134,8 @@ export class RemoveJob extends Job {
       await this.writeStateLazy();
     }, JOB_CONCURRENCY);
 
-    const removedResources = data.resources.filter(({ status }) => status === 204);
-    const removedPaths = removedResources.map(({ path }) => path);
+    const removedResources = data.resources.filter((r) => r.isDeleted());
+    const removedPaths = removedResources.map(({ webPath }) => webPath);
     const resourcePaths = removedResources.map(({ resourcePath }) => resourcePath);
 
     await this.setPhase('purging');

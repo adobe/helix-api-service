@@ -70,7 +70,9 @@ async function copyWithRetry(
 
       // As per S3 docs, retry on a 409
       if (status !== 409) {
-        if (status !== 412) throw e;
+        if (status !== 412) {
+          throw e;
+        }
         // 412: precondition failed - something is at the destination already.
 
         if (move) {

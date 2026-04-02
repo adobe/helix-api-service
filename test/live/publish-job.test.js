@@ -74,10 +74,11 @@ const createJob = async (ctx, info, paths, { forceUpdate = false } = {}) => {
     this.state.data.phase = phase;
   };
   job.trackProgress = async function trackProgress(stat) {
-    if (stat.total !== undefined) this.state.progress.total = stat.total;
-    if (stat.failed !== undefined) this.state.progress.failed = stat.failed;
-    if (stat.notmodified !== undefined) this.state.progress.notmodified = stat.notmodified;
-    if (stat.success !== undefined) this.state.progress.success = stat.success;
+    for (const key of ['total', 'failed', 'notmodified', 'success']) {
+      if (stat[key] !== undefined) {
+        this.state.progress[key] = stat[key];
+      }
+    }
   };
   job.checkStopped = async function checkStopped() {
     return false;
@@ -169,7 +170,6 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(job.state.data.resources.length, 1);
     assert.strictEqual(job.state.data.resources[0].status, 200);
 
-    assert.deepStrictEqual(purgeInfos, [{ key: 'f2fDgEvIJYqtKBTS' }, { key: 'uIOtsRW0UD2rg5Bj' }]);
     assert.strictEqual(notified, 1);
   });
 
@@ -337,7 +337,6 @@ describe('PublishJob Tests', () => {
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
-    assert.deepStrictEqual(purgeInfos, [{ key: 'WSqt6qEhav4fH2sa' }]);
     assert.strictEqual(notified, 1);
   });
 

@@ -22,6 +22,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import tree from './github-tree.js';
 import { ALLOWED_HEADERS_FILTER, measure } from '../support/utils.js';
 import { Job } from '../job/job.js';
+import { CodeResource } from './CodeResource.js';
 import purge, { PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import {
@@ -40,15 +41,6 @@ import { RateLimitError } from './rate-limit-error.js';
  * @property changes
  * @property {string} ref
  * @property {string} branch
- */
-
-/**
- * @typedef Resource
- * @property {string} resourcePath resource path
- * @property {string|undefined} lastModified last modified date in UTC
- * @property {string|undefined} contentType content type
- * @property {string|undefined} error error
- * @property {boolean|undefined} delete whether resource was deleted
  */
 
 /**
@@ -106,38 +98,6 @@ export function getCodeRef(githubRef) {
  */
 export function isValidPath(path) {
   return /^[/a-zA-Z0-9._-]*$/.test(path);
-}
-
-/**
- * Creates a code info response for the given change
- * @param {Change} change
- * @param {number} status
- * @param {string} error
- * @returns {Resource}
- */
-function createResourceInfo(change, status = 200, error = null) {
-  let ret;
-  if (change.type === 'deleted') {
-    ret = {
-      status,
-      resourcePath: `/${change.path}`,
-      deleted: true,
-    };
-  } else {
-    ret = {
-      status,
-      resourcePath: `/${change.path}`,
-      lastModified: change.lastModified || new Date().toUTCString(),
-      contentType: change.contentType,
-    };
-  }
-  if (error) {
-    ret.error = error;
-  }
-  if (change.contentLength !== undefined) {
-    ret.contentLength = change.contentLength;
-  }
-  return ret;
 }
 
 /**
@@ -238,7 +198,7 @@ export class CodeJob extends Job {
         throw new StatusCodeError(`[${codePrefix}] cowardly refusing to delete potential default branch.`, 400);
       }
       this.state.data.deleteTree = true;
-      resources.push(createResourceInfo(branchOp));
+      resources.push(CodeResource.fromChange(branchOp));
       return;
     }
 
@@ -319,7 +279,7 @@ export class CodeJob extends Job {
           log.info(`[code][${codePrefix}*] using base '${baseRef}' for new branch copy.`);
           const copied = await storage.copyDeep(`/${codeOwner}/${codeRepo}/${baseRef}/`, codePrefix, (info) => pathFilter(info.path));
           for (const change of copied) {
-            resources.push(createResourceInfo(change));
+            resources.push(CodeResource.fromChange(change));
           }
         }
       }
@@ -443,11 +403,11 @@ export class CodeJob extends Job {
                 }
               }
             }
-            resources.push(createResourceInfo(change, 204));
+            resources.push(CodeResource.fromChange(change, 204));
           }
         } catch (e) {
           log.error(`[code][${nr}] removing ${path} from storage failed: ${e.message}`);
-          resources.push(createResourceInfo(change, 500, e.message));
+          resources.push(CodeResource.fromChange(change, 500, e.message));
           this.state.progress.failed += 1;
         }
         await this.writeStateLazy();
@@ -462,7 +422,7 @@ export class CodeJob extends Job {
         const res = await fetchContent(ctx, codeSource, ref, change.path, evt.branch, nr, this.githubTimer);
         if (!res.ok) {
           // error already logged in fetchContent()
-          resources.push(createResourceInfo(change, res.status, 'error reading from github'));
+          resources.push(CodeResource.fromChange(change, res.status, 'error reading from github'));
           this.state.progress.failed += 1;
           await this.writeStateLazy();
           return;
@@ -529,7 +489,7 @@ export class CodeJob extends Job {
           return;
         }
         log.error(`[code][${nr}] reading ${codeSource.owner}/${codeSource.repo}/${ref}/${path} from github error: ${e.message}`);
-        resources.push(createResourceInfo(change, 500, `error reading from github: ${e.message}`));
+        resources.push(CodeResource.fromChange(change, 500, `error reading from github: ${e.message}`));
         this.state.progress.failed += 1;
         await this.writeStateLazy();
         return;
@@ -554,11 +514,11 @@ export class CodeJob extends Job {
           this.storageTimer,
         );
         this.storageTimer.put += 1;
-        resources.push(createResourceInfo(change));
+        resources.push(CodeResource.fromChange(change));
         log.info(`[code][${nr}] uploaded ${path} to storage`);
       } catch (e) {
         log.error(`[code][${nr}] uploading ${path} to storage failed: ${e.message}`);
-        resources.push(createResourceInfo(change, 500, `uploading failed: ${e.message}`));
+        resources.push(CodeResource.fromChange(change, 500, `uploading failed: ${e.message}`));
         this.state.progress.failed += 1;
         await this.writeStateLazy();
         return;
@@ -620,7 +580,7 @@ export class CodeJob extends Job {
     let doPurgeConfig = false;
 
     for (const resource of resources) {
-      if (resource.status < 300) {
+      if (resource.isSuccess()) {
         const key = resource.resourcePath.substring(1);
         if (key === 'head.html') {
           doPurgeConfig = true;
@@ -654,7 +614,6 @@ export class CodeJob extends Job {
     }
 
     const { ctx, state: { data: /** @type {ChangeEvent} */ evt } } = this;
-    /** @type {{resources: Resource[]}} */
     const {
       resources, codeOwner: owner, codeRepo: repo,
     } = evt;
@@ -666,9 +625,9 @@ export class CodeJob extends Job {
     const configChanges = {};
 
     for (const resource of resources) {
-      const { resourcePath, status, deleted = false } = resource;
+      const { resourcePath, deleted = false } = resource;
       const key = resourcePath.substring(1);
-      if (status < 300 && OTHER_CONFIG_FILES[key] && evt.ref === 'main') {
+      if (resource.isSuccess() && OTHER_CONFIG_FILES[key] && evt.ref === 'main') {
         const hlx = await fetchHlxJson(ctx, contentBusId);
         const project = `${owner}/${repo}`;
         if (hlx?.['original-site'] === project) {
@@ -740,7 +699,7 @@ export class CodeJob extends Job {
 
     // purge live cdn of modified content
     const purgePaths = resources
-      .filter(({ status }) => status === 200 || status === 204)
+      .filter((r) => r.isSuccess())
       .map(({ resourcePath }) => resourcePath);
     await purge.code(ctx, info, purgePaths);
   }
@@ -813,6 +772,9 @@ export class CodeJob extends Job {
       }
       this.state.data.phase = '';
     }
+
+    // hydrate plain objects from JSON.parse back into CodeResource instances
+    this.state.data.resources = CodeResource.fromJSONArray(this.state.data.resources);
 
     const codeSource = await getCodeSource(ctx, this.state.data);
 

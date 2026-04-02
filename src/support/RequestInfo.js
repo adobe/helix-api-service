@@ -404,12 +404,12 @@ export class RequestInfo {
     return Object.freeze(info);
   }
 
-  getPreviewUrl() {
-    return `https://${this.ref}--${this.site}--${this.org}.aem.page${this.webPath}`;
+  getPreviewUrl(webPath) {
+    return `https://${this.ref}--${this.site}--${this.org}.aem.page${webPath ?? this.webPath}`;
   }
 
-  getLiveUrl() {
-    return `https://${this.ref}--${this.site}--${this.org}.aem.live${this.webPath}`;
+  getLiveUrl(webPath) {
+    return `https://${this.ref}--${this.site}--${this.org}.aem.live${webPath ?? this.webPath}`;
   }
 
   getLinkUrl(path, query = {}) {

@@ -27,7 +27,7 @@ import {
  * @param {object} log logger
  * @returns object with either message, noIndex or record
  */
-function indexPageInIndex(path, config, page, log) {
+export function indexPageInIndex(path, config, page, log) {
   if (!contains(config, path)) {
     return {
       message: 'requested path does not match index configuration',

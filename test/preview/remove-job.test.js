@@ -60,9 +60,15 @@ const createJob = async (ctx, info, paths) => {
     this.state.data.phase = phase;
   };
   job.trackProgress = async function trackProgress(stat) {
-    if (stat.total !== undefined) this.state.progress.total = stat.total;
-    if (stat.processed !== undefined) this.state.progress.processed += stat.processed;
-    if (stat.failed !== undefined) this.state.progress.failed += stat.failed;
+    if (stat.total !== undefined) {
+      this.state.progress.total = stat.total;
+    }
+    if (stat.processed !== undefined) {
+      this.state.progress.processed += stat.processed;
+    }
+    if (stat.failed !== undefined) {
+      this.state.progress.failed += stat.failed;
+    }
   };
   job.checkStopped = async function checkStopped() {
     return false;

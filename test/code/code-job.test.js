@@ -29,6 +29,7 @@ import { getCodeSource } from '../../src/code/github-bot.js';
 import { JobStorage } from '../../src/job/storage.js';
 import { RateLimitError } from '../../src/code/rate-limit-error.js';
 import purge from '../../src/cache/purge.js';
+import { CodeResource } from '../../src/code/CodeResource.js';
 
 const DEFAULT_OCTOKIT = (ctx) => new Octokit({
   request: { fetch: ctx.getFetch() },
@@ -145,6 +146,9 @@ function removeLastModified(resources) {
   resources
     .forEach((r) => { delete r.lastModified; });
 }
+
+const toPlain = (resources) => CodeResource.toJSONArray(resources);
+const mkResources = (objs) => CodeResource.fromJSONArray(objs);
 
 /**
  * Creates a mock CodeJob
@@ -667,7 +671,7 @@ describe('Code Job tests', () => {
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-branch-deleted.json'), 'utf-8'));
       const job = await createJob(ctx, events);
       await job.collect(codeSource);
-      assert.deepStrictEqual(job.state.data.resources, [
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [
         {
           deleted: true,
           resourcePath: '/*',
@@ -738,7 +742,7 @@ describe('Code Job tests', () => {
         type: 'added',
       }]);
       removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [{
         contentLength: 21,
         contentType: 'text/plain',
         resourcePath: '/styles/styles.js',
@@ -1270,7 +1274,7 @@ describe('Code Job tests', () => {
       await job.sync(codeSource);
       removeLastModified(job.state.data.resources);
       job.state.data.resources.sort((a0, a1) => a0.resourcePath.localeCompare(a1.resourcePath));
-      assert.deepStrictEqual(job.state.data, {
+      assert.deepStrictEqual({ ...job.state.data, resources: toPlain(job.state.data.resources) }, {
         baseRef: '',
         changes: [],
         codeOwner: 'owner',
@@ -1309,7 +1313,6 @@ describe('Code Job tests', () => {
           },
           {
             contentLength: 8,
-            contentType: undefined,
             resourcePath: '/music.mp3',
             status: 200,
           },
@@ -1490,7 +1493,7 @@ describe('Code Job tests', () => {
 
       removeLastModified(job.state.data.resources);
       job.state.data.resources.sort((a0, a1) => a0.resourcePath.localeCompare(a1.resourcePath));
-      assert.deepStrictEqual(job.state.data, {
+      assert.deepStrictEqual({ ...job.state.data, resources: toPlain(job.state.data.resources) }, {
         baseRef: '',
         changes: [],
         codeOwner: 'owner',
@@ -1623,7 +1626,7 @@ describe('Code Job tests', () => {
       await job.sync(codeSource);
       removeLastModified(job.state.data.resources);
       job.state.data.resources.sort((a0, a1) => a0.resourcePath.localeCompare(a1.resourcePath));
-      assert.deepStrictEqual(job.state.data.resources, [
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [
         {
           contentLength: 12,
           contentType: 'text/markdown; charset=utf-8',
@@ -1644,7 +1647,6 @@ describe('Code Job tests', () => {
         },
         {
           contentLength: 8,
-          contentType: undefined,
           resourcePath: '/music.mp3',
           status: 200,
         },
@@ -1838,7 +1840,7 @@ describe('Code Job tests', () => {
       };
       await job.sync(codeSource);
       removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [{
         deleted: true,
         resourcePath: '/helix-query.yaml',
         status: 204,
@@ -1869,7 +1871,7 @@ describe('Code Job tests', () => {
       };
       await job.sync(codeSource);
       removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [{
         deleted: true,
         resourcePath: '/helix-query.yaml',
         status: 204,
@@ -1898,7 +1900,7 @@ describe('Code Job tests', () => {
       };
       await job.sync(codeSource);
       removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [{
         deleted: true,
         resourcePath: '/helix-query.yaml',
         status: 204,
@@ -1928,7 +1930,7 @@ describe('Code Job tests', () => {
       };
       await job.sync(codeSource);
       removeLastModified(job.state.data.resources);
-      assert.deepStrictEqual(job.state.data.resources, [{
+      assert.deepStrictEqual(toPlain(job.state.data.resources), [{
         deleted: true,
         resourcePath: '/helix-sitemap.yaml',
         status: 204,
@@ -1953,7 +1955,7 @@ describe('Code Job tests', () => {
         octokit: ctx.attributes.octokits['42'],
       };
       await job.sync(codeSource);
-      assert.deepStrictEqual(job.state.data.resources, []);
+      assert.deepStrictEqual(toPlain(job.state.data.resources), []);
     });
 
     it('call storage for events (weird repo / branch)', async () => {
@@ -2038,7 +2040,7 @@ describe('Code Job tests', () => {
       });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/head.html',
         status: 200,
       }, {
@@ -2050,7 +2052,7 @@ describe('Code Job tests', () => {
       }, {
         resourcePath: '/not-modified.json',
         status: 304,
-      }];
+      }]);
       await job.flushCache();
       assert.deepStrictEqual(purgeInfos, [
         {
@@ -2078,10 +2080,10 @@ describe('Code Job tests', () => {
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-sb.json'), 'utf-8'));
       events.codeRef = 'tripod-test-34-sub';
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/head.html',
         status: 200,
-      }];
+      }]);
       await job.flushCache();
       assert.deepStrictEqual(purgeInfos, [
         {
@@ -2157,10 +2159,10 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
       const job = await createJob(ctx, events);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/head.html',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
     });
 
@@ -2198,10 +2200,10 @@ sitemaps:
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-head.json'), 'utf-8'));
       events.ref = 'fail';
       const job = await createJob(ctx, events);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/head.html',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
       assert.deepEqual(codeBus.added, []);
       assert.deepEqual(codeBus.removed, []);
@@ -2216,10 +2218,10 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/helix-query.yaml',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 1);
@@ -2234,11 +2236,11 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/helix-query.yaml',
         status: 200,
         deleted: true,
-      }];
+      }]);
       await job.postProcess();
 
       assert.strictEqual(contentBus.removed.length, 1);
@@ -2254,10 +2256,10 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-query.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/helix-query.yaml',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 0);
@@ -2272,10 +2274,10 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-sitemap.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/helix-sitemap.yaml',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 1);
@@ -2293,10 +2295,10 @@ sitemaps:
       events.owner = 'other';
 
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/helix-sitemap.yaml',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 0);
@@ -2307,10 +2309,10 @@ sitemaps:
       events.ref = 'other';
 
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/helix-sitemap.yaml',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 0);
@@ -2335,10 +2337,10 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-sidekick.json'), 'utf-8'));
       const job = await createJob(ctx, events, true);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/tools/sidekick/config.json',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
     });
 
@@ -2351,10 +2353,10 @@ sitemaps:
 
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-with-config-robots.json'), 'utf-8'));
       const job = await createJob(ctx, events);
-      job.state.data.resources = [{
+      job.state.data.resources = mkResources([{
         resourcePath: '/robots.txt',
         status: 200,
-      }];
+      }]);
       await job.postProcess();
     });
   });

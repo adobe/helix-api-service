@@ -196,7 +196,9 @@ export async function postVersion(context, baseKey, operation, comment, etag) {
         return new Response('', { status: 201, headers });
       } catch (e) {
         attempt += 1;
-        if (attempt > maxRetry) throw e;
+        if (attempt > maxRetry) {
+          throw e;
+        }
 
         // Retry if we received a 412 precondition failed, but not if the etag was provided to
         // this function (because in that case looping were won't refesh the etag).

@@ -169,7 +169,7 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(job.state.data.resources.length, 1);
     assert.strictEqual(job.state.data.resources[0].status, 200);
 
-    assert.deepStrictEqual(purgeInfos, [{ key: 'eI7cO88L3yedH2Zt' }, { key: 'X3g3ca3tWVPsAJgl' }]);
+    assert.deepStrictEqual(purgeInfos, [{ key: 'f2fDgEvIJYqtKBTS' }, { key: 'uIOtsRW0UD2rg5Bj' }]);
     assert.strictEqual(notified, 1);
   });
 
@@ -312,7 +312,7 @@ describe('PublishJob Tests', () => {
     assert.ok(job.state.data.resources[0].metadata, 'metadata resource should be flagged');
     assert.deepStrictEqual(purgeInfos, [
       { key: 'U_NW4adJU7Qazf-I' },
-      { key: '0BbXqRmqgStJ7irR' },
+      { key: 'bu2SqxB_sPgGHVxe' },
     ]);
     assert.strictEqual(notified, 1);
   });
@@ -337,7 +337,7 @@ describe('PublishJob Tests', () => {
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
-    assert.deepStrictEqual(purgeInfos, [{ key: 'DmtUcbOVSbg9dZSu' }]);
+    assert.deepStrictEqual(purgeInfos, [{ key: 'WSqt6qEhav4fH2sa' }]);
     assert.strictEqual(notified, 1);
   });
 

@@ -74,9 +74,9 @@ const createJob = async (ctx, info, paths, { forceUpdate = false } = {}) => {
     this.state.data.phase = phase;
   };
   job.trackProgress = async function trackProgress(stat) {
-    for (const [key, value] of Object.entries(stat)) {
-      if (value !== undefined) {
-        this.state.progress[key] = value;
+    for (const key of ['total', 'failed', 'notmodified', 'success']) {
+      if (stat[key] !== undefined) {
+        this.state.progress[key] = stat[key];
       }
     }
   };

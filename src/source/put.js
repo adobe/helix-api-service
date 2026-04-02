@@ -84,8 +84,12 @@ async function copyWithRetry(
         if (collOpts.collision === 'unique') {
           // The request is to move and make the destination file unique.
           // We do this by appending a ms timestamp to the destination key.
+
+          const ext = `.${destKey.split('.').pop()}`;
+          const destWithoutExt = destKey.slice(0, -ext.length);
+
           const ts = Date.now().toString(36);
-          destinationKey = `${destKey}-${ts}`;
+          destinationKey = `${destWithoutExt}-${ts}${ext}`;
         } else if (collOpts.collision === 'overwrite') {
           // eslint-disable-next-line no-await-in-loop
           const dest = await bucket.head(destKey);

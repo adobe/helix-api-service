@@ -490,7 +490,7 @@ describe('Source PUT Tests', () => {
 
     // In the retry an 8-char suffix to the name is added
     nock.source()
-      .copyObject(/^\/o1\/s1\/t\/to.html-.{8}$/)
+      .copyObject(/^\/o1\/s1\/t\/to-.{8}\.html$/)
       .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
       .matchHeader('if-none-match', '*')
       .reply(200, new xml2js.Builder().buildObject({

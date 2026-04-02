@@ -235,7 +235,7 @@ export class IndexJob extends Job {
    *
    * @param {BulkContext} bulkContext bulk context
    * @param {string} webPath webpath
-   * @param {object} indexRecord index record
+   * @param {import('./IndexMap.js').IndexRecord} indexRecord index record
    */
   async processRecord(bulkContext, webPath, indexRecord) {
     const { context: { log } } = this;
@@ -258,27 +258,25 @@ export class IndexJob extends Job {
    */
   async run() {
     const { context, info } = this;
-    const { log } = context;
 
+    // preparing
     await this.initialize(this.state.data);
     if (this.isFullReindex) {
       await installSimpleSitemap(context, info, true);
     }
     const bulkContext = await this.prepare();
 
+    // collecting
     await this.setPhase('collecting');
     const indexData = await this.getIndexData(bulkContext);
     await this.trackProgress({
       total: indexData.size,
     });
 
-    await this.setPhase('index');
+    // indexing
+    await this.setPhase('indexing');
     await processQueue(indexData.entries(), async ([webPath, indexRecord]) => {
-      if (await this.checkStopped()) {
-        return;
-      }
-      if (webPath.startsWith('/.helix/')) {
-        log.debug(`Refusing to index: ${webPath}`);
+      if (await this.checkStopped() || webPath.startsWith('/.helix/')) {
         return;
       }
       await this.processRecord(bulkContext, webPath, indexRecord);
@@ -287,6 +285,7 @@ export class IndexJob extends Job {
       await this.writeStateLazy();
     }, JOB_CONCURRENCY);
 
+    // sending
     const { messages } = bulkContext;
     await messages.send(context);
 

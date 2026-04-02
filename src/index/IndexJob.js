@@ -26,7 +26,7 @@ import {
   getIndexTargets, getFetchHeaders,
 } from './utils.js';
 import { installSimpleSitemap } from '../sitemap/utils.js';
-import { RequestInfo, splitExtension, toWebPath } from '../support/RequestInfo.js';
+import { splitExtension, toResourcePath, toWebPath } from '../support/RequestInfo.js';
 
 /**
  * Concurrency to use when indexing pages.
@@ -143,7 +143,7 @@ export class IndexJob extends Job {
       resourcePaths.push(...entries.map(({ key }) => key.substring(contentBusId.length + 5)));
     });
     paths.forEach((webPath) => {
-      resourcePaths.push(RequestInfo.toResourcePath(webPath));
+      resourcePaths.push(toResourcePath(webPath));
     });
     return resourcePaths;
   }

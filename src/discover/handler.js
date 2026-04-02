@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import query from './query.js';
-import reindex from './reindex.js';
+import { reindex } from './reindex.js';
 import remove from './remove.js';
 
 /**

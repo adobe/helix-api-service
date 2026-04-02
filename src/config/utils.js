@@ -9,8 +9,11 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+import { importJWK, SignJWT } from 'jose';
+import crypto from 'crypto';
 import { AbortError } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import localJWKS from '../idp-configs/jwks-json.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
@@ -86,12 +89,12 @@ export async function getUserListPaths(context) {
 /**
  * Return the contents of the `.hlx.json` file in a project.
  *
- * @param {import('../support/AdminContext').AdminContext} ctx context
+ * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} contentBusId content bus id
- * @returns contents of `.hlx.json` or null
+ * @returns {Promise<object|null>} contents of `.hlx.json` or null
  */
-export async function fetchHlxJson(ctx, contentBusId) {
-  const storage = HelixStorage.fromContext(ctx);
+export async function fetchHlxJson(context, contentBusId) {
+  const storage = HelixStorage.fromContext(context);
   const buf = await storage.contentBus().get(`${contentBusId}/.hlx.json`);
   if (!buf) {
     return null;
@@ -100,17 +103,37 @@ export async function fetchHlxJson(ctx, contentBusId) {
 }
 
 /**
+ * Checks if "this" site is the primary site and returns an empty string. otherwise the
+ * name of the primary site is returned.
+ * @param {import('../support/AdminContext').AdminContext} context
+ * @param {string} contentBusId
+ * @param {import('../support/RequestInfo').RequestInfo} info
+ * @returns {Promise<string>} empty string if "this" site is the primary site,
+ * otherwise the name of the primary site
+ */
+export async function checkPrimarySite(context, contentBusId, info) {
+  const { org, site } = info;
+
+  const hlx = await fetchHlxJson(context, contentBusId);
+  const project = `${org}/${site}`;
+  const primary = hlx?.['original-site'] ?? hlx?.['original-repository'] ?? 'n/a';
+
+  return primary === project ? '' : primary;
+}
+
+/**
  * Checks if "this" site's code source is the canonical source of this site.
  * If not, name of the primary code source is returned.
- * @param {import('../support/AdminContext').AdminContext} ctx
+ * @param {import('../support/AdminContext').AdminContext} context
  * @param {import('../support/RequestInfo').RequestInfo} info
  * @returns {string}
  */
-export function checkCanonicalRepo(ctx, info) {
-  if (!ctx.attributes.config?.code) {
+export function checkCanonicalRepo(context, info) {
+  const { config } = context;
+  if (!config?.code) {
     return '';
   }
-  const { code } = ctx.attributes.config;
+  const { code } = context.attributes.config;
   const url = new URL(code.source.url);
   // only check for github repos
   if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {
@@ -119,4 +142,40 @@ export function checkCanonicalRepo(ctx, info) {
     }
   }
   return '';
+}
+
+/**
+ * Creates a new admin API JWT for the given org and site (name). Optionally sets the roles.
+ *
+ * @param {import('../support/AdminContext.js').AdminContext} context context
+ * @param {string} org organization name
+ * @param {string} site site name
+ * @param {string[]} [roles] roles to assign
+ * @returns {Promise<string>} JWT token
+ */
+export async function createAdminJWT(context, org, site = '*', roles = ['author']) {
+  const { env, log } = context;
+  const privateKey = await importJWK(JSON.parse(env.HLX_ADMIN_IDP_PRIVATE_KEY), 'RS256');
+  const publicKey = localJWKS.keys[0];
+  const jti = crypto.randomBytes(33).toString('base64');
+
+  const adminToken = await new SignJWT({
+    email: 'helix@adobe.com',
+    name: 'Helix Admin',
+    roles,
+  })
+    .setProtectedHeader({
+      alg: 'RS256',
+      kid: publicKey.kid,
+    })
+    .setIssuedAt()
+    .setIssuer(publicKey.issuer)
+    .setAudience(env.HLX_SITE_APP_AZURE_CLIENT_ID)
+    .setSubject(`${org}/${site}`)
+    .setExpirationTime('365 days')
+    .setJti(jti)
+    .sign(privateKey);
+
+  log.info(`created admin token for %s/%s with roles: ${roles}. apiKeyId=${jti}`, org, site);
+  return adminToken;
 }

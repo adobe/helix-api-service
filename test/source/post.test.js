@@ -39,7 +39,13 @@ describe('Source POST Tests', () => {
   it('test postSource HTML', async () => {
     async function postFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<body><main>Hello</main></body>');
+      const expectedHtml = `<body>
+<main>
+  <h1>My Title</h1>
+  <div>Hello</div>
+</main>
+</body>`;
+      assert.equal(b.toString(), expectedHtml);
     }
 
     nock.source()
@@ -54,7 +60,7 @@ describe('Source POST Tests', () => {
       '/test/sites/rest/source/toast/jam.html',
       {},
       'POST',
-      '<html><body><main>Hello</main></body></html>',
+      '<html><body><main><h1>My Title</h1><div>Hello</div></main></body></html>',
     ));
     assert.equal(resp.status, 201);
   });
@@ -62,7 +68,10 @@ describe('Source POST Tests', () => {
   it('test postSource index HTML', async () => {
     async function postFn(_uri, gzipBody) {
       const b = await gunzip(Buffer.from(gzipBody, 'hex'));
-      assert.equal(b.toString(), '<body><main>Hello</main></body>');
+      const expectedHtml = `<body>
+<main>Hello</main>
+</body>`;
+      assert.equal(b.toString(), expectedHtml);
     }
 
     const docId = '01KK1E35DP7EQDG9G99QT437VH';

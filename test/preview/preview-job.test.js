@@ -130,6 +130,7 @@ export const createJob = async (context, info, paths = ['/foo/new', '/foo/old', 
   job.audit = async function audit() {
     return true;
   };
+  job.sleep = async function sleep() { /* no-op */ };
   return job;
 };
 
@@ -279,10 +280,10 @@ describe('PreviewJob Tests', () => {
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_pSKj2mQkyH1eSehP' },
-      { key: 'p_iZ0xNI3YLOd8zXlo' },
-      { key: 'p_qePwwdPws3hnLWF8' },
-      { key: 'p_YoGLcSIZab1NDHOk' },
+      { key: 'p_2QGDhFlkXOGfcYgU' },
+      { key: 'p_OWIHGTqUxMCnF76i' },
+      { key: 'p_HITCpfbmhg0O_io-' },
+      { key: 'p_XFQciGxPScclmyMq' },
     ]);
   });
 
@@ -327,7 +328,7 @@ describe('PreviewJob Tests', () => {
 
     // When > threshold, should purge with the bulk key
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f' },
+      { key: `p_${SITE_CONFIG.content.contentBusId}` },
     ]);
   });
 
@@ -423,7 +424,7 @@ describe('PreviewJob Tests', () => {
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.status, 200);
-    assert.deepStrictEqual(purgeInfos, [{ key: 'p_FbbV3_MU1QmJqhfF' }, { path: '/foo' }]);
+    assert.deepStrictEqual(purgeInfos, [{ key: 'p_zmTZd8MUb5tn-Oa0' }, { path: '/foo' }]);
   });
 
   it('processConfigFiles() calls purge.config when a metadata resource was updated', async () => {

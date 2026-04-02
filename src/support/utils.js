@@ -262,6 +262,113 @@ export function getOrCreateObject(obj, path) {
 }
 
 /**
+ * Resolves the correct allow list based on the config type and relative path within the object.
+ *
+ * @param {string} type - The type of the config.
+ * @param {string} [relPath] - The relative path to the sub-structure within the config,
+ * using slash notation.
+ * @param {object} allowListConfig - The configuration object mapping types and paths
+ * to allow lists.
+ * @returns {string[]} - The appropriate allow list for the given type and relPath.
+ */
+export function resolveAllowList(type, relPath, allowListConfig) {
+  let allowList = allowListConfig[type] || [];
+
+  if (relPath) {
+    const prefix = `${relPath}/`;
+    const prefixLength = prefix.length;
+
+    allowList = allowList
+      .filter((path) => path === relPath || path.startsWith(prefix))
+      .map((path) => (path === relPath ? '' : path.substring(prefixLength)));
+  }
+
+  return allowList;
+}
+
+/**
+ * Redacts an object based on an allow list. Only the properties in the allow list are kept.
+ *
+ * This function traverses the provided object (`rawObj`) and retains only those properties
+ * that are specified in the `allowList`. The `allowList` should contain property paths in
+ * slash notation or bracket notation to indicate nested properties.
+ *
+ * Example:
+ *  const obj = {
+ *    a: { b: { c: 1 } },
+ *    d: { e: 2 },
+ *    f: 3,
+ *    g: [{ h: 4 }, { i: 5 }]
+ *  };
+ *  const allowList = ['a/b/c', 'd/e', 'g[0]/h'];
+ *  const result = redactObject(obj, allowList);
+ *  // result will be: {
+ *  //   a: { b: { c: 1 } },
+ *  //   d: { e: 2 },
+ *  //   g: [{ h: 4 }]
+ *  // }
+ *
+ * @param {object} rawObj - The object to be redacted. This is the source object from which
+ *                          only allowed properties will be copied to the result.
+ * @param {string[]} allowList - An array of strings where each string is a path to a property
+ *                               that should be retained in the resulting object. Paths can
+ *                               be in slash notation (e.g., 'a/b/c') or bracket notation
+ *                               (e.g., 'a[b][c]').
+ * @returns {object} - A new object containing only the properties specified in the `allowList`.
+ */
+export function redactObject(rawObj, allowList = []) {
+  if (!Array.isArray(allowList)) {
+    return {};
+  }
+
+  const result = {};
+
+  /**
+   * Retrieves the nested value from an object based on the provided path.
+   *
+   * @param {object} obj - The object to retrieve the value from
+   * @param {string[]} path - An array of strings representing the path to the value
+   * @returns {*} The value at the specified path, or undefined if the path is invalid
+   */
+  function getNestedValue(obj, path) {
+    return path.reduce((acc, key) => acc?.[key] ?? undefined, obj);
+  }
+
+  /**
+   * Sets a nested value within an object based on the provided path.
+   *
+   * @param {object} obj - The object to set the value in
+   * @param {string[]} path - An array of strings representing the path to set the value at
+   * @param {*} value - The value to set at the specified path
+   */
+  function setNestedValue(obj, path, value) {
+    path.reduce((acc, key, index) => {
+      if (index === path.length - 1) {
+        acc[key] = value;
+      } else if (acc[key] === undefined) {
+        // Check if the next path is a number to decide array or object
+        acc[key] = Number.isNaN(parseInt(path[index + 1], 10)) ? {} : [];
+      }
+      return acc[key];
+    }, obj);
+  }
+
+  for (const keyPath of allowList) {
+    if (keyPath === '') {
+      Object.assign(result, rawObj);
+    } else {
+      const pathArray = keyPath.split(/\/|\[|\]/).filter(Boolean);
+      const value = getNestedValue(rawObj, pathArray);
+      if (value !== undefined) {
+        setNestedValue(result, pathArray, value);
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * Logs and creates an error response.
  * @param {Logger} [log] Logger.
  * @param {number} status The HTTP status. if negative, the status will be turned into a

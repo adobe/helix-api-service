@@ -14,6 +14,7 @@ import { Response } from '@adobe/fetch';
 import { maxSizeMediaFilter, MediaHandler } from '@adobe/helix-mediahandler';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
+import { format } from 'hast-util-format';
 import { fromHtml } from 'hast-util-from-html';
 import { select } from 'hast-util-select';
 import { toHtml } from 'hast-util-to-html';
@@ -235,6 +236,8 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
       throw new StatusCodeError(`Error getting blob for image: ${url}`, 400);
     }
   });
+
+  format(bodyNode);
 
   /* Only return the body element, note that Hast synthesizes this if it wasn't
      present in the input HTML. */

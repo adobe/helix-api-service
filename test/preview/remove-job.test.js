@@ -167,7 +167,7 @@ describe('RemoveJob Tests', () => {
     assert.strictEqual(job.state.data.resources[0].status, 204);
     assert.ok(!job.state.data.resources[1].ok); // topic2 delete failed
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_eI7cO88L3yedH2Zt' },
+      { key: 'p_f2fDgEvIJYqtKBTS' },
       { path: '/documents/document' },
     ]);
   });
@@ -198,7 +198,7 @@ describe('RemoveJob Tests', () => {
 
     assert.strictEqual(job.state.data.phase, 'completed');
     assert.deepStrictEqual(purgeInfos, [
-      { key: 'p_853bced1f82a05e9d27a8f63ecac59e70d9c14680dc5e417429f65e988f' },
+      { key: `p_${CONTENT_BUS_ID}` },
     ]);
   });
 

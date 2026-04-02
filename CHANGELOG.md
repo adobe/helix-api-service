@@ -1,3 +1,59 @@
+## [1.39.3](https://github.com/adobe/helix-api-service/compare/v1.39.2...v1.39.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **authzn:** ignore user sheets (already loaded by config service) ([68aa1c2](https://github.com/adobe/helix-api-service/commit/68aa1c2520a329a950573706b90820ff86e4f8b3))
+
+## [1.39.2](https://github.com/adobe/helix-api-service/compare/v1.39.1...v1.39.2) (2026-04-01)
+
+
+### Bug Fixes
+
+* remove imsToken from payload before logging ([#167](https://github.com/adobe/helix-api-service/issues/167)) ([196ace3](https://github.com/adobe/helix-api-service/commit/196ace3242651e26b75ea0e2b92395a68c661184))
+
+## [1.39.1](https://github.com/adobe/helix-api-service/compare/v1.39.0...v1.39.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* remove token from codeSource before logging ([#164](https://github.com/adobe/helix-api-service/issues/164)) ([8074e77](https://github.com/adobe/helix-api-service/commit/8074e7716ff32d33c812b0440e63eed81756c184))
+
+# [1.39.0](https://github.com/adobe/helix-api-service/compare/v1.38.1...v1.39.0) (2026-04-01)
+
+
+### Features
+
+* pretty-format HTML when stored using POST ([#165](https://github.com/adobe/helix-api-service/issues/165)) ([c72b941](https://github.com/adobe/helix-api-service/commit/c72b941d7132b27c640f35c99e6d00cfc410dbb8))
+
+## [1.38.1](https://github.com/adobe/helix-api-service/compare/v1.38.0...v1.38.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/helix-config-storage to v2.13.4 ([#162](https://github.com/adobe/helix-api-service/issues/162)) ([ebe577a](https://github.com/adobe/helix-api-service/commit/ebe577a6352c1d7ffbea96e2fd442fdf3f6c466d))
+
+# [1.38.0](https://github.com/adobe/helix-api-service/compare/v1.37.1...v1.38.0) (2026-04-01)
+
+
+### Features
+
+* implement `config` route ([#151](https://github.com/adobe/helix-api-service/issues/151)) ([2083dc3](https://github.com/adobe/helix-api-service/commit/2083dc3277ddffdf7383b28d8a785bfaf1b8b460))
+
+## [1.37.1](https://github.com/adobe/helix-api-service/compare/v1.37.0...v1.37.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#161](https://github.com/adobe/helix-api-service/issues/161)) ([565ac4f](https://github.com/adobe/helix-api-service/commit/565ac4f35b60574466a7b73f86e5a6cba85a1364))
+
+# [1.37.0](https://github.com/adobe/helix-api-service/compare/v1.36.3...v1.37.0) (2026-03-31)
+
+
+### Features
+
+* **preview:** migrate bulk-remove from helix-admin ([#157](https://github.com/adobe/helix-api-service/issues/157)) ([e38a485](https://github.com/adobe/helix-api-service/commit/e38a485ef6b26f633e3134907705213bf7e3dbd9))
+
 ## [1.36.3](https://github.com/adobe/helix-api-service/compare/v1.36.2...v1.36.3) (2026-03-31)
 
 

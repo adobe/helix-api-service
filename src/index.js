@@ -17,6 +17,10 @@ import { helixStatus } from '@adobe/helix-status';
 
 import cache from './cache/handler.js';
 import code from './code/handler.js';
+import orgConfig from './config/org-handler.js';
+import aggregatedConfig from './config/aggregated-handler.js';
+import siteConfig from './config/site-handler.js';
+import profileConfig from './config/profile-handler.js';
 import contentproxy from './contentproxy/handler.js';
 import discover from './discover/handler.js';
 import index from './index/handler.js';
@@ -53,9 +57,6 @@ const notImplemented = () => new Response('', { status: 405 });
  */
 const nameSelector = (segs) => {
   const literals = segs.filter((seg) => seg !== '*' && !seg.startsWith(':'));
-  if (literals.length === 0) {
-    return 'org';
-  }
   if (literals.at(0) === 'sites' && literals.length > 1) {
     literals.shift();
   }
@@ -68,33 +69,31 @@ export const router = new Router(nameSelector)
   .add('/login', login)
   .add('/logout', logout)
   .add('/profile?org,site', profile)
-  .add('/:org', notImplemented)
-  .add('/:org/config', notImplemented)
-  .add('/:org/config/access', notImplemented)
-  .add('/:org/config/versions', notImplemented)
-  .add('/:org/profiles', notImplemented)
-  .add('/:org/profiles/:profile/versions', notImplemented)
-  .add('/:org/sites', notImplemented)
-  .add('/:org/sites/:site/status/*', status)
-  .add('/:org/sites/:site/config', notImplemented)
-  .add('/:org/sites/:site/config/da', notImplemented)
-  .add('/:org/sites/:site/config/sidekick', notImplemented)
-  .add('/:org/sites/:site/config/access', notImplemented)
-  .add('/:org/sites/:site/config/versions', notImplemented)
+  .add('/:org/config.json', orgConfig)
+  .add('/:org/config/*', orgConfig)
+  .add('/:org/profiles', orgConfig)
+  .add('/:org/sites', orgConfig)
+  .add('/:org/aggregated/:site/config.json', aggregatedConfig)
+  .add('/:org/aggregated/:site/config/*', aggregatedConfig)
+  .add('/:org/profiles/:profile/config.json', profileConfig)
+  .add('/:org/profiles/:profile/config/*', profileConfig)
+  .add('/:org/sites/:site/cache/*', cache)
+  .add('/:org/repos/:site/code/:ref', code) // this should be owner/repo (not org/site)
+  .add('/:org/repos/:site/code/:ref/*', code) // this should be owner/repo (not org/site)
+  .add('/:org/sites/:site/config.json', siteConfig)
+  .add('/:org/sites/:site/config/*', siteConfig)
   .add('/:org/sites/:site/contentproxy/*', contentproxy)
-  .add('/:org/sites/:site/preview/*', preview)
+  .add('/:org/sites/:site/index/*', index)
   .add('/:org/sites/:site/live/*', live)
   .add('/:org/sites/:site/log', log)
   .add('/:org/sites/:site/login', login)
   .add('/:org/sites/:site/media/*', media)
-  .add('/:org/repos/:site/code/:ref', code) // this should be owner/repo (not org/site)
-  .add('/:org/repos/:site/code/:ref/*', code) // this should be owner/repo (not org/site)
-  .add('/:org/sites/:site/cache/*', cache)
-  .add('/:org/sites/:site/index/*', index)
+  .add('/:org/sites/:site/preview/*', preview)
   .add('/:org/sites/:site/sidekick', sidekick)
   .add('/:org/sites/:site/sitemap/*', sitemap)
   .add('/:org/sites/:site/snapshots/*', notImplemented)
   .add('/:org/sites/:site/source/*', source)
+  .add('/:org/sites/:site/status/*', status)
   .add('/:org/sites/:site/jobs/:topic/*', job);
 
 /**

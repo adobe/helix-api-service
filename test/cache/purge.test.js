@@ -69,7 +69,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'DiyvKbkf2MaZORJJ',
+              'IHu7-5Mz7pLcJch8',
               '8lnjgOWBwsoqAQXB',
             ],
           });
@@ -88,8 +88,8 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'DiyvKbkf2MaZORJJ',
-              'p_DiyvKbkf2MaZORJJ',
+              'IHu7-5Mz7pLcJch8',
+              'p_IHu7-5Mz7pLcJch8',
               '8lnjgOWBwsoqAQXB',
             ],
           });
@@ -108,7 +108,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'ti4OdwTK6sZH0Pbn',
+              'AvJjTYOAzmRypLdS',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -126,7 +126,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'sby9rtkIBtNieA0T',
+              'ikRawb-8LlqCZunb',
               'PjItaMe-aiYUBcYB',
             ],
           });
@@ -155,10 +155,10 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              's9Ws5y-QiKnatGn1',
-              '5elsUSGxLK7160mA',
-              'w6eiqRHzt4pOEey5',
-              '0l_ve8MRySIx4HxF',
+              '2YaO-CcsVGko_3x5',
+              'VzjtbBcBCKi9mvmv',
+              'vXNJJKYUB--CvrPR',
+              'NRW0IEx58Ty5BLlX',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -208,7 +208,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'lAKEj4mgHHLiyxX6',
+              'ucCjUwnLJUsOFQxY',
               'fhy7zxoNym_6JoRo',
             ],
           });
@@ -227,7 +227,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'p_lAKEj4mgHHLiyxX6',
+              'p_ucCjUwnLJUsOFQxY',
               'fhy7zxoNym_6JoRo',
             ],
           });
@@ -304,7 +304,7 @@ describe('Purge Tests', () => {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
               `${SITE_CONFIG.content.contentBusId}_metadata`,
-              '0BbXqRmqgStJ7irR',
+              'bu2SqxB_sPgGHVxe',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -343,7 +343,7 @@ describe('Purge Tests', () => {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
               `${SITE_CONFIG.content.contentBusId}_metadata`,
-              '8DD0pNaE1hdJrCU3',
+              'MIk0mloIAaXz11TQ',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -375,8 +375,8 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'MsueC3kn41CeYvWZ_metadata',
-              'zPyegZLNQrXm7f6_',
+              'kMlfmhVKQmZHvaOJ_metadata',
+              'rMHsfPTeV6Gpa_Q-',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -651,7 +651,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'sby9rtkIBtNieA0T',
+              'ikRawb-8LlqCZunb',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');
@@ -661,7 +661,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'sby9rtkIBtNieA0T',
+              'ikRawb-8LlqCZunb',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], 'abcdefgh');
@@ -704,7 +704,7 @@ describe('Purge Tests', () => {
         .reply(function f(uri, body) {
           assert.deepStrictEqual(body, {
             surrogate_keys: [
-              'p_sby9rtkIBtNieA0T',
+              'p_ikRawb-8LlqCZunb',
             ],
           });
           assert.strictEqual(this.req.headers['fastly-key'], '1234');

@@ -13,8 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import xml2js from 'xml2js';
-import { deleteSource } from '../../src/source/delete.js';
+import { deleteFolder } from '../../src/source/folder.js';
 import { getSource, headSource } from '../../src/source/get.js';
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
@@ -257,23 +256,7 @@ describe('Source List Tests', () => {
     assert.equal(resp.status, 401);
   });
 
-  const BUCKET_LIST_EMPTY_TRASH = `
-    <ListBucketResult>
-      <Name>my-bucket</Name>
-      <Marker></Marker>
-      <MaxKeys>1000</MaxKeys>
-      <IsTruncated>false</IsTruncated>
-    </ListBucketResult>`;
-
   it('test delete folder', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
     nock.source()
       .get('/')
       .query({
@@ -281,50 +264,6 @@ describe('Source List Tests', () => {
         prefix: 'org1/site2/a/b/',
       })
       .reply(200, Buffer.from(BUCKET_LIST_RESULT3));
-
-    nock.source()
-      .headObject('/org1/site2/a/b/c/some.json')
-      .reply(200, null, {
-        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      });
-    nock.source()
-      .headObject('/org1/site2/a/b/c/my.pdf')
-      .reply(200, null, {
-        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      });
-    nock.source()
-      .headObject('/org1/site2/a/b/page.html')
-      .reply(200, null, {
-        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      });
-    nock.source()
-      .copyObject('/org1/site2/.trash/b/c/some.json')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/some.json')
-      .matchHeader('if-none-match', '*')
-      .reply(200, new xml2js.Builder().buildObject({
-        CopyObjectResult: {
-          ETag: '314159',
-        },
-      }));
-    nock.source()
-      .copyObject('/org1/site2/.trash/b/c/my.pdf')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/my.pdf')
-      .matchHeader('if-none-match', '*')
-      .reply(200, new xml2js.Builder().buildObject({
-        CopyObjectResult: {
-          ETag: '314159',
-        },
-      }));
-    nock.source()
-      .copyObject('/org1/site2/.trash/b/page.html')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/page.html')
-      .matchHeader('if-none-match', '*')
-      .reply(200, new xml2js.Builder().buildObject({
-        CopyObjectResult: {
-          ETag: '314159',
-        },
-      }));
-
     nock.source()
       .deleteObject('/org1/site2/a/b/c/some.json')
       .reply(204);
@@ -335,7 +274,7 @@ describe('Source List Tests', () => {
       .deleteObject('/org1/site2/a/b/page.html')
       .reply(204);
     const info = createInfo('/org1/sites/site2/source/a/b/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 204);
   });
 
@@ -344,105 +283,15 @@ describe('Source List Tests', () => {
       .get('/')
       .query({
         'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/nope/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
         prefix: 'org1/site2/nope/',
       })
       .reply(200, Buffer.from('<ListBucketResult><Name>abc</Name></ListBucketResult>'));
     const info = createInfo('/org1/sites/site2/source/nope/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 404);
   });
 
-  it('test delete folder with file error', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        prefix: 'org1/site2/a/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_RESULT3));
-
-    nock.source()
-      .headObject('/org1/site2/a/b/c/some.json')
-      .reply(200, null, {
-        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      });
-    nock.source()
-      .headObject('/org1/site2/a/b/c/my.pdf')
-      .reply(200, null, {
-        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      });
-    nock.source()
-      .headObject('/org1/site2/a/b/page.html')
-      .reply(200, null, {
-        'last-modified': 'Tue, 25 Oct 2022 02:57:46 GMT',
-      });
-    nock.source()
-      .copyObject('/org1/site2/.trash/b/c/some.json')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/some.json')
-      .matchHeader('if-none-match', '*')
-      .reply(200, new xml2js.Builder().buildObject({
-        CopyObjectResult: {
-          ETag: '314159',
-        },
-      }));
-    nock.source()
-      .copyObject('/org1/site2/.trash/b/c/my.pdf')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/c/my.pdf')
-      .matchHeader('if-none-match', '*')
-      .reply(200, new xml2js.Builder().buildObject({
-        CopyObjectResult: {
-          ETag: '314159',
-        },
-      }));
-    nock.source()
-      .copyObject('/org1/site2/.trash/b/page.html')
-      .matchHeader('x-amz-copy-source', 'helix-source-bus/org1/site2/a/b/page.html')
-      .matchHeader('if-none-match', '*')
-      .reply(200, new xml2js.Builder().buildObject({
-        CopyObjectResult: {
-          ETag: '314159',
-        },
-      }));
-
-    nock.source()
-      .deleteObject('/org1/site2/a/b/c/some.json')
-      .reply(500);
-    nock.source()
-      .deleteObject('/org1/site2/a/b/c/my.pdf')
-      .reply(204);
-    nock.source()
-      .deleteObject('/org1/site2/a/b/page.html')
-      .reply(500);
-    const info = createInfo('/org1/sites/site2/source/a/b/');
-    const resp = await deleteSource(context, info);
-    assert.equal(resp.status, 500);
-  });
-
   it('test delete folder error', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/nope/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
     nock.source()
       .get('/')
       .query({
@@ -451,7 +300,7 @@ describe('Source List Tests', () => {
       })
       .reply(503);
     const info = createInfo('/org1/sites/site2/source/nope/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 503);
   });
 

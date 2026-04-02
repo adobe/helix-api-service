@@ -480,6 +480,44 @@ describe('Source PUT Tests', () => {
     assert.equal(500, resp.status);
   });
 
+  it('test putSource moves a file with 412 collision and unique rename', async () => {
+    // First copy attempt returns 412 (destination already exists, IfNoneMatch: * fails)
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
+      .reply(412);
+
+    // In the retry an 8-char suffix to the name is added
+    nock.source()
+      .copyObject(/^\/o1\/s1\/t\/to.html-.{8}$/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      }));
+
+    nock.source()
+      .deleteObject('/o1/s1/s/src.html')
+      .reply(204);
+
+    const path = '/o1/sites/s1/source/t/to.html';
+    const ctx = setupContext(path, {
+      data: {
+        source: '/s/src.html',
+        collision: 'unique',
+        move: 'true',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    const resp = await putSource(ctx, createInfo(path));
+    assert.equal(resp.status, 200);
+  });
+
   const BUCKET_LIST_RESULT = `
     <ListBucketResult>
       <Name>my-bucket</Name>

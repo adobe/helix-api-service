@@ -188,6 +188,13 @@ export class IndexJob extends Job {
     return indexMap;
   }
 
+  /**
+   * Reindex a single record.
+   *
+   * @param {BulkContext} bulkContext bulk context
+   * @param {string} webPath webpath
+   * @param {import('./IndexMap.js').IndexRecord} indexRecord index record
+   */
   async reindexRecord(bulkContext, webPath, indexRecord) {
     const { context, info } = this;
     const { log } = context;

@@ -1,3 +1,10 @@
+## [1.39.3](https://github.com/adobe/helix-api-service/compare/v1.39.2...v1.39.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **authzn:** ignore user sheets (already loaded by config service) ([68aa1c2](https://github.com/adobe/helix-api-service/commit/68aa1c2520a329a950573706b90820ff86e4f8b3))
+
 ## [1.39.2](https://github.com/adobe/helix-api-service/compare/v1.39.1...v1.39.2) (2026-04-01)
 
 

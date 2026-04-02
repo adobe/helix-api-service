@@ -45,9 +45,10 @@ export class RoleMapping {
     if (roles.length) {
       for (const [role, userEntry] of roles) {
         // eslint-disable-next-line no-await-in-loop
-        const users = await roleMapping.resolveUsers(userEntry);
-        for (const user of users) {
-          roleMapping.add(role, user);
+        for (const user of coerceArray(userEntry)) {
+          if (!user?.endsWith('.json')) {
+            roleMapping.add(role, user);
+          }
         }
       }
       roleMapping.hasConfigured = true;
@@ -156,19 +157,6 @@ export class RoleMapping {
     if (!users.includes(user)) {
       users.push(user);
     }
-  }
-
-  async resolveUsers(userEntry) {
-    const users = [];
-    for (const user of coerceArray(userEntry)) {
-      if (user?.endsWith('.json')) {
-        const sheetUsers = this.sheets.get(user);
-        users.push(...sheetUsers);
-      } else {
-        users.push(user);
-      }
-    }
-    return users;
   }
 
   withRequireAuth(requireAuth) {

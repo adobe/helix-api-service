@@ -18,13 +18,25 @@ import { main } from '../../src/index.js';
 // eslint-disable-next-line no-underscore-dangle
 global.__rootdir = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
 
+function getServerPort(valueS, defaultValue) {
+  if (!valueS) {
+    return defaultValue;
+  }
+  const port = Number.parseInt(valueS, 10);
+  if (!Number.isNaN(port) && port >= 1024 && port <= 65535) {
+    return port;
+  }
+  return defaultValue;
+}
+
 async function run() {
-  process.env.HLX_DEV_SERVER_HOST = 'localhost:3000';
+  const port = getServerPort(process.env.HLX_DEV_SERVER_PORT, 3000);
+  process.env.HLX_DEV_SERVER_HOST = `localhost:${port}`;
   process.env.HLX_DEV_SERVER_SCHEME = 'http';
 
   const devServer = await new DevelopmentServer(main)
     .withHeader('x-forwarded-host', '')
-    .withPort(3000)
+    .withPort(port)
     .init();
   await devServer.start();
 }

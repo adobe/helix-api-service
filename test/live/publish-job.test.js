@@ -74,17 +74,10 @@ const createJob = async (ctx, info, paths, { forceUpdate = false } = {}) => {
     this.state.data.phase = phase;
   };
   job.trackProgress = async function trackProgress(stat) {
-    if (stat.total !== undefined) {
-      this.state.progress.total = stat.total;
-    }
-    if (stat.failed !== undefined) {
-      this.state.progress.failed = stat.failed;
-    }
-    if (stat.notmodified !== undefined) {
-      this.state.progress.notmodified = stat.notmodified;
-    }
-    if (stat.success !== undefined) {
-      this.state.progress.success = stat.success;
+    for (const [key, value] of Object.entries(stat)) {
+      if (value !== undefined) {
+        this.state.progress[key] = value;
+      }
     }
   };
   job.checkStopped = async function checkStopped() {

@@ -69,7 +69,7 @@ export class CodeResource extends Resource {
    * @returns {boolean}
    */
   isSuccess() {
-    return this.status !== undefined && this.status < 300;
+    return this.status < 300;
   }
 
   /**

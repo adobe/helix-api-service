@@ -230,10 +230,10 @@ describe('RemoveJob Tests', () => {
     const resources = await job.prepare([{ prefix: '/' }], CONTENT_BUS_ID, HelixStorage.fromContext(ctx).contentBus());
 
     const indexEntry = resources.find((r) => r.resourcePath === '/folder/index.md');
-    assert.strictEqual(indexEntry.path, '/folder/');
+    assert.strictEqual(indexEntry.webPath, '/folder/');
 
     const imgEntry = resources.find((r) => r.resourcePath === '/image.png');
-    assert.strictEqual(imgEntry.path, '/image.png');
+    assert.strictEqual(imgEntry.webPath, '/image.png');
   });
 
   it('skips excluded paths (metadata, redirects, .helix) during prepare', async () => {

@@ -18,16 +18,16 @@ import { Resource } from '../job/Resource.js';
  */
 export class RemoveResource extends Resource {
   /** @type {string} */
-  path;
+  webPath;
 
   /**
    * @param {string} resourcePath resource path (e.g. `/documents/doc1.md`)
-   * @param {string} path web path (e.g. `/documents/doc1`)
+   * @param {string} webPath web path (e.g. `/documents/doc1`)
    * @param {Date|string} [lastModified] last modified date from storage
    */
-  constructor(resourcePath, path, lastModified) {
+  constructor(resourcePath, webPath, lastModified) {
     super(resourcePath);
-    this.path = path;
+    this.webPath = webPath;
     this.setLastModified(lastModified);
   }
 
@@ -37,7 +37,7 @@ export class RemoveResource extends Resource {
    */
   static fromJSON(obj) {
     const r = super.fromJSON(obj);
-    r.path = obj.path;
+    r.webPath = obj.webPath;
     return r;
   }
 
@@ -46,7 +46,7 @@ export class RemoveResource extends Resource {
    */
   toJSON() {
     const obj = super.toJSON();
-    obj.path = this.path;
+    obj.webPath = this.webPath;
     return obj;
   }
 

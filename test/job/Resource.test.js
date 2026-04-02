@@ -333,11 +333,11 @@ describe('Resource', () => {
   });
 
   describe('RemoveResource', () => {
-    it('constructs with resourcePath, path, lastModified', () => {
+    it('constructs with resourcePath, webPath, lastModified', () => {
       const date = new Date('2025-06-01T00:00:00.000Z');
       const r = new RemoveResource('/doc.md', '/doc', date);
       assert.strictEqual(r.resourcePath, '/doc.md');
-      assert.strictEqual(r.path, '/doc');
+      assert.strictEqual(r.webPath, '/doc');
       assert.ok(r.lastModified instanceof Date);
       assert.strictEqual(r.lastModified.getTime(), date.getTime());
     });

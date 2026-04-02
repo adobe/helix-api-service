@@ -83,17 +83,17 @@ export class RemoveJob extends Job {
    */
   async processResource(resource) {
     const { ctx, ctx: { log }, info } = this;
-    const { path } = resource;
+    const { webPath } = resource;
 
     const start = Date.now();
-    const localInfo = RequestInfo.clone(info, { path, route: 'preview' });
+    const localInfo = RequestInfo.clone(info, { path: webPath, route: 'preview' });
 
     const res = await contentbusRemove(ctx, localInfo, 'preview');
     const { status } = res;
 
     if (!res.ok) {
       const err = res.headers.get('x-error');
-      log.warn(`unable to delete preview of ${path}: (${res.status}) ${err}`);
+      log.warn(`unable to delete preview of ${webPath}: (${res.status}) ${err}`);
       resource.setStatus(status, err);
       return;
     }
@@ -135,7 +135,7 @@ export class RemoveJob extends Job {
     }, JOB_CONCURRENCY);
 
     const removedResources = data.resources.filter((r) => r.isDeleted());
-    const removedPaths = removedResources.map(({ path }) => path);
+    const removedPaths = removedResources.map(({ webPath }) => webPath);
     const resourcePaths = removedResources.map(({ resourcePath }) => resourcePath);
 
     await this.setPhase('purging');

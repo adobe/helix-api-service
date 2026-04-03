@@ -1,0 +1,19 @@
+extends:
+  - recommended
+
+apis:
+  api-service@v1:
+    root: docs/openapi/api-service.yaml
+    rules:
+      operation-4xx-response: off
+      operation-2xx-response: off
+      path-not-include-query: off
+  api-service-bundled@v1:
+    root: docs/openapi/api-service.bundle.yaml
+    rules:
+      operation-4xx-response: off
+      operation-2xx-response: off
+      path-not-include-query: off
+
+openapi:
+  schemasExpansionLevel: 2

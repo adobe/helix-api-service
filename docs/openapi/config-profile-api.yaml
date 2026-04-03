@@ -1,0 +1,177 @@
+openapi: 3.1.0
+profile:
+  get:
+    operationId: getConfigProfile
+    tags:
+      - profileConfig
+    summary: Read Profile Config
+    description: Returns the profile level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: Profile config
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/profile.json"
+
+  post:
+    operationId: updateConfigProfile
+    tags:
+      - profileConfig
+    summary: Update Profile Config
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+      - $ref: "./parameters.yaml#/versionNameParam"
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "./schemas/config/profile.json"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: Profile config
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/profile.json"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+  put:
+    operationId: createConfigProfile
+    tags:
+      - profileConfig
+    summary: Create Profile Config
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "./schemas/config/profile.json"
+    responses:
+      '201':
+        description: Resource created.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  delete:
+    operationId: deleteConfigProfile
+    tags:
+      - profileConfig
+    summary: Delete Profile Config
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+    responses:
+      '204':
+        description: Resource deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+profileConfig:
+  get:
+    operationId: getConfigProfileSub
+    tags:
+      - profileConfig
+    summary: Read Profile Config Property
+    description: Returns a sub-property of the profile level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The config property
+        content:
+          application/json:
+            schema:
+              type: object
+  post:
+    operationId: updateConfigProfileSub
+    tags:
+      - profileConfig
+    summary: Update Profile Config Property
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+  delete:
+    operationId: deleteConfigProfileSub
+    tags:
+      - profileConfig
+    summary: Delete Profile Config Property
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/profileParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '204':
+        description: Property deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

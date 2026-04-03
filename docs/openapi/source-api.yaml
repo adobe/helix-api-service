@@ -1,0 +1,179 @@
+openapi: 3.1.0
+source:
+  get:
+    operationId: getSource
+    tags:
+      - source
+    summary: Get source document
+    description: Returns the source document metadata or content.
+    security:
+      - AuthCookie:
+          - source:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: The source document
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"
+
+  head:
+    operationId: headSource
+    tags:
+      - source
+    summary: Check source document
+    description: Checks if a source document exists without returning content.
+    security:
+      - AuthCookie:
+          - source:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Source document exists
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+  post:
+    operationId: createSource
+    tags:
+      - source
+    summary: Create source document
+    description: Creates or modifies a source document in the content source.
+    security:
+      - AuthCookie:
+          - source:read
+          - source:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Source document created or modified
+        content:
+          application/json:
+            schema:
+              type: object
+      '201':
+        description: Source document created
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"
+
+  put:
+    operationId: replaceSource
+    tags:
+      - source
+    summary: Replace source document
+    description: Creates or replaces a source document in the content source.
+    security:
+      - AuthCookie:
+          - source:read
+          - source:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Source document replaced
+        content:
+          application/json:
+            schema:
+              type: object
+      '201':
+        description: Source document created
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"
+
+  delete:
+    operationId: deleteSource
+    tags:
+      - source
+    summary: Delete source document
+    description: Deletes a source document from the content source.
+    security:
+      - AuthCookie:
+          - source:read
+          - source:delete
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '204':
+        description: Source document deleted
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"

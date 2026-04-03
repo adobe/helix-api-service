@@ -1,0 +1,44 @@
+openapi: 3.1.0
+sitemap:
+  post:
+    operationId: generateSitemap
+    tags:
+      - sitemap
+    summary: Generates a sitemap
+    description: >
+      Generates a sitemap. The path specified should be the destination path of a sitemap.
+    security:
+      - {}
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Sitemap generated.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/sitemapInfo"
+            examples:
+              success:
+                description: Success response of generating a sitemap
+                value:
+                  paths:
+                    - /sitemap.xml
+      '204':
+        description: Path specified is no destination for any sitemap configured
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        description: No sitemap configuration found
+        headers:
+          X-Error:
+            $ref: "./headers.yaml#/xError"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

@@ -201,7 +201,7 @@ export class IndexJob extends Job {
     const { headers, index, messages } = bulkContext;
 
     const fetchURL = info.getLiveUrl(webPath);
-    const page = await fetchPage(context, fetchURL, log, headers);
+    const page = await fetchPage(context, fetchURL, headers /* TODO: retry params */);
     if (page.error) {
       log.warn(`Unable to index ${webPath}: ${page.error}`);
       return;

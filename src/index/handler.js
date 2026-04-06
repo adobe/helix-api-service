@@ -29,7 +29,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function indexHandler(context, info) {
-  const { log, attributes: { authInfo }, data } = context;
+  const { log, attributes: { authInfo } } = context;
   const { org, site, webPath } = info;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
@@ -61,7 +61,7 @@ export default async function indexHandler(context, info) {
   authInfo.assertPermissions('index:write');
   if (info.method === 'POST') {
     if (webPath === '/*') {
-      return bulkIndex(context, info, data?.paths ?? [webPath], { indexNames: data?.indexNames });
+      return bulkIndex(context, info);
     }
     return update(context, info, index);
   }

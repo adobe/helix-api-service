@@ -19,27 +19,27 @@ import { IndexJob } from './IndexJob.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context the universal context
  * @param {import('../support/RequestInfo').RequestInfo} info path info
- * @param {Array<string>} paths paths to index
- * @param {object} opts options
  *
  * @returns {Promise<Response>} response
  */
-export default async function bulkIndex(context, info, paths, opts = {}) {
-  const { log } = context;
-  const { indexNames = [], transient = false } = opts ?? {};
+export default async function bulkIndex(context, info) {
+  const { log, data: { paths = [info.webPath], indexNames = [] } } = context;
 
   try {
     if (!Array.isArray(paths)) {
-      return errorResponse(log, 400, 'bulk-index \'paths\' is not an array.');
+      return errorResponse(log, 400, 'bulk-index \'paths\' is not an array');
+    }
+    if (!Array.isArray(indexNames)) {
+      return errorResponse(log, 400, 'bulk-index \'indexNames\' is not an array');
     }
     return await Job.create(context, info, 'index', {
+      transient: true,
       jobClass: IndexJob,
       data: {
         paths: processPrefixedPaths(paths),
         indexNames,
       },
       roles: ['author'],
-      transient,
     });
   } catch (e) {
     return createErrorResponse({ e, log });

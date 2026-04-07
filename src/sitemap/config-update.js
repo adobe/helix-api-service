@@ -12,7 +12,7 @@
 import { SitemapConfig } from '@adobe/helix-shared-config';
 
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import SitemapBuilder from './builder.js';
+import SitemapBuilder from './SitemapBuilder.js';
 
 export default {
   /**

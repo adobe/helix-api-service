@@ -1,0 +1,221 @@
+openapi: 3.1.0
+preview:
+  get:
+    operationId: previewStatus
+    tags:
+      - preview
+    summary: Preview status
+    description: Returns the preview status of the respective resource.
+    security:
+      - AuthCookie:
+          - preview:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: The preview status
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/previewInfo"
+                - $ref: "./schemas.yaml#/resourceLinksInfo"
+            examples:
+              success:
+                description: Success response of a preview document.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  preview:
+                    status: 200
+                    url: "https://main--site--org.aem.page/en/2021/blog"
+                    lastModified: "2021-05-31T23:00:00Z"
+                    contentBusId: "h3-site-abc123def456abc123def456a/preview/en/2021/blog.md"
+                    sourceLocation: "onedrive:/drives/b!DyVXacYnlkm/items/012VWERI4JFI"
+                    sourceLastModified: "2021-05-29T21:00:00Z"
+                    permissions:
+                      - read
+                  links:
+                    status: "https://api.aem.live/org/sites/site/status/en/2021/blog"
+                    preview: "https://api.aem.live/org/sites/site/preview/en/2021/blog"
+                    live: "https://api.aem.live/org/sites/site/live/en/2021/blog"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+  post:
+    operationId: updatePreview
+    tags:
+      - preview
+    summary: Update preview
+    description: >
+      Updates the preview resource by fetching the latest content from the content providers
+      (e.g. sharepoint, google docs, BYOM) and storing it in `preview`.
+    security:
+      - AuthCookie:
+          - edit:read
+          - preview:read
+          - preview:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/forceUpdateRedirectsParam"
+    responses:
+      '200':
+        description: Preview resource updated.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/previewInfo"
+                - $ref: "./schemas.yaml#/resourceLinksInfo"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  preview:
+                    status: 200
+                    url: "https://main--site--org.aem.page/en/2021/blog"
+                    lastModified: "2021-05-31T23:00:00Z"
+                    contentBusId: "h3-site-abc123def456abc123def456a/preview/en/2021/blog.md"
+                    sourceLocation: "onedrive:/drives/b!DyVXacYnlkm/items/012VWERI4JFI"
+                    sourceLastModified: "2021-05-29T21:00:00Z"
+                    permissions:
+                      - read
+                      - write
+                  links:
+                    status: "https://api.aem.live/org/sites/site/status/en/2021/blog"
+                    preview: "https://api.aem.live/org/sites/site/preview/en/2021/blog"
+                    live: "https://api.aem.live/org/sites/site/live/en/2021/blog"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"
+
+  delete:
+    operationId: deletePreview
+    tags:
+      - preview
+    summary: Delete preview
+    description: >
+      Deletes a preview resource from the `preview` partition in the content-bus.
+    security:
+      - AuthCookie:
+          - preview:read
+          - preview:delete
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '204':
+        description: Resource deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+bulkPreview:
+  post:
+    operationId: bulkPreview
+    tags:
+      - preview
+    summary: Start a bulk preview job
+    description: >
+      Updates preview resources specified in the `paths` property in the payload. If a path ends
+      with `/*`, it is assumed to be a folder and is recursively previewed.<br>
+      By default, only new and modified resources are updated, unless the `forceUpdate` property is set to `true`.<br>
+      Note that the bulk preview is performed asynchronously and this request will return information
+      to the created job.
+    security:
+      - AuthCookie:
+          - edit:read
+          - edit:list
+          - preview:read
+          - preview:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    requestBody:
+      content:
+        'application/json':
+          schema:
+            $ref: './schemas.yaml#/bulkPreviewBody'
+          examples:
+            multiple-paths:
+              summary: Preview multiple paths
+              value:
+                paths:
+                  - "/en/2021/blog"
+                  - "/en/2021/news/*"
+                forceUpdate: false
+    responses:
+      '202':
+        description: Bulk preview scheduled.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/jobCreated"
+                - $ref: "./schemas.yaml#/jobLinksInfo"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  messageId: "37e92eec-020c-4eae-8f80-3db444c25056"
+                  job:
+                    topic: "preview"
+                    name: "job-123"
+                    state: "created"
+                    startTime: "2021-05-31T23:00:00Z"
+                    data:
+                      paths:
+                        - "/en/2021/blog"
+                        - "/en/2021/news/*"
+                  links:
+                    self: "https://api.aem.live/org/sites/site/jobs/preview/job-123"
+                    list: "https://api.aem.live/org/sites/site/jobs/preview"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

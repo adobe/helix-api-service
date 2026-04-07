@@ -1,0 +1,287 @@
+openapi: 3.1.0
+info:
+  version:
+    $ref: "../../package.json#/version"
+  title: AEM Admin API Service
+  description: AEM Admin API Service is used to manage the lifecycle of content, code, and configuration.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: 'https://api.aem.live'
+
+tags:
+  - name: status
+    description: Status operations
+  - name: publish
+    description: Publish operations
+  - name: preview
+    description: Preview operations
+  # Hidden from docs (YAML files kept intact for future use):
+  # - name: code
+  #   description: Code bus operations
+  # - name: cache
+  #   description: Cache operations
+  # - name: index
+  #   description: Index operations
+  - name: authentication
+    description: >
+      The API uses your existing Identity Provider (IDP) to authenticate users with administrative access.
+      The general flow is that you open `/login` in a browser, select the IDP you want to use, and then
+      are redirected to the IDP login page. After successful login, you are redirected back to the
+      Admin API with an auth token in the response cookie (`auth_token`). This token is then used to authenticate all subsequent requests.
+      <br><br>
+      Alternatively, you can provide an `authorization: token $API_KEY` header. In order to obtain
+      an API_KEY, use the <a href="#tag/siteConfig/operation/updateConfigSiteSub">Site Config Property</a> API to create one.
+  # - name: sitemap
+  #   description: Sitemap operations
+  - name: job
+    description: Job operations
+  - name: log
+    description: Log operations
+  - name: source
+    description: Source document management operations
+  # - name: media
+  #   description: Media/asset upload operations
+  # - name: discover
+  #   description: Discovery/search index operations
+  # - name: sidekick
+  #   description: Sidekick configuration
+  # - name: contentproxy
+  #   description: Content proxy operations (testing)
+  - name: orgConfig
+    x-displayName: Org Config
+    description: Org Config operations
+  - name: siteConfig
+    x-displayName: Site Config
+    description: >
+      Please note that most of the configuration objects that have an explicit schema can
+      also be addressed directly, even if not listed in this documentation.
+      <br>
+      For example the production CDN configuration can be managed via the
+      <code>/{org}/sites/{site}/config/cdn/prod.json</code> endpoint.
+  - name: profileConfig
+    x-displayName: Profile Config
+    description: >
+      Please note that most of the configuration objects that have an explicit schema can
+      also be addressed directly, even if not listed in this documentation.
+      <br>
+      For example the production CDN configuration can be managed via the
+      <code>/{org}/profiles/{profile}/config/cdn/prod.json</code> endpoint.
+  - name: aggregatedConfig
+    x-displayName: Aggregated Config
+    description: >
+      Aggregated configuration combines site configuration with inherited values from the profile.
+
+x-tagGroups:
+  - name: Authoring and Publishing
+    tags:
+      - status
+      - preview
+      - publish
+      # - code
+      # - cache
+      # - index
+      # - sitemap
+      - source
+      # - media
+  - name: Operations
+    tags:
+      - authentication
+      # - discover
+      - log
+      - job
+      # - sidekick
+      # - contentproxy
+  - name: Configuration Management
+    tags:
+      - orgConfig
+      - siteConfig
+      - profileConfig
+      - aggregatedConfig
+
+paths:
+  /login:
+    $ref: "./auth-api.yaml#/login"
+  /logout:
+    $ref: "./auth-api.yaml#/logout"
+  /profile:
+    $ref: "./auth-api.yaml#/profile"
+  # /discover:
+  #   $ref: "./discover-api.yaml#/discover"
+
+  /{org}/config.json:
+    $ref: "./config-org-api.yaml#/org"
+  /{org}/config/{path}:
+    $ref: "./config-org-api.yaml#/orgConfig"
+  /{org}/profiles:
+    $ref: "./config-org-api.yaml#/orgProfiles"
+  /{org}/sites:
+    $ref: "./config-org-api.yaml#/orgSites"
+
+  /{org}/aggregated/{site}/config.json:
+    $ref: "./config-aggregated-api.yaml#/aggregatedSite"
+  /{org}/aggregated/{site}/config/{path}:
+    $ref: "./config-aggregated-api.yaml#/aggregatedSiteConfig"
+
+  /{org}/profiles/{profile}/config.json:
+    $ref: "./config-profile-api.yaml#/profile"
+  /{org}/profiles/{profile}/config/{path}:
+    $ref: "./config-profile-api.yaml#/profileConfig"
+
+  # /{org}/repos/{site}/code/{ref}:
+  #   $ref: "./code-api.yaml#/code-event"
+  # /{org}/repos/{site}/code/{ref}/{path}:
+  #   $ref: "./code-api.yaml#/code"
+
+  # /{org}/sites/{site}/cache/{path}:
+  #   $ref: "./cache-api.yaml#/cache"
+  /{org}/sites/{site}/config.json:
+    $ref: "./config-site-api.yaml#/site"
+  /{org}/sites/{site}/config/{path}:
+    $ref: "./config-site-api.yaml#/siteConfig"
+  # /{org}/sites/{site}/contentproxy/{path}:
+  #   $ref: "./contentproxy-api.yaml#/contentproxy"
+  # /{org}/sites/{site}/index/{path}:
+  #   $ref: "./index-api.yaml#/index"
+  /{org}/sites/{site}/live/{path}:
+    $ref: "./live-api.yaml#/live"
+  /{org}/sites/{site}/live/*:
+    $ref: "./live-api.yaml#/bulkPublish"
+  /{org}/sites/{site}/log:
+    $ref: "./log-api.yaml#/log"
+  /{org}/sites/{site}/login:
+    $ref: "./auth-api.yaml#/login-site"
+  # /{org}/sites/{site}/media/{path}:
+  #   $ref: "./media-api.yaml#/media"
+  /{org}/sites/{site}/preview/{path}:
+    $ref: "./preview-api.yaml#/preview"
+  /{org}/sites/{site}/preview/*:
+    $ref: "./preview-api.yaml#/bulkPreview"
+  # /{org}/sites/{site}/sidekick:
+  #   $ref: "./sidekick-api.yaml#/sidekick"
+  # /{org}/sites/{site}/sitemap/{path}:
+  #   $ref: "./sitemap-api.yaml#/sitemap"
+  /{org}/sites/{site}/source/{path}:
+    $ref: "./source-api.yaml#/sourceFile"
+  /{org}/sites/{site}/source/*:
+    $ref: "./source-api.yaml#/sourceFolder"
+  /{org}/sites/{site}/source/{path}/.versions:
+    $ref: "./source-api.yaml#/sourceVersion"
+  /{org}/sites/{site}/status/{path}:
+    $ref: "./status-api.yaml#/status"
+  /{org}/sites/{site}/jobs/{topic}:
+    $ref: "./job-api.yaml#/job-list"
+  /{org}/sites/{site}/jobs/{topic}/{jobName}:
+    $ref: "./job-api.yaml#/job"
+  /{org}/sites/{site}/jobs/{topic}/{jobName}/report:
+    $ref: "./job-api.yaml#/job-report"
+
+components:
+  securitySchemes:
+    AuthCookie:
+      type: apiKey
+      in: cookie
+      name: auth_token
+    BearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SiteConfig:
+      x-tags:
+        - siteConfig
+      $ref: "./schemas/config/site.json"
+    OrgConfig:
+      x-tags:
+        - orgConfig
+      $ref: "./schemas/config/org.json"
+    ProfileConfig:
+      x-tags:
+        - profileConfig
+      $ref: "./schemas/config/profile.json"
+    ProfileConfigList:
+      x-tags:
+        - profileConfig
+      $ref: "./schemas/config/profiles.json"
+    SiteConfigList:
+      x-tags:
+        - siteConfig
+      $ref: "./schemas/config/sites.json"
+    AdminAccessConfig:
+      $ref: "./schemas/config/access-admin.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    SiteAccessConfig:
+      $ref: "./schemas/config/access-site.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    AccessConfig:
+      $ref: "./schemas/config/access.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    CDNConfig:
+      $ref: "./schemas/config/cdn.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    CodeConfig:
+      $ref: "./schemas/config/code.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    ContentConfig:
+      $ref: "./schemas/config/content.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    FoldersConfig:
+      $ref: "./schemas/config/folders.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    HeadersConfig:
+      $ref: "./schemas/config/headers.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    MetadataConfig:
+      $ref: "./schemas/config/metadata-source.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    PublicConfig:
+      $ref: "./schemas/config/public.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    GroupsConfig:
+      $ref: "./schemas/config/groups.json"
+      x-tags:
+        - siteConfig
+        - orgConfig
+    RobotsConfig:
+      $ref: "./schemas/config/robots.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    SidekickConfig:
+      $ref: "./schemas/config/sidekick.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    TokensConfig:
+      $ref: "./schemas/config/tokens.json"
+      x-tags:
+        - siteConfig
+        - profileConfig
+    SecretsConfig:
+      $ref: "./schemas/config/secrets.json"
+      x-tags:
+        - orgConfig
+        - siteConfig
+        - profileConfig

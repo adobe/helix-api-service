@@ -17,7 +17,11 @@
     "deploy": "hedy -v --deploy --test",
     "deploy-routes": "hedy --no-build --no-hints -l major",
     "deploy-ci": "hedy -v --deploy --test --pkgVersion=ci$CI_BUILD_NUM -l ci --cleanup-ci 24h",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docs": "npm run docs:lint && npm run docs:build",
+    "docs:build": "./build-docs.sh",
+    "docs:serve": "npx @redocly/cli preview-docs api-service@v1",
+    "docs:lint": "node test/dev/generate-external-schemas.js && npx @redocly/cli lint api-service@v1"
   },
   "wsk": {
     "nodeVersion": 22,
@@ -93,8 +97,8 @@
     "lodash.escape": "4.0.1",
     "mime": "4.1.0",
     "private-ip": "3.0.2",
-    "unist-util-visit": "5.1.0",
     "ulid": "3.0.2",
+    "unist-util-visit": "5.1.0",
     "xml2js": "0.6.2"
   },
   "devDependencies": {
@@ -104,6 +108,7 @@
     "@adobe/helix-universal-devserver": "1.1.146",
     "@adobe/semantic-release-coralogix": "1.1.40",
     "@eslint/config-helpers": "0.5.3",
+    "@redocly/cli": "^2.24.0",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/exec": "7.1.0",
     "@semantic-release/git": "10.0.1",

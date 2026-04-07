@@ -1,0 +1,46 @@
+openapi: 3.1.0
+cache:
+  post:
+    operationId: purgeCache
+    tags:
+      - cache
+    summary: Purge live cache
+    description: >
+      Purges the resource from the respective _live_ cdn. It optionally invokes the _byo_ cdn
+      purging hook, if configured.
+    security:
+      - {}
+      - AuthCookie:
+          - cache:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Cache purged successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: integer
+                  description: HTTP status code of the CDN purge response.
+                  example: 200
+                path:
+                  type: string
+                  description: The path that was purged.
+                  example: "/en/2021/blog"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

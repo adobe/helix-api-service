@@ -9,19 +9,19 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { handleJSON } from './Excel.js';
+import { handleJSON } from './OnedriveSheet.js';
 import { handleFile } from './onedrive-file.js';
 import { list } from './OneDriveForest.js';
-import { resolveResource } from '../support/onedrive.js';
-import fetchContent from './fetch-content.js';
-import { errorResponse, toSISize } from '../support/utils.js';
-import { error } from './errors.js';
+import { resolveResource } from '../../support/onedrive.js';
+import fetchContent from '../fetch-content.js';
+import { errorResponse, toSISize } from '../../support/utils.js';
+import { error } from '../errors.js';
 
 /**
  * Retrieves a file from OneDrive.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
  * @param {string} [opts.lastModified] last modified
  * @param {number} [opts.fetchTimeout] fetch timeout

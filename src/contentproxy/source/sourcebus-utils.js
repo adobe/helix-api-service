@@ -9,8 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { errorResponse } from '../support/utils.js';
-import { error } from './errors.js';
+import { errorResponse } from '../../support/utils.js';
+import { error } from '../errors.js';
 
 /**
  * @typedef ValidationResult
@@ -24,8 +24,8 @@ import { error } from './errors.js';
 /**
  * Validates if the content source is properly configured and if org/site match.
  *
- * @param {import('../support/AdminContext').AdminContext} ctx context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} ctx context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
  * @param {object} [opts.source] content source
  * @param {string} [opts.lastModified] last modified

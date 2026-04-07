@@ -14,8 +14,8 @@
 
 import { basename } from 'path';
 import { sanitizeName, splitByExtension } from '@adobe/helix-shared-string';
-import { MEDIA_TYPES } from '../media/ValidationError.js';
-import { toResourcePath } from '../support/RequestInfo.js';
+import { MEDIA_TYPES } from '../../media/ValidationError.js';
+import { toResourcePath } from '../../support/RequestInfo.js';
 
 /**
  * Document types that are not media.
@@ -57,8 +57,8 @@ export const ALLOWED_BYOM_TYPES = [
  * we will asssign the location to the overlay
  *
  * @type {import('./contentproxy.js').FetchList}
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {string[]} paths
  * @param {ProgressCallback} progressCB
  * @returns {Promise<ResourceInfo[]>} the list of resources

@@ -12,8 +12,8 @@
 import { splitByExtension } from '@adobe/helix-shared-string';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { basename, dirname } from 'path';
-import { Forest } from './Forest.js';
-import { StatusCodeError } from '../support/StatusCodeError.js';
+import { Forest } from '../Forest.js';
+import { StatusCodeError } from '../../support/StatusCodeError.js';
 import { validateSource } from './sourcebus-utils.js';
 
 export class SourceForest extends Forest {
@@ -77,8 +77,8 @@ export class SourceForest extends Forest {
  * its entire subtree is retrieved.
  *
  * @type {import('./contentproxy.js').FetchList}
- * @param {import('../support/AdminContext').AdminContext} ctx context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} ctx context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {string[]} paths
  * @param {ProgressCallback} progressCB
  * @returns {Promise<ResourceInfo[]>} the list of resources

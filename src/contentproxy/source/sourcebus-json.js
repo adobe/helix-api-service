@@ -11,16 +11,16 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { errorResponse } from '../support/utils.js';
-import { parseSheetJSON } from './utils.js';
+import { errorResponse } from '../../support/utils.js';
+import { parseSheetJSON } from '../utils.js';
 import { validateSource } from './sourcebus-utils.js';
-import { error } from './errors.js';
+import { error } from '../errors.js';
 
 /**
  * Fetches a JSON as sheet/multisheet from the source bus
  *
- * @param {import('../support/AdminContext').AdminContext} ctx context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} ctx context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
  * @param {object} [opts.source] content source
  * @param {string} [opts.lastModified] last modified

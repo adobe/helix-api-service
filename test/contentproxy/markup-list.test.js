@@ -16,7 +16,7 @@ import assert from 'assert';
 import sinon from 'sinon';
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
-import { list } from '../../src/contentproxy/markup-list.js';
+import { list } from '../../src/contentproxy/markup/markup-list.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';

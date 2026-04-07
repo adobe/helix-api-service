@@ -10,19 +10,19 @@
  * governing permissions and limitations under the License.
  */
 import { GoogleClient } from '@adobe/helix-google-support';
-import { resolveResource } from '../support/google.js';
-import { errorResponse } from '../support/utils.js';
-import { error } from './errors.js';
-import fetchContent from './fetch-content.js';
+import { resolveResource } from '../../support/google.js';
+import { errorResponse } from '../../support/utils.js';
+import { error } from '../errors.js';
+import fetchContent from '../fetch-content.js';
 import { handleFile } from './google-file.js';
-import { handleJSON } from './GoogleJson.js';
+import { handleJSON } from './GoogleSheet.js';
 import { list } from './GoogleForest.js';
 
 /**
  * Retrieves a file from google drive.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} opts options
  * @param {string} opts.lastModified last modified
  * @param {number} opts.fetchTimeout fetch timeout

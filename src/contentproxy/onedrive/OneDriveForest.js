@@ -11,9 +11,9 @@
  */
 import { OneDrive } from '@adobe/helix-onedrive-support';
 import { sanitizeName, splitByExtension, editDistance } from '@adobe/helix-shared-string';
-import { getSourceLastModified } from '../support/onedrive.js';
-import { sleep } from '../support/utils.js';
-import { Forest } from './Forest.js';
+import { getSourceLastModified } from '../../support/onedrive.js';
+import { sleep } from '../../support/utils.js';
+import { Forest } from '../Forest.js';
 
 export class OneDriveForest extends Forest {
   constructor(log, drive, retryDelay) {
@@ -117,8 +117,8 @@ export class OneDriveForest extends Forest {
  * If a path ends with `/*` its entire subtree is retrieved.
  *
  * @type {import('./contentproxy.js').FetchList}
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {string[]} paths
  * @param {ProgressCallback} progressCB
  * @returns {Promise<ResourceInfo[]>} the list of resources

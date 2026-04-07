@@ -10,17 +10,17 @@
  * governing permissions and limitations under the License.
  */
 
-import fetchContent from './fetch-content.js';
+import fetchContent from '../fetch-content.js';
 import { handleFile } from './markup-file.js';
 import { handleJSON } from './markup-json.js';
 import { list } from './markup-list.js';
-import { computeSourceUrl, getContentSourceHeaders, updateMarkupSourceInfo } from './utils.js';
+import { computeSourceUrl, getContentSourceHeaders, updateMarkupSourceInfo } from '../utils.js';
 
 /**
  * Retrieves a file from html2md.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
  * @param {object} [opts.source] content source
  * @param {string} [opts.lastModified] last modified

@@ -11,16 +11,16 @@
  */
 import { Response } from '@adobe/fetch';
 import { GoogleClient } from '@adobe/helix-google-support';
-import { resolveResource } from '../support/google.js';
-import { errorResponse } from '../support/utils.js';
-import { error } from './errors.js';
-import { FILE_SIZE_LIMIT } from './utils.js';
+import { resolveResource } from '../../support/google.js';
+import { errorResponse } from '../../support/utils.js';
+import { error } from '../errors.js';
+import { FILE_SIZE_LIMIT } from '../utils.js';
 
 /**
  * Fetches a google file from the external source.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} a http response
  */
 export async function handleFile(context, info) {

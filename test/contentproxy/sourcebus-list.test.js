@@ -14,7 +14,7 @@
 import assert from 'assert';
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
-import { list } from '../../src/contentproxy/SourceForest.js';
+import { list } from '../../src/contentproxy/source/SourceForest.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';

@@ -11,7 +11,7 @@
  */
 import { sanitizeName, splitByExtension, editDistance } from '@adobe/helix-shared-string';
 import { GoogleClient } from '@adobe/helix-google-support';
-import { Forest } from './Forest.js';
+import { Forest } from '../Forest.js';
 
 export class GoogleForest extends Forest {
   constructor(log, client) {

@@ -11,12 +11,12 @@
  */
 import { google, GoogleClient } from '@adobe/helix-google-support';
 import A1 from '@flighter/a1-notation';
-import { resolveResource } from '../support/google.js';
-import { errorResponse } from '../support/utils.js';
-import { error } from './errors.js';
-import extract from './sheets.js';
-import Tabular from './Tabular.js';
-import { rewriteCellUrl } from './utils.js';
+import { resolveResource } from '../../support/google.js';
+import { errorResponse } from '../../support/utils.js';
+import { error } from '../errors.js';
+import extract from '../sheets.js';
+import Tabular from '../Tabular.js';
+import { rewriteCellUrl } from '../utils.js';
 
 /**
  * Monospace fonts used in google docs
@@ -164,7 +164,7 @@ function formatCell(cell) {
   return sanitizeHtml(parts.join(''));
 }
 
-class Google extends Tabular {
+class GoogleSheet extends Tabular {
   constructor(sheetsClient, id, googleApiOpts) {
     super('google');
     this.sheets = sheetsClient;
@@ -265,8 +265,8 @@ class Google extends Tabular {
 /**
  * Fetches a google sheet from the external source.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
 export async function handleJSON(context, info) {
@@ -285,7 +285,7 @@ export async function handleJSON(context, info) {
     }
     const client = await context.getGoogleClient(contentBusId);
     const sheetsClient = google.sheets({ version: 'v4', auth: client.auth });
-    const tabular = new Google(sheetsClient, id, context.attributes.googleApiOpts)
+    const tabular = new GoogleSheet(sheetsClient, id, context.attributes.googleApiOpts)
       .withLog(log)
       .withResource(resourcePath);
 

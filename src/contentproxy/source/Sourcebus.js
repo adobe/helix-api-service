@@ -19,8 +19,8 @@ import { handleJSON } from './sourcebus-json.js';
 import { handleFile } from './sourcebus-file.js';
 import { list } from './SourceForest.js';
 import { validateSource } from './sourcebus-utils.js';
-import { errorResponse } from '../support/utils.js';
-import { error } from './errors.js';
+import { errorResponse } from '../../support/utils.js';
+import { error } from '../errors.js';
 
 const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 
@@ -115,8 +115,8 @@ function createUploadErrorMessage(errors) {
 /**
  * Retrieves a file from source bus.
  *
- * @param {import('../support/AdminContext').AdminContext} ctx context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} ctx context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
  * @param {object} [opts.source] content source
  * @param {string} [opts.lastModified] last modified

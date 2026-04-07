@@ -14,10 +14,10 @@ import { fileTypeFromBuffer } from 'file-type';
 import { MEDIA_TYPES, ValidationError } from '../media/ValidationError.js';
 import { applyCustomHeaders, errorResponse, logStack } from '../support/utils.js';
 import { error } from './errors.js';
-import google from './google.js';
-import markup from './markup.js';
-import onedrive from './onedrive.js';
-import sourcebus from './Sourcebus.js';
+import google from './google/google.js';
+import markup from './markup/markup.js';
+import onedrive from './onedrive/onedrive.js';
+import sourcebus from './source/Sourcebus.js';
 
 /**
  * @type {import('./contentproxy').ContentSourceHandler[]}

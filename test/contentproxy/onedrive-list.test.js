@@ -15,7 +15,7 @@ import assert from 'assert';
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
 import { AcquireMethod } from '@adobe/helix-onedrive-support';
-import { list } from '../../src/contentproxy/OneDriveForest.js';
+import { list } from '../../src/contentproxy/onedrive/OneDriveForest.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';

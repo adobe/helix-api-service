@@ -10,11 +10,11 @@
  * governing permissions and limitations under the License.
  */
 import { OneDrive } from '@adobe/helix-onedrive-support';
-import { resolveResource } from '../support/onedrive.js';
-import Tabular from './Tabular.js';
-import extract from './sheets.js';
+import { resolveResource } from '../../support/onedrive.js';
+import Tabular from '../Tabular.js';
+import extract from '../sheets.js';
 
-class Excel extends Tabular {
+class OnedriveSheet extends Tabular {
   /**
    * Create a new instance of this class
    * @param {OneDrive} drive one drive
@@ -90,8 +90,8 @@ class Excel extends Tabular {
 /**
  * Fetches an excel sheet from the external source.
  *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
 export async function handleJSON(context, info) {
@@ -112,7 +112,7 @@ export async function handleJSON(context, info) {
     },
   });
   const workbookSessionId = info.headers['x-workbook-session-id'];
-  const tabular = new Excel(client, OneDrive.driveItemFromURL(location), log)
+  const tabular = new OnedriveSheet(client, OneDrive.driveItemFromURL(location), log)
     .withLog(log)
     .withResource(resourcePath)
     .withWorkbookSessionId(workbookSessionId);

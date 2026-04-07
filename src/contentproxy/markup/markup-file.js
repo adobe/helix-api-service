@@ -9,45 +9,39 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+
 import { AbortError, Response } from '@adobe/fetch';
-import { HelixStorage } from '@adobe/helix-shared-storage';
-import { errorResponse } from '../support/utils.js';
+import { errorResponse } from '../../support/utils.js';
+import { error } from '../errors.js';
 import {
-  addLastModified,
-  computeSourceUrl,
-  getContentSourceHeaders,
-  parseSheetJSON,
-  updateMarkupSourceInfo,
-} from './utils.js';
-import { error } from './errors.js';
+  addLastModified, computeSourceUrl, getContentSourceHeaders, updateMarkupSourceInfo,
+} from '../utils.js';
 
 /**
- * Fetch timeout for markup source.
+ * Fetch timeout for markup files.
  */
-const FETCH_TIMEOUT = 10_000;
+const FETCH_TIMEOUT = 5_000;
 
 /**
- * Fetches a JSON as sheet/multisheet from the external source.
+ * Fetches file data from the external source.
  *
- * Falls back to code-bus if the content source does not have the resource.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @param {import('../../support/AdminContext').AdminContext} context context
+ * @param {import('../../support/RequestInfo').RequestInfo} info request info
  * @param {object} [opts] options
  * @param {object} [opts.source] content source
  * @param {string} [opts.lastModified] last modified
  * @param {number} [opts.fetchTimeout] fetch timeout
  * @returns {Promise<Response>} response
  */
-export async function handleJSON(context, info, opts) {
+export async function handleFile(context, info, opts) {
   const { config: { content }, log } = context;
-  const { resourcePath } = info;
-  const fetch = context.getFetch(context);
+  const { org, site, resourcePath } = info;
+  const fetch = context.getFetch();
 
   const source = opts?.source ?? content.source;
   const url = await computeSourceUrl(log, info, source);
   const fopts = context.getFetchOptions({ fetchTimeout: FETCH_TIMEOUT, ...opts });
-  const contentSourceHeaders = getContentSourceHeaders(context, info, source);
+  const contentSourceHeaders = getContentSourceHeaders(context, info);
   fopts.headers = { ...fopts.headers, ...contentSourceHeaders };
 
   try {
@@ -55,39 +49,40 @@ export async function handleJSON(context, info, opts) {
 
     updateMarkupSourceInfo(info.sourceInfo, response);
 
+    if (response.status === 404) {
+      return errorResponse(context.log, 404, error(
+        'Unable to preview \'$1\': File not found',
+        `${org}/${site}${resourcePath}`,
+      ));
+    }
+
+    const lastModified = response.headers.get('last-modified');
     if (response.status === 304) {
       return new Response('Not modified', {
         status: 304,
         headers: addLastModified({
           'x-source-location': url,
-        }, response.headers.get('last-modified')),
+        }, lastModified),
       });
     }
-    log.info(`[markup] fetched json from markup origin: ${url} (${response.status})`);
 
     if (response.ok) {
-      let json;
-      try {
-        json = parseSheetJSON(await response.text());
-      } catch (e) {
-        return errorResponse(log, 400, error(
-          'JSON fetched from markup \'$1\' is invalid: $2',
-          resourcePath,
-          e.message,
+      const contentType = response.headers.get('content-type');
+      if (!contentType) {
+        return errorResponse(context.log, 415, error(
+          'Content type header is missing',
         ));
       }
+      const body = await response.buffer();
 
-      return new Response(JSON.stringify(json), {
+      return new Response(body, {
         status: 200,
         headers: addLastModified({
-          'content-type': response.headers.get('content-type'),
+          'content-type': contentType,
           'x-source-location': url,
-        }, response.headers.get('last-modified')),
+        }, lastModified),
       });
-    }
-
-    // if response is other than 403, 404, also abort
-    if (response.status !== 403 && response.status !== 404) {
+    } else {
       return errorResponse(log, -response.status, error(
         'Unable to fetch \'$1\' from \'$2\': $3',
         resourcePath,
@@ -104,7 +99,7 @@ export async function handleJSON(context, info, opts) {
       message = 'mountpoint URL invalid';
       headers['x-severity'] = 'warn';
     }
-    return errorResponse(context.log, status, error(
+    return errorResponse(log, status, error(
       'Unable to fetch \'$1\' from \'$2\': $3',
       resourcePath,
       'markup',
@@ -116,34 +111,4 @@ export async function handleJSON(context, info, opts) {
       fopts.signal.clear();
     }
   }
-
-  // fallback to code-bus
-
-  const { owner, repo, ref } = info;
-  const codeBusPath = `/${owner}/${repo}/${ref}${resourcePath}`;
-  const storage = HelixStorage.fromContext(context).codeBus();
-  const item = await storage.get(codeBusPath);
-
-  log.info(`[markup] fetched json from code-bus ${codeBusPath} (${item ? 200 : 404})`);
-  if (!item) {
-    return new Response(null, { status: 404 });
-  }
-
-  let json;
-  try {
-    json = parseSheetJSON(item);
-  } catch (e) {
-    return errorResponse(log, 400, error(
-      'JSON fetched from markup \'$1\' is invalid: $2',
-      resourcePath,
-      e.message,
-    ));
-  }
-
-  return new Response(JSON.stringify(json), {
-    status: 200,
-    headers: {
-      'content-type': 'application/json',
-    },
-  });
 }

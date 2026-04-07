@@ -116,6 +116,7 @@ jobs:
           then
             git config user.name github-actions
             git config user.email github-actions@github.com
-            git commit -am "chore(docs): update API service docs [skip ci]"
+            git add docs/api.html
+            git commit -m "chore(docs): update API service docs [skip ci]"
             git push
           fi

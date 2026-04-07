@@ -9,9 +9,9 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { handleJSON } from './onedrive-json.js';
+import { handleJSON } from './OnedriveJson.js';
 import { handleFile } from './onedrive-file.js';
-import { list } from './onedrive-list.js';
+import { list } from './OnedriveList.js';
 import { resolveResource } from '../support/onedrive.js';
 import fetchContent from './fetch-content.js';
 import { errorResponse, toSISize } from '../support/utils.js';

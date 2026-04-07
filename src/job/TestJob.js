@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Job } from './job.js';
+import { Job } from './Job.js';
 import { sleep } from '../support/utils.js';
 
 /**

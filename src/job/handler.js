@@ -10,13 +10,13 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
-import { Job } from './job.js';
-import { TestJob } from './test-job.js';
-import { JobStorage } from './storage.js';
-import { CodeJob } from '../code/code-job.js';
-import { PreviewJob } from '../preview/preview-job.js';
-import { RemoveJob } from '../preview/remove-job.js';
-import { PublishJob } from '../live/publish-job.js';
+import { Job } from './Job.js';
+import { TestJob } from './TestJob.js';
+import { JobStorage } from './Storage.js';
+import { CodeJob } from '../code/CodeJob.js';
+import { PreviewJob } from '../preview/PreviewJob.js';
+import { RemoveJob } from '../preview/RemoveJob.js';
+import { PublishJob } from '../live/PublishJob.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
 

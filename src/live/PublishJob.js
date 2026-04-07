@@ -15,10 +15,10 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 
 import purge, { PURGE_LIVE, getPurgePathVariants } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex } from '../index/utils.js';
-import { publishBulkResourceNotification } from '../support/notifications.js';
+import { publishBulkResourceNotification } from '../support/Notifications.js';
 import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
 import { hasSimpleSitemap, installSimpleSitemap } from '../sitemap/utils.js';
 import { updateRedirects } from '../redirects/update.js';

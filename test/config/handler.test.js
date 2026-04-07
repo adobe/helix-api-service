@@ -15,8 +15,8 @@ import assert from 'assert';
 import { exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
-import { AdminConfigStore } from '../../src/config/admin-config-store.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
+import { AdminConfigStore } from '../../src/config/AdminConfigStore.js';
 import { main } from '../../src/index.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from '../utils.js';
 

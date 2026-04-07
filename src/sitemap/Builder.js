@@ -10,8 +10,8 @@
  * governing permissions and limitations under the License.
  */
 import processQueue from '@adobe/helix-shared-process-queue';
-import SitemapLanguage from './language.js';
-import SitemapOutput from './output.js';
+import SitemapLanguage from './Language.js';
+import SitemapOutput from './Output.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**

@@ -11,7 +11,7 @@
  */
 import xml2js from 'xml2js';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import SitemapURL from './sitemap-url.js';
+import SitemapURL from './SitemapUrl.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**

@@ -16,7 +16,7 @@ import xml2js from 'xml2js';
 import { Response } from '@adobe/fetch';
 import sinon from 'sinon';
 
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
 import purge from '../../src/cache/purge.js';
 import {

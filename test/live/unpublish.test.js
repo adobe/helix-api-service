@@ -14,7 +14,7 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { HANDLERS } from '../../src/lookup/web2edit.js';
 import { main } from '../../src/index.js';

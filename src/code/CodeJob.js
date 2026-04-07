@@ -21,7 +21,7 @@ import { sanitizeName } from '@adobe/helix-shared-string';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import tree from './github-tree.js';
 import { ALLOWED_HEADERS_FILTER, measure } from '../support/utils.js';
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { CodeResource } from './CodeResource.js';
 import purge, { PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
@@ -34,7 +34,7 @@ import {
   updateDeployment, getRefSha,
 } from './github-bot.js';
 import { fetchHlxJson } from '../config/utils.js';
-import { RateLimitError } from './rate-limit-error.js';
+import { RateLimitError } from './RateLimitError.js';
 
 /**
  * @typedef CodeJobData

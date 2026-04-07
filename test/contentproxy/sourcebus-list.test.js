@@ -14,7 +14,7 @@
 import assert from 'assert';
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
-import { list } from '../../src/contentproxy/sourcebus-list.js';
+import { list } from '../../src/contentproxy/SourcebusList.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';

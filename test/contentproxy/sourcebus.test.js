@@ -14,10 +14,10 @@
 import { resolve } from 'path';
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { createContext, Nock, SITE_CONFIG } from '../utils.js';
-import { SVGValidationError, validateSVG } from '../../src/contentproxy/sourcebus.js';
+import { SVGValidationError, validateSVG } from '../../src/contentproxy/Sourcebus.js';
 
 const SITE_MUP_CONFIG = (url = 'https://api.aem.live/org/sites/site/source') => ({
   ...SITE_CONFIG,

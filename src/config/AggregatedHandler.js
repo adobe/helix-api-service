@@ -13,8 +13,8 @@ import { Response } from '@adobe/fetch';
 import { getMergedConfig } from '@adobe/helix-config-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { errorResponse } from '../support/utils.js';
-import { AdminConfigStore } from './admin-config-store.js';
-import { BaseHandler } from './handler.js';
+import { AdminConfigStore } from './AdminConfigStore.js';
+import { BaseHandler } from './Handler.js';
 
 class AggregatedHandler extends BaseHandler {
   constructor() {

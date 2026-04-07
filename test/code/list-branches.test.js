@@ -13,7 +13,7 @@
 import assert from 'assert';
 import xml2js from 'xml2js';
 import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { listBranches } from '../../src/code/list-branches.js';
 import { createContext, createInfo, Nock } from '../utils.js';
 

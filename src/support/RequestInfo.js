@@ -351,7 +351,7 @@ export class RequestInfo {
    * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
-   * @param {import('../router/router.js').default} router router
+   * @param {import('../router/Router.js').default} router router
    * @param {object} variables route variables
    * @param {string} [variables.org] org, optional
    * @param {string} [variables.site] site, optional

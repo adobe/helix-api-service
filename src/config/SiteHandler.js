@@ -9,8 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { BaseHandler } from './handler.js';
-import { ContentStore, CONFIG_TYPES } from './content-store.js';
+import { BaseHandler } from './Handler.js';
+import { ContentStore, CONFIG_TYPES } from './ContentStore.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
 class SiteHandler extends BaseHandler {

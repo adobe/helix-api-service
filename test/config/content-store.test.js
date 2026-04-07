@@ -14,7 +14,7 @@ import assert from 'assert';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
-import { ContentStore } from '../../src/config/content-store.js';
+import { ContentStore } from '../../src/config/ContentStore.js';
 
 const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
 

@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Node } from './node.js';
+import { Node } from './Node.js';
 
 /**
  * Router that will match an incoming request to a handler.

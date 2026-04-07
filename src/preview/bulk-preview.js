@@ -11,8 +11,8 @@
  */
 import { getContentSourceHandler } from '../contentproxy/index.js';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
-import { Job } from '../job/job.js';
-import { PreviewJob } from './preview-job.js';
+import { Job } from '../job/Job.js';
+import { PreviewJob } from './PreviewJob.js';
 import { error } from '../contentproxy/errors.js';
 
 /**

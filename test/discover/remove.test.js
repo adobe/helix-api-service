@@ -14,7 +14,7 @@
 
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
@@ -22,7 +22,7 @@ describe('Discover remove tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
-  /** @type {import('../../src/discover/inventory.js').Inventory} */
+  /** @type {import('../../src/discover/Inventory.js').Inventory} */
   let inventory;
 
   beforeEach(() => {

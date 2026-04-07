@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { AdminConfigStore } from './admin-config-store.js';
+import { AdminConfigStore } from './AdminConfigStore.js';
 import { errorResponse } from '../support/utils.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { createAdminJWT } from './utils.js';

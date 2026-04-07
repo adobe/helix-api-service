@@ -14,10 +14,10 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Response } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
 import bulkPreview from '../../src/preview/bulk-preview.js';
-import { Job } from '../../src/job/job.js';
+import { Job } from '../../src/job/Job.js';
 import { createContext, createInfo, Nock } from '../utils.js';
 
 const TEST_SOURCE = { type: 'test-bulk', url: 'test://foo-bar' };

@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { BaseHandler } from './handler.js';
+import { BaseHandler } from './Handler.js';
 
 class OrgHandler extends BaseHandler {
   constructor() {

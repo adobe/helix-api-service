@@ -15,7 +15,7 @@ import { GoogleClient } from '@adobe/helix-google-support';
 import assert from 'assert';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { list } from '../../src/contentproxy/google-list.js';
+import { list } from '../../src/contentproxy/GoogleList.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
 } from '../utils.js';

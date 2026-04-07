@@ -15,7 +15,7 @@ import xml2js from 'xml2js';
 
 import { Headers, Request } from '@adobe/fetch';
 
-import { AuthInfo } from '../src/auth/auth-info.js';
+import { AuthInfo } from '../src/auth/AuthInfo.js';
 import { router } from '../src/index.js';
 import { AdminContext } from '../src/support/AdminContext.js';
 import { RequestInfo } from '../src/support/RequestInfo.js';

@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { RoleMapping } from './role-mapping.js';
+import { RoleMapping } from './RoleMapping.js';
 
 /**
  * Authorizes the current user by loading the project config and assigning the roles.

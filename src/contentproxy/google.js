@@ -15,8 +15,8 @@ import { errorResponse } from '../support/utils.js';
 import { error } from './errors.js';
 import fetchContent from './fetch-content.js';
 import { handleFile } from './google-file.js';
-import { handleJSON } from './google-json.js';
-import { list } from './google-list.js';
+import { handleJSON } from './GoogleJson.js';
+import { list } from './GoogleList.js';
 
 /**
  * Retrieves a file from google drive.

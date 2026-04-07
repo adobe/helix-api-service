@@ -14,7 +14,7 @@
 
 import { basename } from 'path';
 import { sanitizeName, splitByExtension } from '@adobe/helix-shared-string';
-import { MEDIA_TYPES } from '../media/validate.js';
+import { MEDIA_TYPES } from '../media/Validate.js';
 import { toResourcePath } from '../support/RequestInfo.js';
 
 /**

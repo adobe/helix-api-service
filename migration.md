@@ -43,10 +43,10 @@ These features from helix-admin have already been ported or implemented in helix
 
 These require porting entire modules or large subsystems from helix-admin.
 
-- [ ] **Port cron module (scheduled job execution)** — [adobe/helix-api-service#174](https://github.com/adobe/helix-api-service/issues/174)
-  Cron-style scheduling for preview/live/publish/unpublish/http/process commands.
-  helix-admin: `src/cron/` — handler.js, execute.js, schedule.js, utils.js, preview.js.
-  helix-admin PRs: [#3286](https://github.com/adobe/helix-admin/pull/3286), [#3282](https://github.com/adobe/helix-admin/pull/3282), [#3283](https://github.com/adobe/helix-admin/pull/3283), [#3301](https://github.com/adobe/helix-admin/pull/3301), [#3244](https://github.com/adobe/helix-admin/pull/3244), [#3346](https://github.com/adobe/helix-admin/pull/3346).
+- ~~**Port cron module (scheduled job execution)**~~ ~~[adobe/helix-api-service#174](https://github.com/adobe/helix-api-service/issues/174)~~ **DEPRECATED — will not be ported**
+  ~~Cron-style scheduling for preview/live/publish/unpublish/http/process commands.~~
+  ~~helix-admin: `src/cron/` — handler.js, execute.js, schedule.js, utils.js, preview.js.~~
+  ~~helix-admin PRs: [#3286](https://github.com/adobe/helix-admin/pull/3286), [#3282](https://github.com/adobe/helix-admin/pull/3282), [#3283](https://github.com/adobe/helix-admin/pull/3283), [#3301](https://github.com/adobe/helix-admin/pull/3301), [#3244](https://github.com/adobe/helix-admin/pull/3244), [#3346](https://github.com/adobe/helix-admin/pull/3346).~~
 
 - [ ] **Port PSI (PageSpeed Insights) endpoint** — [adobe/helix-api-service#175](https://github.com/adobe/helix-api-service/issues/175)
   Proxy to Lighthouse/PSI, validates URL against org/site config, adds site auth tokens.
@@ -69,9 +69,10 @@ These require porting entire modules or large subsystems from helix-admin.
   skip record > 100 KB ([#3476](https://github.com/adobe/helix-admin/pull/3476)),
   skip downloading index JSONs for sites with many indexes ([#3475](https://github.com/adobe/helix-admin/pull/3475)).
 
-- [ ] **Status bulk operations (POST /status)** — [adobe/helix-api-service#179](https://github.com/adobe/helix-api-service/issues/179)
-  helix-admin supports POST /status for bulk status checks; helix-api-service only has GET.
-  helix-admin: `src/status/handler.js` POST → `bulkStatus()`.
+- ~~**Status bulk operations (POST /status)**~~ ~~[adobe/helix-api-service#179](https://github.com/adobe/helix-api-service/issues/179)~~ **DEPRECATED — will not be ported**
+  ~~helix-admin supports POST /status for bulk status checks; helix-api-service only has GET.~~
+  ~~helix-admin: `src/status/handler.js` POST → `bulkStatus()`.~~
+  Functionality will be replaced by a dedicated API to browse the preview and live partitions — see [adobe/helix-api-service#123](https://github.com/adobe/helix-api-service/issues/123).
 
 ---
 

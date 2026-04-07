@@ -61,7 +61,7 @@ export default async function indexHandler(context, info) {
   authInfo.assertPermissions('index:write');
   if (info.method === 'POST') {
     if (webPath === '/*') {
-      return bulkIndex(context, info);
+      return bulkIndex(context, info, context.data);
     }
     return update(context, info, index);
   }

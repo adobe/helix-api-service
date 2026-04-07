@@ -86,6 +86,18 @@ const createJob = async (ctx, info, paths, { forceUpdate = false } = {}) => {
   job.audit = async function audit() {
     return true;
   };
+  job.indexBatch = async function indexBatch(_ctx, _info, resources) {
+    const toIndex = resources.filter((r) => r.needsIndexing());
+    for (const resource of toIndex) {
+      resource.setIndexed();
+    }
+  };
+  job.reindexSimpleSitemap = async function reindexSimpleSitemap() {
+    const { state: { data } } = this;
+    if (data.reindexSimpleSitemap) {
+      delete data.reindexSimpleSitemap;
+    }
+  };
   return job;
 };
 
@@ -437,10 +449,9 @@ describe('PublishJob Tests', () => {
     await assert.rejects(job.run(), Error('job cannot be resumed during the prepare phase. please provide a smaller input set.'));
   });
 
-  it('sets needsBulkIndex when metadata is published and simple sitemap exists', async () => {
+  it('sets reindexSimpleSitemap when metadata is published and simple sitemap exists', async () => {
     const configStub = sandbox.stub(purge, 'config').resolves();
-    // override the beforeEach default so hasSimpleSitemap returns true,
-    // causing the needsBulkIndex branch (lines 309-310, 358-360) to be hit
+
     ctx.attributes.hasSimpleSitemap = true;
 
     nock.content()
@@ -459,8 +470,8 @@ describe('PublishJob Tests', () => {
     await job.run();
 
     assert.strictEqual(job.state.data.phase, 'completed');
-    // needsBulkIndex was set then deleted — confirm it's gone and job completed normally
-    assert.strictEqual(job.state.data.needsBulkIndex, undefined);
+    // reindexSimpleSitemap was set then deleted — confirm it's gone and job completed normally
+    assert.strictEqual(job.state.data.reindexSimpleSitemap, undefined);
     assert.ok(configStub.calledOnce, 'purge.config should be called after metadata publish');
     assert.strictEqual(notified, 1);
   });

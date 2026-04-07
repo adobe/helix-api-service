@@ -14,6 +14,7 @@ import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-
 import purge, { PURGE_LIVE, PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
 import contentBusCopy from '../contentbus/copy.js';
+import bulkIndex from '../index/bulk-index.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex, getIndexTargets } from '../index/utils.js';
 import { updateRedirect, updateRedirects } from '../redirects/update.js';
@@ -64,12 +65,6 @@ export async function liveUpdate(context, info) {
         },
       });
     }
-  }
-
-  if (getMetadataPaths(context).includes(info.webPath) && await hasSimpleSitemap(context, info)) {
-    // TODO await bulkIndex(context, info, ['/*'], {
-    //   indexNames: ['#simple'],
-    // });
   }
   return publishStatus(context, info);
 }
@@ -131,6 +126,12 @@ export default async function publish(context, info) {
     return response;
   }
 
+  if (getMetadataPaths(context).includes(info.webPath) && await hasSimpleSitemap(context, info)) {
+    await bulkIndex(context, info, {
+      paths: ['/*'],
+      indexNames: ['#simple'],
+    });
+  }
   await purge.resource(context, info, PURGE_LIVE);
 
   if (oldRedirects) {

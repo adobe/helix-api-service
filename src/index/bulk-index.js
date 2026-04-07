@@ -19,11 +19,15 @@ import { IndexJob } from './IndexJob.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context the universal context
  * @param {import('../support/RequestInfo').RequestInfo} info path info
+ * @param {object} opts options
+ * @param {string[]} opts.paths paths to index
+ * @param {string[]} opts.indexNames index names to use
  *
  * @returns {Promise<Response>} response
  */
-export default async function bulkIndex(context, info) {
-  const { log, data: { paths = [], indexNames = [] } } = context;
+export default async function bulkIndex(context, info, opts = {}) {
+  const { log } = context;
+  const { paths = [], indexNames = [] } = opts;
 
   try {
     if (paths.length === 0) {

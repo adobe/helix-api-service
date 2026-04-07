@@ -134,4 +134,49 @@ describe('Live Handler Tests', () => {
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.headers.get('x-error'), "bulk-publish payload is missing 'paths'.");
   });
+
+  it('routes POST /* with delete=true to bulk unpublish', async () => {
+    const suffix = '/org/sites/site/live/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      body: JSON.stringify({ delete: 'true' }),
+      headers: { 'content-type': 'application/json' },
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Admin().withAuthenticated(true),
+        infoMarkerChecked: true,
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+    // bulk-unpublish validates paths before creating a job; empty paths returns 400
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.headers.get('x-error'), "bulk-unpublish payload is missing 'paths'.");
+  });
+
+  it('returns 403 when bulk-unpublish caller lacks live:list permission', async () => {
+    const suffix = '/org/sites/site/live/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+      body: JSON.stringify({ delete: 'true', paths: ['/doc'] }),
+      headers: { 'content-type': 'application/json' },
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        // basic_publish role has live:write and live:delete but not live:list
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withRole('basic_publish'),
+        infoMarkerChecked: true,
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+    assert.strictEqual(response.status, 403);
+  });
 });

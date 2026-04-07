@@ -13,6 +13,7 @@
 import assert from 'assert';
 import { Resource } from '../../src/job/Resource.js';
 import { PublishResource } from '../../src/live/PublishResource.js';
+import { UnpublishResource } from '../../src/live/UnpublishResource.js';
 import { PreviewResource } from '../../src/preview/PreviewResource.js';
 import { RemoveResource } from '../../src/preview/RemoveResource.js';
 import { CodeResource } from '../../src/code/CodeResource.js';
@@ -450,6 +451,66 @@ describe('Resource', () => {
       assert.strictEqual(r2.deleted, true);
       assert.strictEqual(r2.status, 204);
       assert.strictEqual(r2.lastModified, undefined);
+    });
+  });
+
+  describe('UnpublishResource', () => {
+    it('constructs with resourcePath, webPath, lastModified', () => {
+      const date = new Date('2025-06-01T00:00:00.000Z');
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1', date);
+      assert.strictEqual(r.resourcePath, '/documents/doc1.md');
+      assert.strictEqual(r.webPath, '/documents/doc1');
+      assert.ok(r.lastModified instanceof Date);
+      assert.strictEqual(r.lastModified.getTime(), date.getTime());
+    });
+
+    it('constructs without lastModified', () => {
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1');
+      assert.strictEqual(r.lastModified, undefined);
+    });
+
+    it('fromJSON coerces lastModified string to Date', () => {
+      const date = new Date('2025-06-01T00:00:00.000Z');
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1', date);
+      const r2 = UnpublishResource.fromJSON(JSON.parse(JSON.stringify(r)));
+      assert.ok(r2.lastModified instanceof Date);
+      assert.strictEqual(r2.lastModified.getTime(), date.getTime());
+      assert.strictEqual(r2.webPath, '/documents/doc1');
+    });
+
+    it('toJSON includes webPath', () => {
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1');
+      const obj = r.toJSON();
+      assert.strictEqual(obj.webPath, '/documents/doc1');
+      assert.strictEqual(obj.resourcePath, '/documents/doc1.md');
+    });
+
+    it('isDeleted returns true for status 204', () => {
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1');
+      r.setStatus(204);
+      assert.strictEqual(r.isDeleted(), true);
+    });
+
+    it('isDeleted returns false for other statuses', () => {
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1');
+      r.setStatus(500);
+      assert.strictEqual(r.isDeleted(), false);
+    });
+
+    it('isDeleted returns false when not yet processed', () => {
+      const r = new UnpublishResource('/documents/doc1.md', '/documents/doc1');
+      assert.strictEqual(r.isDeleted(), false);
+    });
+
+    it('fromJSONArray deserializes array and restores webPath', () => {
+      const objs = [
+        { resourcePath: '/a.md', webPath: '/a' },
+        { resourcePath: '/b.md', webPath: '/b', status: 204 },
+      ];
+      const [a, b] = UnpublishResource.fromJSONArray(objs);
+      assert.strictEqual(a.webPath, '/a');
+      assert.strictEqual(b.webPath, '/b');
+      assert.strictEqual(b.isDeleted(), true);
     });
   });
 });

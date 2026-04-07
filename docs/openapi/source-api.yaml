@@ -1,11 +1,13 @@
 openapi: 3.1.0
-source:
+
+# --- File operations: /{org}/sites/{site}/source/{path} ---
+sourceFile:
   get:
-    operationId: getSource
+    operationId: getSourceFile
     tags:
       - source
-    summary: Get source document
-    description: Returns the source document metadata or content.
+    summary: Get file
+    description: Returns the source file content and metadata.
     security:
       - AuthCookie:
           - source:read
@@ -15,11 +17,11 @@ source:
       - $ref: "./parameters.yaml#/pathParam"
     responses:
       '200':
-        description: The source document
+        description: The source file
         content:
           application/json:
             schema:
-              type: object
+              $ref: "#/sourceDocument"
       '400':
         $ref: "./responses.yaml#/400"
       '401':
@@ -36,11 +38,11 @@ source:
         $ref: "./responses.yaml#/503"
 
   head:
-    operationId: headSource
+    operationId: headSourceFile
     tags:
       - source
-    summary: Check source document
-    description: Checks if a source document exists without returning content.
+    summary: Check file
+    description: Checks if a source file exists without returning content.
     security:
       - AuthCookie:
           - source:read
@@ -50,7 +52,7 @@ source:
       - $ref: "./parameters.yaml#/pathParam"
     responses:
       '200':
-        description: Source document exists
+        description: Source file exists
       '401':
         $ref: "./responses.yaml#/401"
       '403':
@@ -61,11 +63,11 @@ source:
         $ref: "./responses.yaml#/429"
 
   post:
-    operationId: createSource
+    operationId: createSourceFile
     tags:
       - source
-    summary: Create source document
-    description: Creates or modifies a source document in the content source.
+    summary: Create file
+    description: Creates a source file in the content source.
     security:
       - AuthCookie:
           - source:read
@@ -76,13 +78,13 @@ source:
       - $ref: "./parameters.yaml#/pathParam"
     responses:
       '200':
-        description: Source document created or modified
+        description: Source file modified
         content:
           application/json:
             schema:
               type: object
       '201':
-        description: Source document created
+        description: Source file created
         content:
           application/json:
             schema:
@@ -105,11 +107,17 @@ source:
         $ref: "./responses.yaml#/503"
 
   put:
-    operationId: replaceSource
+    operationId: replaceOrCopySource
     tags:
       - source
-    summary: Replace source document
-    description: Creates or replaces a source document in the content source.
+    summary: Replace, copy, or move file
+    description: >
+      Creates or replaces a source file in the content source.<br>
+      When the `source` query parameter is provided, copies (or moves) the resource from the
+      `source` path to the destination path. Set `move=true` to move instead of copy.
+      The `collision` parameter controls behavior when the destination already exists
+      (`overwrite` to replace, otherwise the request fails).
+      Both files and folders can be copied/moved.
     security:
       - AuthCookie:
           - source:read
@@ -118,19 +126,87 @@ source:
       - $ref: "./parameters.yaml#/orgParam"
       - $ref: "./parameters.yaml#/siteParam"
       - $ref: "./parameters.yaml#/pathParam"
+      - name: source
+        in: query
+        description: >
+          Source path for copy/move operations. When provided, the resource at this path
+          is copied (or moved) to the destination path.
+        required: false
+        schema:
+          type: string
+      - name: move
+        in: query
+        description: When set to `true` together with `source`, moves the resource instead of copying it.
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: collision
+        in: query
+        description: >
+          Collision handling strategy when the destination already exists.
+          Set to `overwrite` to replace the existing resource.
+        required: false
+        schema:
+          type: string
+          enum:
+            - overwrite
     responses:
       '200':
-        description: Source document replaced
+        description: Source file replaced, copied, or moved
         content:
           application/json:
             schema:
               type: object
+            examples:
+              copied:
+                summary: File copied
+                value:
+                  copied: 1
+              moved:
+                summary: File moved
+                value:
+                  moved: 1
       '201':
-        description: Source document created
+        description: Source file created
         content:
           application/json:
             schema:
               type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"
+
+  delete:
+    operationId: deleteSourceFile
+    tags:
+      - source
+    summary: Delete file
+    description: Deletes a source file from the content source.
+    security:
+      - AuthCookie:
+          - source:read
+          - source:delete
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '204':
+        description: Source file deleted
       '400':
         $ref: "./responses.yaml#/400"
       '401':
@@ -146,23 +222,40 @@ source:
       '503':
         $ref: "./responses.yaml#/503"
 
-  delete:
-    operationId: deleteSource
+# --- Folder operations: /{org}/sites/{site}/source/{path}/ ---
+sourceFolder:
+  get:
+    operationId: listSourceFolder
     tags:
       - source
-    summary: Delete source document
-    description: Deletes a source document from the content source.
+    summary: List folder
+    description: >
+      Lists the contents of a folder (path ending with `/`).<br>
+      Returns an array of files and subfolders sorted by name. Subfolders have
+      `content-type: application/folder`, files include `size`, `content-type`, and `last-modified`.
     security:
       - AuthCookie:
           - source:read
-          - source:delete
     parameters:
       - $ref: "./parameters.yaml#/orgParam"
       - $ref: "./parameters.yaml#/siteParam"
-      - $ref: "./parameters.yaml#/pathParam"
     responses:
-      '204':
-        description: Source document deleted
+      '200':
+        description: Folder listing
+        content:
+          application/json:
+            schema:
+              $ref: "#/folderListing"
+            examples:
+              success:
+                summary: Folder with files and subfolders
+                value:
+                  - name: "subfolder"
+                    content-type: "application/folder"
+                  - name: "document.docx"
+                    size: 12345
+                    content-type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    last-modified: "2021-05-29T21:00:00.000Z"
       '400':
         $ref: "./responses.yaml#/400"
       '401':
@@ -175,5 +268,243 @@ source:
         $ref: "./responses.yaml#/429"
       '500':
         $ref: "./responses.yaml#/500"
-      '503':
-        $ref: "./responses.yaml#/503"
+
+  post:
+    operationId: createSourceFolder
+    tags:
+      - source
+    summary: Create folder
+    description: >
+      Creates a folder in the content source (path ending with `/`).<br>
+      The folder name must be in sanitized form.
+    security:
+      - AuthCookie:
+          - source:read
+          - source:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      '201':
+        description: Folder created
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  delete:
+    operationId: deleteSourceFolder
+    tags:
+      - source
+    summary: Delete folder
+    description: >
+      Deletes a folder and all its contents recursively (path ending with `/`).
+    security:
+      - AuthCookie:
+          - source:read
+          - source:delete
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      '204':
+        description: Folder deleted
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+# --- Version operations: /{org}/sites/{site}/source/{path}/.versions ---
+sourceVersion:
+  get:
+    operationId: listSourceVersions
+    tags:
+      - source
+    summary: List versions
+    description: >
+      Lists all versions of a source file, ordered from oldest to newest.<br>
+      To retrieve a specific version, append the version id to the path:
+      `/{org}/sites/{site}/source/{path}/.versions/{versionId}`.
+    security:
+      - AuthCookie:
+          - source:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Version listing
+        content:
+          application/json:
+            schema:
+              $ref: "#/versionListing"
+            examples:
+              success:
+                summary: Version list
+                value:
+                  - version: "01KJDB2TW1AWCD1P7TMRZMBCT1"
+                    size: 12345
+                    content-type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    version-by: "user@example.org"
+                    version-date: "2026-02-26T16:04:06.000Z"
+                    version-operation: "version"
+                    version-comment: "ready for approval"
+                  - version: "01KJDB3QXBAFRRXWRV3W8DBD9R"
+                    size: 12345
+                    content-type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    version-date: "2026-02-26T16:04:36.000Z"
+                    version-by: "user@example.org"
+                    version-operation: "preview"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  post:
+    operationId: createSourceVersion
+    tags:
+      - source
+    summary: Create version
+    description: >
+      Creates a new version of a source file. The path must end with `/.versions`.<br>
+      Optional query parameters `operation` and `comment` can be provided to annotate the version.
+    security:
+      - AuthCookie:
+          - source:read
+          - source:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - name: operation
+        in: query
+        description: Operation that triggered the version creation (e.g. `preview`, `version`).
+        required: false
+        schema:
+          type: string
+      - name: comment
+        in: query
+        description: Comment to annotate the version.
+        required: false
+        schema:
+          type: string
+    responses:
+      '201':
+        description: Version created
+        headers:
+          Location:
+            description: Path to the created version
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+# --- Schemas ---
+sourceDocument:
+  type: object
+  properties:
+    name:
+      type: string
+    size:
+      type: integer
+    content-type:
+      type: string
+    last-modified:
+      type: string
+      format: date-time
+
+folderListing:
+  type: array
+  items:
+    type: object
+    properties:
+      name:
+        description: Name of the file or subfolder
+        type: string
+      size:
+        description: Size in bytes (files only)
+        type: integer
+      content-type:
+        description: Content type. `application/folder` for subfolders.
+        type: string
+      last-modified:
+        description: Last modification date (files only)
+        type: string
+        format: date-time
+
+versionListing:
+  type: array
+  items:
+    type: object
+    required:
+      - version
+      - version-date
+      - version-by
+    properties:
+      version:
+        description: Version identifier (ULID)
+        type: string
+      size:
+        description: Size in bytes
+        type: integer
+      content-type:
+        description: Content type of the versioned resource
+        type: string
+      version-date:
+        description: Date the version was created
+        type: string
+        format: date-time
+      version-by:
+        description: User who created the version
+        type: string
+      version-operation:
+        description: Operation that triggered the version creation (e.g. `preview`, `copy`, `version`)
+        type: string
+      version-comment:
+        description: Optional comment for the version
+        type: string

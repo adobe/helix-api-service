@@ -164,7 +164,11 @@ paths:
   # /{org}/sites/{site}/sitemap/{path}:
   #   $ref: "./sitemap-api.yaml#/sitemap"
   /{org}/sites/{site}/source/{path}:
-    $ref: "./source-api.yaml#/source"
+    $ref: "./source-api.yaml#/sourceFile"
+  /{org}/sites/{site}/source/*:
+    $ref: "./source-api.yaml#/sourceFolder"
+  /{org}/sites/{site}/source/{path}/.versions:
+    $ref: "./source-api.yaml#/sourceVersion"
   /{org}/sites/{site}/status/{path}:
     $ref: "./status-api.yaml#/status"
   /{org}/sites/{site}/jobs/{topic}:

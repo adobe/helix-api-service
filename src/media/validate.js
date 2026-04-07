@@ -75,7 +75,7 @@ function prependProlog(buf) {
 }
 
 /**
- * ValidationError SVG. Checks whether neither script tags nor on attributes are contained.
+ * Validate SVG. Checks whether neither script tags nor on attributes are contained.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
@@ -136,7 +136,7 @@ async function validateSVG(context, resourcePath, buf) {
 }
 
 /**
- * ValidationError MP4. Checks limits.
+ * Validate MP4. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
@@ -175,7 +175,7 @@ async function validateMP4(context, resourcePath, buf) {
 }
 
 /**
- * ValidationError ICO. Checks limits.
+ * Validate ICO. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
@@ -199,7 +199,7 @@ async function validateICO(context, resourcePath, buf) {
 }
 
 /**
- * ValidationError PDF. Checks limits.
+ * Validate PDF. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
@@ -223,7 +223,7 @@ async function validatePDF(context, resourcePath, buf) {
 }
 
 /**
- * ValidationError default image. Checks limits.
+ * Validate default image. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path

@@ -42,14 +42,14 @@ tags:
     description: Log operations
   - name: source
     description: Source document management operations
-  - name: media
-    description: Media/asset upload operations
+  # - name: media
+  #   description: Media/asset upload operations
   # - name: discover
   #   description: Discovery/search index operations
   # - name: sidekick
   #   description: Sidekick configuration
-  - name: contentproxy
-    description: Content proxy operations (testing)
+  # - name: contentproxy
+  #   description: Content proxy operations (testing)
   - name: orgConfig
     x-displayName: Org Config
     description: Org Config operations
@@ -85,7 +85,7 @@ x-tagGroups:
       # - index
       # - sitemap
       - source
-      - media
+      # - media
   - name: Operations
     tags:
       - authentication
@@ -93,7 +93,7 @@ x-tagGroups:
       - log
       - job
       # - sidekick
-      - contentproxy
+      # - contentproxy
   - name: Configuration Management
     tags:
       - orgConfig
@@ -141,8 +141,8 @@ paths:
     $ref: "./config-site-api.yaml#/site"
   /{org}/sites/{site}/config/{path}:
     $ref: "./config-site-api.yaml#/siteConfig"
-  /{org}/sites/{site}/contentproxy/{path}:
-    $ref: "./contentproxy-api.yaml#/contentproxy"
+  # /{org}/sites/{site}/contentproxy/{path}:
+  #   $ref: "./contentproxy-api.yaml#/contentproxy"
   # /{org}/sites/{site}/index/{path}:
   #   $ref: "./index-api.yaml#/index"
   /{org}/sites/{site}/live/{path}:
@@ -153,8 +153,8 @@ paths:
     $ref: "./log-api.yaml#/log"
   /{org}/sites/{site}/login:
     $ref: "./auth-api.yaml#/login-site"
-  /{org}/sites/{site}/media/{path}:
-    $ref: "./media-api.yaml#/media"
+  # /{org}/sites/{site}/media/{path}:
+  #   $ref: "./media-api.yaml#/media"
   /{org}/sites/{site}/preview/{path}:
     $ref: "./preview-api.yaml#/preview"
   /{org}/sites/{site}/preview/*:

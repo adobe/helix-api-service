@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { validateSource } from './sourcebus-utils.js';
+import { validateSource } from './utils.js';
 
 /**
  * Fetches file data from the source bus

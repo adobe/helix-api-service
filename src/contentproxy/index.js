@@ -11,13 +11,14 @@
  */
 import { Response } from '@adobe/fetch';
 import { fileTypeFromBuffer } from 'file-type';
-import { MEDIA_TYPES, Validate } from '../media/validate.js';
+import { MEDIA_TYPES } from '../media/validate.js';
 import { applyCustomHeaders, errorResponse, logStack } from '../support/utils.js';
 import { error } from './errors.js';
 import google from './google/google.js';
 import markup from './markup/markup.js';
 import onedrive from './onedrive/onedrive.js';
 import sourcebus from './source/sourcebus.js';
+import { ValidationError } from '../media/ValidationError.js';
 
 /**
  * @type {import('./contentproxy').ContentSourceHandler[]}
@@ -95,7 +96,7 @@ export async function contentProxy(context, info, opts) {
         try {
           await validate(context, resourcePath, buf);
         } catch (e) {
-          if (e instanceof Validate) {
+          if (e instanceof ValidationError) {
             return errorResponse(log, 409, e);
             /* c8 ignore next 8 */
           } else {

@@ -18,7 +18,7 @@ import { toSISize } from '@adobe/helix-shared-string';
 import { handleJSON } from './sourcebus-json.js';
 import { handleFile } from './sourcebus-file.js';
 import { list } from './SourceForest.js';
-import { validateSource } from './sourcebus-utils.js';
+import { validateSource } from './utils.js';
 import { errorResponse } from '../../support/utils.js';
 import { error } from '../errors.js';
 
@@ -42,7 +42,7 @@ export class SVGValidationError extends Error {
 }
 
 /**
- * Validate SVG. Checks whether neither script tags nor on attributes are contained.
+ * ValidationError SVG. Checks whether neither script tags nor on attributes are contained.
  * Note, this is similar to {@link ../media/ValidationError.js} but different enough
  * that combining them is tedious.
  *

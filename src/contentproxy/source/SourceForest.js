@@ -14,7 +14,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { basename, dirname } from 'path';
 import { Forest } from '../Forest.js';
 import { StatusCodeError } from '../../support/StatusCodeError.js';
-import { validateSource } from './sourcebus-utils.js';
+import { validateSource } from './utils.js';
 
 export class SourceForest extends Forest {
   constructor(ctx, info) {

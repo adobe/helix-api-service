@@ -13,6 +13,7 @@ import xml2js from 'xml2js';
 import { MP4Parser } from '@adobe/helix-mediahandler';
 import { FileSizeFormatter, formatDuration, toSISize } from '../support/utils.js';
 import { error } from '../contentproxy/errors.js';
+import { ValidationError } from './ValidationError.js';
 
 const XML_PROLOG = Buffer.from('<?xml version="1.0" encoding="UTF-8"?>');
 
@@ -42,24 +43,6 @@ const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
  * Image file size limit.
  */
 const IMAGE_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
-
-/**
- * Error information with code and message.
- */
-export class Validate extends Error {
-  code;
-
-  /**
-   * @param {ErrorInfo} errorInfo
-   */
-  constructor(errorInfo, reason) {
-    super(errorInfo.message);
-    this.code = errorInfo.code;
-    if (reason) {
-      this.reason = reason;
-    }
-  }
-}
 
 function getLimit(config, property, def) {
   const limit = Number.parseInt(config.limits?.preview?.[property], 10);
@@ -92,12 +75,12 @@ function prependProlog(buf) {
 }
 
 /**
- * Validate SVG. Checks whether neither script tags nor on attributes are contained.
+ * ValidationError SVG. Checks whether neither script tags nor on attributes are contained.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {Validate} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
 async function validateSVG(context, resourcePath, buf) {
   const { log, config } = context;
@@ -108,7 +91,7 @@ async function validateSVG(context, resourcePath, buf) {
     const $2 = toSISize(limit, 0);
     const $3 = toSISize(buf.byteLength, 1);
 
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': SVG is larger than $2: $3', $1, $2, $3),
       `SVG is larger than ${$2}: ${$3}`,
     );
@@ -118,7 +101,7 @@ async function validateSVG(context, resourcePath, buf) {
     if (node.script || node.$?.on) {
       const $2 = path;
 
-      throw new Validate(
+      throw new ValidationError(
         error('Unable to preview \'$1\': Script or event handler detected in SVG at: $2', $1, $2),
         `Script or event handler detected in SVG at: ${$2}`,
       );
@@ -138,13 +121,13 @@ async function validateSVG(context, resourcePath, buf) {
     /* c8 ignore next 7 */
   } catch (e) {
     log.info(`Parsing SVG threw an error: ${e.message}`);
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': Unable to parse SVG XML', $1),
       'Unable to parse SVG XML',
     );
   }
   if (!xml?.svg) {
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': Expected XML content with an SVG root item', $1),
       'Expected XML content with an SVG root item',
     );
@@ -153,19 +136,19 @@ async function validateSVG(context, resourcePath, buf) {
 }
 
 /**
- * Validate MP4. Checks limits.
+ * ValidationError MP4. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {Validate} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
 async function validateMP4(context, resourcePath, buf) {
   const $1 = resourcePath;
 
   const info = new MP4Parser(buf, context.log).parse(buf);
   if (info === null) {
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': Unable to parse MP4', $1),
       'Unable to parse MP4',
     );
@@ -174,7 +157,7 @@ async function validateMP4(context, resourcePath, buf) {
     if (info.duration > 120) {
       const $2 = formatDuration(info.duration);
 
-      throw new Validate(
+      throw new ValidationError(
         error('Unable to preview \'$1\': MP4 is longer than 2 minutes: $2', $1, $2),
         `MP4 is longer than 2 minutes: ${$2}`,
       );
@@ -183,7 +166,7 @@ async function validateMP4(context, resourcePath, buf) {
     if (bitRate >= BIT_RATE_LIMIT) {
       const $2 = FileSizeFormatter('en-US', {}).format(bitRate);
 
-      throw new Validate(
+      throw new ValidationError(
         error('Unable to preview \'$1\': MP4 has a higher bitrate than 300 KB/s: $2', $1, $2),
         `MP4 has a higher bitrate than 300 KB/s: ${$2}`,
       );
@@ -192,12 +175,12 @@ async function validateMP4(context, resourcePath, buf) {
 }
 
 /**
- * Validate ICO. Checks limits.
+ * ValidationError ICO. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {Validate} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
 async function validateICO(context, resourcePath, buf) {
   const { config } = context;
@@ -208,7 +191,7 @@ async function validateICO(context, resourcePath, buf) {
     const $2 = toSISize(limit, 0);
     const $3 = toSISize(buf.byteLength, 1);
 
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': ICO is larger than $2: $3', $1, $2, $3),
       `ICO is larger than ${$2}: ${$3}`,
     );
@@ -216,12 +199,12 @@ async function validateICO(context, resourcePath, buf) {
 }
 
 /**
- * Validate PDF. Checks limits.
+ * ValidationError PDF. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
  * @param {Buffer} buf buffer
- * @throws {Validate} if an error occurs
+ * @throws {ValidationError} if an error occurs
  */
 async function validatePDF(context, resourcePath, buf) {
   const { config } = context;
@@ -232,7 +215,7 @@ async function validatePDF(context, resourcePath, buf) {
     const $2 = toSISize(limit, 0);
     const $3 = toSISize(buf.byteLength, 1);
 
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': PDF is larger than $2: $3', $1, $2, $3),
       `PDF is larger than ${$2}: ${$3}`,
     );
@@ -240,7 +223,7 @@ async function validatePDF(context, resourcePath, buf) {
 }
 
 /**
- * Validate default image. Checks limits.
+ * ValidationError default image. Checks limits.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {string} resourcePath resource path
@@ -256,7 +239,7 @@ async function validateImage(context, resourcePath, buf) {
     const $2 = toSISize(limit, 0);
     const $3 = toSISize(buf.byteLength, 1);
 
-    throw new Validate(
+    throw new ValidationError(
       error('Unable to preview \'$1\': Image is larger than $2: $3', $1, $2, $3),
       `Image is larger than ${$2}: ${$3}`,
     );
@@ -273,14 +256,14 @@ async function validateImage(context, resourcePath, buf) {
  * @param {string} resourcePath resource path
  * @param {Buffer} buffer buffer
  * @returns {Promise<void>} if validation passed
- * @throws {Validate} if validation failed
+ * @throws {ValidationError} if validation failed
  *
  * @typedef MediaType
  * @property {string} name
  * @property {string{}} extensions
  * @property {string} mime
  * @property {Preprocess} preprocess
- * @property {Validate} validate
+ * @property {ValidationError} validate
  * @property {boolean} redirect
  */
 

@@ -13,7 +13,7 @@ import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { errorResponse } from '../../support/utils.js';
 import { parseSheetJSON } from '../utils.js';
-import { validateSource } from './sourcebus-utils.js';
+import { validateSource } from './utils.js';
 import { error } from '../errors.js';
 
 /**

@@ -16,8 +16,8 @@ import { LambdaClient, InvokeCommand, InvocationType } from '@aws-sdk/client-lam
 import { Response } from '@adobe/fetch';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { sleep } from '../support/utils.js';
-import { JobStorage } from './Storage.js';
-// import { AuditBatch } from '../support/Audit.js';
+import { JobStorage } from './JobStorage.js';
+// import { AuditBatch } from '../support/AuditBatch.js';
 import { X_CONTENT_SOURCE_AUTH } from '../contentproxy/utils.js';
 
 const X_CONTENT_SOURCE_AUTH_ENCRYPTED = 'x-content-source-authorization-encrypted';

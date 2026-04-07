@@ -11,11 +11,11 @@
  */
 import { Response } from '@adobe/fetch';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
-import SitemapBuilder from './Builder.js';
+import SitemapBuilder from './SitemapBuilder.js';
 import { fetchExtendedSitemap, INTERNAL_SITEMAP } from './utils.js';
-// import { getNotifier } from '../support/Notifications.js';
+// import { getNotifier } from '../support/NotificationsSupport.js';
 import { errorResponse } from '../support/utils.js';
-// import { audit } from '../support/Audit.js';
+// import { audit } from '../support/AuditBatch.js';
 
 /**
  * Check whether a sitemap's source matches a given string.

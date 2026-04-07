@@ -18,7 +18,7 @@ import sinon from 'sinon';
 
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
-import { JobStorage } from '../../src/job/Storage.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import { PURGE_ALL_CONTENT_THRESHOLD } from '../../src/contentbus/contentbus.js';
 import { PreviewJob } from '../../src/preview/PreviewJob.js';
 import { PreviewResource } from '../../src/preview/PreviewResource.js';

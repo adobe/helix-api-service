@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { fileTypeFromBuffer } from 'file-type';
-import { MEDIA_TYPES, ValidationError } from '../media/Validate.js';
+import { MEDIA_TYPES, ValidationError } from '../media/ValidationError.js';
 import { applyCustomHeaders, errorResponse, logStack } from '../support/utils.js';
 import { error } from './errors.js';
 import google from './google.js';

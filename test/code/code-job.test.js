@@ -26,7 +26,7 @@ import {
 import { CodeJob } from '../../src/code/CodeJob.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { getCodeSource } from '../../src/code/github-bot.js';
-import { JobStorage } from '../../src/job/Storage.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import { RateLimitError } from '../../src/code/RateLimitError.js';
 import purge from '../../src/cache/purge.js';
 import { CodeResource } from '../../src/code/CodeResource.js';

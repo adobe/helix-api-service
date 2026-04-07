@@ -12,7 +12,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 
-import SitemapLanguage from '../../src/sitemap/Language.js';
+import SitemapLanguage from '../../src/sitemap/SitemapLanguage.js';
 import { createContext, Nock } from '../utils.js';
 
 describe('Sitemap Language tests', () => {

@@ -18,11 +18,11 @@ import { computeSurrogateKey, logLevelForStatusCode, propagateStatusCode } from 
 import { getMetadataPaths, METADATA_JSON_PATH } from '../contentbus/contentbus.js';
 import { querySiblingSites } from '../discover/cdn-identifier.js';
 import { cartesian } from '../support/utils.js';
-import { AkamaiPurgeClient } from './clients/Akamai.js';
-import { CloudflarePurgeClient } from './clients/Cloudflare.js';
-import { CloudfrontPurgeClient } from './clients/Cloudfront.js';
-import { FastlyPurgeClient } from './clients/Fastly.js';
-import { ManagedPurgeClient } from './clients/Managed.js';
+import { AkamaiPurgeClient } from './clients/AkamaiPurgeClient.js';
+import { CloudflarePurgeClient } from './clients/CloudflarePurgeClient.js';
+import { CloudfrontPurgeClient } from './clients/CloudfrontPurgeClient.js';
+import { FastlyPurgeClient } from './clients/FastlyPurgeClient.js';
+import { ManagedPurgeClient } from './clients/ManagedPurgeClient.js';
 import resolve from './resolve.js';
 import { removeRedundantKeys, removeRedundantPaths, sleep } from './utils.js';
 import { loadSiteConfig } from '../config/utils.js';

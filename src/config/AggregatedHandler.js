@@ -14,7 +14,7 @@ import { getMergedConfig } from '@adobe/helix-config-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { errorResponse } from '../support/utils.js';
 import { AdminConfigStore } from './AdminConfigStore.js';
-import { BaseHandler } from './Handler.js';
+import { BaseHandler } from './BaseHandler.js';
 
 class AggregatedHandler extends BaseHandler {
   constructor() {

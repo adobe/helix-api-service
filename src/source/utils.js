@@ -20,7 +20,7 @@ import { select } from 'hast-util-select';
 import { toHtml } from 'hast-util-to-html';
 import { ulid } from 'ulid';
 import { visit, CONTINUE } from 'unist-util-visit';
-import { MEDIA_TYPES } from '../media/Validate.js';
+import { MEDIA_TYPES } from '../media/ValidationError.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**

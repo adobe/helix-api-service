@@ -12,7 +12,7 @@
 import { Response } from '@adobe/fetch';
 import { Job } from './Job.js';
 import { TestJob } from './TestJob.js';
-import { JobStorage } from './Storage.js';
+import { JobStorage } from './JobStorage.js';
 import { CodeJob } from '../code/CodeJob.js';
 import { PreviewJob } from '../preview/PreviewJob.js';
 import { RemoveJob } from '../preview/RemoveJob.js';

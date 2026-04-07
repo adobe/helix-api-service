@@ -16,7 +16,7 @@ import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
 import contentbusRemove from '../contentbus/remove.js';
 import { Job } from '../job/Job.js';
-import { publishBulkResourceNotification } from '../support/Notifications.js';
+import { publishBulkResourceNotification } from '../support/NotificationsSupport.js';
 import { RequestInfo, toWebPath } from '../support/RequestInfo.js';
 import { RemoveResource } from './RemoveResource.js';
 

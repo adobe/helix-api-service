@@ -18,7 +18,7 @@ import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } fr
 import { Job } from '../job/Job.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex } from '../index/utils.js';
-import { publishBulkResourceNotification } from '../support/Notifications.js';
+import { publishBulkResourceNotification } from '../support/NotificationsSupport.js';
 import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
 import { hasSimpleSitemap, installSimpleSitemap } from '../sitemap/utils.js';
 import { updateRedirects } from '../redirects/update.js';

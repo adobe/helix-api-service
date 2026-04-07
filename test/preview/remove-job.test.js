@@ -19,7 +19,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { METADATA_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { RemoveJob } from '../../src/preview/RemoveJob.js';
-import { JobStorage } from '../../src/job/Storage.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import purge from '../../src/cache/purge.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,

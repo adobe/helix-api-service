@@ -14,6 +14,7 @@ import { Job } from './job.js';
 import { TestJob } from './test-job.js';
 import { JobStorage } from './storage.js';
 import { CodeJob } from '../code/code-job.js';
+import { IndexJob } from '../index/IndexJob.js';
 import { PreviewJob } from '../preview/preview-job.js';
 import { RemoveJob } from '../preview/remove-job.js';
 import { PublishJob } from '../live/publish-job.js';
@@ -26,6 +27,7 @@ export const JOB_CLASS = {
   [PreviewJob.TOPIC]: PreviewJob,
   [RemoveJob.TOPIC]: RemoveJob,
   [PublishJob.TOPIC]: PublishJob,
+  [IndexJob.TOPIC]: IndexJob,
 };
 
 /**

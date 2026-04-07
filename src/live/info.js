@@ -34,7 +34,7 @@ export default async function getLiveInfo(context, info) {
   const redirects = await context.getRedirects('live');
 
   return {
-    url: info.getLiveUrl(context),
+    url: info.getLiveUrl(),
     ...await getContentBusInfo(context, info, 'live'),
     configRedirectLocation: redirects[resourcePath],
     permissions: authInfo.getPermissions('live:'),

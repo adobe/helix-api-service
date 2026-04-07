@@ -1,0 +1,96 @@
+openapi: 3.1.0
+log:
+  get:
+    operationId: getLogs
+    tags:
+      - log
+    summary: Returns logs
+    description: >
+      Returns logs for a project. If there are more logs for the timespan specified,
+      there will be a `next` link in the response to load the next batch.
+    security:
+      - AuthCookie:
+          - log:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/fromParam"
+      - $ref: "./parameters.yaml#/toParam"
+      - $ref: "./parameters.yaml#/sinceParam"
+      - $ref: "./parameters.yaml#/nextTokenParam"
+    responses:
+      '200':
+        description: Log statements
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas.yaml#/logResult"
+            examples:
+              success:
+                description: Success response of a log request.
+                value:
+                  from: 2023-11-07T14:00:00.000Z
+                  to: 2023-11-07T16:15:12.454Z
+                  entries:
+                    - timestamp: 1699368094644
+                      duration: 467
+                      status: 201
+                      method: POST
+                      route: preview
+                      path: /my-page
+                  nextToken: ABAB==
+                  links:
+                    next: https://api.aem.live/org/sites/site/log?nextToken=ABAB==
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+  post:
+    operationId: addLogs
+    tags:
+      - log
+    summary: Add logs
+    description: >
+      Add logs to a project. The body should be in JSON format and
+      contain an array called `entries`.
+    security:
+      - AuthCookie:
+          - log:read
+          - log:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    requestBody:
+      content:
+        'application/json':
+          schema:
+            $ref: './schemas.yaml#/logEntriesBody'
+          examples:
+            multiple-entries:
+              description: Posts one entry to the audit log.
+              value:
+                entries:
+                  - event: dinner is ready
+    responses:
+      '201':
+        description: Logs added.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

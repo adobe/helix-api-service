@@ -26,6 +26,7 @@ jobs:
       - run: npm install
       - run: npm run lint
       - run: npm test
+      - run: npm run docs:lint
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -97,3 +98,24 @@ jobs:
         env:
           HLX_TEST_HEADERS: ${{ secrets.HLX_TEST_HEADERS }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # publish api docs to https://www.hlx.live/docs/api.html
+      - name: Publish docs (check out)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/checkout@v6
+        with:
+          repository: adobe/helix-website
+          ssh-key: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+          path: website
+      - name: Publish docs (deploy)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd $GITHUB_WORKSPACE/website
+          cp $GITHUB_WORKSPACE/docs/api.html docs/api.html
+          if [[ -n $(git status --porcelain) ]]
+          then
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git commit -am "chore(docs): update API service docs [skip ci]"
+            git push
+          fi

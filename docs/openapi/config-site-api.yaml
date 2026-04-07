@@ -1,0 +1,171 @@
+openapi: 3.1.0
+site:
+  get:
+    operationId: getConfigSite
+    tags:
+      - siteConfig
+    summary: Read Site Config
+    description: Returns the site level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The site configuration
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/site.json"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+  post:
+    operationId: updateConfigSite
+    tags:
+      - siteConfig
+    summary: Update Site Config
+    description: Stores new site configuration.
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/versionNameParam"
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "./schemas/config/site.json"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The updated site configuration
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/site.json"
+
+  put:
+    operationId: createConfigSite
+    tags:
+      - siteConfig
+    summary: Create Site Config
+    description: Creates the site level configuration. Returns `409` if a configuration already exists.
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "./schemas/config/site.json"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The created site configuration
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/site.json"
+
+  delete:
+    operationId: deleteConfigSite
+    tags:
+      - siteConfig
+    summary: Delete Site Config
+    description: Permanently deletes the site level configuration.
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      '204':
+        description: Resource deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+siteConfig:
+  get:
+    operationId: getConfigSiteSub
+    tags:
+      - siteConfig
+    summary: Read Site Config Property
+    description: Returns a sub-property of the site level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The config property
+        content:
+          application/json:
+            schema:
+              type: object
+  post:
+    operationId: updateConfigSiteSub
+    tags:
+      - siteConfig
+    summary: Update Site Config Property
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+  delete:
+    operationId: deleteConfigSiteSub
+    tags:
+      - siteConfig
+    summary: Delete Site Config Property
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '204':
+        description: Property deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

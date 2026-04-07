@@ -1,0 +1,188 @@
+openapi: 3.1.0
+job:
+  get:
+    operationId: getJob
+    tags:
+      - job
+    summary: Job Status
+    description: Returns the job status
+    security:
+      - AuthCookie:
+          - job:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/topicParam"
+      - $ref: "./parameters.yaml#/jobNameParam"
+    responses:
+      '202':
+        description: The Job Status
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/jobStatus"
+                - $ref: "./schemas.yaml#/jobLinksInfo"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  topic: "preview"
+                  name: "job-123"
+                  state: "created"
+                  startTime: "2021-05-31T23:00:00Z"
+                  progress:
+                    total: 10
+                    processed: 0
+                    failed: 0
+                  links:
+                    self: "https://api.aem.live/org/sites/site/jobs/preview/job-123"
+                    details: "https://api.aem.live/org/sites/site/jobs/preview/job-123/report"
+                    list: "https://api.aem.live/org/sites/site/jobs/preview"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+  delete:
+    operationId: stopJob
+    tags:
+      - job
+    summary: Stop job
+    description: Stops a job.
+    security:
+      - AuthCookie:
+          - job:read
+          - job:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/topicParam"
+      - $ref: "./parameters.yaml#/jobNameParam"
+    responses:
+      '204':
+        description: Job stopped.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+job-report:
+  get:
+    operationId: getJobReport
+    tags:
+      - job
+    summary: Job Report
+    description: Returns the detailed job report
+    security:
+      - AuthCookie:
+          - job:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/topicParam"
+      - $ref: "./parameters.yaml#/jobNameParam"
+    responses:
+      '202':
+        description: The Job Report
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/jobStatusDetails"
+                - $ref: "./schemas.yaml#/jobLinksInfoDetails"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  topic: "preview"
+                  name: "job-123"
+                  state: "created"
+                  startTime: "2021-05-31T23:00:00Z"
+                  progress:
+                    total: 10
+                    processed: 6
+                    failed: 4
+                  data:
+                    paths:
+                      - "/documents"
+                  links:
+                    self: "https://api.aem.live/org/sites/site/jobs/preview/job-123/report"
+                    job: "https://api.aem.live/org/sites/site/jobs/preview/job-123"
+                    list: "https://api.aem.live/org/sites/site/jobs/preview"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+job-list:
+  get:
+    operationId: getJobList
+    tags:
+      - job
+    summary: Job List
+    description: Returns the list of jobs for a topic
+    security:
+      - AuthCookie:
+          - job:list
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/topicParam"
+    responses:
+      '200':
+        description: The Job List
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/jobList"
+                - $ref: "./schemas.yaml#/jobListLink"
+            examples:
+              success:
+                description: Success response of a job list.
+                value:
+                  topic: "preview"
+                  jobs:
+                    - name: "job-123"
+                      state: "created"
+                      time: "2021-05-31T23:00:00Z"
+                      href: "https://api.aem.live/org/sites/site/jobs/preview/job-123"
+                    - name: "job-124"
+                      state: "running"
+                      time: "2021-04-30T23:00:00Z"
+                      href: "https://api.aem.live/org/sites/site/jobs/preview/job-124"
+                  links:
+                    self: "https://api.aem.live/org/sites/site/jobs/preview"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"

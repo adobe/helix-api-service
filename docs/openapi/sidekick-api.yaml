@@ -1,0 +1,30 @@
+openapi: 3.1.0
+sidekick:
+  get:
+    operationId: getSidekickConfig
+    tags:
+      - sidekick
+    summary: Get Sidekick configuration
+    description: Returns the Sidekick configuration for the given site.
+    security:
+      - {}
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      '200':
+        description: The Sidekick configuration
+        content:
+          application/json:
+            schema:
+              type: object
+      '401':
+        $ref: "./responses.yaml#/401"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

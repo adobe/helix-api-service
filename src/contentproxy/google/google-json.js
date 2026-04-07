@@ -14,7 +14,7 @@ import { resolveResource } from '../../support/google.js';
 import { errorResponse } from '../../support/utils.js';
 import { error } from '../errors.js';
 import extract from '../sheets.js';
-import GoogleSheet from './GoogleSheet.js';
+import { GoogleSheet } from './GoogleSheet.js';
 
 /**
  * Fetches a google sheet from the external source.

@@ -257,4 +257,4 @@ class GoogleSheet extends Tabular {
   }
 }
 
-export default GoogleSheet;
+export { GoogleSheet };

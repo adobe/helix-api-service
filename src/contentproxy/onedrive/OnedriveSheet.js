@@ -84,4 +84,4 @@ class OnedriveSheet extends Tabular {
   }
 }
 
-export default OnedriveSheet;
+export { OnedriveSheet };

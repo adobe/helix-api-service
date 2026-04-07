@@ -12,7 +12,7 @@
 import { OneDrive } from '@adobe/helix-onedrive-support';
 import { resolveResource } from '../../support/onedrive.js';
 import extract from '../sheets.js';
-import OnedriveSheet from './OnedriveSheet.js';
+import { OnedriveSheet } from './OnedriveSheet.js';
 
 /**
  * Fetches an excel sheet from the external source.

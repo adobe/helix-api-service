@@ -1,3 +1,10 @@
+# [1.42.0](https://github.com/adobe/helix-api-service/compare/v1.41.1...v1.42.0) (2026-04-07)
+
+
+### Features
+
+* **index:** add bulk indexing ([#172](https://github.com/adobe/helix-api-service/issues/172)) ([3a9f036](https://github.com/adobe/helix-api-service/commit/3a9f036c97a3bfbf9082c3dd0f7587d7ccbe8926))
+
 ## [1.41.1](https://github.com/adobe/helix-api-service/compare/v1.41.0...v1.41.1) (2026-04-07)
 
 

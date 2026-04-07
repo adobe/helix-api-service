@@ -55,6 +55,11 @@ const MAXIMUM_NUM_PATHS = 50000;
  * Index job class.
  */
 export class IndexJob extends Job {
+  /**
+   * Topic name
+   */
+  static TOPIC = 'index';
+
   /** @type {string} */
   indexNames;
 

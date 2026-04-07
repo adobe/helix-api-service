@@ -9,7 +9,6 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-/* eslint-disable no-param-reassign */
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { computeSurrogateKey } from '@adobe/helix-shared-utils';
@@ -22,6 +21,7 @@ import { sleep } from '../support/utils.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
 import { RequestInfo } from '../support/RequestInfo.js';
+import { PreviewResource } from './PreviewResource.js';
 
 /**
  * Concurrency to use when previewing pages.
@@ -53,20 +53,11 @@ async function isNotModified(context, file) {
 }
 
 /**
- * @typedef File
- * @property {Date} lastModified last modified date
- * @property {string} resourcePath resource path
- * @property {string} path web path
- * @property {string} status status of update
- * @property {string} error error on update
- * @property {string} errorCode errorCode on update
- * @property {object} source source object
- */
-
-/**
  * Job that previews a bulk of resources in the background.
  */
 export class PreviewJob extends Job {
+  static TOPIC = 'preview';
+
   /**
    * Collect the resources from onedrive
    *
@@ -92,10 +83,7 @@ export class PreviewJob extends Job {
 
     const resources = [];
     for (const file of list) {
-      const resource = {
-        status: 0,
-        ...file,
-      };
+      const resource = PreviewResource.fromJSON(file);
       if (resource.resourcePath === REDIRECTS_JSON_PATH) {
         // ensure redirects are processed first
         resource.redirects = true;
@@ -131,7 +119,7 @@ export class PreviewJob extends Job {
   /**
    * Process a single file that should be previewed.
    *
-   * @param {File} file file
+   * @param {PreviewResource} file file
    * @param {boolean} forceUpdate whether to force an update
    * @param {import('@adobe/helix-shared-process-queue').Token} token the task token
    */
@@ -141,7 +129,7 @@ export class PreviewJob extends Job {
 
     if (!forceUpdate && await isNotModified(ctx, file)) {
       log.info(`ignored preview update for not modified ${file.path}`);
-      file.status = 304;
+      file.setStatus(304);
       state.progress.notmodified += 1;
       token.release();
       return;
@@ -195,15 +183,11 @@ export class PreviewJob extends Job {
         }
       }
     }
-    file.status = status;
+    file.setStatus(status);
     const err = response.headers.get('x-error');
     /* c8 ignore next 5 */ // TODO!
     if (err) {
-      file.error = err;
-      const errorCode = response.headers.get('x-error-code');
-      if (errorCode) {
-        file.errorCode = errorCode;
-      }
+      file.setError(err, response.headers.get('x-error-code') || undefined);
       log.warn(`error from content bus: ${response.status} ${err}`);
       state.progress.failed += 1;
     }
@@ -265,7 +249,7 @@ export class PreviewJob extends Job {
         abortController.abort();
         return;
       }
-      if (!file.status) {
+      if (!file.isProcessed()) {
         await this.processFile(file, forceUpdate, token);
         state.progress.processed += 1;
         if (file.status === 200) {
@@ -290,6 +274,10 @@ export class PreviewJob extends Job {
       // todo: implement resume for content-source listing
       throw new Error('job cannot be resumed during the collect phase. please provide a smaller input set.');
     }
+
+    // hydrate plain objects from JSON.parse back into PreviewResource instances
+    data.resources = PreviewResource.fromJSONArray(data.resources);
+
     if (!data.phase) {
       await this.setPhase('collect');
 

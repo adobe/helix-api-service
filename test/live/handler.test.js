@@ -112,4 +112,26 @@ describe('Live Handler Tests', () => {
       'x-error': 'error while fetching: 403',
     });
   });
+
+  it('routes POST /* to bulk publish', async () => {
+    const suffix = '/org/sites/site/live/*';
+
+    const response = await main(new Request('https://api.aem.live/', {
+      method: 'POST',
+    }), {
+      pathInfo: { suffix },
+      attributes: {
+        authInfo: AuthInfo.Default()
+          .withAuthenticated(true)
+          .withRole('publish'),
+        infoMarkerChecked: true,
+      },
+      env: {
+        HELIX_STORAGE_MAX_ATTEMPTS: '1',
+      },
+    });
+    // bulk-publish validates paths before creating a job; empty paths returns 400
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.headers.get('x-error'), "bulk-publish payload is missing 'paths'.");
+  });
 });

@@ -131,7 +131,7 @@ export async function update(ctx, info) {
     }
   }
 
-  return Job.create(ctx, info, 'code', {
+  return Job.create(ctx, info, CodeJob.TOPIC, {
     jobClass: CodeJob,
     transient: !startJob,
     data: event,

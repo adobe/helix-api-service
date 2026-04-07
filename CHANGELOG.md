@@ -1,3 +1,10 @@
+# [1.41.0](https://github.com/adobe/helix-api-service/compare/v1.40.1...v1.41.0) (2026-04-07)
+
+
+### Features
+
+* **docs:** add OpenAPI spec and generated API documentation ([#173](https://github.com/adobe/helix-api-service/issues/173)) ([3713efe](https://github.com/adobe/helix-api-service/commit/3713efe0fff5e2945f4c377d45d10fe955c187fa))
+
 ## [1.40.1](https://github.com/adobe/helix-api-service/compare/v1.40.0...v1.40.1) (2026-04-07)
 
 

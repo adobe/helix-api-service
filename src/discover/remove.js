@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { Inventory } from './inventory.js';
+import { Inventory } from './Inventory.js';
 
 /**
  * Remove a project.

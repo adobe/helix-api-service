@@ -12,7 +12,7 @@
 /* eslint-env mocha */
 /* eslint-disable class-methods-use-this */
 import assert from 'assert';
-import Tabular from '../../src/contentproxy/Tabular.js';
+import { Tabular } from '../../src/contentproxy/Tabular.js';
 
 describe('Tabular Tests', () => {
   it('getRows returns empty array', async () => {

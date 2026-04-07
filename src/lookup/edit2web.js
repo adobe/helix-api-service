@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import google from './edit2web-google.js';
+import google from './GoogleURL.js';
 import onedrive from './edit2web-onedrive.js';
 import { getSanitizedPath } from '../support/utils.js';
 

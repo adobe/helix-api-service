@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../auth/auth-info.js';
+import { AuthInfo } from '../auth/AuthInfo.js';
 
 /**
  * Wrapper to turn an SQS record into a http request

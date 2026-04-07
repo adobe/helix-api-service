@@ -15,9 +15,9 @@ import {
   CodeJob,
   getCodeRef,
   isValidPath,
-} from './code-job.js';
+} from './CodeJob.js';
 import { BYOGIT_INSTALLATION_ID, getCodeSource, getRateLimits } from './github-bot.js';
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { errorResponse } from '../support/utils.js';
 
 /**

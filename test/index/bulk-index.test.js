@@ -14,7 +14,7 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { IndexMessages } from '../../src/index/IndexMessages.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
@@ -82,13 +82,9 @@ sitemaps:
     sandbox = sinon.createSandbox();
     sandbox.stub(IndexMessages.prototype, 'send').callsFake(function fn() {
       updates = this.messages.map(({ MessageBody }) => {
-        const { record: { path }, deleted } = JSON.parse(MessageBody);
-        const ret = { path };
-        if (deleted) {
-          ret.deleted = true;
-        }
-        return ret;
-      }).sort((a, b) => a.path.localeCompare(b.path));
+        const { index, record: { path }, deleted } = JSON.parse(MessageBody);
+        return `${index}:${path}${deleted ? ' (deleted)' : ''}`;
+      }).sort();
     });
   });
 
@@ -187,7 +183,7 @@ sitemaps:
     });
   });
 
-  it('reindex everything', async () => {
+  it('reindex all pages in all indexes', async () => {
     nock.content()
       .getObject('/live/en/query-index.json')
       .reply(200, { data: [{ path: '/en/' }] })
@@ -207,7 +203,26 @@ sitemaps:
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(updates, [{ path: '/en/' }, { path: '/fr/' }]);
+    assert.deepStrictEqual(updates, ['default:/en/', 'french:/fr/']);
+  });
+
+  it('reindex all pages in a specific index', async () => {
+    nock.content()
+      .getObject('/live/en/query-index.json')
+      .reply(200, { data: [{ path: '/en/' }, { path: '/fr/' }] });
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/live/`, [
+      { Key: 'en/index.md' },
+      { Key: 'fr/index.md' },
+    ], '');
+    nock('https://main--site--org.aem.live')
+      .get('/en/')
+      .reply(200, '<html></html>', { 'last-modified': 'Tue, 04 May 2021 04:40:15 GMT' });
+
+    const { request, context } = setupTest(['/*'], ['default']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(updates, ['default:/en/', 'default:/fr/ (deleted)']);
   });
 
   it('reindex a subtree in an index', async () => {
@@ -225,10 +240,7 @@ sitemaps:
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(updates, [
-      { path: '/en/' },
-      { path: '/en/gone', deleted: true },
-    ]);
+    assert.deepStrictEqual(updates, ['default:/en/', 'default:/en/gone (deleted)']);
   });
 
   it('reindex specific paths in an index', async () => {
@@ -248,10 +260,7 @@ sitemaps:
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(updates, [
-      { path: '/en/' },
-      { path: '/en/gone', deleted: true },
-    ]);
+    assert.deepStrictEqual(updates, ['default:/en/', 'default:/en/gone (deleted)']);
   });
 
   it('ignores a page that has not changed', async () => {

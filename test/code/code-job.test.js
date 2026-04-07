@@ -23,11 +23,11 @@ import {
   createContext, createInfo,
   Nock, SITE_CONFIG,
 } from '../utils.js';
-import { CodeJob } from '../../src/code/code-job.js';
+import { CodeJob } from '../../src/code/CodeJob.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { getCodeSource } from '../../src/code/github-bot.js';
-import { JobStorage } from '../../src/job/storage.js';
-import { RateLimitError } from '../../src/code/rate-limit-error.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
+import { RateLimitError } from '../../src/code/RateLimitError.js';
 import purge from '../../src/cache/purge.js';
 import { CodeResource } from '../../src/code/CodeResource.js';
 

@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { createErrorResponse } from '../contentbus/utils.js';
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { IndexJob } from './IndexJob.js';
 

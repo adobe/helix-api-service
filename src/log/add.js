@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { errorResponse } from '../support/utils.js';
-import { AuditBatch } from '../support/audit.js';
+import { AuditBatch } from '../support/AuditBatch.js';
 
 /**
  * Add entries to an audit log.

@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { errorResponse } from '../support/utils.js';
-import Tabular from './Tabular.js';
+import { Tabular } from './Tabular.js';
 import { error } from './errors.js';
 
 const TYPE_KEY = ':type';

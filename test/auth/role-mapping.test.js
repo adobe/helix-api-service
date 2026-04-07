@@ -11,7 +11,7 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
-import { RoleMapping } from '../../src/auth/role-mapping.js';
+import { RoleMapping } from '../../src/auth/RoleMapping.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';

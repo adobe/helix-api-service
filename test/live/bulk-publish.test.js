@@ -14,10 +14,10 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Response } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import bulkPublish from '../../src/live/bulk-publish.js';
-import { PublishJob } from '../../src/live/publish-job.js';
-import { Job } from '../../src/job/job.js';
+import { PublishJob } from '../../src/live/PublishJob.js';
+import { Job } from '../../src/job/Job.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';

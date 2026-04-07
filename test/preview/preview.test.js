@@ -16,7 +16,7 @@ import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import sinon from 'sinon';
 import { Request, Response } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
 import { main } from '../../src/index.js';
 import purge from '../../src/cache/purge.js';

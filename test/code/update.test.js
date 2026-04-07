@@ -23,8 +23,8 @@ import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
-import { Job } from '../../src/job/job.js';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { Job } from '../../src/job/Job.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 
 const getKeyPair = promisify(generateKeyPair);
 

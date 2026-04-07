@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import getLiveInfo from '../../src/live/info.js';
 import { main } from '../../src/index.js';
 import { createInfo, Nock, SITE_CONFIG } from '../utils.js';

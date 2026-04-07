@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { error } from '../contentproxy/errors.js';
 import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { UnpublishJob } from './unpublish-job.js';

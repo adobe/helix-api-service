@@ -14,9 +14,9 @@
 import assert from 'assert';
 import crypto from 'crypto';
 import sinon from 'sinon';
-import { AuthInfo } from '../../src/auth/auth-info.js';
-import { decryptToken, encryptToken, Job } from '../../src/job/job.js';
-import { JobStorage } from '../../src/job/storage.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
+import { decryptToken, encryptToken, Job } from '../../src/job/Job.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,

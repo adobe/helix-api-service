@@ -14,8 +14,8 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Request, Response } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
-import { Job } from '../../src/job/job.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
+import { Job } from '../../src/job/Job.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 

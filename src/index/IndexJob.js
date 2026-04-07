@@ -233,7 +233,6 @@ export class IndexJob extends Job {
       page.gone = true;
     }
     index.indices
-      .filter(({ name }) => this.includeIndex(name))
       .filter((config) => contains(config, webPath))
       .forEach((config) => {
         const type = getIndexType(config, bulkContext.type);

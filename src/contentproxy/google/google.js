@@ -15,7 +15,7 @@ import { errorResponse } from '../../support/utils.js';
 import { error } from '../errors.js';
 import fetchContent from '../fetch-content.js';
 import { handleFile } from './google-file.js';
-import { handleJSON } from './GoogleSheet.js';
+import { handleJSON } from './google-json.js';
 import { list } from './GoogleForest.js';
 
 /**

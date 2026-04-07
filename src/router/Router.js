@@ -14,7 +14,7 @@ import { Node } from './Node.js';
 /**
  * Router that will match an incoming request to a handler.
  */
-export default class Router {
+export class Router {
   /**
    * Root node.
    */

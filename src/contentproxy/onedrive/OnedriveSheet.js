@@ -9,7 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import Tabular from '../Tabular.js';
+import { Tabular } from '../Tabular.js';
 
 export class OnedriveSheet extends Tabular {
   /**

@@ -12,9 +12,9 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { errorResponse } from '../support/utils.js';
-import GoogleMatcher from './matcher/GoogleMatcher.js';
-import SharepointMatcher from './matcher/SharepointMatcher.js';
-import GithubMatcher from './matcher/GithubMatcher.js';
+import { GoogleMatcher } from './matcher/GoogleMatcher.js';
+import { SharepointMatcher } from './matcher/SharepointMatcher.js';
+import { GithubMatcher } from './matcher/GithubMatcher.js';
 import { Inventory } from './Inventory.js';
 
 const MATCHERS = [

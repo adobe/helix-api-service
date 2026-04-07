@@ -11,7 +11,7 @@
  */
 import { Response } from '@adobe/fetch';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
-import SitemapBuilder from './SitemapBuilder.js';
+import { SitemapBuilder } from './SitemapBuilder.js';
 import { fetchExtendedSitemap, INTERNAL_SITEMAP } from './utils.js';
 // import { getNotifier } from '../support/NotificationsSupport.js';
 import { errorResponse } from '../support/utils.js';

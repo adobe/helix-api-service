@@ -36,7 +36,7 @@ import source from './source/handler.js';
 import status from './status/handler.js';
 import job from './job/handler.js';
 
-import Router from './router/Router.js';
+import { Router } from './router/Router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
 import { logRequest } from './support/utils.js';

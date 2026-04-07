@@ -38,7 +38,7 @@ function buildRoots(inventory) {
 /**
  * Matcher that filters inventory entries against known google drives.
  */
-export default class GoogleMatcher {
+export class GoogleMatcher {
   constructor(env) {
     this.customUserProjects = (env.HLX_CUSTOM_GOOGLE_USERS ?? '').split(',')
       .map((project) => {

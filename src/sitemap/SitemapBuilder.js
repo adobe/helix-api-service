@@ -10,15 +10,15 @@
  * governing permissions and limitations under the License.
  */
 import processQueue from '@adobe/helix-shared-process-queue';
-import SitemapLanguage from './SitemapLanguage.js';
-import SitemapOutput from './SitemapOutput.js';
+import { SitemapLanguage } from './SitemapLanguage.js';
+import { SitemapOutput } from './SitemapOutput.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
  * Combines all sitemaps and computes the global structure
  * of the sitemap including all alternates.
  */
-export default class SitemapBuilder {
+export class SitemapBuilder {
   constructor({
     config, origin: defaultOrigin,
   }) {

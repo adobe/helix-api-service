@@ -66,7 +66,7 @@ function stripAccessSpecifiers(pathname) {
 /**
  * Matcher that filters inventory entries against known sharepoint sites.
  */
-export default class SharepointMatcher {
+export class SharepointMatcher {
   /**
    * Returns a matcher for document URLs given as `/_layouts/15/Doc.aspx`
    *

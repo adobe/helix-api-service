@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import A1 from '@flighter/a1-notation';
-import Tabular from '../Tabular.js';
+import { Tabular } from '../Tabular.js';
 import { rewriteCellUrl } from '../utils.js';
 
 /**

@@ -13,7 +13,7 @@
 /**
  * Matcher that filters inventory entries against github url.
  */
-export default class GithubMatcher {
+export class GithubMatcher {
   /**
    * Find the inventory entries that have the given github URL.
    *

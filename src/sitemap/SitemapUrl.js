@@ -17,7 +17,7 @@ import escape from 'lodash.escape';
  * @property {string} loc the location
  * @property {string} lastmod last modification date, optional
  */
-export default class SitemapURL {
+export class SitemapURL {
   /**
    * Location in URL
    * @property {string} location

@@ -11,7 +11,7 @@
  */
 import xml2js from 'xml2js';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import SitemapURL from './SitemapURL.js';
+import { SitemapURL } from './SitemapURL.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 
 /**
@@ -23,7 +23,7 @@ const MAXIMUM_NUM_URLS = 50000;
  * Represents a sitemap output, that can be fed by one more than one language
  * when aggregating multiple languages.
  */
-export default class SitemapOutput {
+export class SitemapOutput {
   constructor(destination) {
     this._destination = destination;
 

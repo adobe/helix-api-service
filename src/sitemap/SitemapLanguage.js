@@ -15,7 +15,7 @@ import escape from 'lodash.escape';
 import xml2js from 'xml2js';
 import { fetchS3 } from '@adobe/helix-admin-support';
 
-import SitemapURL from './SitemapURL.js';
+import { SitemapURL } from './SitemapURL.js';
 import { isInternal } from '../support/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { getSheetData } from '../contentproxy/utils.js';
@@ -68,7 +68,7 @@ function jsonFilter(searchParams, data) {
 /**
  * Represents a single sitemap language, which may have alternates.
  */
-export default class SitemapLanguage {
+export class SitemapLanguage {
   constructor({
     origin, source, lastmod,
     hreflang, alternate, extension,

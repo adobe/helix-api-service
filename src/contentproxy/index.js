@@ -17,7 +17,7 @@ import { error } from './errors.js';
 import google from './google/google.js';
 import markup from './markup/markup.js';
 import onedrive from './onedrive/onedrive.js';
-import sourcebus from './source/Sourcebus.js';
+import sourcebus from './source/sourcebus.js';
 
 /**
  * @type {import('./contentproxy').ContentSourceHandler[]}

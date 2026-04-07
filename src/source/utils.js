@@ -146,7 +146,7 @@ export function getDocID(meta) {
 }
 
 /**
- * ValidationError the HTML message body and intern the images if a media handler is provided.
+ * Validate the HTML message body and intern the images if a media handler is provided.
  * When interning the images, they are uploaded to the media bus and references to them
  * are replaced with media bus URLs.
  *
@@ -245,7 +245,7 @@ export async function getValidHtml(context, body, keptImageURLPrefixes, mediaHan
 }
 
 /**
- * ValidationError the JSON message body stored in the request info.
+ * Validate the JSON message body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {Buffer} body the message body as buffer
@@ -261,7 +261,7 @@ export async function validateJson(context, body) {
 }
 
 /**
- * ValidationError media body stored in the request info.
+ * Validate media body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
@@ -321,7 +321,7 @@ function getKeptImageURLPrefixes(info) {
 }
 
 /**
- * ValidationError the body stored in the request info.
+ * Validate the body stored in the request info.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info

@@ -82,7 +82,7 @@ function transformList(list) {
 }
 
 /**
- * ValidationError a folder path by checking that its name remains the same once
+ * Validate a folder path by checking that its name remains the same once
  * sanitized.
  *
  * @param {string} path The folder path, note that it must end with a slash

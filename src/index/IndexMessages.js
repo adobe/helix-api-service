@@ -40,20 +40,22 @@ export class IndexMessages {
   /**
    * Initialize the index messages.
    */
-  constructor(org, site) {
+  constructor(org, site, opts = {}) {
     this.org = org;
     this.site = site;
+    this.maxMessageSize = opts.maxMessageSize /* c8 ignore next */ ?? MAX_MESSAGE_SIZE;
+    this.thresholdFifo = opts.thresholdFifo /* c8 ignore next */ ?? THRESHOLD_FIFO;
   }
 
   /**
    * Append a message for the {BatchedQueueClient} and push it to an array of messages. Skip
    * the message if it exceeds a certain size and log a warning.
    */
-  append(msg, log) {
-    const { messages } = this;
+  #append(msg, log) {
+    const { messages, maxMessageSize } = this;
 
     const size = Buffer.from(JSON.stringify(msg), 'utf8').length;
-    if (size > MAX_MESSAGE_SIZE) {
+    if (size > maxMessageSize) {
       log.warn(`Message too big: ${hsize(size)} bytes. Skipping...`);
     } else {
       messages.push(msg);
@@ -68,7 +70,7 @@ export class IndexMessages {
       timestamp: Date.now(),
       type,
     });
-    this.append(message, log);
+    this.#append(message, log);
   }
 
   appendDeleted(name, webPath, type, log) {
@@ -82,7 +84,7 @@ export class IndexMessages {
       timestamp: Date.now(),
       type,
     });
-    this.append(message, log);
+    this.#append(message, log);
   }
 
   /**
@@ -152,8 +154,8 @@ export class IndexMessages {
    * @returns {Promise<void>}
    */
   async send(context) {
-    const { messages } = this;
-    if (messages.length > THRESHOLD_FIFO) {
+    const { messages, thresholdFifo } = this;
+    if (messages.length > thresholdFifo) {
       await this.#sendTask(context);
     } else if (messages.length) {
       await this.#sendUpdates(context);

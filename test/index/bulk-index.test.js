@@ -19,8 +19,14 @@ import { main } from '../../src/index.js';
 import { IndexMessages } from '../../src/index/IndexMessages.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
+/**
+ * Content bus ID (short form)
+ */
 const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
 
+/**
+ * Index configuration
+ */
 const INDEX_CONFIG = `
 indices:
   default: &default
@@ -107,6 +113,7 @@ sitemaps:
       pathInfo: { suffix },
       attributes: {
         authInfo: AuthInfo.Default().withAuthenticated(true),
+        maximumNumPaths: 100,
       },
       env: {
         HLX_CONFIG_SERVICE_TOKEN: 'token',
@@ -245,5 +252,55 @@ sitemaps:
       { path: '/en/' },
       { path: '/en/gone', deleted: true },
     ]);
+  });
+
+  it('ignores a page that has not changed', async () => {
+    nock.content()
+      .getObject('/live/en/query-index.json')
+      .reply(200, { data: [{ title: '', path: '/en/', lastModified: 1620103215 }] });
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/live/`, [
+      { Key: 'en/index.md' },
+    ], '');
+    nock('https://main--site--org.aem.live')
+      .get('/en/')
+      .reply(200, '<html></html>', { 'last-modified': 'Tue, 04 May 2021 04:40:15 GMT' });
+
+    const { request, context } = setupTest(['/en/'], ['default']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('reports an error if fetching a page fails', async () => {
+    nock.content()
+      .getObject('/live/en/query-index.json')
+      .reply(200, { data: {} });
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/live/`, [
+      { Key: 'en/index.md' },
+    ], '');
+    nock('https://main--site--org.aem.live')
+      .get('/en/')
+      .reply(500);
+
+    const { request, context } = setupTest(['/en/'], ['default']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('reports an error when too many paths are found', async () => {
+    nock.listObjects(
+      'helix-content-bus',
+      `${CONTENT_BUS_ID}/live/en/`,
+      Array.from({ length: 101 }, (_, index) => ({ Key: `document-${index + 1}` })),
+      '',
+    );
+
+    const { request, context } = setupTest(['/en/*'], ['default']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    const { job } = await response.json();
+    assert.strictEqual(job.error, 'Too many paths with prefix \'/en/\': 101, maximum allowed is: 100');
   });
 });

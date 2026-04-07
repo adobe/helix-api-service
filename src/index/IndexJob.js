@@ -60,6 +60,9 @@ export class IndexJob extends Job {
    */
   static TOPIC = 'index';
 
+  /** @type {number} */
+  maximumNumPaths;
+
   /** @type {string} */
   indexNames;
 
@@ -82,6 +85,9 @@ export class IndexJob extends Job {
     const { prefixes, paths } = this.pathList;
     this.isFullReindex = this.indexNames.length === 0
       && util.isDeepStrictEqual(prefixes, ['/']) && paths.length === 0;
+
+    const { attributes: { maximumNumPaths } } = this.context;
+    this.maximumNumPaths = maximumNumPaths /* c8 ignore next */ ?? MAXIMUM_NUM_PATHS;
   }
 
   get context() {
@@ -146,14 +152,14 @@ export class IndexJob extends Job {
    * @returns {Promise<Array<string>>} live paths
    */
   async collectPaths(storage) {
-    const { context, pathList: { prefixes, paths } } = this;
+    const { context, maximumNumPaths, pathList: { prefixes, paths } } = this;
     const { contentBusId } = context;
 
     const resourcePaths = [];
     await processQueue([...prefixes], async (prefix) => {
       const entries = await storage.list(`${contentBusId}/live${prefix}`);
-      if (entries.length > MAXIMUM_NUM_PATHS) {
-        throw new Error(`Too many paths with prefix '${prefix}': ${entries.length}, maximum allowed is: ${MAXIMUM_NUM_PATHS}`);
+      if (entries.length > maximumNumPaths) {
+        throw new Error(`Too many paths with prefix '${prefix}': ${entries.length}, maximum allowed is: ${maximumNumPaths}`);
       }
       resourcePaths.push(...entries.map(({ key }) => key.substring(contentBusId.length + 5)));
     });

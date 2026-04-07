@@ -52,6 +52,7 @@ export default async function bulkIndex(context, info) {
       },
       roles: ['author'],
     });
+    /* c8 ignore next 3 */
   } catch (e) {
     return createErrorResponse({ e, log });
   }

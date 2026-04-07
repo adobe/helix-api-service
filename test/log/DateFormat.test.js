@@ -11,7 +11,7 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
-import DateFormat from '../../src/log/DateFormat.js';
+import { DateFormat } from '../../src/log/DateFormat.js';
 
 describe('S3 DateFormat tests', () => {
   it('parse works for genuine format', async () => {

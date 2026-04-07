@@ -9,10 +9,10 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
 import { error } from '../contentproxy/errors.js';
-import { PublishJob } from './publish-job.js';
+import { PublishJob } from './PublishJob.js';
 
 /**
  * Maximum number of paths supported for a synchronous bulk-publish.

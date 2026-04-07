@@ -16,7 +16,7 @@ import { resolve } from 'path';
 import sinon from 'sinon';
 import xml2js from 'xml2js';
 import { Request, Response } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import purge from '../../src/cache/purge.js';
 import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { main } from '../../src/index.js';

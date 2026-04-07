@@ -85,6 +85,16 @@ Each feature area is a subdirectory with its own handler module:
 
 ### Code Style
 
+- Do not use default exports. Use named exports with the `export` keyword inline on the declaration:
+  ```js
+  // preferred
+  export class Foo { ... }
+  export function bar() { ... }
+  // avoid
+  class Foo { ... }
+  export default Foo;
+  ```
+
 - Use destructuring for variable bindings. Prefer deep destructuring to collapse chains:
   ```js
   // preferred

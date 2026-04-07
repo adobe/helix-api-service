@@ -13,7 +13,7 @@ import util from 'util';
 import { contains } from '@adobe/helix-shared-indexer';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { fetchPage } from './fetch-page.js';
 import { indexPageInIndex } from './index-page.js';
 import { IndexContents } from './IndexContents.js';

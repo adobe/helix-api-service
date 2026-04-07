@@ -13,7 +13,7 @@
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';

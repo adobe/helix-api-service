@@ -13,14 +13,14 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { JOB_CLASS } from '../../src/job/handler.js';
-import { Job } from '../../src/job/job.js';
-import { TestJob } from '../../src/job/test-job.js';
-import { CodeJob } from '../../src/code/code-job.js';
-import { PreviewJob } from '../../src/preview/preview-job.js';
-import { RemoveJob } from '../../src/preview/remove-job.js';
-import { PublishJob } from '../../src/live/publish-job.js';
+import { Job } from '../../src/job/Job.js';
+import { TestJob } from '../../src/job/TestJob.js';
+import { CodeJob } from '../../src/code/CodeJob.js';
+import { PreviewJob } from '../../src/preview/PreviewJob.js';
+import { RemoveJob } from '../../src/preview/RemoveJob.js';
+import { PublishJob } from '../../src/live/PublishJob.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 

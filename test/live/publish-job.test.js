@@ -15,10 +15,10 @@ import assert from 'assert';
 import xml2js from 'xml2js';
 import sinon from 'sinon';
 
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { METADATA_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
-import { PublishJob } from '../../src/live/publish-job.js';
-import { JobStorage } from '../../src/job/storage.js';
+import { PublishJob } from '../../src/live/PublishJob.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import purge from '../../src/cache/purge.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,

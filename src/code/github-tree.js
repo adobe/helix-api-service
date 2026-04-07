@@ -12,7 +12,7 @@
 
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import { RateLimitError } from './rate-limit-error.js';
+import { RateLimitError } from './RateLimitError.js';
 
 /**
  * Reads the github tree for the given repository and creates a change event. The change set

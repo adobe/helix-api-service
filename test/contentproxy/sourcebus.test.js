@@ -14,10 +14,10 @@
 import { resolve } from 'path';
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { createContext, Nock, SITE_CONFIG } from '../utils.js';
-import { SVGValidationError, validateSVG } from '../../src/contentproxy/sourcebus.js';
+import { SVGValidationError, validateSVG } from '../../src/contentproxy/source/sourcebus.js';
 
 const SITE_MUP_CONFIG = (url = 'https://api.aem.live/org/sites/site/source') => ({
   ...SITE_CONFIG,
@@ -503,7 +503,7 @@ source bus images.
   });
 });
 
-describe('Validate SVG Test', () => {
+describe('ValidationError SVG Test', () => {
   it('validates an SVG that has a script tag', async () => {
     const contents = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 56 54" style="enable-background:new 0 0 56 54;" xml:space="preserve">

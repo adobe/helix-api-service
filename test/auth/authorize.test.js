@@ -12,7 +12,7 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { authorize } from '../../src/auth/authzn.js';
 import { PERMISSIONS } from '../../src/auth/permissions.js';
 import {

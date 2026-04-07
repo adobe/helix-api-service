@@ -11,13 +11,14 @@
  */
 import { Response } from '@adobe/fetch';
 import { fileTypeFromBuffer } from 'file-type';
-import { MEDIA_TYPES, ValidationError } from '../media/validate.js';
+import { MEDIA_TYPES } from '../media/validate.js';
 import { applyCustomHeaders, errorResponse, logStack } from '../support/utils.js';
 import { error } from './errors.js';
-import google from './google.js';
-import markup from './markup.js';
-import onedrive from './onedrive.js';
-import sourcebus from './sourcebus.js';
+import google from './google/google.js';
+import markup from './markup/markup.js';
+import onedrive from './onedrive/onedrive.js';
+import sourcebus from './source/sourcebus.js';
+import { ValidationError } from '../media/ValidationError.js';
 
 /**
  * @type {import('./contentproxy').ContentSourceHandler[]}

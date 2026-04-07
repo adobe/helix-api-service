@@ -11,7 +11,7 @@
  */
 import Tabular from '../Tabular.js';
 
-class OnedriveSheet extends Tabular {
+export class OnedriveSheet extends Tabular {
   /**
    * Create a new instance of this class
    * @param {OneDrive} drive one drive
@@ -83,5 +83,3 @@ class OnedriveSheet extends Tabular {
     return this;
   }
 }
-
-export { OnedriveSheet };

@@ -159,7 +159,7 @@ function formatCell(cell) {
   return sanitizeHtml(parts.join(''));
 }
 
-class GoogleSheet extends Tabular {
+export class GoogleSheet extends Tabular {
   constructor(sheetsClient, id, googleApiOpts) {
     super('google');
     this.sheets = sheetsClient;
@@ -256,5 +256,3 @@ class GoogleSheet extends Tabular {
     }
   }
 }
-
-export { GoogleSheet };

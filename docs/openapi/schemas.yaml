@@ -1,0 +1,717 @@
+openapi: 3.1.0
+# generic content bus resource
+contentBusResource:
+  required:
+    - contentBusId
+  properties:
+    contentBusId:
+      description: Full content-bus id.
+      type: string
+    lastModified:
+      description: Last modification date. undefined when resource is missing.
+      type: string
+      format: date-time
+    contentType:
+      description: The resource content type. undefined when resource is missing.
+      type: string
+    contentLength:
+      description: Size of the content in bytes. undefined when resource is missing.
+      type: integer
+    redirectLocation:
+      description: Location for redirects as defined on the resource
+      type: string
+      format: uri
+    configRedirectLocation:
+      description: Location for redirects as defined in the config (redirects.json)
+      type: string
+      format: uri
+    sourceLocation:
+      description: Content provider specific id of the source.
+      type: string
+    sourceLastModified:
+      description: Last modification date of the source document.
+      type: string
+      format: date-time
+
+# generic code bus resource
+codeBusResource:
+  required:
+    - codeBusId
+  properties:
+    codeBusId:
+      description: Full code-bus id.
+      type: string
+    lastModified:
+      description: Last modification date. undefined when resource is missing.
+      type: string
+      format: date-time
+    contentType:
+      description: The resource content type. undefined when resource is missing.
+      type: string
+    contentLength:
+      description: Size of the content in bytes. undefined when resource is missing.
+      type: integer
+    sourceLocation:
+      description: Content provider specific id of the source
+      type: string
+    sourceLastModified:
+      description: Last modification date of the source document.
+      type: string
+      format: date-time
+
+# access permissions
+permissions:
+  description: Access permissions
+  required:
+    - permissions
+  properties:
+    permissions:
+      type: array
+      items:
+        type: string
+        enum: [ read, write, delete ]
+
+# generic information of the resource
+resourceInfo:
+  required:
+    - webPath
+    - resourcePath
+  properties:
+    webPath:
+      description: Relative path used on the websites.
+      type: string
+    resourcePath:
+      description: Relative path of the content resource
+      type: string
+
+# --------------------------------------------------------------------------------------------------
+# live
+
+# information about a published resource.
+liveInfo:
+  required:
+    - live
+  properties:
+    live:
+      description: Information about the published resource.
+      allOf:
+        - required:
+            - url
+            - status
+        - properties:
+            status:
+              description: HTTP status of response when fetching the information of the resource
+              type: number
+            error:
+              description: Message of error when there was a problem fetching the information of the resource
+            url:
+              description: Live URL of the resource.
+              type: string
+              format: uri
+        - $ref: "#/permissions"
+        - $ref: "#/contentBusResource"
+
+bulkPublishBody:
+  description: bulk publish body
+  required:
+    - paths
+  properties:
+    forceUpdate:
+      description: forces an update of the resources during bulk-publish
+      type: boolean
+    forceAsync:
+      description: forces the job to be executed asynchronous, even for a small number of given paths.
+      type: boolean
+    paths:
+      description: paths to filter the bulk publish
+      type: array
+      items:
+        type: string
+    delete:
+      description: delete the resources from publish
+      type: boolean
+      default: false
+
+# --------------------------------------------------------------------------------------------------
+# preview
+
+# information about a preview resource
+previewInfo:
+  required:
+    - preview
+  properties:
+    preview:
+      description: Information about the preview resource.
+      allOf:
+        - required:
+            - url
+            - status
+        - properties:
+            status:
+              description: HTTP status of response when fetching the information of the resource
+              type: number
+            error:
+              description: Message of error when there was a problem fetching the information of the resource
+            url:
+              description: Preview URL of the resource.
+              type: string
+              format: uri
+        - $ref: "#/permissions"
+        - $ref: "#/contentBusResource"
+
+bulkPreviewBody:
+  description: bulk preview body
+  required:
+    - paths
+  properties:
+    forceUpdate:
+      description: forces an update of the resources during bulk-preview
+      type: boolean
+    forceAsync:
+      description: forces the job to be executed asynchronous, even for a small number of given paths.
+      type: boolean
+    paths:
+      description: paths to filter the bulk preview
+      type: array
+      items:
+        type: string
+    delete:
+      description: delete the resources from preview
+      type: boolean
+      default: false
+
+# --------------------------------------------------------------------------------------------------
+# edit
+
+# edit information for a resource
+editResource:
+  description: Edit information for a resource
+  properties:
+    url:
+      description: URL of edit document.
+      type: string
+      format: uri
+    sourceLocation:
+      description: Content provider specific id of the source
+      type: string
+      format: uri
+    lastModified:
+      description: Last modification date of the source document.
+      type: string
+      format: date-time
+    name:
+      description: Name of the edit document
+      type: string
+    contentType:
+      description: Content type of the edit document
+      type: string
+    folders:
+      description: Information of parent folders of the edit document.
+      type: array
+      items:
+        $ref: "#/folderInfo"
+
+# items of the `editFolders` array
+folderInfo:
+  required:
+    - name
+    - path
+    - url
+  properties:
+    name:
+      description: Name of folder
+      type: string
+    path:
+      description: Path of folder, relative to the mount root
+      type: string
+    url:
+      description: URL of folder
+      type: string
+      format: uri
+
+editInfo:
+  required:
+    - edit
+  properties:
+    edit:
+      description: Edit information for a resource
+      type: object
+      allOf:
+        - required:
+            - url
+            - status
+        - properties:
+            status:
+              description: HTTP status of response when fetching the information of the resource
+              type: number
+            error:
+              description: Message of error when there was a problem fetching the information of the resource
+        - $ref: "#/editResource"
+
+# --------------------------------------------------------------------------------------------------
+# code
+
+# information about a code bus resource
+codeInfo:
+  required:
+    - code
+  properties:
+    code:
+      description: Information about a code bus resource
+      type: object
+      allOf:
+        - required:
+            - status
+        - properties:
+            status:
+              description: HTTP status of response when fetching the information of the resource
+              type: number
+            error:
+              description: Message of error when there was a problem fetching the information of the resource
+        - $ref: "#/codeBusResource"
+        - $ref: "#/permissions"
+
+changeEntry:
+  description: Describes the changes made to one resource.
+  required:
+    - type
+    - path
+  properties:
+    type:
+      description: change type
+      type: string
+      enum: [ added, deleted, modified ]
+    path:
+      description: Relative path of changed resource or `*` if this as a branch event.
+      type: string
+    time:
+      description: timestamp of change
+      type: string
+      format: date-time
+    commit:
+      description: commit sha of change
+      type: string
+    contentType:
+      description: the content type of the changed resource
+      type: string
+
+# change event
+changeEventBody:
+  description: Change event payload
+  required:
+    - changes
+  additionalProperties: true
+  properties:
+    source:
+      description: >
+        event source, eg: 'github'
+      type: string
+    baseRef:
+      description: base ref for branch operations
+      type: string
+    changes:
+      description: array of changes
+      type: array
+      items:
+        $ref: "#/changeEntry"
+
+# --------------------------------------------------------------------------------------------------
+# index
+
+indexResource:
+  description: Information of the index
+  required:
+    - name
+  properties:
+    name:
+      description: Index name
+      type: string
+    lastModified:
+      type: string
+      format: date-time
+    status:
+      description: status of index operation on resource
+      type: number
+
+indexInfo:
+  required:
+    - index
+  properties:
+    index:
+      description: Information of the index
+      type: object
+      $ref: "#/indexResource"
+
+bulkIndexBody:
+  description: bulk index body
+  properties:
+    paths:
+      description: paths to reindex. if `paths` is missing, re-indexes every resource published.
+      type: array
+      items:
+        type: string
+
+# --------------------------------------------------------------------------------------------------
+# sitemap
+
+sitemapInfo:
+  description: Information for the sitemap that was generated
+  properties:
+    paths:
+      description: Paths that were updated
+      type: array
+      items:
+        type: string
+
+# --------------------------------------------------------------------------------------------------
+# links
+
+resourceLinksInfo:
+  required:
+    - links
+  properties:
+    links:
+      description: API navigation links
+      properties:
+        status:
+          description: link of the status api
+          example: https://api.aem.live/org/sites/site/status/path
+          type: string
+          format: uri
+        live:
+          description: link of the live api
+          example: https://api.aem.live/org/sites/site/live/path
+          type: string
+          format: uri
+        preview:
+          description: link of the preview api
+          example: https://api.aem.live/org/sites/site/preview/path
+          type: string
+          format: uri
+        code:
+          description: link of the code api
+          example: https://api.aem.live/org/repos/site/code/ref/path
+          type: string
+          format: uri
+
+logoutLink:
+  required:
+    - links
+  properties:
+    links:
+      description: API navigation links
+      properties:
+        logout:
+          description: link of logout
+          example: https://api.aem.live/logout
+          type: string
+          format: uri
+
+loginLinks:
+  required:
+    - links
+  properties:
+    links:
+      description: API navigation links
+      additionalProperties:
+        type: string
+        format: uri
+
+# --------------------------------------------------------------------------------------------------
+# profile
+profileInfo:
+  properties:
+    profile:
+      description: Profile data
+      additionalProperties: true
+      properties:
+        iss:
+          description: id token issuer
+          type: string
+        email:
+          description: email of logged in user
+          type: string
+        name:
+          description: name of logged in user
+          type: string
+        ttl:
+          description: time to live of current id token
+          type: number
+
+# --------------------------------------------------------------------------------------------------
+# job
+jobState:
+  description: Job state
+  type: string
+  enum: [ created, running, stopped ]
+
+jobCreated:
+  required:
+    - messageId
+    - job
+  properties:
+    messageId:
+      description: Internal message id
+      type: string
+    job:
+      description: Job state
+      type: object
+      $ref: "#/jobStatus"
+
+jobStatus:
+  required:
+    - topic
+    - name
+    - state
+    - startTime
+  properties:
+    topic:
+      description: Job Topic
+      type: string
+    name:
+      description: Job Name
+      type: string
+    state:
+      description: Job State
+      type: string
+    startTime:
+      description: Job start time
+      type: string
+      format: date-time
+    endTime:
+      description: Job end time
+      type: string
+      format: date-time
+    cancelled:
+      description: Flag indicating if job was cancelled
+      type: boolean
+    data:
+      description: Custom job data
+      type: object
+    progress:
+      description: job progress
+      type: object
+
+jobStatusDetails:
+  required:
+    - topic
+    - name
+    - state
+    - startTime
+    - data
+  properties:
+    topic:
+      description: Job Topic
+      type: string
+    name:
+      description: Job Name
+      type: string
+    state:
+      description: Job State
+      type: string
+    startTime:
+      description: Job start time
+      type: string
+      format: date-time
+    endTime:
+      description: Job end time
+      type: string
+      format: date-time
+    cancelled:
+      description: Flag indicating if job was cancelled
+      type: boolean
+    data:
+      description: Custom job data
+      type: object
+    progress:
+      description: job progress
+      type: object
+
+jobLinksInfo:
+  required:
+    - links
+  properties:
+    links:
+      description: API navigation links
+      properties:
+        self:
+          description: link of the job api
+          example: https://api.aem.live/org/sites/site/jobs/preview/job-13
+          type: string
+          format: uri
+        details:
+          description: link of the job details api
+          example: https://api.aem.live/org/sites/site/jobs/preview/job-13/report
+          type: string
+          format: uri
+        list:
+          description: link of the job list
+          example: https://api.aem.live/org/sites/site/jobs/preview
+          type: string
+          format: uri
+
+jobLinksInfoDetails:
+  required:
+    - links
+  properties:
+    links:
+      description: API navigation links
+      properties:
+        self:
+          description: link of the job details api
+          example: https://api.aem.live/org/sites/site/jobs/preview/job-13/report
+          type: string
+          format: uri
+        job:
+          description: link of the job api
+          example: https://api.aem.live/org/sites/site/jobs/preview/job-13
+          type: string
+          format: uri
+        list:
+          description: link of the job list
+          example: https://api.aem.live/org/sites/site/jobs/preview
+          type: string
+          format: uri
+
+jobList:
+  required:
+    - topic
+    - jobs
+  properties:
+    topic:
+      description: Job Topic
+      type: string
+    jobs:
+      description: Jobs
+      type: array
+      items:
+        required:
+          - name
+          - state
+          - time
+          - href
+        description: Job info
+        type: object
+        properties:
+          name:
+            description: Job name
+            type: string
+          state:
+            description: Job State
+            type: string
+          time:
+            description: Job creation time
+            type: string
+            format: date-time
+          href:
+            description: link of the job api
+            example: https://api.aem.live/org/sites/site/jobs/preview/job-13
+            type: string
+            format: uri
+
+jobListLink:
+  required:
+    - links
+  properties:
+    links:
+      description: API navigation links
+      properties:
+        self:
+          description: link of the job list
+          example: https://api.aem.live/org/sites/site/jobs/preview
+          type: string
+          format: uri
+
+# --------------------------------------------------------------------------------------------------
+# log
+
+logResult:
+  description: Log result
+  required:
+    - entries
+  properties:
+    entries:
+      description: entries in that page
+      type: array
+      items:
+        type: object
+    nextToken:
+      description: token to pass in next call to continue paging
+      type: string
+    links:
+      description: API navigation links
+      properties:
+        next:
+          description: link to the next batch
+          example: https://api.aem.live/org/sites/site/log?nextToken=ABAB==
+          type: string
+          format: uri
+    from:
+      description: log start time
+      type: string
+    to:
+      description: log end time
+      type: string
+
+logEntriesBody:
+  description: Add logs body
+  required:
+    - entries
+  properties:
+    entries:
+      description: entries to add to the logs
+      type: array
+      items:
+        type: object
+
+# --------------------------------------------------------------------------------------------------
+# status
+
+bulkStatusBody:
+  description: bulk status body
+  required:
+    - paths
+  properties:
+    paths:
+      description: paths to filter the bulk status
+      type: array
+      items:
+        type: string
+    forceAsync:
+      description: forces the job to be executed asynchronous, even for a small number of given paths.
+      type: boolean
+    select:
+      description: a combination of `edit`, `preview` and `live`. The default is `['preview','live']`.
+      type: array
+      items:
+        type: string
+        enum: [ edit, preview, live ]
+    pathsOnly:
+      description: only return paths
+      type: boolean
+      default: false
+
+# --------------------------------------------------------------------------------------------------
+# org config users
+orgConfigUser:
+  type: object
+  description: org user
+  required:
+    - email
+    - roles
+  properties:
+    email:
+      description: email of the user
+      type: string
+    roles:
+      description: role of the user
+      type: array
+      items:
+        type: string
+        enum: [ "admin", "author", "publish", "develop", "basic_author", "basic_publish", "config", "config_admin" ]
+
+orgConfigUsers:
+  type: array
+  description: org users
+  items:
+    $ref: "#/orgConfigUser"

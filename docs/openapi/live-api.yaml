@@ -1,0 +1,224 @@
+openapi: 3.1.0
+live:
+  get:
+    operationId: getLiveStatus
+    tags:
+      - publish
+    summary: Publish Status
+    description: Returns the publish status of the respective resource.
+    security:
+      - AuthCookie:
+          - live:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: The publish status
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/liveInfo"
+                - $ref: "./schemas.yaml#/resourceLinksInfo"
+            examples:
+              success:
+                description: Success response of a published document.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  live:
+                    status: 200
+                    url: "https://main--site--org.aem.live/en/2021/blog"
+                    lastModified: "2021-05-29T22:00:00Z"
+                    contentBusId: "h3-site-abc123def456abc123def456a/live/en/2021/blog.md"
+                    sourceLocation: "onedrive:/drives/b!DyVXacYnlkm/items/012VWERI4JFI"
+                    sourceLastModified: "2021-05-29T21:00:00Z"
+                    permissions:
+                      - read
+                  links:
+                    status: "https://api.aem.live/org/sites/site/status/en/2021/blog"
+                    preview: "https://api.aem.live/org/sites/site/preview/en/2021/blog"
+                    live: "https://api.aem.live/org/sites/site/live/en/2021/blog"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  post:
+    operationId: publishResource
+    tags:
+      - publish
+    summary: Publish a resource
+    description: >
+      Publish a resource by copying the resource content from the `preview` content-bus partition
+      to the `live` content-bus partition.
+      It additionally purges the _live_ cdn and the _byo_ cdn, if configured.
+    security:
+      - AuthCookie:
+          - preview:read
+          - live:read
+          - live:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/forceUpdateRedirectsParam"
+      - $ref: "./parameters.yaml#/disableNotificationsParam"
+    responses:
+      '200':
+        description: Resource published.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/liveInfo"
+                - $ref: "./schemas.yaml#/resourceLinksInfo"
+            examples:
+              success:
+                description: Success response of the published document.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  live:
+                    status: 200
+                    url: "https://main--site--org.aem.live/en/2021/blog"
+                    lastModified: "2021-05-29T22:00:00Z"
+                    contentBusId: "h3-site-abc123def456abc123def456a/live/en/2021/blog.md"
+                    sourceLocation: "onedrive:/drives/b!DyVXacYnlkm/items/012VWERI4JFI"
+                    sourceLastModified: "2021-05-29T21:00:00Z"
+                    permissions:
+                      - read
+                      - write
+                  links:
+                    status: "https://api.aem.live/org/sites/site/status/en/2021/blog"
+                    preview: "https://api.aem.live/org/sites/site/preview/en/2021/blog"
+                    live: "https://api.aem.live/org/sites/site/live/en/2021/blog"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  delete:
+    operationId: unpublishResource
+    tags:
+      - publish
+    summary: Un-publish a resource
+    description: >
+      Un-publish a resource by deleting the content from the `live` content-bus partition.
+      It additionally purges the _live_ cdn and the _byo_ cdn, if configured.
+    security:
+      - AuthCookie:
+          - live:read
+          - live:delete
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/disableNotificationsParam"
+    responses:
+      '204':
+        description: Resource unpublished
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+bulkPublish:
+  post:
+    operationId: bulkPublish
+    tags:
+      - publish
+    summary: Start a bulk publish job
+    description: >
+      Publishes resources specified in the `paths` property in the payload.<br>
+      By default, only new and modified resources are updated, unless the `forceUpdate` property is set to `true`.<br>
+      Note that the bulk publish is performed asynchronously and this request will return information
+      to the created job.
+    security:
+      - AuthCookie:
+          - preview:list
+          - preview:read
+          - live:read
+          - live:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    requestBody:
+      content:
+        'application/json':
+          schema:
+            $ref: './schemas.yaml#/bulkPublishBody'
+          examples:
+            multiple-paths:
+              summary: Publish multiple paths
+              value:
+                paths:
+                  - "/en/2021/blog"
+                  - "/en/2021/news"
+                  - "/metadata.json"
+                forceUpdate: false
+    responses:
+      '202':
+        description: Bulk publish scheduled.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/jobCreated"
+                - $ref: "./schemas.yaml#/jobLinksInfo"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  messageId: "37e92eec-020c-4eae-8f80-3db444c25056"
+                  job:
+                    topic: "publish"
+                    name: "job-123"
+                    state: "created"
+                    startTime: "2021-05-31T23:00:00Z"
+                    data:
+                      paths:
+                        - "/en/2021/blog"
+                        - "/en/2021/news"
+                        - "/metadata.json"
+                  links:
+                    self: "https://api.aem.live/org/sites/site/jobs/publish/job-123"
+                    list: "https://api.aem.live/org/sites/site/jobs/publish"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

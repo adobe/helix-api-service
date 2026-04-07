@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+
 import { Job } from './Job.js';
 import { TestJob } from './TestJob.js';
 import { JobStorage } from './JobStorage.js';
@@ -17,6 +18,7 @@ import { CodeJob } from '../code/CodeJob.js';
 import { PreviewJob } from '../preview/PreviewJob.js';
 import { RemoveJob } from '../preview/RemoveJob.js';
 import { PublishJob } from '../live/PublishJob.js';
+import { IndexJob } from '../index/IndexJob.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
 
@@ -26,6 +28,7 @@ export const JOB_CLASS = {
   [PreviewJob.TOPIC]: PreviewJob,
   [RemoveJob.TOPIC]: RemoveJob,
   [PublishJob.TOPIC]: PublishJob,
+  [IndexJob.TOPIC]: IndexJob,
 };
 
 /**

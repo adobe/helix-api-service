@@ -1,0 +1,56 @@
+openapi: 3.1.0
+media:
+  post:
+    operationId: uploadMedia
+    tags:
+      - media
+    summary: Upload media
+    description: >
+      Uploads a media file. The media can be provided as binary body data or as a URL reference.
+      Supported types include images (JPEG, PNG, GIF, WebP, AVIF, TIFF), videos (MP4, WebM),
+      and documents (PDF).
+    security:
+      - AuthCookie:
+          - media:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    requestBody:
+      description: Binary media data or JSON with a URL reference.
+      content:
+        'application/octet-stream':
+          schema:
+            type: string
+            format: binary
+        'image/*':
+          schema:
+            type: string
+            format: binary
+        'video/*':
+          schema:
+            type: string
+            format: binary
+        'application/pdf':
+          schema:
+            type: string
+            format: binary
+    responses:
+      '200':
+        description: Media uploaded successfully
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '413':
+        description: Payload too large
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

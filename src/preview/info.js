@@ -34,7 +34,7 @@ export default async function getPreviewInfo(context, info) {
   const redirects = await context.getRedirects('preview');
 
   return {
-    url: info.getPreviewUrl(context, info),
+    url: info.getPreviewUrl(),
     ...await getContentBusInfo(context, info, 'preview'),
     configRedirectLocation: redirects[resourcePath],
     permissions: authInfo.getPermissions('preview:'),

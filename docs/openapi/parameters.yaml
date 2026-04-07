@@ -1,0 +1,164 @@
+openapi: 3.1.0
+orgParam:
+  name: org
+  in: path
+  description: Organisation name.
+  required: true
+  schema:
+    type: string
+siteParam:
+  name: site
+  in: path
+  description: Site identifier.
+  required: true
+  schema:
+    type: string
+profileParam:
+  name: profile
+  in: path
+  description: Profile name.
+  required: true
+  schema:
+    type: string
+refParam:
+  name: ref
+  in: path
+  description: Ref (branch) of repository.
+  required: true
+  schema:
+    type: string
+pathParam:
+  name: path
+  in: path
+  description: Relative path of the resource
+  required: true
+  schema:
+    type: string
+topicParam:
+  name: topic
+  in: path
+  description: Topic of a job
+  required: true
+  schema:
+    type: string
+jobNameParam:
+  name: jobName
+  in: path
+  description: Name of a job
+  required: true
+  schema:
+    type: string
+orgQueryParam:
+  name: org
+  in: query
+  description: Organisation name (optional filter for profile).
+  required: false
+  schema:
+    type: string
+siteQueryParam:
+  name: site
+  in: query
+  description: Site identifier (optional filter for profile).
+  required: false
+  schema:
+    type: string
+editUrlParam:
+  name: editUrl
+  in: query
+  description: URL of the edit (authoring) document
+  required: true
+  schema:
+    type: string
+    format: url
+statusEditUrlParam:
+  name: editUrl
+  in: query
+  description: Optional URL of the edit (authoring) document
+  required: false
+  schema:
+    oneOf:
+      - type: string
+        format: url
+      - type: string
+        enum: ["auto"]
+forceUpdateRedirectsParam:
+  name: forceUpdateRedirects
+  in: query
+  description: Forces an update of the redirect table. Only applies when updating or publishing `redirects.json`.
+  required: false
+  schema:
+    type: boolean
+disableNotificationsParam:
+  name: disableNotifications
+  in: query
+  description: When set to `true`, suppresses change notifications for affected resources.
+  schema:
+    type: boolean
+listDetailsParam:
+  name: details
+  in: query
+  required: false
+  description: Show detailed information about the resources in the list
+  schema:
+    type: boolean
+fromParam:
+  name: from
+  in: query
+  description: >
+    Indicates the starting date to get logs from. If not specified, uses the current date minus 15 minutes.
+  required: false
+  schema:
+    type: string
+toParam:
+  name: to
+  in: query
+  description: >
+    Indicates the ending date to get logs from. If not specified, uses the current date.
+  required: false
+  schema:
+    type: string
+sinceParam:
+  name: since
+  in: query
+  description: >
+    Indicates the time span to retrieve logs for, as a number and a unit in short notation (`s`, `m`, `h` or `d`).
+    Not usable in combination with either `from` or `to`.
+  required: false
+  schema:
+    type: string
+    example: 5m
+nextTokenParam:
+  name: nextToken
+  in: query
+  description: >
+    Token returned from a previous call to continue
+  required: false
+  schema:
+    type: string
+
+versionNameParam:
+  name: versionName
+  in: query
+  description: Optional label to attach to the config version created by this operation.
+  required: false
+  schema:
+    type: string
+branchParam:
+  name: branch
+  in: query
+  description: Optional branch specifier in case the branch name contains slashes or uppercase characters.
+  required: false
+  schema:
+    oneOf:
+      - type: string
+        format: url
+      - type: string
+        enum: ["auto"]
+tagParam:
+  name: tag
+  in: query
+  description: Optional flag to indicate that the ref is a tag.
+  required: false
+  schema:
+    type: string
+    enum: ["true", "false"]

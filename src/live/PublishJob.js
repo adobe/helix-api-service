@@ -15,9 +15,8 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 
 import purge, { PURGE_LIVE, getPurgePathVariants } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
+import bulkIndex from '../index/bulk-index.js';
 import { Job } from '../job/Job.js';
-import indexUpdate from '../index/update.js';
-import { fetchExtendedIndex } from '../index/utils.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
 import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
 import { hasSimpleSitemap, installSimpleSitemap } from '../sitemap/utils.js';
@@ -201,17 +200,14 @@ export class PublishJob extends Job {
    */
   // eslint-disable-next-line class-methods-use-this
   async indexBatch(ctx, info, resources) {
-    // TODO: replace with bulkIndex(ctx, info, toIndex) once available in helix-api-service.
-    // For now, index resources one by one using the existing per-resource indexUpdate.
     const toIndex = resources.filter((r) => r.needsIndexing());
-    await processQueue(toIndex, async (resource) => {
+    await bulkIndex(ctx, info, {
+      paths: toIndex.map((r) => r.path),
+      indexNames: ['#simple'],
+    });
+    for (const resource of toIndex) {
       resource.setIndexed();
-      const localInfo = RequestInfo.clone(info, { path: resource.path, route: 'live' });
-      const index = await fetchExtendedIndex(ctx, localInfo);
-      if (index) {
-        await indexUpdate(ctx, localInfo, index, { lastPublished: new Date() });
-      }
-    }, JOB_CONCURRENCY);
+    }
   }
 
   /**
@@ -235,6 +231,25 @@ export class PublishJob extends Job {
       }
     }
     await publishBulkResourceNotification(ctx, 'resources-published', info, publishedResourcePaths, toNotify);
+  }
+
+  /**
+   * Bulk-reindex the simple sitemap for all paths when publish set `reindexSimpleSitemap`
+   * on job state.
+   *
+   * @param {import('../support/AdminContext').AdminContext} ctx context
+   * @param {import('../support/RequestInfo').RequestInfo} info request info
+   */
+  async reindexSimpleSitemap(ctx, info) {
+    const { state: { data } } = this;
+    if (!data.reindexSimpleSitemap) {
+      return;
+    }
+    await bulkIndex(ctx, info, {
+      paths: ['/*'],
+      indexNames: ['#simple'],
+    });
+    delete data.reindexSimpleSitemap;
   }
 
   /**
@@ -278,7 +293,7 @@ export class PublishJob extends Job {
     if (data.resources.some((r) => r.metadata && r.status === 200)) {
       await purge.config(ctx, info);
       if (await hasSimpleSitemap(ctx, info)) {
-        data.needsBulkIndex = true;
+        data.reindexSimpleSitemap = true;
       }
     }
   }
@@ -329,17 +344,12 @@ export class PublishJob extends Job {
    */
   async index() {
     const { ctx, info, state: { data } } = this;
-    const { resources, needsBulkIndex } = data;
+    const { resources } = data;
 
     await this.indexBatch(ctx, info, resources);
     await this.notifyBatch(ctx, info, resources);
     await this.writeStateLazy();
-
-    // re-index simple sitemap if any metadata file was published
-    if (needsBulkIndex) {
-      // TODO: await bulkIndex(ctx, info, ['/*'], { indexNames: ['#simple'] });
-      delete data.needsBulkIndex;
-    }
+    await this.reindexSimpleSitemap(ctx, info);
   }
 
   /**

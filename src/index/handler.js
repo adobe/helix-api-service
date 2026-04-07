@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import bulkIndex from './bulk-index.js';
 import remove from './remove.js';
 import status from './status.js';
 import update from './update.js';
@@ -59,6 +60,9 @@ export default async function indexHandler(context, info) {
 
   authInfo.assertPermissions('index:write');
   if (info.method === 'POST') {
+    if (webPath === '/*') {
+      return bulkIndex(context, info, context.data);
+    }
     return update(context, info, index);
   }
   return remove(context, info, index);

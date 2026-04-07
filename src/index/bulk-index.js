@@ -11,7 +11,7 @@
  */
 import { createErrorResponse } from '../contentbus/utils.js';
 import { Job } from '../job/job.js';
-import { errorResponse, processPrefixedPaths } from '../support/utils.js';
+import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { IndexJob } from './IndexJob.js';
 
 /**
@@ -23,14 +23,25 @@ import { IndexJob } from './IndexJob.js';
  * @returns {Promise<Response>} response
  */
 export default async function bulkIndex(context, info) {
-  const { log, data: { paths = [info.webPath], indexNames = [] } } = context;
+  const { log, data: { paths = [], indexNames = [] } } = context;
 
   try {
+    if (paths.length === 0) {
+      return errorResponse(log, 400, 'bulk-index payload is missing \'paths\'');
+    }
     if (!Array.isArray(paths)) {
       return errorResponse(log, 400, 'bulk-index \'paths\' is not an array');
     }
     if (!Array.isArray(indexNames)) {
       return errorResponse(log, 400, 'bulk-index \'indexNames\' is not an array');
+    }
+    for (const path of paths) {
+      if (isIllegalPath(path, true)) {
+        return errorResponse(log, 400, `bulk-index path not valid: ${path}`);
+      }
+      if (path.startsWith('/.helix/')) {
+        return errorResponse(log, 400, `bulk-index of config resources is not supported: ${path}`);
+      }
     }
     return await Job.create(context, info, 'index', {
       transient: true,

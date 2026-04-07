@@ -12,9 +12,11 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/auth-info.js';
 import { main } from '../../src/index.js';
+import { IndexMessages } from '../../src/index/IndexMessages.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
 const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
@@ -54,6 +56,12 @@ describe('Bulk Index Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
+  /** @type {object[]} */
+  let updates;
+
   beforeEach(() => {
     nock = new Nock().env();
 
@@ -64,9 +72,23 @@ sitemaps:
   default:
     source: /sitemap-index.json
     destination: /sitemap.xml`);
+
+    sandbox = sinon.createSandbox();
+    sandbox.stub(IndexMessages.prototype, 'send').callsFake(function fn() {
+      updates = this.messages.map(({ MessageBody }) => {
+        const { record: { path }, deleted } = JSON.parse(MessageBody);
+        const ret = { path };
+        if (deleted) {
+          ret.deleted = true;
+        }
+        return ret;
+      }).sort((a, b) => a.path.localeCompare(b.path));
+    });
   });
 
   afterEach(() => {
+    updates = null;
+    sandbox.restore();
     nock.done();
   });
 
@@ -98,6 +120,18 @@ sitemaps:
     return { request, context };
   }
 
+  it('return 400 when `paths` is empty', async () => {
+    const { request, context } = setupTest([]);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 400);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+      'x-error': 'bulk-index payload is missing \'paths\'',
+    });
+  });
+
   it('return 400 when `paths` is not an array', async () => {
     const { request, context } = setupTest({});
     const response = await main(request, context);
@@ -122,20 +156,94 @@ sitemaps:
     });
   });
 
-  it.skip('reindex everything', async () => {
+  it('return 400 when some path is illegal', async () => {
+    const { request, context } = setupTest(['/-parent/']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 400);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+      'x-error': 'bulk-index path not valid: /-parent/',
+    });
+  });
+
+  it('return 400 when some path is a config resource', async () => {
+    const { request, context } = setupTest(['/.helix/config.json']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 400);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store, private, must-revalidate',
+      'x-error': 'bulk-index of config resources is not supported: /.helix/config.json',
+    });
+  });
+
+  it('reindex everything', async () => {
     nock.content()
       .getObject('/live/en/query-index.json')
-      .reply(200, { data: [] })
+      .reply(200, { data: [{ path: '/en/' }] })
       .getObject('/live/fr/query-index.json')
-      .reply(200, { data: [] });
+      .reply(404);
     nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/live/`, [
-      { Key: 'en/english.md' },
-      { Key: 'fr/french.md' },
+      { Key: 'en/index.md' },
+      { Key: 'fr/index.md' },
     ], '');
+    nock('https://main--site--org.aem.live')
+      .get('/en/')
+      .reply(200, '<html></html>', { 'last-modified': 'Tue, 04 May 2021 04:40:15 GMT' })
+      .get('/fr/')
+      .reply(200, '<html></html>', { 'last-modified': 'Tue, 04 May 2021 04:40:15 GMT' });
 
     const { request, context } = setupTest();
     const response = await main(request, context);
 
     assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(updates, [{ path: '/en/' }, { path: '/fr/' }]);
+  });
+
+  it('reindex a subtree in an index', async () => {
+    nock.content()
+      .getObject('/live/en/query-index.json')
+      .reply(200, { data: [{ path: '/en/gone' }] });
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/live/en/`, [
+      { Key: 'index.md' },
+    ], '');
+    nock('https://main--site--org.aem.live')
+      .get('/en/')
+      .reply(200, '<html></html>', { 'last-modified': 'Tue, 04 May 2021 04:40:15 GMT' });
+
+    const { request, context } = setupTest(['/en/*'], ['default']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(updates, [
+      { path: '/en/' },
+      { path: '/en/gone', deleted: true },
+    ]);
+  });
+
+  it('reindex specific paths in an index', async () => {
+    nock.content()
+      .getObject('/live/en/query-index.json')
+      .reply(200, { data: [{ path: '/en/gone' }] });
+    nock.listObjects('helix-content-bus', `${CONTENT_BUS_ID}/live/`, [
+      { Key: 'en/index.md' },
+    ], '');
+    nock('https://main--site--org.aem.live')
+      .get('/en/')
+      .reply(200, '<html></html>', { 'last-modified': 'Tue, 04 May 2021 04:40:15 GMT' })
+      .get('/en/gone')
+      .reply(404);
+
+    const { request, context } = setupTest(['/en/', '/en/gone'], ['default']);
+    const response = await main(request, context);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(updates, [
+      { path: '/en/' },
+      { path: '/en/gone', deleted: true },
+    ]);
   });
 });

@@ -40,19 +40,9 @@ export class IndexContents {
    * @return {Promise<object[]|null>} rows or null if the index contents is unavailable
    */
   async load(contentBusId, storage, log) {
-    const { config, name } = this;
+    const { config: { target }, name } = this;
 
-    let { target } = config;
-    if (!target) {
-      log.warn(`Unable to fetch paths for index ${name}, target is undefined`);
-      return null;
-    }
-    target = target.replace(/^s3:\//, '');
-    if (!target.startsWith('/')) {
-      log.warn(`Unable to fetch paths for index ${name}, target isn't relative to mount: ${target}`);
-      return null;
-    }
-    const jsonTarget = jsonPath(target);
+    const jsonTarget = jsonPath(target.replace(/^s3:\//, ''));
     const key = `/${contentBusId}/live${jsonTarget}`;
     const contents = await storage.get(key);
     if (!contents) {

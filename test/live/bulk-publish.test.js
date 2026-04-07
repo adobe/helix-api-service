@@ -81,6 +81,13 @@ describe('Bulk Publish Tests', () => {
     assert.strictEqual(result.headers.get('x-error'), 'bulk-publish path not valid: /foo/my documents/bar');
   });
 
+  it('returns 400 for .helix config path', async () => {
+    const context = createTestContext({ paths: ['/.helix/config.json'] });
+    const result = await bulkPublish(context, info);
+    assert.strictEqual(result.status, 400);
+    assert.strictEqual(result.headers.get('x-error'), 'bulk-publish of config resources is not supported: /.helix/config.json');
+  });
+
   it('returns 400 for tree publish', async () => {
     const context = createTestContext({ paths: ['/foo/*'] });
     const result = await bulkPublish(context, info);

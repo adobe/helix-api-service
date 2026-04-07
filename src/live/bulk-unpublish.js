@@ -40,6 +40,9 @@ export default async function bulkUnpublish(context, info) {
     if (isIllegalPath(path, true)) {
       return errorResponse(log, 400, `bulk-unpublish path not valid: ${path}`);
     }
+    if (path.startsWith('/.helix/')) {
+      return errorResponse(log, 400, `bulk-unpublish of config resources is not supported: ${path}`);
+    }
   }
 
   if (paths.length > MAX_SYNC_PATHS && String(context.data.forceAsync) !== 'true') {

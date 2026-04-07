@@ -40,6 +40,9 @@ export default async function bulkPublish(context, info) {
     if (isIllegalPath(path, true)) {
       return errorResponse(log, 400, `bulk-publish path not valid: ${path}`);
     }
+    if (path.startsWith('/.helix/')) {
+      return errorResponse(log, 400, `bulk-publish of config resources is not supported: ${path}`);
+    }
   }
   // disallow tree publish — see https://github.com/adobe/helix-admin/issues/1969
   if (paths.some((path) => path.endsWith('/*'))) {

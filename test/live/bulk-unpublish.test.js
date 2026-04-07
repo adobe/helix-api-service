@@ -81,6 +81,13 @@ describe('Bulk Unpublish Tests', () => {
     assert.strictEqual(result.headers.get('x-error'), 'bulk-unpublish path not valid: /foo/my documents/bar');
   });
 
+  it('returns 400 for .helix config path', async () => {
+    const context = createTestContext({ paths: ['/.helix/config.json'] });
+    const result = await bulkUnpublish(context, info);
+    assert.strictEqual(result.status, 400);
+    assert.strictEqual(result.headers.get('x-error'), 'bulk-unpublish of config resources is not supported: /.helix/config.json');
+  });
+
   it('returns 400 when paths exceed the sync limit', async () => {
     const context = createTestContext({ paths: Array.from({ length: 201 }, (_, i) => `/path-${i}`) });
     const result = await bulkUnpublish(context, info);

@@ -18,7 +18,7 @@ import update from '../contentbus/update.js';
 import { updateRedirect, updateRedirects } from '../redirects/update.js';
 import purge, { PURGE_PREVIEW, getPurgePathVariants } from '../cache/purge.js';
 import { sleep } from '../support/utils.js';
-import { publishBulkResourceNotification } from '../support/NotificationsSupport.js';
+import { publishBulkResourceNotification } from '../support/notifications.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
 import { RequestInfo } from '../support/RequestInfo.js';
 import { PreviewResource } from './PreviewResource.js';

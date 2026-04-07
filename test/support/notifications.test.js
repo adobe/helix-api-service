@@ -17,7 +17,7 @@ import {
   getNotifier,
   publishBulkResourceNotification,
   splitArray,
-} from '../../src/support/NotificationsSupport.js';
+} from '../../src/support/notifications.js';
 import { createContext, Nock } from '../utils.js';
 
 describe('Notifications Test', () => {

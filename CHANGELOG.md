@@ -1,3 +1,10 @@
+## [1.42.3](https://github.com/adobe/helix-api-service/compare/v1.42.2...v1.42.3) (2026-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#187](https://github.com/adobe/helix-api-service/issues/187)) ([344308b](https://github.com/adobe/helix-api-service/commit/344308b676997dbbdcd8aad84f3b745881cfe926))
+
 ## [1.42.2](https://github.com/adobe/helix-api-service/compare/v1.42.1...v1.42.2) (2026-04-09)
 
 

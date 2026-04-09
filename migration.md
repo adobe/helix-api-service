@@ -62,7 +62,7 @@ These require porting entire modules or large subsystems from helix-admin.
   helix-admin: `src/medialog/` — handler.js, add.js, query.js.
   helix-admin PRs: [#3450](https://github.com/adobe/helix-admin/pull/3450), [#3478](https://github.com/adobe/helix-admin/pull/3478), [#3509](https://github.com/adobe/helix-admin/pull/3509), [#3486](https://github.com/adobe/helix-admin/pull/3486).
 
-- [ ] **Index bulk operations** — [adobe/helix-api-service#178](https://github.com/adobe/helix-api-service/issues/178)
+- [x] **Index bulk operations** — [adobe/helix-api-service#178](https://github.com/adobe/helix-api-service/issues/178)
   helix-api-service's index module is greatly simplified vs helix-admin. Missing: bulk-index.js,
   index-job.js, partitioner.js, fetch-page.js, index-page.js, remove-page.js, remove-pages.js,
   row-count.js, index preview/publish. Also: `indexNames` param ([#3333](https://github.com/adobe/helix-admin/pull/3333)),

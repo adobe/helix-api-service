@@ -181,6 +181,11 @@ const createJob = async (ctx, event = {}) => {
   await job.trackProgress({
     total: 0,
   });
+  job.getRateLimit = () => ({
+    maxConcurrent: 12,
+    limit: 900,
+    interval: 1,
+  });
   return job;
 };
 
@@ -1360,20 +1365,40 @@ describe('Code Job tests', () => {
         ],
       });
 
+      codeBus.added.sort((a0, a1) => a0.filePath.localeCompare(a1.filePath));
       assert.deepStrictEqual(codeBus.added, [{
+        body: '5edf98811d50b5b948f6f890f0c4367095490dbd',
+        compressed: false,
+        contentType: 'text/plain',
+        filePath: '/owner/repo/main/.sha',
+        meta: {
+          'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
+          'x-source-last-modified': codeBus.added.at(0).meta['x-source-last-modified'],
+        },
+      }, {
         body: 'hello, world',
-        contentType: 'text/plain; charset=utf-8',
-        filePath: '/owner/repo/main/new-file.txt',
+        compressed: true,
+        contentType: 'text/markdown; charset=utf-8',
+        filePath: '/owner/repo/main/back-dated.md',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
-          'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
+          'x-source-last-modified': 'Tue, 01 Mar 2022 08:32:02 GMT',
         },
-        compressed: true,
+      }, {
+        body: 'tralala!',
+        compressed: false,
+        contentType: undefined,
+        filePath: '/owner/repo/main/music.mp3',
+        meta: {
+          'access-control-allow-origin': '*',
+          'x-commit-id': '5beb72484d916d5682e59d78c3cc85e3e9d146b7',
+          'x-source-last-modified': 'Tue, 01 Mar 2022 08:32:01 GMT',
+        },
       }, {
         body: 'hello, world',
-        contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/main/README.md',
+        contentType: 'text/plain; charset=utf-8',
+        filePath: '/owner/repo/main/new-file.txt',
         meta: {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
@@ -1399,37 +1424,16 @@ describe('Code Job tests', () => {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': 'Tue, 01 Mar 2022 08:32:01 GMT',
         },
-      },
-      {
-        body: 'hello, world',
-        compressed: true,
-        contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/main/back-dated.md',
-        meta: {
-          'access-control-allow-origin': '*',
-          'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
-          'x-source-last-modified': 'Tue, 01 Mar 2022 08:32:02 GMT',
-        },
       }, {
-        body: 'tralala!',
-        compressed: false,
-        contentType: undefined,
-        filePath: '/owner/repo/main/music.mp3',
+        body: 'hello, world',
+        contentType: 'text/markdown; charset=utf-8',
+        filePath: '/owner/repo/main/README.md',
         meta: {
           'access-control-allow-origin': '*',
-          'x-commit-id': '5beb72484d916d5682e59d78c3cc85e3e9d146b7',
-          'x-source-last-modified': 'Tue, 01 Mar 2022 08:32:01 GMT',
-        },
-      },
-      {
-        body: '5edf98811d50b5b948f6f890f0c4367095490dbd',
-        compressed: false,
-        contentType: 'text/plain',
-        filePath: '/owner/repo/main/.sha',
-        meta: {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
-          'x-source-last-modified': codeBus.added.at(-1).meta['x-source-last-modified'],
+          'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
         },
+        compressed: true,
       },
       ]);
       assert.deepEqual(codeBus.removed, [
@@ -1440,6 +1444,8 @@ describe('Code Job tests', () => {
     it('syncs events with rate limit error', async () => {
       nock('https://raw.githubusercontent.com')
         .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/new-file.txt')
+        .reply(200, 'hello, world')
+        .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/music.mp3')
         .reply(200, 'hello, world')
         .get('/owner/repo/5edf98811d50b5b948f6f890f0c4367095490dbd/rate-error.md')
         .reply(429, '', {
@@ -1514,6 +1520,12 @@ describe('Code Job tests', () => {
         resources: [
           {
             contentLength: 12,
+            contentType: 'text/markdown; charset=utf-8',
+            resourcePath: '/music.mp3',
+            status: 200,
+          },
+          {
+            contentLength: 12,
             contentType: 'text/plain; charset=utf-8',
             resourcePath: '/new-file.txt',
             status: 200,
@@ -1527,7 +1539,27 @@ describe('Code Job tests', () => {
         ],
       });
 
+      codeBus.added.sort((a0, a1) => a0.filePath.localeCompare(a1.filePath));
       assert.deepStrictEqual(codeBus.added, [{
+        body: '5edf98811d50b5b948f6f890f0c4367095490dbd',
+        compressed: false,
+        contentType: 'text/plain',
+        filePath: '/owner/repo/ref/.sha',
+        meta: {
+          'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
+          'x-source-last-modified': codeBus.added[0].meta['x-source-last-modified'],
+        },
+      }, {
+        body: 'hello, world',
+        compressed: false,
+        contentType: 'text/markdown; charset=utf-8',
+        filePath: '/owner/repo/ref/music.mp3',
+        meta: {
+          'access-control-allow-origin': '*',
+          'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
+          'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
+        },
+      }, {
         body: 'hello, world',
         contentType: 'text/plain; charset=utf-8',
         filePath: '/owner/repo/ref/new-file.txt',
@@ -1546,16 +1578,6 @@ describe('Code Job tests', () => {
           'access-control-allow-origin': '*',
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
-        },
-      },
-      {
-        body: '5edf98811d50b5b948f6f890f0c4367095490dbd',
-        compressed: false,
-        contentType: 'text/plain',
-        filePath: '/owner/repo/ref/.sha',
-        meta: {
-          'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
-          'x-source-last-modified': codeBus.added[2].meta['x-source-last-modified'],
         },
       }]);
       assert.deepEqual(codeBus.removed, []);
@@ -1694,19 +1716,28 @@ describe('Code Job tests', () => {
         },
       ]);
 
+      codeBus.added.sort((a0, a1) => a0.filePath.localeCompare(a1.filePath));
       assert.deepStrictEqual(codeBus.added, [{
         body: 'hello, world',
-        contentType: 'text/plain; charset=utf-8',
-        filePath: '/owner/repo/ref/new-file.txt',
+        compressed: true,
+        contentType: 'text/markdown; charset=utf-8',
+        filePath: '/owner/repo/ref/back-dated.md',
         meta: {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
         },
-        compressed: true,
+      }, {
+        body: 'tralala!',
+        compressed: false,
+        contentType: undefined,
+        filePath: '/owner/repo/ref/music.mp3',
+        meta: {
+          'x-commit-id': '',
+        },
       }, {
         body: 'hello, world',
-        contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/ref/README.md',
+        contentType: 'text/plain; charset=utf-8',
+        filePath: '/owner/repo/ref/new-file.txt',
         meta: {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
@@ -1729,24 +1760,15 @@ describe('Code Job tests', () => {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': 'Tue, 01 Mar 2022 08:32:01 GMT',
         },
-      },
-      {
+      }, {
         body: 'hello, world',
-        compressed: true,
         contentType: 'text/markdown; charset=utf-8',
-        filePath: '/owner/repo/ref/back-dated.md',
+        filePath: '/owner/repo/ref/README.md',
         meta: {
           'x-commit-id': '5edf98811d50b5b948f6f890f0c4367095490dbd',
           'x-source-last-modified': 'Tue, 04 May 2021 04:40:15 GMT',
         },
-      }, {
-        body: 'tralala!',
-        compressed: false,
-        contentType: undefined,
-        filePath: '/owner/repo/ref/music.mp3',
-        meta: {
-          'x-commit-id': '',
-        },
+        compressed: true,
       }]);
       assert.deepEqual(codeBus.removed, [
         '/owner/repo/ref/src/html.htl',

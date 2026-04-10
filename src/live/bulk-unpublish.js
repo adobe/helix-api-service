@@ -12,7 +12,7 @@
 import { Job } from '../job/Job.js';
 import { error } from '../contentproxy/errors.js';
 import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
-import { UnpublishJob } from './unpublish-job.js';
+import { UnpublishJob } from './UnpublishJob.js';
 
 /**
  * Maximum number of paths supported for a synchronous bulk-unpublish.

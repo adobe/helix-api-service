@@ -11,6 +11,7 @@
  */
 
 import { Resource } from '../job/Resource.js';
+import contentbusRemove from '../contentbus/remove.js';
 
 /**
  * Resource used by {@link UnpublishJob}. Represents a live resource that is to be unpublished,
@@ -56,5 +57,24 @@ export class UnpublishResource extends Resource {
    */
   isDeleted() {
     return this.status === 204;
+  }
+
+  /**
+   * Processes the unpublish operation for this resource.
+   * @param {AdminContext} context admin context
+   * @param {RequestInfo} info request info
+   * @returns {Promise<Response>} the response from the contentbus remove operation
+   */
+  async process(context, info) {
+    const res = await contentbusRemove(context, info, 'live');
+    const { status } = res;
+    if (!res.ok) {
+      const err = res.headers.get('x-error');
+      context.log.warn(`unable to unpublish ${this.webPath}: (${status}) ${err}`);
+      this.setStatus(status, err);
+    } else {
+      this.setStatus(status);
+    }
+    return res;
   }
 }

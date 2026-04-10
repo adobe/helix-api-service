@@ -21,7 +21,7 @@ import { CodeJob } from '../../src/code/CodeJob.js';
 import { PreviewJob } from '../../src/preview/PreviewJob.js';
 import { RemoveJob } from '../../src/preview/RemoveJob.js';
 import { PublishJob } from '../../src/live/PublishJob.js';
-import { UnpublishJob } from '../../src/live/unpublish-job.js';
+import { UnpublishJob } from '../../src/live/UnpublishJob.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 

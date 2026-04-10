@@ -11,6 +11,7 @@
  */
 
 import { Resource } from '../job/Resource.js';
+import contentbusRemove from '../contentbus/remove.js';
 
 /**
  * Resource used by {@link RemoveJob}. Represents a preview resource that is to be deleted,
@@ -56,5 +57,24 @@ export class RemoveResource extends Resource {
    */
   isDeleted() {
     return this.status === 204;
+  }
+
+  /**
+   * Processes the unpreview operation for this resource.
+   * @param {AdminContext} context admin context
+   * @param {RequestInfo} info request info
+   * @returns {Promise<Response>} the response from the contentbus remove operation
+   */
+  async process(context, info) {
+    const res = await contentbusRemove(context, info, 'preview');
+    const { status } = res;
+    if (!res.ok) {
+      const err = res.headers.get('x-error');
+      context.log.warn(`unable to delete preview of ${this.webPath}: (${status}) ${err}`);
+      this.setStatus(status, err);
+    } else {
+      this.setStatus(status);
+    }
+    return res;
   }
 }

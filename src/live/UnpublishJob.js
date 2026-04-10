@@ -14,7 +14,6 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 
 import purge, { PURGE_LIVE } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
-import contentbusRemove from '../contentbus/remove.js';
 import { Job } from '../job/Job.js';
 import { fetchExtendedIndex } from '../index/utils.js';
 import indexRemove from '../index/remove.js';
@@ -85,25 +84,16 @@ export class UnpublishJob extends Job {
    * @param {UnpublishResource} resource resource
    */
   async processResource(resource) {
-    const { ctx, ctx: { log }, info } = this;
+    const { ctx, info } = this;
     const { webPath } = resource;
 
     const start = Date.now();
     const localInfo = RequestInfo.clone(info, { path: webPath, route: 'live' });
-
-    const res = await contentbusRemove(ctx, localInfo, 'live');
-    const { status } = res;
-
-    if (!res.ok) {
-      const err = res.headers.get('x-error');
-      log.warn(`unable to unpublish ${webPath}: (${status}) ${err}`);
-      resource.setStatus(status, err);
-      return;
-    }
-    resource.setStatus(status);
-
+    const res = await resource.process(ctx, localInfo);
     const stop = Date.now();
-    await this.audit(ctx, localInfo, { res, start, stop });
+    if (res.ok) {
+      await this.audit(ctx, localInfo, { res, start, stop });
+    }
   }
 
   /**
@@ -151,9 +141,9 @@ export class UnpublishJob extends Job {
     const { ctx, info, state: { data } } = this;
 
     const removedResources = data.resources.filter((r) => r.isDeleted());
+    const idx = await fetchExtendedIndex(ctx, info);
     await processQueue([...removedResources], async (resource) => {
       const localInfo = RequestInfo.clone(info, { path: resource.webPath, route: 'live' });
-      const idx = await fetchExtendedIndex(ctx, localInfo);
       if (idx) {
         await indexRemove(ctx, localInfo, idx);
       }

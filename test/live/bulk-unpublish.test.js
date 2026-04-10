@@ -16,7 +16,7 @@ import sinon from 'sinon';
 import { Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import bulkUnpublish from '../../src/live/bulk-unpublish.js';
-import { UnpublishJob } from '../../src/live/unpublish-job.js';
+import { UnpublishJob } from '../../src/live/UnpublishJob.js';
 import { Job } from '../../src/job/Job.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,

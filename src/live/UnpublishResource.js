@@ -14,10 +14,10 @@ import { Resource } from '../job/Resource.js';
 import contentbusRemove from '../contentbus/remove.js';
 
 /**
- * Resource used by {@link RemoveJob}. Represents a preview resource that is to be deleted,
- * with its last modified date from the preview partition.
+ * Resource used by {@link UnpublishJob}. Represents a live resource that is to be unpublished,
+ * with its last modified date from the live partition.
  */
-export class RemoveResource extends Resource {
+export class UnpublishResource extends Resource {
   /** @type {string} */
   webPath;
 
@@ -34,7 +34,7 @@ export class RemoveResource extends Resource {
 
   /**
    * @param {object} obj plain object from JSON.parse
-   * @returns {RemoveResource}
+   * @returns {UnpublishResource}
    */
   static fromJSON(obj) {
     const r = super.fromJSON(obj);
@@ -52,7 +52,7 @@ export class RemoveResource extends Resource {
   }
 
   /**
-   * Returns true if this resource was successfully deleted (HTTP 204).
+   * Returns true if this resource was successfully unpublished (HTTP 204).
    * @returns {boolean}
    */
   isDeleted() {
@@ -60,17 +60,17 @@ export class RemoveResource extends Resource {
   }
 
   /**
-   * Processes the unpreview operation for this resource.
+   * Processes the unpublish operation for this resource.
    * @param {AdminContext} context admin context
    * @param {RequestInfo} info request info
    * @returns {Promise<Response>} the response from the contentbus remove operation
    */
   async process(context, info) {
-    const res = await contentbusRemove(context, info, 'preview');
+    const res = await contentbusRemove(context, info, 'live');
     const { status } = res;
     if (!res.ok) {
       const err = res.headers.get('x-error');
-      context.log.warn(`unable to delete preview of ${this.webPath}: (${status}) ${err}`);
+      context.log.warn(`unable to unpublish ${this.webPath}: (${status}) ${err}`);
       this.setStatus(status, err);
     } else {
       this.setStatus(status);

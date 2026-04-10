@@ -21,6 +21,7 @@ import { CodeJob } from '../../src/code/CodeJob.js';
 import { PreviewJob } from '../../src/preview/PreviewJob.js';
 import { RemoveJob } from '../../src/preview/RemoveJob.js';
 import { PublishJob } from '../../src/live/PublishJob.js';
+import { UnpublishJob } from '../../src/live/UnpublishJob.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 
@@ -496,6 +497,7 @@ describe('Job Handler — RUN dispatches to correct job class', () => {
     [PreviewJob, PreviewJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
     [RemoveJob, RemoveJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
     [PublishJob, PublishJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
+    [UnpublishJob, UnpublishJob.TOPIC, (t) => `/preview/.helix/admin-jobs/${t}/incoming/job-24.json`],
   ]) {
     // eslint-disable-next-line no-loop-func
     it(`RUN invokes ${topic} job`, async () => {

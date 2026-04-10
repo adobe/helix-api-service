@@ -14,7 +14,6 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD } from '../contentbus/contentbus.js';
-import contentbusRemove from '../contentbus/remove.js';
 import { Job } from '../job/Job.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
 import { RequestInfo, toWebPath } from '../support/RequestInfo.js';
@@ -82,25 +81,16 @@ export class RemoveJob extends Job {
    * @param {RemoveResource} resource resource
    */
   async processResource(resource) {
-    const { ctx, ctx: { log }, info } = this;
+    const { ctx, info } = this;
     const { webPath } = resource;
 
     const start = Date.now();
     const localInfo = RequestInfo.clone(info, { path: webPath, route: 'preview' });
-
-    const res = await contentbusRemove(ctx, localInfo, 'preview');
-    const { status } = res;
-
-    if (!res.ok) {
-      const err = res.headers.get('x-error');
-      log.warn(`unable to delete preview of ${webPath}: (${res.status}) ${err}`);
-      resource.setStatus(status, err);
-      return;
-    }
-    resource.setStatus(status);
-
+    const res = await resource.process(ctx, localInfo);
     const stop = Date.now();
-    await this.audit(ctx, localInfo, { res, start, stop });
+    if (res.ok) {
+      await this.audit(ctx, localInfo, { res, start, stop });
+    }
   }
 
   /**

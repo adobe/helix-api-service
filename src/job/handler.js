@@ -18,6 +18,7 @@ import { CodeJob } from '../code/CodeJob.js';
 import { PreviewJob } from '../preview/PreviewJob.js';
 import { RemoveJob } from '../preview/RemoveJob.js';
 import { PublishJob } from '../live/PublishJob.js';
+import { UnpublishJob } from '../live/UnpublishJob.js';
 import { IndexJob } from '../index/IndexJob.js';
 
 const ALLOWED_METHODS = ['GET', 'DELETE', 'RUN', 'POST'];
@@ -28,6 +29,7 @@ export const JOB_CLASS = {
   [PreviewJob.TOPIC]: PreviewJob,
   [RemoveJob.TOPIC]: RemoveJob,
   [PublishJob.TOPIC]: PublishJob,
+  [UnpublishJob.TOPIC]: UnpublishJob,
   [IndexJob.TOPIC]: IndexJob,
 };
 

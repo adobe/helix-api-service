@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Adobe. All rights reserved.
+ * Copyright 2026 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at https://www.apache.org/licenses/LICENSE-2.0
@@ -15,8 +15,8 @@ import assert from 'assert';
 import sinon from 'sinon';
 import { Response } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
-import bulkPublish from '../../src/live/bulk-publish.js';
-import { PublishJob } from '../../src/live/PublishJob.js';
+import bulkUnpublish from '../../src/live/bulk-unpublish.js';
+import { UnpublishJob } from '../../src/live/UnpublishJob.js';
 import { Job } from '../../src/job/Job.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
@@ -33,7 +33,7 @@ function createTestContext(data) {
   });
 }
 
-describe('Bulk Publish Tests', () => {
+describe('Bulk Unpublish Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
@@ -55,49 +55,42 @@ describe('Bulk Publish Tests', () => {
 
   it('returns 400 for missing payload', async () => {
     const context = createTestContext(undefined);
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), "bulk-publish payload is missing 'paths'.");
+    assert.strictEqual(result.headers.get('x-error'), "bulk-unpublish payload is missing 'paths'.");
   });
 
   it('returns 400 for empty paths array', async () => {
     const context = createTestContext({ paths: [] });
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), "bulk-publish payload is missing 'paths'.");
+    assert.strictEqual(result.headers.get('x-error'), "bulk-unpublish payload is missing 'paths'.");
   });
 
   it('returns 400 for invalid payload (not an array)', async () => {
     const context = createTestContext({ paths: '/foo' });
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), "bulk-publish 'paths' is not an array.");
+    assert.strictEqual(result.headers.get('x-error'), "bulk-unpublish 'paths' is not an array.");
   });
 
   it('returns 400 for illegal path (with spaces)', async () => {
     const context = createTestContext({ paths: ['/foo/my documents/bar'] });
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), 'bulk-publish path not valid: /foo/my documents/bar');
+    assert.strictEqual(result.headers.get('x-error'), 'bulk-unpublish path not valid: /foo/my documents/bar');
   });
 
   it('returns 400 for .helix config path', async () => {
     const context = createTestContext({ paths: ['/.helix/config.json'] });
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), 'bulk-publish of config resources is not supported: /.helix/config.json');
-  });
-
-  it('returns 400 for tree publish', async () => {
-    const context = createTestContext({ paths: ['/foo/*'] });
-    const result = await bulkPublish(context, info);
-    assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.headers.get('x-error'), 'bulk-publish does not support publishing of subtrees due to security reasons.');
+    assert.strictEqual(result.headers.get('x-error'), 'bulk-unpublish of config resources is not supported: /.helix/config.json');
   });
 
   it('returns 400 when paths exceed the sync limit', async () => {
     const context = createTestContext({ paths: Array.from({ length: 201 }, (_, i) => `/path-${i}`) });
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.headers.get('x-error'), 'Bulk path limit exceeded for this content source (201 > 200). Use forceAsync=true');
     assert.strictEqual(result.headers.get('x-error-code'), 'AEM_BACKEND_TOO_MANY_BULK_PATHS');
@@ -109,7 +102,7 @@ describe('Bulk Publish Tests', () => {
       forceAsync: true,
     });
     const createStub = sandbox.stub(Job, 'create').resolves(new Response('', { status: 202 }));
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 202);
     assert.ok(createStub.calledOnce);
   });
@@ -119,29 +112,31 @@ describe('Bulk Publish Tests', () => {
 
     const createStub = sandbox.stub(Job, 'create').resolves(new Response('', { status: 202 }));
 
-    const result = await bulkPublish(context, info);
+    const result = await bulkUnpublish(context, info);
     assert.strictEqual(result.status, 202);
     assert.ok(createStub.calledOnce);
 
     const [, , topic, opts] = createStub.firstCall.args;
-    assert.strictEqual(topic, PublishJob.TOPIC);
+    assert.strictEqual(topic, UnpublishJob.TOPIC);
     assert.strictEqual(opts.transient, true);
     assert.deepStrictEqual(opts.data, {
-      paths: ['/foo/bar', '/bar'],
-      forceUpdate: false,
+      paths: [{ path: '/foo/bar' }, { path: '/bar' }],
     });
     assert.deepStrictEqual(opts.roles, ['author']);
   });
 
-  it('passes forceUpdate=true when specified', async () => {
-    const context = createTestContext({ paths: ['/foo/bar'], forceUpdate: 'true' });
+  it('processes wildcard paths as prefix entries', async () => {
+    const context = createTestContext({ paths: ['/docs/*', '/blog'] });
 
     const createStub = sandbox.stub(Job, 'create').resolves(new Response('', { status: 202 }));
 
-    await bulkPublish(context, info);
+    await bulkUnpublish(context, info);
     assert.ok(createStub.calledOnce);
 
     const [, , , opts] = createStub.firstCall.args;
-    assert.strictEqual(opts.data.forceUpdate, true);
+    assert.deepStrictEqual(opts.data.paths, [
+      { prefix: '/docs/' },
+      { path: '/blog' },
+    ]);
   });
 });

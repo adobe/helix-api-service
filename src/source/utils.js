@@ -131,6 +131,17 @@ export function getS3KeyFromInfo(info) {
 }
 
 /**
+ * Get the document path from the source bus S3 key.
+ *
+ * @param {string} sKey source bus S3 key
+ * @returns {string} the document path
+ */
+export function getDocPathFromS3Key(sKey) {
+  const path = sKey.split('/').slice(2).join('/');
+  return `/${path}`;
+}
+
+/**
  * Get the document ID from the head, by reading it from the Metadata.
  *
  * @param {Object) meta object containins metadata with the doc id

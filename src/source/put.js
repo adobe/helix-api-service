@@ -18,6 +18,7 @@ import { StatusCodeError } from '../support/StatusCodeError.js';
 import { checkConditionals } from './header-utils.js';
 import {
   contentTypeFromExtension,
+  getDocPathFromS3Key,
   getS3KeyFromInfo,
   getS3Key,
   getDocID,
@@ -35,7 +36,13 @@ import { postVersion } from './versions.js';
  * @param {string} destKey destination S3 key
  * @param {boolean} move true if this is a move operation
  * @param {object} initialOpts metadata options for the copy operation
- * @param {object} collOpts collision options (e.g { copy: 'overwrite' } )
+ * @param {object} collOpts collision options (e.g { collision: 'overwrite' } ),
+ * these collision options are used to handle conflicts when copying the source to the
+ * destination.
+ * - 'overwrite' - overwrite the destination if it exists, but create a version of
+ * the destination first.
+ * - 'unique' - append a (base-36) encoded timestamp to the destination key to make it unique.
+ * These timestamps are alphabetically sortable.
  */
 async function copyWithRetry(
   context,
@@ -46,6 +53,7 @@ async function copyWithRetry(
   collOpts,
 ) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
+  let destinationKey = destKey;
   let opts = initialOpts;
 
   // We start with assuming that there is nothing at the destination, the happy path
@@ -57,7 +65,7 @@ async function copyWithRetry(
     try {
       const allOpts = { copyOpts, ...opts };
       // eslint-disable-next-line no-await-in-loop
-      await bucket.copy(srcKey, destKey, allOpts);
+      await bucket.copy(srcKey, destinationKey, allOpts);
 
       break; // copy was successful, break out of the loop - we're done!
     } catch (e) {
@@ -75,14 +83,16 @@ async function copyWithRetry(
         }
         // 412: precondition failed - something is at the destination already.
 
-        if (move) {
-          // TODO add move collision handling
-          throw new StatusCodeError('Collision: something is at the destination already', 409);
-        } else {
-          if (collOpts.copy !== 'overwrite') {
-            throw new StatusCodeError('Collision: something is at the destination already, no overwrite option provided', 409);
-          }
+        if (collOpts.collision === 'unique') {
+          // The request is to move and make the destination file unique.
+          // We do this by appending a ms timestamp to the destination key.
 
+          const ext = `.${destKey.split('.').pop()}`;
+          const destWithoutExt = destKey.slice(0, -ext.length);
+
+          const ts = Date.now().toString(36);
+          destinationKey = `${destWithoutExt}-${ts}${ext}`;
+        } else if (collOpts.collision === 'overwrite') {
           // eslint-disable-next-line no-await-in-loop
           const dest = await bucket.head(destKey);
 
@@ -106,6 +116,8 @@ async function copyWithRetry(
             // Now only copy over the destination if it's still the same as what we did a head() of
             copyOpts = { IfMatch: dest.ETag };
           }
+        } else {
+          throw new StatusCodeError('Collision: something is at the destination already', 409);
         }
       }
     }
@@ -119,12 +131,12 @@ async function copyWithRetry(
   }
 }
 
-async function copyFile(context, srcKey, destKey, move, collOpts) {
-  const opts = {};
+async function copyFile(context, srcKey, destKey, move, opts, collOpts) {
+  const copyOpts = { ...opts };
   if (!move) {
-    opts.addMetadata = { 'doc-id': ulid() };
+    copyOpts.addMetadata = { 'doc-id': ulid() };
   }
-  await copyWithRetry(context, srcKey, destKey, move, opts, collOpts);
+  await copyWithRetry(context, srcKey, destKey, move, copyOpts, collOpts);
 }
 
 /**
@@ -134,12 +146,13 @@ async function copyFile(context, srcKey, destKey, move, collOpts) {
  * @param {string} src source S3 key
  * @param {import('../support/RequestInfo').RequestInfo} info destination info
  * @param {boolean} move whether to move the source
+ * @param {object} opts additional options for the copy operation
  * @param {object} collOpts collision options
  * @returns {Promise<Array<{src: string, dst: string}>>} the copied file details
  */
-async function copyDocument(context, src, info, move, collOpts) {
+export async function copyDocument(context, src, info, move, opts, collOpts) {
   const dst = getS3KeyFromInfo(info);
-  await copyFile(context, src, dst, move, collOpts);
+  await copyFile(context, src, dst, move, opts, collOpts);
   return [{ src, dst }];
 }
 
@@ -150,10 +163,13 @@ async function copyDocument(context, src, info, move, collOpts) {
  * @param {string} srcKey source S3 key
  * @param {import('../support/RequestInfo').RequestInfo} info destination info
  * @param {boolean} move whether to move the source
+ * @param {function(string, string): object} fnOpts additional options for the copy operation.
+ * This function is called for each object being copied with source and destination S3 keys as
+ * arguments.
  * @param {object} collOpts collision options
  * @returns {Promise<Array<{src: string, dst: string}>>} the copied files
  */
-async function copyFolder(context, srcKey, info, move, collOpts) {
+export async function copyFolder(context, srcKey, info, move, fnOpts, collOpts) {
   const tasks = [];
   const destKey = getS3Key(info.org, info.site, info.rawPath);
 
@@ -169,9 +185,15 @@ async function copyFolder(context, srcKey, info, move, collOpts) {
     });
   });
 
+  if (tasks.length === 0) {
+    // Nothing found at source
+    throw new StatusCodeError('Not found', 404);
+  }
+
   const copied = [];
   await processQueue(tasks, async (task) => {
-    await copyFile(context, task.src, task.dst, move, collOpts);
+    const opts = fnOpts(task.src, task.dst);
+    await copyFile(context, task.src, task.dst, move, opts, collOpts);
     copied.push({ src: task.src, dst: task.dst });
   });
   return copied;
@@ -199,12 +221,18 @@ async function copySource(context, info, move, collOpts) {
     }
 
     const copied = isFolder
-      ? await copyFolder(context, srcKey, info, move, collOpts)
-      : await copyDocument(context, srcKey, info, move, collOpts);
+      ? await copyFolder(context, srcKey, info, move, () => ({}), collOpts)
+      : await copyDocument(context, srcKey, info, move, {}, collOpts);
+
+    // The copied paths returned are without the org and site segments
+    const copiedPaths = copied.map((c) => ({
+      src: getDocPathFromS3Key(c.src),
+      dst: getDocPathFromS3Key(c.dst),
+    }));
 
     const operation = move ? 'moved' : 'copied';
     return new Response({
-      [operation]: copied,
+      [operation]: copiedPaths,
     });
   } catch (e) {
     const opts = { e, log };
@@ -223,12 +251,9 @@ async function copySource(context, info, move, collOpts) {
 export async function putSource(context, info) {
   if (context.data.source) {
     const move = String(context.data.move) === 'true';
-    const collOpts = {};
-    if (move) {
-      collOpts.move = context.data.collision;
-    } else {
-      collOpts.copy = context.data.collision;
-    }
+    const collOpts = {
+      collision: context.data.collision,
+    };
     return copySource(context, info, move, collOpts);
   }
 

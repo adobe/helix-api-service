@@ -1,3 +1,24 @@
+## [1.42.3](https://github.com/adobe/helix-api-service/compare/v1.42.2...v1.42.3) (2026-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#187](https://github.com/adobe/helix-api-service/issues/187)) ([344308b](https://github.com/adobe/helix-api-service/commit/344308b676997dbbdcd8aad84f3b745881cfe926))
+
+## [1.42.2](https://github.com/adobe/helix-api-service/compare/v1.42.1...v1.42.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#191](https://github.com/adobe/helix-api-service/issues/191)) ([00b06d9](https://github.com/adobe/helix-api-service/commit/00b06d9131a00214886e170bd6a0a6e0d89b5126))
+
+## [1.42.1](https://github.com/adobe/helix-api-service/compare/v1.42.0...v1.42.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* **code-job:** speed up code job tests ([#192](https://github.com/adobe/helix-api-service/issues/192)) ([214288b](https://github.com/adobe/helix-api-service/commit/214288b2e4d08968d3f76c7f0144e370f3886749))
+
 # [1.42.0](https://github.com/adobe/helix-api-service/compare/v1.41.1...v1.42.0) (2026-04-07)
 
 

@@ -70,16 +70,6 @@ export const OTHER_CONFIG_FILES = {
 };
 
 /**
- * Rate limits for code sync
- * https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#about-secondary-rate-limits
- */
-const RATE_LIMIT = {
-  maxConcurrent: 12, // github allows 100, though
-  limit: 900, // github allows  900 points
-  interval: 1000 * 60, // 1 minute
-};
-
-/**
  * Returns the ref (branch) name to use in the codebus for the given github ref.
  * It ensures that the codebus ref is lowercase and does not contain unsupported characters.
  *
@@ -168,6 +158,19 @@ export class CodeJob extends Job {
       time: 0, get: 0, put: 0, remove: 0, head: 0,
     };
     this.bytesDownloaded = 0;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getRateLimit() {
+    /**
+     * Rate limits for code sync
+     * https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#about-secondary-rate-limits
+     */
+    return {
+      maxConcurrent: 12, // github allows 100, though
+      limit: 900, // github allows  900 points
+      interval: 1000 * 60, // 1 minute
+    };
   }
 
   /**
@@ -344,7 +347,7 @@ export class CodeJob extends Job {
     const { octokit } = codeSource;
     let counter = 0;
     const rateLimit = {
-      ...RATE_LIMIT,
+      ...this.getRateLimit(),
       abortController: new AbortController(),
     };
 

@@ -26,7 +26,7 @@ export default async function copy(context, info) {
 
   try {
     const storage = HelixStorage.fromContext(context).contentBus();
-    await storage.copy(
+    const result = await storage.copy(
       `${contentBusId}/preview${resourcePath}`,
       `${contentBusId}/live${resourcePath}`,
       {
@@ -35,7 +35,7 @@ export default async function copy(context, info) {
         },
       },
     );
-    return new Response('', { status: 200 });
+    return new Response(result, { status: 200 });
   /* c8 ignore next 3 */
   } catch (e) {
     return createErrorResponse({ e, log });

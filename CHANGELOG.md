@@ -1,3 +1,10 @@
+# [1.43.0](https://github.com/adobe/helix-api-service/compare/v1.42.4...v1.43.0) (2026-04-10)
+
+
+### Features
+
+* **live:** migrate bulk-unpublish job from helix-admin ([#188](https://github.com/adobe/helix-api-service/issues/188)) ([613d9d1](https://github.com/adobe/helix-api-service/commit/613d9d151a5ebc2b8150d8183942f7d7a5cda20b))
+
 ## [1.42.4](https://github.com/adobe/helix-api-service/compare/v1.42.3...v1.42.4) (2026-04-10)
 
 

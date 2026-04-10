@@ -1,3 +1,10 @@
+## [1.42.4](https://github.com/adobe/helix-api-service/compare/v1.42.3...v1.42.4) (2026-04-10)
+
+
+### Bug Fixes
+
+* **sitemap:** ETag-based metadata change detection ([#193](https://github.com/adobe/helix-api-service/issues/193)) ([9ce53e6](https://github.com/adobe/helix-api-service/commit/9ce53e63a97995e50685a5cee38cf8fa1dd190fd))
+
 ## [1.42.3](https://github.com/adobe/helix-api-service/compare/v1.42.2...v1.42.3) (2026-04-09)
 
 

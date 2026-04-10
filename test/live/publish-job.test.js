@@ -170,10 +170,7 @@ describe('PublishJob Tests', () => {
       .headObject('/preview/documents/document.md')
       .reply(200)
       .copyObject('/live/documents/document.md')
-      .reply(200, COPY_XML)
-      // publishStatus: getContentBusInfo HEADs live partition
-      .headObject('/live/documents/document.md')
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
+      .reply(200, COPY_XML);
 
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
@@ -227,9 +224,7 @@ describe('PublishJob Tests', () => {
       .headObject('/preview/documents/document.md')
       .reply(200) // storage.copy addMetadata
       .copyObject('/live/documents/document.md')
-      .reply(200, COPY_XML)
-      .headObject('/live/documents/document.md')
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
+      .reply(200, COPY_XML);
 
     const job = await createJob(ctx, info, ['/documents/document'], { forceUpdate: true });
     await job.run();
@@ -290,9 +285,7 @@ describe('PublishJob Tests', () => {
         .headObject(`/preview${key}.md`)
         .reply(200)
         .copyObject(`/live${key}.md`)
-        .reply(200, COPY_XML)
-        .headObject(`/live${key}.md`)
-        .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
+        .reply(200, COPY_XML);
     }
 
     const job = await createJob(ctx, info, paths);
@@ -313,9 +306,7 @@ describe('PublishJob Tests', () => {
       .headObject(`/preview${METADATA_JSON_PATH}`)
       .reply(200)
       .copyObject(`/live${METADATA_JSON_PATH}`)
-      .reply(200, COPY_XML)
-      .headObject(`/live${METADATA_JSON_PATH}`)
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'application/json' });
+      .reply(200, COPY_XML);
 
     const job = await createJob(ctx, info, [METADATA_JSON_PATH]);
     await job.run();
@@ -339,8 +330,6 @@ describe('PublishJob Tests', () => {
       .reply(200) // storage.copy addMetadata
       .copyObject(`/live${REDIRECTS_JSON_PATH}`)
       .reply(200, COPY_XML)
-      .headObject(`/live${REDIRECTS_JSON_PATH}`)
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'application/json' })
       // updateRedirects calls ctx.getRedirects('live') — cache cleared in processRedirects
       .getObject(`/live${REDIRECTS_JSON_PATH}`)
       .reply(404); // no redirects on live
@@ -384,17 +373,13 @@ describe('PublishJob Tests', () => {
       .reply(200)
       .copyObject('/live/documents/doc1.md')
       .reply(200, COPY_XML)
-      .headObject('/live/documents/doc1.md')
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' })
       // doc2: isModified → modified → publish
       .headObject('/live/documents/doc2.md')
       .reply(404)
       .headObject('/preview/documents/doc2.md')
       .reply(200)
       .copyObject('/live/documents/doc2.md')
-      .reply(200, COPY_XML)
-      .headObject('/live/documents/doc2.md')
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
+      .reply(200, COPY_XML);
 
     const job = await createJob(ctx, info, ['/documents/doc1', '/documents/doc2']);
     await job.run();
@@ -426,9 +411,7 @@ describe('PublishJob Tests', () => {
       .headObject('/preview/documents/document.md')
       .reply(200)
       .copyObject('/live/documents/document.md')
-      .reply(200, COPY_XML)
-      .headObject('/live/documents/document.md')
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'text/markdown' });
+      .reply(200, COPY_XML);
 
     const job = await createJob(ctx, info, ['/documents/document']);
     await job.run();
@@ -462,9 +445,7 @@ describe('PublishJob Tests', () => {
       .headObject(`/preview${METADATA_JSON_PATH}`)
       .reply(200)
       .copyObject(`/live${METADATA_JSON_PATH}`)
-      .reply(200, COPY_XML)
-      .headObject(`/live${METADATA_JSON_PATH}`)
-      .reply(200, '', { 'last-modified': LAST_MODIFIED_PREVIEW, 'content-type': 'application/json' });
+      .reply(200, COPY_XML);
 
     const job = await createJob(ctx, info, [METADATA_JSON_PATH]);
     await job.run();

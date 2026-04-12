@@ -85,7 +85,7 @@ Individual improvements from helix-admin not yet in helix-api-service.
   in the fetch Accept header but no media-upload equivalent in the preview pipeline.
   helix-admin PR: [#3549](https://github.com/adobe/helix-admin/pull/3549).
 
-- [ ] **Sitemap improvements (ETag, canonical, CDN host)** — [adobe/helix-api-service#181](https://github.com/adobe/helix-api-service/issues/181)
+- [x] **Sitemap improvements (ETag, canonical, CDN host)** — [adobe/helix-api-service#181](https://github.com/adobe/helix-api-service/issues/181)
   Three sitemap improvements missing: (1) ETag-based metadata change detection to skip unnecessary
   reindexing ([#3523](https://github.com/adobe/helix-admin/pull/3523), [#3524](https://github.com/adobe/helix-admin/pull/3524));
   (2) respect `canonical` meta tag when building sitemap ([#3378](https://github.com/adobe/helix-admin/pull/3378));

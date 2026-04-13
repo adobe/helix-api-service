@@ -32,6 +32,7 @@ import preview from './preview/handler.js';
 import profile from './profile/handler.js';
 import sidekick from './sidekick/handler.js';
 import sitemap from './sitemap/handler.js';
+import snapshot from './snapshot/handler.js';
 import source from './source/handler.js';
 import status from './status/handler.js';
 import job from './job/handler.js';
@@ -45,12 +46,6 @@ import { contentEncodeWrapper } from './wrappers/content-encode.js';
 import commonResponseHeaders from './wrappers/response-headers.js';
 import { sidekickCSRFProtection } from './sidekick/csrf.js';
 import { sqsEventAdapter } from './wrappers/sqs-event-adapter.js';
-
-/**
- * Dummy NYI handler
- * @returns {Response} response
- */
-const notImplemented = () => new Response('', { status: 405 });
 
 /**
  * Name selector for routes.
@@ -91,7 +86,8 @@ export const router = new Router(nameSelector)
   .add('/:org/sites/:site/preview/*', preview)
   .add('/:org/sites/:site/sidekick', sidekick)
   .add('/:org/sites/:site/sitemap/*', sitemap)
-  .add('/:org/sites/:site/snapshots/*', notImplemented)
+  .add('/:org/sites/:site/snapshots', snapshot)
+  .add('/:org/sites/:site/snapshots/*', snapshot)
   .add('/:org/sites/:site/source/*', source)
   .add('/:org/sites/:site/status/*', status)
   .add('/:org/sites/:site/jobs/:topic/*', job);

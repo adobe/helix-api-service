@@ -61,8 +61,9 @@ export class PublishJob extends Job {
       const resource = new PublishResource(resourcePath, path);
 
       if (!forceUpdate) {
-        // check if resource exists on preview partition
-        const key = `${contentBusId}/preview${resourcePath}`;
+        // if snapshotId is defined, use snapshot resource's modified date
+        const { snapshotId } = data;
+        const key = `${contentBusId}/preview${snapshotId ? `/.snapshots/${snapshotId}` : ''}${resourcePath}`;
         try {
           const { LastModified: lastModified } = await storage.head(key) ?? {};
           if (lastModified) {
@@ -150,6 +151,11 @@ export class PublishJob extends Job {
     const start = Date.now();
     const localInfo = RequestInfo.clone(info, { path, route: 'live' });
 
+    // ensure snapshotId is available on context.data for liveUpdate → publishSnapshot
+    if (this.state.data.snapshotId) {
+      ctx.data.snapshotId = this.state.data.snapshotId;
+    }
+
     const res = await liveUpdate(ctx, localInfo);
     const { status } = res;
     resource.setStatus(status);
@@ -230,7 +236,7 @@ export class PublishJob extends Job {
         toNotify.push(resource);
       }
     }
-    await publishBulkResourceNotification(ctx, 'resources-published', info, publishedResourcePaths, toNotify);
+    await publishBulkResourceNotification(ctx, 'resources-published', info, publishedResourcePaths, toNotify, this.state.data.snapshotId);
   }
 
   /**

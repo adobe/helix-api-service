@@ -88,7 +88,7 @@
     "dayjs": "1.11.20",
     "fast-xml-parser": "5.5.9",
     "fetch-retry": "6.0.0",
-    "file-type": "21.3.4",
+    "file-type": "22.0.0",
     "hast-util-format": "1.1.0",
     "hast-util-from-html": "2.0.3",
     "hast-util-select": "6.0.4",

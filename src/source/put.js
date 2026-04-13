@@ -12,7 +12,9 @@
 import { Response } from '@adobe/fetch';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { checkConditionals } from './header-utils.js';
-import { copyFolder, copyDocument, storeSourceFile } from './source-client.js';
+import {
+  CopyOptions, copyFolder, copyDocument, storeSourceFile,
+} from './source-client.js';
 import {
   contentTypeFromExtension,
   getDocPathFromS3Key,
@@ -42,9 +44,12 @@ async function copySource(context, info, move, collOpts) {
       return createErrorResponse({ status: 400, msg: 'Source and destination type mismatch', log });
     }
 
+    const copyOpts = new CopyOptions({
+      src: srcKey, info, move, collOpts,
+    });
     const copied = isFolder
-      ? await copyFolder(context, srcKey, info, move, () => ({}), collOpts)
-      : await copyDocument(context, srcKey, info, move, {}, collOpts);
+      ? await copyFolder(context, copyOpts)
+      : await copyDocument(context, copyOpts);
 
     // The copied paths returned are without the org and site segments
     const copiedPaths = copied.map((c) => ({

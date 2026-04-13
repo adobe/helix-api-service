@@ -14,7 +14,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { RequestInfo } from '../support/RequestInfo.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import { copyDocument, copyFolder } from './source-client.js';
+import { CopyOptions, copyDocument, copyFolder } from './source-client.js';
 import { getDocPathFromS3Key, getS3Key, getS3KeyFromInfo } from './utils.js';
 
 /**
@@ -39,7 +39,9 @@ async function trashFolder(context, info) {
   const copyOpts = (sKey) => ({ addMetadata: { 'doc-path': getDocPathFromS3Key(sKey) } });
 
   try {
-    const resp = await copyFolder(context, srcKey, newInfo, true, copyOpts, { collision: 'unique' });
+    const resp = await copyFolder(context, new CopyOptions({
+      src: srcKey, info: newInfo, move: true, fnOpts: copyOpts, collOpts: { collision: 'unique' },
+    }));
     if (resp.length > 0) {
       return new Response('', { status: 204 });
     }
@@ -74,9 +76,12 @@ export async function deleteSource(context, info) {
       'doc-path': info.resourcePath,
     },
   };
+  const copyOptions = new CopyOptions({
+    src: srcKey, info: newInfo, move: true, opts: copyOpts, collOpts: { collision: 'unique' },
+  });
 
   try {
-    const resp = await copyDocument(context, srcKey, newInfo, true, copyOpts, { collision: 'unique' });
+    const resp = await copyDocument(context, copyOptions);
     if (resp.length !== 1) {
       throw new StatusCodeError('Trashing of document failed', 500);
     }

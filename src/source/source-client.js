@@ -23,6 +23,28 @@ import {
 } from './utils.js';
 
 export const VERSION_FOLDER = '.versions';
+export class CopyOptions {
+  /**
+   * @param {object} options
+   * @param {string} options.src source S3 key
+   * @param {import('../support/RequestInfo').RequestInfo} options.info destination info
+   * @param {boolean} options.move whether to move the source
+   * @param {object} [options.opts] additional options for the copy operation
+   * @param {function(string, string): object} [options.fnOpts] function returning per-file options,
+   * called with source and destination S3 keys. Used by folder copies.
+   * @param {object} options.collOpts collision options
+   */
+  constructor({
+    src, info, move, opts = {}, fnOpts, collOpts,
+  }) {
+    this.src = src;
+    this.info = info;
+    this.move = move;
+    this.opts = opts;
+    this.fnOpts = fnOpts;
+    this.collOpts = collOpts;
+  }
+}
 
 /**
  * Get the headers for the source file response.
@@ -31,7 +53,7 @@ export const VERSION_FOLDER = '.versions';
  * @param {number} length The content length
  * @return {Object} headers
  */
-export function getFileHeaders(meta, length) {
+function getFileHeaders(meta, length) {
   const headers = {
     'Content-Type': meta.ContentType,
     'Last-Modified': meta.LastModified.toUTCString(),
@@ -52,7 +74,7 @@ export function getFileHeaders(meta, length) {
  * @param {import('../support/AdminContext').AdminContext} context context
  * @return {string} user or 'anonymous'
  */
-export function getUser(context) {
+function getUser(context) {
   const email = context.attributes.authInfo?.profile?.email;
 
   return email || 'anonymous';
@@ -287,14 +309,13 @@ async function copyFile(context, srcKey, destKey, move, opts, collOpts) {
  * Copies a document from the source to the destination.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} src source S3 key
- * @param {import('../support/RequestInfo').RequestInfo} info destination info
- * @param {boolean} move whether to move the source
- * @param {object} opts additional options for the copy operation
- * @param {object} collOpts collision options
+ * @param {CopyOptions} copyOptions copy options
  * @returns {Promise<Array<{src: string, dst: string}>>} the copied file details
  */
-export async function copyDocument(context, src, info, move, opts, collOpts) {
+export async function copyDocument(context, copyOptions) {
+  const {
+    src, info, move, opts, collOpts,
+  } = copyOptions;
   const dst = getS3KeyFromInfo(info);
   await copyFile(context, src, dst, move, opts, collOpts);
   return [{ src, dst }];
@@ -304,16 +325,13 @@ export async function copyDocument(context, src, info, move, opts, collOpts) {
  * Copies a folder from the source to the destination.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} srcKey source S3 key
- * @param {import('../support/RequestInfo').RequestInfo} info destination info
- * @param {boolean} move whether to move the source
- * @param {function(string, string): object} fnOpts additional options for the copy operation.
- * This function is called for each object being copied with source and destination S3 keys as
- * arguments.
- * @param {object} collOpts collision options
+ * @param {CopyOptions} copyOptions copy options
  * @returns {Promise<Array<{src: string, dst: string}>>} the copied files
  */
-export async function copyFolder(context, srcKey, info, move, fnOpts, collOpts) {
+export async function copyFolder(context, copyOptions) {
+  const {
+    src: srcKey, info, move, fnOpts = () => ({}), collOpts,
+  } = copyOptions;
   const tasks = [];
   const destKey = getS3Key(info.org, info.site, info.rawPath);
 

@@ -12,8 +12,9 @@
 import { createErrorResponse } from '../contentbus/utils.js';
 import { createFolder } from './folder.js';
 import { checkConditionals } from './header-utils.js';
+import { getS3KeyFromInfo } from './s3-path-utils.js';
 import { storeSourceFile, createVersion, VERSION_FOLDER } from './source-client.js';
-import { contentTypeFromExtension, getS3KeyFromInfo, getValidPayload } from './utils.js';
+import { contentTypeFromExtension, getValidPayload } from './utils.js';
 
 /**
  * Handle POST requests to the source bus.

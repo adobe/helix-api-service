@@ -15,7 +15,7 @@ import { createErrorResponse } from '../contentbus/utils.js';
 import { RequestInfo } from '../support/RequestInfo.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
 import { CopyOptions, copyDocument, copyFolder } from './source-client.js';
-import { getDocPathFromS3Key, getS3Key, getS3KeyFromInfo } from './utils.js';
+import { getDocPathFromS3Key, getS3Key, getS3KeyFromInfo } from './s3-path-utils.js';
 
 /**
  * Trash a folder by moving all of its contents to the trash in the same folder structure.

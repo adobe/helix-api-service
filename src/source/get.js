@@ -12,7 +12,7 @@
 import { createErrorResponse } from '../contentbus/utils.js';
 import { listFolder } from './folder.js';
 import { accessSourceFile, VERSION_FOLDER } from './source-client.js';
-import { getS3KeyFromInfo } from './utils.js';
+import { getS3KeyFromInfo } from './s3-path-utils.js';
 import { getOrListVersions } from './versions.js';
 
 async function accessSource(context, info, headRequest) {

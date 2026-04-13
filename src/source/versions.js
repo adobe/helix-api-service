@@ -16,8 +16,9 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { isValid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import { getS3Key } from './s3-path-utils.js';
 import { accessSourceFile, VERSION_FOLDER } from './source-client.js';
-import { getS3Key, getDocID } from './utils.js';
+import { getDocID } from './utils.js';
 
 function handleNoVersions() {
   const headers = {

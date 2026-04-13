@@ -12,16 +12,11 @@
 import { Response } from '@adobe/fetch';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { checkConditionals } from './header-utils.js';
+import { getDocPathFromS3Key, getS3Key, getS3KeyFromInfo } from './s3-path-utils.js';
 import {
   CopyOptions, copyFolder, copyDocument, storeSourceFile,
 } from './source-client.js';
-import {
-  contentTypeFromExtension,
-  getDocPathFromS3Key,
-  getS3KeyFromInfo,
-  getS3Key,
-  getValidPayload,
-} from './utils.js';
+import { contentTypeFromExtension, getValidPayload } from './utils.js';
 
 /**
  * Copies a resource of a folder to the destination folder. If a folder is

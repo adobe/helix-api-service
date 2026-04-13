@@ -16,8 +16,9 @@ import { sanitizePath } from '@adobe/helix-shared-string';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { splitExtension } from '../support/RequestInfo.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
+import { getS3Key } from './s3-path-utils.js';
 import { storeSourceFile } from './source-client.js';
-import { getS3Key, CONTENT_TYPES } from './utils.js';
+import { CONTENT_TYPES } from './utils.js';
 
 /**
  * A folder is marked by a marker file. This allows folder to show up in bucket

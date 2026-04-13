@@ -16,7 +16,6 @@ import assert from 'assert';
 import {
   getDocID,
   getValidHtml,
-  getS3Key,
   validateJson,
   validateMedia,
 } from '../../src/source/utils.js';
@@ -209,10 +208,6 @@ describe('Source Utils Tests', () => {
       validateMedia(setupContext(), info, 'video/blah', Buffer.from(media)),
       new StatusCodeError('Unknown media type: video/blah', 400),
     );
-  });
-
-  it('test getS3Key', () => {
-    assert.equal(getS3Key('org1', 'site2', '/a/b/c/'), 'org1/site2/a/b/c/');
   });
 
   it('test getDocID', () => {

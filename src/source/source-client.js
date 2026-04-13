@@ -15,12 +15,8 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { ulid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import {
-  getS3KeyFromInfo,
-  getS3Key,
-  getDocID,
-  MAX_SOURCE_BUCKET_RETRY,
-} from './utils.js';
+import { getS3KeyFromInfo, getS3Key } from './s3-path-utils.js';
+import { getDocID, MAX_SOURCE_BUCKET_RETRY } from './utils.js';
 
 export const VERSION_FOLDER = '.versions';
 export class CopyOptions {

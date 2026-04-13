@@ -104,40 +104,6 @@ function getHast(body) {
 }
 
 /**
- * Get the S3 key from the organization, site, and path.
- *
- * @param {string} org organization
- * @param {string} site site
- * @param {string} path document path
- * @returns {string} the S3 key
- */
-export function getS3Key(org, site, path) {
-  return `${org}/${site}${path}`;
-}
-
-/**
- * Get the source bus key from the request info.
- *
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @return {string} the source bus path
- */
-export function getS3KeyFromInfo(info) {
-  const { org, site, resourcePath } = info;
-  return getS3Key(org, site, resourcePath);
-}
-
-/**
- * Get the document path from the source bus S3 key.
- *
- * @param {string} sKey source bus S3 key
- * @returns {string} the document path
- */
-export function getDocPathFromS3Key(sKey) {
-  const path = sKey.split('/').slice(2).join('/');
-  return `/${path}`;
-}
-
-/**
  * Get the document ID from the head, by reading it from the Metadata.
  *
  * @param {Object) meta object containins metadata with the doc id

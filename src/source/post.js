@@ -12,13 +12,8 @@
 import { createErrorResponse } from '../contentbus/utils.js';
 import { createFolder } from './folder.js';
 import { checkConditionals } from './header-utils.js';
-import {
-  contentTypeFromExtension,
-  getS3KeyFromInfo,
-  getValidPayload,
-  storeSourceFile,
-} from './utils.js';
-import { postVersion, VERSION_FOLDER } from './versions.js';
+import { storeSourceFile, createVersion, VERSION_FOLDER } from './source-client.js';
+import { contentTypeFromExtension, getS3KeyFromInfo, getValidPayload } from './utils.js';
 
 /**
  * Handle POST requests to the source bus.
@@ -38,7 +33,7 @@ export async function postSource(context, info) {
     const operation = String(context.data.operation || '');
     const comment = String(context.data.comment || '');
 
-    return postVersion(context, baseKey, operation, comment);
+    return createVersion(context, baseKey, operation, comment);
   }
 
   try {

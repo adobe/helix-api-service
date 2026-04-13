@@ -14,7 +14,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { RequestInfo } from '../support/RequestInfo.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import { copyDocument, copyFolder } from './put.js';
+import { copyDocument, copyFolder } from './source-client.js';
 import { getDocPathFromS3Key, getS3Key, getS3KeyFromInfo } from './utils.js';
 
 /**

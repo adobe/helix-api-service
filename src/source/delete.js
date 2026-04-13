@@ -28,8 +28,7 @@ import { getDocPathFromS3Key, getS3Key, getS3KeyFromInfo } from './utils.js';
 async function trashFolder(context, info) {
   const bucket = HelixStorage.fromContext(context).sourceBus();
 
-  const segments = info.rawPath.split('/');
-  const destDir = `/.trash/${segments[segments.length - 2]}`;
+  const destDir = `/.trash/${info.rawPath.split('/').at(-2)}`;
 
   // Ensure that there is no folder in the trash with this name yet
   const listResp = await bucket.list(`${getS3Key(info.org, info.site, destDir)}/`, { shallow: true });

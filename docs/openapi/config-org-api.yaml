@@ -1,0 +1,206 @@
+openapi: 3.1.0
+org:
+  get:
+    operationId: getConfigOrg
+    tags:
+      - orgConfig
+    summary: Read Organisation Config
+    description: Returns the organisation level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The organisation configuration
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/org.json"
+  post:
+    operationId: updateConfigOrg
+    tags:
+      - orgConfig
+    summary: Update Organisation Config
+    description: Stores updated organisation level configuration. Creates a new version if `versionName` is specified.
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/versionNameParam"
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "./schemas/config/org.json"
+    responses:
+      $ref: "./responses.yaml"
+  put:
+    operationId: createConfigOrg
+    tags:
+      - orgConfig
+    summary: Create Organisation Config
+    description: Creates the organisation level configuration. Returns `409` if a configuration already exists.
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "./schemas/config/org.json"
+    responses:
+      '201':
+        description: Resource created.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+  delete:
+    operationId: deleteConfigOrg
+    tags:
+      - orgConfig
+    summary: Delete Organisation Config
+    description: Permanently deletes the organisation level configuration.
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+    responses:
+      '204':
+        description: Resource deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '409':
+        $ref: "./responses.yaml#/409"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+orgConfig:
+  get:
+    operationId: getConfigOrgSub
+    tags:
+      - orgConfig
+    summary: Read Organisation Config Property
+    description: Returns a sub-property of the organisation level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The config property
+        content:
+          application/json:
+            schema:
+              type: object
+  post:
+    operationId: updateConfigOrgSub
+    tags:
+      - orgConfig
+    summary: Update Organisation Config Property
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+  delete:
+    operationId: deleteConfigOrgSub
+    tags:
+      - orgConfig
+    summary: Delete Organisation Config Property
+    security:
+      - AuthCookie:
+          - config:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '204':
+        description: Property deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+orgProfiles:
+  get:
+    operationId: getConfigOrgProfiles
+    tags:
+      - orgConfig
+    summary: List Profiles
+    description: Returns the profile names for this organisation.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/listDetailsParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The list of profile names
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/profiles.json"
+
+orgSites:
+  get:
+    operationId: getConfigOrgSites
+    tags:
+      - orgConfig
+    summary: List Sites
+    description: Returns the site names for this organisation.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/listDetailsParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The list of site names
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/sites.json"

@@ -25,10 +25,10 @@ import idpAdobe from '../idp-configs/adobe.js';
 import idpAdobeStage from '../idp-configs/adobe-stg.js';
 import idpIms from '../idp-configs/ims.js';
 import idpImsStage from '../idp-configs/ims-stg.js';
-import { AuthInfo } from './auth-info.js';
+import { AuthInfo } from './AuthInfo.js';
 import { ADMIN_CLIENT_ID } from './clients.js';
 import { getAuthCookie } from './cookie.js';
-import { RoleMapping } from './role-mapping.js';
+import { RoleMapping } from './RoleMapping.js';
 
 export const LOGIN_PATH = '/login';
 export const PROFILE_PATH = '/profile';

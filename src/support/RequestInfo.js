@@ -351,7 +351,7 @@ export class RequestInfo {
    * Create a new request info.
    *
    * @param {import('@adobe/fetch').Request} request request
-   * @param {import('../router/router.js').default} router router
+   * @param {import('../router/Router.js').default} router router
    * @param {object} variables route variables
    * @param {string} [variables.org] org, optional
    * @param {string} [variables.site] site, optional
@@ -404,12 +404,12 @@ export class RequestInfo {
     return Object.freeze(info);
   }
 
-  getPreviewUrl() {
-    return `https://${this.ref}--${this.site}--${this.org}.aem.page${this.webPath}`;
+  getPreviewUrl(webPath) {
+    return `https://${this.ref}--${this.site}--${this.org}.aem.page${webPath ?? this.webPath}`;
   }
 
-  getLiveUrl() {
-    return `https://${this.ref}--${this.site}--${this.org}.aem.live${this.webPath}`;
+  getLiveUrl(webPath) {
+    return `https://${this.ref}--${this.site}--${this.org}.aem.live${webPath ?? this.webPath}`;
   }
 
   getLinkUrl(path, query = {}) {

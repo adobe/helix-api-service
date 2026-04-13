@@ -1,0 +1,203 @@
+openapi: 3.1.0
+code:
+  get:
+    operationId: codeStatus
+    tags:
+      - code
+    summary: Code bus status
+    description: Returns the code bus status of the respective resource.
+    security:
+      - {}
+      - AuthCookie:
+          - code:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/refParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/branchParam"
+    responses:
+      '200':
+        description: The code-bus status
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/codeInfo"
+                - $ref: "./schemas.yaml#/resourceLinksInfo"
+            examples:
+              success:
+                description: Success response of a code document.
+                value:
+                  webPath: "/scripts.js"
+                  resourcePath: "/scripts.js"
+                  code:
+                    status: 200
+                    lastModified: "2021-05-31T23:00:00Z"
+                    sourceLastModified: "2021-05-29T21:00:00Z"
+                    codeBusId: "helix-code-bus/owner/repo/main/scripts.js"
+                    permissions:
+                      - read
+                  links:
+                    status: "https://api.aem.live/org/sites/site/status/scripts.js"
+                    code: "https://api.aem.live/org/repos/site/code/main/scripts.js"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  post:
+    operationId: updateCode
+    tags:
+      - code
+    summary: Update code
+    description: >
+      Updates the code-bus resource by fetching the latest content from github and storing it
+      in the code-bus. If the last path segment is a `*`, it will recursively update the code-bus
+      with the respective github tree (directory).
+      It additionally purges the _live_ cdn and the _byo_ cdn, if configured.
+    security:
+      - {}
+      - AuthCookie:
+          - code:read
+          - code:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/refParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/branchParam"
+    responses:
+      '200':
+        description: Code resource updated.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - $ref: "./schemas.yaml#/codeInfo"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  - code:
+                      status: 200
+                      lastModified: "2021-05-31T23:00:00Z"
+                      codeBusId: "helix-code-bus/owner/repo/main/scripts.js"
+                      permissions:
+                        - read
+                        - write
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  delete:
+    operationId: deleteCode
+    tags:
+      - code
+    summary: Delete code
+    description: >
+      Deletes a code resource from the code-bus.
+      It additionally purges the _live_ cdn and the _byo_ cdn, if configured.
+    security:
+      - AuthCookie:
+          - code:read
+          - code:delete
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/refParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/branchParam"
+    responses:
+      '204':
+        description: Resource deleted.
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+code-event:
+  post:
+    operationId: batchCode
+    tags:
+      - code
+    summary: Batch update code
+    description: >
+      Processes a change event and updates the code-bus accordingly.
+      It additionally purges the _live_ cdn and the _byo_ cdn, if configured.
+    security:
+      - {}
+      - AuthCookie:
+          - code:read
+          - code:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/refParam"
+      - $ref: "./parameters.yaml#/tagParam"
+    requestBody:
+      content:
+        'application/json':
+          schema:
+            $ref: './schemas.yaml#/changeEventBody'
+    responses:
+      '200':
+        description: Code resource updated.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - $ref: "./schemas.yaml#/codeInfo"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  - code:
+                      status: 200
+                      lastModified: "2021-05-31T23:00:00Z"
+                      codeBusId: "helix-code-bus/owner/repo/main/scripts.js"
+                      permissions:
+                        - read
+                        - write
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

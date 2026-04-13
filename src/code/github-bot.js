@@ -13,7 +13,7 @@ import { Octokit } from '@octokit/rest';
 import { createAppAuth } from '@octokit/auth-app';
 import { measure } from '../support/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-import { RateLimitError } from './rate-limit-error.js';
+import { RateLimitError } from './RateLimitError.js';
 
 const DEPLOYMENT_SYNC = 'aem-code-sync';
 

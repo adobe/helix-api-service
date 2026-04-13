@@ -14,7 +14,7 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
 import { HANDLERS } from '../../src/lookup/web2edit.js';
 import { main } from '../../src/index.js';
@@ -226,7 +226,7 @@ describe('Publish Remove Tests', () => {
       assert.deepStrictEqual(response.headers.plain(), {
         'cache-control': 'no-store, private, must-revalidate',
         'content-type': 'text/plain; charset=utf-8',
-        'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md from storage failed: [S3] Unknown`,
+        'x-error': `removing helix-content-bus/${SITE_CONFIG.content.contentBusId}/live/index.md from storage failed: [S3] UnknownError`,
       });
     });
   });

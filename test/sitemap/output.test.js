@@ -12,8 +12,8 @@
 /* eslint-env mocha */
 import assert from 'assert';
 
-import SitemapLanguage from '../../src/sitemap/language.js';
-import SitemapOutput from '../../src/sitemap/output.js';
+import { SitemapLanguage } from '../../src/sitemap/SitemapLanguage.js';
+import { SitemapOutput } from '../../src/sitemap/SitemapOutput.js';
 import { createContext, Nock } from '../utils.js';
 
 describe('Sitemap Output tests', () => {

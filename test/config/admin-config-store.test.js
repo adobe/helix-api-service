@@ -15,7 +15,7 @@ import sinon from 'sinon';
 import purge from '../../src/cache/purge.js';
 import discover from '../../src/discover/reindex.js';
 import sitemap from '../../src/sitemap/config-update.js';
-import { AdminConfigStore } from '../../src/config/admin-config-store.js';
+import { AdminConfigStore } from '../../src/config/AdminConfigStore.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';

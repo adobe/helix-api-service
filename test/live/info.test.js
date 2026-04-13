@@ -13,9 +13,10 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
+import getLiveInfo from '../../src/live/info.js';
 import { main } from '../../src/index.js';
-import { Nock, SITE_CONFIG } from '../utils.js';
+import { createInfo, Nock, SITE_CONFIG } from '../utils.js';
 
 describe('Live Info Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -87,5 +88,20 @@ describe('Live Info Tests', () => {
       resourcePath: '/document.md',
       webPath: '/document',
     });
+  });
+});
+
+describe('getLiveInfo unit tests', () => {
+  it('returns 403 when live:read permission is missing', async () => {
+    const info = createInfo('/org/sites/site/live/document');
+    const ctx = {
+      attributes: {
+        authInfo: AuthInfo.Default(),
+        config: structuredClone(SITE_CONFIG),
+      },
+    };
+    const result = await getLiveInfo(ctx, info);
+    assert.strictEqual(result.status, 403);
+    assert.strictEqual(result.error, 'forbidden');
   });
 });

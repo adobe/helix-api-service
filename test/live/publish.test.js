@@ -16,9 +16,10 @@ import { resolve } from 'path';
 import sinon from 'sinon';
 import xml2js from 'xml2js';
 import { Request, Response } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import purge from '../../src/cache/purge.js';
 import { METADATA_JSON_PATH, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
+import { Job } from '../../src/job/Job.js';
 import { main } from '../../src/index.js';
 import sitemap from '../../src/sitemap/update.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
@@ -39,6 +40,9 @@ describe('Publish Action Tests', () => {
   /** @type {import('../../src/cache/purge.js').PurgeInfo[]} */
   let purgeInfos;
 
+  /** @type {object} */
+  let jobOptions;
+
   beforeEach(() => {
     nock = new Nock().env();
     sandbox = sinon.createSandbox();
@@ -48,6 +52,10 @@ describe('Publish Action Tests', () => {
     });
     sandbox.stub(purge, 'surrogate').callsFake((context, info, keys) => {
       surrogates = keys;
+    });
+    sandbox.stub(Job, 'create').callsFake((context, info, topic, opts) => {
+      jobOptions = { topic, opts: opts.data };
+      return new Response('', { status: 202 });
     });
 
     nock.siteConfig(SITE_CONFIG);
@@ -218,6 +226,7 @@ describe('Publish Action Tests', () => {
           },
         }))
         .head('/live/metadata.json')
+        .times(2)
         .reply(200, '', { 'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT' });
 
       const { request, context } = setupTest(METADATA_JSON_PATH);
@@ -416,6 +425,72 @@ describe('Publish Action Tests', () => {
         { key: 'p_ikRawb-8LlqCZunb' },
         { path: '/sitemap.xml' },
       ]);
+    });
+  });
+
+  describe('simple sitemap', () => {
+    beforeEach(() => {
+      nock.indexConfig(null);
+      nock.sitemapConfig(null);
+      nock.content()
+        .head('/live/sitemap.json')
+        .reply(200);
+      nock.sqs('helix-indexer', entries);
+    });
+
+    it('publish metadata with ETag unchanged', async () => {
+      nock.content()
+        .head('/preview/metadata.json')
+        .reply(200)
+        .copyObject('/live/metadata.json')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"f278c0035a9b4398629613a33abe6451"',
+          },
+        }))
+        .head('/live/metadata.json')
+        .times(2)
+        .reply(200, '', {
+          ETag: '"f278c0035a9b4398629613a33abe6451"',
+          'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT',
+        });
+
+      const { request, context } = setupTest(METADATA_JSON_PATH);
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it('publish metadata with ETag changed', async () => {
+      nock.content()
+        .head('/preview/metadata.json')
+        .reply(200)
+        .copyObject('/live/metadata.json')
+        .reply(200, new xml2js.Builder().buildObject({
+          CopyObjectResult: {
+            LastModified: '2021-05-05T08:37:23.000Z',
+            ETag: '"a278c0035a9b4398629613a33abe6451"',
+          },
+        }))
+        .head('/live/metadata.json')
+        .times(2)
+        .reply(200, '', {
+          ETag: '"f278c0035a9b4398629613a33abe6451"',
+          'last-modified': 'Thu, 08 Jul 2021 10:04:16 GMT',
+        });
+
+      const { request, context } = setupTest(METADATA_JSON_PATH);
+      const response = await main(request, context);
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(jobOptions, {
+        topic: 'index',
+        opts: {
+          paths: [{ prefix: '/' }],
+          indexNames: ['#simple'],
+        },
+      });
     });
   });
 });

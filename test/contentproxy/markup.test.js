@@ -15,7 +15,7 @@ import assert from 'assert';
 import { gzip } from 'zlib';
 import { promisify } from 'util';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 

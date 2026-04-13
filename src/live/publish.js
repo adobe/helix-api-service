@@ -10,10 +10,12 @@
  * governing permissions and limitations under the License.
  */
 import { Response } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
 import purge, { PURGE_LIVE, PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
 import contentBusCopy from '../contentbus/copy.js';
+import bulkIndex from '../index/bulk-index.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex, getIndexTargets } from '../index/utils.js';
 import { updateRedirect, updateRedirects } from '../redirects/update.js';
@@ -31,11 +33,6 @@ import publishStatus from './status.js';
 export async function liveUpdate(context, info) {
   const { log } = context;
 
-  // TODO: really?
-  // const response = info.snapshotId
-  //   ? await publishSnapshot(ctx, info)
-  //   : await publish(ctx, info);
-
   log.info('updating live in content-bus.');
   const response = await contentBusCopy(context, info);
 
@@ -48,7 +45,7 @@ export async function liveUpdate(context, info) {
     if (status === 404) {
       // tweak status if existing redirect
       if (sourceRedirectLocation) {
-        status = 200;
+        return new Response('', { status: 200 });
       }
     }
     if (status !== 304 && status !== 200) {
@@ -65,13 +62,7 @@ export async function liveUpdate(context, info) {
       });
     }
   }
-
-  if (getMetadataPaths(context).includes(info.webPath) && await hasSimpleSitemap(context, info)) {
-    // TODO await bulkIndex(context, info, ['/*'], {
-    //   indexNames: ['#simple'],
-    // });
-  }
-  return publishStatus(context, info);
+  return response;
 }
 
 /**
@@ -104,6 +95,20 @@ async function checkSitemapSourceChange(context, info, index) {
   }
 }
 
+async function getMetadataInfo(context, info) {
+  const { contentBusId } = context;
+  const { resourcePath, webPath } = info;
+
+  const isMetadata = getMetadataPaths(context).includes(webPath);
+  if (isMetadata) {
+    const contentStorage = HelixStorage.fromContext(context).contentBus();
+    const sourceKey = `${contentBusId}/live${resourcePath}`;
+    const result = await contentStorage.head(sourceKey);
+    return { isMetadata: true, etag: result?.ETag };
+  }
+  return {};
+}
+
 /**
  * Publish a resource.
  *
@@ -126,9 +131,24 @@ export default async function publish(context, info) {
     }
   }
 
+  const metadataInfo = await getMetadataInfo(context, info);
+
   const response = await liveUpdate(context, info);
   if (response.status !== 200) {
     return response;
+  }
+
+  if (metadataInfo.isMetadata && await hasSimpleSitemap(context, info)) {
+    const { ETag: etag } = await response.json();
+    if (metadataInfo.etag !== etag) {
+      await bulkIndex(context, info, {
+        paths: ['/*'],
+        indexNames: ['#simple'],
+      });
+    } else {
+      const { org, site } = info;
+      log.info(`no reindex needed for ${org}/${site}:${resourcePath} (ETag unchanged: ${metadataInfo.etag})`);
+    }
   }
 
   await purge.resource(context, info, PURGE_LIVE);
@@ -150,14 +170,5 @@ export default async function publish(context, info) {
       await checkSitemapSourceChange(context, info, index);
     }
   }
-
-  // TODO if (!context.data?.disableNotifications) {
-  //   // todo: only notify if the resource was modified or newer
-  //   await getNotifier(context).publish('resource-published', info, {
-  //     status: response.status,
-  //     resourcePath: info.resourcePath,
-  //   });
-  // }
-
-  return response;
+  return publishStatus(context, info);
 }

@@ -15,7 +15,7 @@ import assert from 'assert';
 import { Request } from '@adobe/fetch';
 import { main, router } from '../src/index.js';
 import { Nock, ORG_CONFIG, SITE_CONFIG } from './utils.js';
-import { AuthInfo } from '../src/auth/auth-info.js';
+import { AuthInfo } from '../src/auth/AuthInfo.js';
 
 describe('Index Tests', () => {
   /** @type {import('./utils.js').NockEnv} */

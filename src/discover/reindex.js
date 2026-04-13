@@ -14,9 +14,9 @@ import { basename } from 'path';
 import { Response } from '@adobe/fetch';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import GoogleMatcher from './matcher/google.js';
-import SharepointMatcher from './matcher/sharepoint.js';
-import { Inventory } from './inventory.js';
+import { GoogleMatcher } from './matcher/GoogleMatcher.js';
+import { SharepointMatcher } from './matcher/SharepointMatcher.js';
+import { Inventory } from './Inventory.js';
 import { fetchHlxJson, loadSiteConfig } from '../config/utils.js';
 import { generate } from './cdn-identifier.js';
 import { removeProject } from './remove.js';
@@ -34,7 +34,7 @@ const MATCHERS = {
  * @param {string} org org
  * @param {string} site site
  * @param {object} matchers matchers
- * @returns {Promise<import('./inventory.js').InventoryEntry>}
+ * @returns {Promise<import('./Inventory.js').InventoryEntry>}
  */
 async function createEntry(context, contentBus, org, site, matchers) {
   const config = await loadSiteConfig(context, org, site);

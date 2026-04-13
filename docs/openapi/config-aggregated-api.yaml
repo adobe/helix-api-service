@@ -1,0 +1,52 @@
+openapi: 3.1.0
+aggregatedSite:
+  get:
+    operationId: getAggregatedConfigSite
+    tags:
+      - aggregatedConfig
+    summary: Read Aggregated Site Config
+    description: >
+      Returns the aggregated site level configuration. This includes the inherited values from
+      the profile.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The aggregated site configuration
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/config/site.json"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+aggregatedSiteConfig:
+  get:
+    operationId: getAggregatedConfigSiteSub
+    tags:
+      - aggregatedConfig
+    summary: Read Aggregated Site Config Property
+    description: >
+      Returns a sub-property of the aggregated site level configuration.
+    security:
+      - AuthCookie:
+          - config:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      $ref: "./responses.yaml"
+      '200':
+        description: The config property
+        content:
+          application/json:
+            schema:
+              type: object
+      '429':
+        $ref: "./responses.yaml#/429"

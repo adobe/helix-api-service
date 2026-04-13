@@ -17,7 +17,7 @@ import { promisify } from 'util';
 import xml2js from 'xml2js';
 import zlib from 'zlib';
 import { Headers, Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 

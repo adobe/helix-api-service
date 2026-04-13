@@ -16,7 +16,7 @@ import xml2js from 'xml2js';
 import { Response } from '@adobe/fetch';
 import sinon from 'sinon';
 
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
 import purge from '../../src/cache/purge.js';
 import {
@@ -42,7 +42,9 @@ const createSharepointHandler = () => ({
   async handle() { return new Response('ok'); },
   async list(ctx, info, paths, cb) {
     const cont = await cb({ total: 8 });
-    if (!cont) return [];
+    if (!cont) {
+      return [];
+    }
     return [
       {
         path: '/sp/doc',
@@ -69,7 +71,9 @@ const createOverlayHandler = () => ({
   async handle() { return new Response('ok'); },
   async list(ctx, info, paths, cb) {
     const cont = await cb({ total: paths.length });
-    if (!cont) return [];
+    if (!cont) {
+      return [];
+    }
     return paths.map((p) => ({
       path: p,
       resourcePath: `${p}.md`,
@@ -90,7 +94,9 @@ const createByomHandler = () => ({
   async handle() { return new Response('ok'); },
   async list(ctx, info, paths, cb) {
     const cont = await cb({ total: paths.length });
-    if (!cont) return [];
+    if (!cont) {
+      return [];
+    }
     return paths
       .filter((p) => !p.endsWith('/*'))
       .map((p) => ({

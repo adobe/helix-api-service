@@ -14,10 +14,10 @@
 import { resolve } from 'path';
 import assert from 'assert';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { createContext, Nock, SITE_CONFIG } from '../utils.js';
-import { SVGValidationError, validateSVG } from '../../src/contentproxy/sourcebus.js';
+import { SVGValidationError, validateSVG } from '../../src/contentproxy/source/sourcebus.js';
 
 const SITE_MUP_CONFIG = (url = 'https://api.aem.live/org/sites/site/source') => ({
   ...SITE_CONFIG,
@@ -465,7 +465,7 @@ source bus images.
     nock.media()
       .headObject('/199c601995c217244407df21d6a1d71b0e83f3ffb')
       .reply(404)
-      .headObject('/186a5ba15193adc18f983308b64a0b92b4ad941f1')
+      .headObject('/120b6669c77e35fb2ad9563a4a048701b43948bd3')
       .reply(404)
       .headObject('/1234dea2862775a45dbc9311cff50ae57eba56eba')
       .reply(404);
@@ -483,7 +483,7 @@ source bus images.
       .get('/icon.png')
       .reply(200, Buffer.alloc(25 * 1025 * 1024), {
         'content-type': 'image/png',
-        'content-length': 25 * 1024 * 1240,
+        'content-length': 25 * 1024 * 1024,
       });
 
     const { request, context } = setupTest('/gallery', {
@@ -503,7 +503,7 @@ source bus images.
   });
 });
 
-describe('Validate SVG Test', () => {
+describe('ValidationError SVG Test', () => {
   it('validates an SVG that has a script tag', async () => {
     const contents = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 56 54" style="enable-background:new 0 0 56 54;" xml:space="preserve">

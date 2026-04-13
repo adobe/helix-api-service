@@ -11,8 +11,8 @@
  */
 import { getContentSourceHandler } from '../contentproxy/index.js';
 import { errorResponse, isIllegalPath } from '../support/utils.js';
-import { Job } from '../job/job.js';
-import { PreviewJob } from './preview-job.js';
+import { Job } from '../job/Job.js';
+import { PreviewJob } from './PreviewJob.js';
 import { error } from '../contentproxy/errors.js';
 
 /**
@@ -87,7 +87,7 @@ export default async function bulkPreview(context, info) {
   }
 
   // create new preview job
-  return Job.create(context, info, 'preview', {
+  return Job.create(context, info, PreviewJob.TOPIC, {
     transient: true,
     jobClass: PreviewJob,
     data: {

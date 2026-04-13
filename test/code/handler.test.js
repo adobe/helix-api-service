@@ -13,7 +13,7 @@
 import assert from 'assert';
 import { Request, Response } from '@adobe/fetch';
 import sinon from 'sinon';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 import { main } from '../../src/index.js';
 import codebus from '../../src/code/codebus.js';

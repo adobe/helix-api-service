@@ -16,11 +16,12 @@ import xml2js from 'xml2js';
 import { Response } from '@adobe/fetch';
 import sinon from 'sinon';
 
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { HANDLERS } from '../../src/contentproxy/index.js';
-import { JobStorage } from '../../src/job/storage.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import { PURGE_ALL_CONTENT_THRESHOLD } from '../../src/contentbus/contentbus.js';
-import { PreviewJob } from '../../src/preview/preview-job.js';
+import { PreviewJob } from '../../src/preview/PreviewJob.js';
+import { PreviewResource } from '../../src/preview/PreviewResource.js';
 import purge from '../../src/cache/purge.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
@@ -75,7 +76,9 @@ const createTestHandler = (fileList = DEFAULT_FILE_LIST) => ({
   async handleJSON() { return new Response('{"data":[]}'); },
   async list(ctx, info, paths, cb) {
     const cont = await cb({ total: fileList.length });
-    if (!cont) return [];
+    if (!cont) {
+      return [];
+    }
     return fileList;
   },
 });
@@ -111,9 +114,15 @@ export const createJob = async (context, info, paths = ['/foo/new', '/foo/old', 
     this.state.data.phase = phase;
   };
   job.trackProgress = async function trackProgress(stat) {
-    if (stat.total !== undefined) this.state.progress.total = stat.total;
-    if (stat.processed !== undefined) this.state.progress.processed += stat.processed;
-    if (stat.failed !== undefined) this.state.progress.failed += stat.failed;
+    if (stat.total !== undefined) {
+      this.state.progress.total = stat.total;
+    }
+    if (stat.processed !== undefined) {
+      this.state.progress.processed += stat.processed;
+    }
+    if (stat.failed !== undefined) {
+      this.state.progress.failed += stat.failed;
+    }
   };
   job.checkStopped = async function checkStopped() {
     return false;
@@ -337,9 +346,9 @@ describe('PreviewJob Tests', () => {
       .reply(201);
 
     const job = await createJob(ctx, info, ['/foo/new']);
-    const file = {
-      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
-    };
+    const file = PreviewResource.fromJSON({
+      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 },
+    });
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.status, 200);
@@ -365,12 +374,11 @@ describe('PreviewJob Tests', () => {
       .reply(201);
 
     const job = await createJob(ctx, info, ['/foo/new']);
-    const file = {
+    const file = PreviewResource.fromJSON({
       path: '/foo/new',
       resourcePath: '/foo/new.md',
       source: { lastModified: 1000 },
-      status: 0,
-    };
+    });
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.status, 200);
@@ -406,13 +414,12 @@ describe('PreviewJob Tests', () => {
       },
     };
     const job = await createJob(ctx, info, ['/redirects.json']);
-    const file = {
+    const file = PreviewResource.fromJSON({
       path: '/redirects.json',
       resourcePath: '/redirects.json',
       redirects: true,
       source: { lastModified: 1000 },
-      status: 0,
-    };
+    });
     job.state.data.resources = [file];
     await job.processFile(file, false, { release() {} });
 
@@ -439,9 +446,9 @@ describe('PreviewJob Tests', () => {
 
     const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [];
-    const file = {
-      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
-    };
+    const file = PreviewResource.fromJSON({
+      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 },
+    });
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.error, 'upstream error');
@@ -458,9 +465,9 @@ describe('PreviewJob Tests', () => {
 
     const job = await createJob(ctx, info, ['/foo/new']);
     job.state.data.resources = [];
-    const file = {
-      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 }, status: 0,
-    };
+    const file = PreviewResource.fromJSON({
+      path: '/foo/new', resourcePath: '/foo/new.md', source: { lastModified: 1000 },
+    });
     await job.processFile(file, false, { release() {} });
 
     assert.strictEqual(file.error, 'upstream error');

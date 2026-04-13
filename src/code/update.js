@@ -15,9 +15,9 @@ import {
   CodeJob,
   getCodeRef,
   isValidPath,
-} from './code-job.js';
+} from './CodeJob.js';
 import { BYOGIT_INSTALLATION_ID, getCodeSource, getRateLimits } from './github-bot.js';
-import { Job } from '../job/job.js';
+import { Job } from '../job/Job.js';
 import { errorResponse } from '../support/utils.js';
 
 /**
@@ -131,7 +131,7 @@ export async function update(ctx, info) {
     }
   }
 
-  return Job.create(ctx, info, 'code', {
+  return Job.create(ctx, info, CodeJob.TOPIC, {
     jobClass: CodeJob,
     transient: !startJob,
     data: event,

@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { AccessDeniedError } from '../../src/auth/AccessDeniedError.js';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 
 describe('AuthInfo Test', () => {
   it('auth info can assert for permissions', async () => {

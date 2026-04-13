@@ -1,0 +1,83 @@
+openapi: 3.1.0
+status:
+  get:
+    operationId: status
+    tags:
+      - status
+    summary: General status
+    description: Returns the overall status of the respective resource.
+    security:
+      - {}
+      - AuthCookie:
+          - preview:read
+          - live:read
+          - code:read
+          - edit:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+      - $ref: "./parameters.yaml#/statusEditUrlParam"
+    responses:
+      '200':
+        description: The overall status
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/liveInfo"
+                - $ref: "./schemas.yaml#/previewInfo"
+                - $ref: "./schemas.yaml#/editInfo"
+                - $ref: "./schemas.yaml#/codeInfo"
+                - $ref: "./schemas.yaml#/resourceLinksInfo"
+                - $ref: "./schemas.yaml#/profileInfo"
+            examples:
+              success:
+                description: Success response of a preview document.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  live:
+                    status: 200
+                    url: "https://main--site--org.aem.live/en/2021/blog"
+                    lastModified: "2021-05-29T22:00:00Z"
+                    contentBusId: "h3-site-abc123def456abc123def456a/live/en/2021/blog.md"
+                    permissions:
+                      - read
+                  preview:
+                    status: 200
+                    url: "https://main--site--org.aem.page/en/2021/blog"
+                    lastModified: "2021-05-31T23:00:00Z"
+                    contentBusId: "h3-site-abc123def456abc123def456a/preview/en/2021/blog.md"
+                    permissions:
+                      - read
+                      - write
+                  edit:
+                    status: 200
+                    url: "https://your.sharepoint.com/"
+                    sourceLocation: "onedrive:/drives/b!DyVXacYnlkm/items/012VWERI4JFI"
+                    lastModified: "2021-05-29T21:00:00Z"
+                  code:
+                    status: 404
+                    codeBusId: 'helix-code-bus/org/site/main/blog.md'
+                    permissions:
+                      - read
+                  links:
+                    status: "https://api.aem.live/org/sites/site/status/en/2021/blog"
+                    preview: "https://api.aem.live/org/sites/site/preview/en/2021/blog"
+                    live: "https://api.aem.live/org/sites/site/live/en/2021/blog"
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"

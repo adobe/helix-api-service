@@ -1,0 +1,69 @@
+openapi: 3.1.0
+discover:
+  get:
+    operationId: discoverQuery
+    tags:
+      - discover
+    summary: Query discovery index
+    description: Queries the discovery/search index for matching resources.
+    security:
+      - {}
+    responses:
+      '200':
+        description: Discovery results
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  post:
+    operationId: discoverReindex
+    tags:
+      - discover
+    summary: Reindex discovery
+    description: Triggers a reindex of the discovery index.
+    security:
+      - AuthCookie:
+          - discover:write
+    responses:
+      '200':
+        description: Reindex triggered
+        content:
+          application/json:
+            schema:
+              type: object
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+
+  delete:
+    operationId: discoverRemove
+    tags:
+      - discover
+    summary: Remove from discovery index
+    description: Removes entries from the discovery index.
+    security:
+      - AuthCookie:
+          - discover:write
+    responses:
+      '204':
+        description: Entries removed
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

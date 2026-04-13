@@ -16,10 +16,10 @@ import xml2js from 'xml2js';
 import sinon from 'sinon';
 
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { METADATA_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD, REDIRECTS_JSON_PATH } from '../../src/contentbus/contentbus.js';
-import { RemoveJob } from '../../src/preview/remove-job.js';
-import { JobStorage } from '../../src/job/storage.js';
+import { RemoveJob } from '../../src/preview/RemoveJob.js';
+import { JobStorage } from '../../src/job/JobStorage.js';
 import purge from '../../src/cache/purge.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
@@ -60,9 +60,15 @@ const createJob = async (ctx, info, paths) => {
     this.state.data.phase = phase;
   };
   job.trackProgress = async function trackProgress(stat) {
-    if (stat.total !== undefined) this.state.progress.total = stat.total;
-    if (stat.processed !== undefined) this.state.progress.processed += stat.processed;
-    if (stat.failed !== undefined) this.state.progress.failed += stat.failed;
+    if (stat.total !== undefined) {
+      this.state.progress.total = stat.total;
+    }
+    if (stat.processed !== undefined) {
+      this.state.progress.processed += stat.processed;
+    }
+    if (stat.failed !== undefined) {
+      this.state.progress.failed += stat.failed;
+    }
   };
   job.checkStopped = async function checkStopped() {
     return false;
@@ -224,10 +230,10 @@ describe('RemoveJob Tests', () => {
     const resources = await job.prepare([{ prefix: '/' }], CONTENT_BUS_ID, HelixStorage.fromContext(ctx).contentBus());
 
     const indexEntry = resources.find((r) => r.resourcePath === '/folder/index.md');
-    assert.strictEqual(indexEntry.path, '/folder/');
+    assert.strictEqual(indexEntry.webPath, '/folder/');
 
     const imgEntry = resources.find((r) => r.resourcePath === '/image.png');
-    assert.strictEqual(imgEntry.path, '/image.png');
+    assert.strictEqual(imgEntry.webPath, '/image.png');
   });
 
   it('skips excluded paths (metadata, redirects, .helix) during prepare', async () => {

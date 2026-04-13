@@ -1,0 +1,139 @@
+openapi: 3.1.0
+index:
+  get:
+    operationId: getIndexStatus
+    tags:
+      - index
+    summary: Index Status
+    description: Returns the index status of the respective resource.
+    security:
+      - {}
+      - AuthCookie:
+          - index:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: The index status of a resource
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/indexInfo"
+            examples:
+              success:
+                description: Success response of an index document.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  index:
+                    name: "blog"
+                    lastModified: 'Tue, 01 Mar 2022 08:32:01 GMT'
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        description: Resource not found or not in index definition.
+        headers:
+          X-Error:
+            $ref: "./headers.yaml#/xError"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+  post:
+    operationId: indexResource
+    tags:
+      - index
+    summary: Re-index a resource.
+    description: >
+      Index a single resource.
+    security:
+      - {}
+      - AuthCookie:
+          - index:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Re-index of resource triggered.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/indexInfo"
+            examples:
+              success:
+                description: Success response of indexing a resource.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  index:
+                    name: "blog"
+                    lastModified: 'Tue, 01 Mar 2022 08:32:01 GMT'
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        description: Resource not found or not in index definition.
+        headers:
+          X-Error:
+            $ref: "./headers.yaml#/xError"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+  delete:
+    operationId: indexRemovePage
+    tags:
+      - index
+    summary: Remove a resource from the index.
+    description: >
+      Removes a resource from the index.
+    security:
+      - {}
+      - AuthCookie:
+          - index:write
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: Removal of resource in the index triggered.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/resourceInfo"
+                - $ref: "./schemas.yaml#/indexInfo"
+            examples:
+              success:
+                description: Success response of removing a resource from the index.
+                value:
+                  webPath: "/en/2021/blog"
+                  resourcePath: "/en/2021/blog.md"
+                  index:
+                    name: "blog"
+                    status: 202
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        description: Resource not found or not in index definition.
+        headers:
+          X-Error:
+            $ref: "./headers.yaml#/xError"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"

@@ -1,3 +1,85 @@
+# [1.43.0](https://github.com/adobe/helix-api-service/compare/v1.42.4...v1.43.0) (2026-04-10)
+
+
+### Features
+
+* **live:** migrate bulk-unpublish job from helix-admin ([#188](https://github.com/adobe/helix-api-service/issues/188)) ([613d9d1](https://github.com/adobe/helix-api-service/commit/613d9d151a5ebc2b8150d8183942f7d7a5cda20b))
+
+## [1.42.4](https://github.com/adobe/helix-api-service/compare/v1.42.3...v1.42.4) (2026-04-10)
+
+
+### Bug Fixes
+
+* **sitemap:** ETag-based metadata change detection ([#193](https://github.com/adobe/helix-api-service/issues/193)) ([9ce53e6](https://github.com/adobe/helix-api-service/commit/9ce53e63a97995e50685a5cee38cf8fa1dd190fd))
+
+## [1.42.3](https://github.com/adobe/helix-api-service/compare/v1.42.2...v1.42.3) (2026-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#187](https://github.com/adobe/helix-api-service/issues/187)) ([344308b](https://github.com/adobe/helix-api-service/commit/344308b676997dbbdcd8aad84f3b745881cfe926))
+
+## [1.42.2](https://github.com/adobe/helix-api-service/compare/v1.42.1...v1.42.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#191](https://github.com/adobe/helix-api-service/issues/191)) ([00b06d9](https://github.com/adobe/helix-api-service/commit/00b06d9131a00214886e170bd6a0a6e0d89b5126))
+
+## [1.42.1](https://github.com/adobe/helix-api-service/compare/v1.42.0...v1.42.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* **code-job:** speed up code job tests ([#192](https://github.com/adobe/helix-api-service/issues/192)) ([214288b](https://github.com/adobe/helix-api-service/commit/214288b2e4d08968d3f76c7f0144e370f3886749))
+
+# [1.42.0](https://github.com/adobe/helix-api-service/compare/v1.41.1...v1.42.0) (2026-04-07)
+
+
+### Features
+
+* **index:** add bulk indexing ([#172](https://github.com/adobe/helix-api-service/issues/172)) ([3a9f036](https://github.com/adobe/helix-api-service/commit/3a9f036c97a3bfbf9082c3dd0f7587d7ccbe8926))
+
+## [1.41.1](https://github.com/adobe/helix-api-service/compare/v1.41.0...v1.41.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* **docs:** add git add for new api.html in website publish step ([#189](https://github.com/adobe/helix-api-service/issues/189)) ([23a3400](https://github.com/adobe/helix-api-service/commit/23a3400033083d7497499b93f7145fd551dc4b62))
+
+# [1.41.0](https://github.com/adobe/helix-api-service/compare/v1.40.1...v1.41.0) (2026-04-07)
+
+
+### Features
+
+* **docs:** add OpenAPI spec and generated API documentation ([#173](https://github.com/adobe/helix-api-service/issues/173)) ([3713efe](https://github.com/adobe/helix-api-service/commit/3713efe0fff5e2945f4c377d45d10fe955c187fa))
+
+## [1.40.1](https://github.com/adobe/helix-api-service/compare/v1.40.0...v1.40.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#168](https://github.com/adobe/helix-api-service/issues/168)) ([d31d586](https://github.com/adobe/helix-api-service/commit/d31d586b267173afac77109858949d72aeaf21f4))
+
+# [1.40.0](https://github.com/adobe/helix-api-service/compare/v1.39.3...v1.40.0) (2026-04-02)
+
+
+### Bug Fixes
+
+* tests ([c717673](https://github.com/adobe/helix-api-service/commit/c7176733f184fe5f22844e8fe9e971f0f55a8932))
+
+
+### Features
+
+* **live:** add bulk publish job via POST /live/* ([#160](https://github.com/adobe/helix-api-service/issues/160)) ([ab025df](https://github.com/adobe/helix-api-service/commit/ab025dff0cf6552e0426c44349090490dac887f4))
+
+## [1.39.3](https://github.com/adobe/helix-api-service/compare/v1.39.2...v1.39.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **authzn:** ignore user sheets (already loaded by config service) ([68aa1c2](https://github.com/adobe/helix-api-service/commit/68aa1c2520a329a950573706b90820ff86e4f8b3))
+
 ## [1.39.2](https://github.com/adobe/helix-api-service/compare/v1.39.1...v1.39.2) (2026-04-01)
 
 

@@ -17,10 +17,10 @@ import { helixStatus } from '@adobe/helix-status';
 
 import cache from './cache/handler.js';
 import code from './code/handler.js';
-import orgConfig from './config/org-handler.js';
-import aggregatedConfig from './config/aggregated-handler.js';
-import siteConfig from './config/site-handler.js';
-import profileConfig from './config/profile-handler.js';
+import orgConfig from './config/OrgHandler.js';
+import aggregatedConfig from './config/AggregatedHandler.js';
+import siteConfig from './config/SiteHandler.js';
+import profileConfig from './config/ProfileHandler.js';
 import contentproxy from './contentproxy/handler.js';
 import discover from './discover/handler.js';
 import index from './index/handler.js';
@@ -36,7 +36,7 @@ import source from './source/handler.js';
 import status from './status/handler.js';
 import job from './job/handler.js';
 
-import Router from './router/router.js';
+import { Router } from './router/Router.js';
 import { adminContext } from './support/AdminContext.js';
 import { RequestInfo } from './support/RequestInfo.js';
 import { logRequest } from './support/utils.js';

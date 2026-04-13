@@ -1,0 +1,118 @@
+openapi: 3.1.0
+login:
+  get:
+    operationId: login
+    tags:
+      - authentication
+    summary: Login Selection
+    description: Provides a selection of available IDP logins
+    security:
+      - {}
+    responses:
+      '200':
+        description: Display links to IDP specific logins
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/loginLinks"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  links:
+                    login_microsoft: 'https://api.aem.live/auth/microsoft'
+                    login_google: 'https://api.aem.live/auth/google'
+              loggedin:
+                description: Success response when logged in
+                value:
+                  links:
+                    logout: 'https://api.aem.live/logout'
+      '429':
+        $ref: "./responses.yaml#/429"
+
+login-site:
+  get:
+    operationId: loginSite
+    tags:
+      - authentication
+    summary: Auto login
+    description: Redirects to IDP corresponding to the project setup
+    security:
+      - {}
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+    responses:
+      '302':
+        description: Redirects to the IDP authorization endpoint
+        headers:
+          location:
+            $ref: "./headers.yaml#/location"
+      '404':
+        description: Resource not found.
+        headers:
+          X-Error:
+            $ref: "./headers.yaml#/xError"
+      '400':
+        description: Invalid request url.
+        headers:
+          X-Error:
+            $ref: "./headers.yaml#/xError"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+logout:
+  get:
+    operationId: logout
+    tags:
+      - authentication
+    summary: Logout
+    description: Logs out the current session and redirects to the login screen
+    security:
+      - {}
+    responses:
+      '302':
+        description: Redirects to /login
+        headers:
+          location:
+            $ref: "./headers.yaml#/location"
+      '429':
+        $ref: "./responses.yaml#/429"
+
+profile:
+  get:
+    operationId: profile
+    tags:
+      - authentication
+    summary: Profile information
+    description: Display profile information
+    security:
+      - {}
+      - AuthCookie:
+          - profile:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgQueryParam"
+      - $ref: "./parameters.yaml#/siteQueryParam"
+    responses:
+      '200':
+        description: Show profile information of logged in user
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "./schemas.yaml#/profileInfo"
+                - $ref: "./schemas.yaml#/logoutLink"
+            examples:
+              success:
+                description: Success response.
+                value:
+                  profile:
+                    iss: 'urn:example:issuer'
+                    email: 'test@example.com'
+                    name: 'Test User'
+                    ttl: 7200
+                  links:
+                    logout: 'https://api.aem.live/logout'
+      '429':
+        $ref: "./responses.yaml#/429"

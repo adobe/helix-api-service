@@ -16,7 +16,7 @@ import assert from 'assert';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
-import { AuthInfo } from '../../src/auth/auth-info.js';
+import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import { main } from '../../src/index.js';
 import { Nock, SITE_CONFIG } from '../utils.js';
 

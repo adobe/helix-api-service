@@ -13,6 +13,7 @@ import xml2js from 'xml2js';
 import { MP4Parser } from '@adobe/helix-mediahandler';
 import { FileSizeFormatter, formatDuration, toSISize } from '../support/utils.js';
 import { error } from '../contentproxy/errors.js';
+import { ValidationError } from './ValidationError.js';
 
 const XML_PROLOG = Buffer.from('<?xml version="1.0" encoding="UTF-8"?>');
 
@@ -42,24 +43,6 @@ const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
  * Image file size limit.
  */
 const IMAGE_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
-
-/**
- * Error information with code and message.
- */
-export class ValidationError extends Error {
-  code;
-
-  /**
-   * @param {ErrorInfo} errorInfo
-   */
-  constructor(errorInfo, reason) {
-    super(errorInfo.message);
-    this.code = errorInfo.code;
-    if (reason) {
-      this.reason = reason;
-    }
-  }
-}
 
 function getLimit(config, property, def) {
   const limit = Number.parseInt(config.limits?.preview?.[property], 10);
@@ -280,7 +263,7 @@ async function validateImage(context, resourcePath, buf) {
  * @property {string{}} extensions
  * @property {string} mime
  * @property {Preprocess} preprocess
- * @property {Validate} validate
+ * @property {ValidationError} validate
  * @property {boolean} redirect
  */
 

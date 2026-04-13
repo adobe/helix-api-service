@@ -1,0 +1,37 @@
+openapi: 3.1.0
+contentproxy:
+  get:
+    operationId: contentProxy
+    tags:
+      - contentproxy
+    summary: Proxy content request
+    description: >
+      Proxies a content request to the underlying content source. Used for testing purposes.
+    security:
+      - AuthCookie:
+          - content:read
+    parameters:
+      - $ref: "./parameters.yaml#/orgParam"
+      - $ref: "./parameters.yaml#/siteParam"
+      - $ref: "./parameters.yaml#/pathParam"
+    responses:
+      '200':
+        description: The proxied content
+        content:
+          application/json:
+            schema:
+              type: object
+      '400':
+        $ref: "./responses.yaml#/400"
+      '401':
+        $ref: "./responses.yaml#/401"
+      '403':
+        $ref: "./responses.yaml#/403"
+      '404':
+        $ref: "./responses.yaml#/404"
+      '429':
+        $ref: "./responses.yaml#/429"
+      '500':
+        $ref: "./responses.yaml#/500"
+      '503':
+        $ref: "./responses.yaml#/503"

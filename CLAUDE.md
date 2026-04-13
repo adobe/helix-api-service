@@ -85,6 +85,16 @@ Each feature area is a subdirectory with its own handler module:
 
 ### Code Style
 
+- Do not use default exports. Use named exports with the `export` keyword inline on the declaration:
+  ```js
+  // preferred
+  export class Foo { ... }
+  export function bar() { ... }
+  // avoid
+  class Foo { ... }
+  export default Foo;
+  ```
+
 - Use destructuring for variable bindings. Prefer deep destructuring to collapse chains:
   ```js
   // preferred
@@ -110,6 +120,10 @@ Use `StatusCodeError` for HTTP error responses and `AccessDeniedError` for autho
 - Dev server for integration testing at `test/dev/server.mjs`
 - Coverage thresholds: 95% for lines, branches, statements, and functions
 - Always use `SITE_CONFIG` (and `ORG_CONFIG`) from `test/utils.js` for site/org config fixtures instead of defining local `TEST_CONFIG` constants. If a test needs a different content source type (e.g. a custom test handler), override only that field: `{ ...structuredClone(SITE_CONFIG), content: { ...SITE_CONFIG.content, source: TEST_SOURCE } }`
+
+### helix-admin Migration
+
+This project is an evolution of [helix-admin](https://github.com/adobe/helix-admin). See [`migration.md`](./migration.md) for a checklist of what has been ported and what is still outstanding, with links to helix-api-service issues and helix-admin PRs.
 
 ### Key Integrations
 

@@ -80,7 +80,7 @@ These require porting entire modules or large subsystems from helix-admin.
 
 Individual improvements from helix-admin not yet in helix-api-service.
 
-- [ ] **WebP image support in preview upload** — [adobe/helix-api-service#180](https://github.com/adobe/helix-api-service/issues/180)
+- [x] **WebP image support in preview upload** — [adobe/helix-api-service#180](https://github.com/adobe/helix-api-service/issues/180)
   helix-admin added WebP to `src/preview/media-upload.js` MEDIA_TYPES. helix-api-service has WebP
   in the fetch Accept header but no media-upload equivalent in the preview pipeline.
   helix-admin PR: [#3549](https://github.com/adobe/helix-admin/pull/3549).

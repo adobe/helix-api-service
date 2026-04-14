@@ -27,7 +27,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run docs:lint
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 

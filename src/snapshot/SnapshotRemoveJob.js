@@ -17,7 +17,7 @@ import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { Job } from '../job/Job.js';
 import { toWebPath, toResourcePath } from '../support/RequestInfo.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
-import { Manifest } from './manifest.js';
+import { Manifest } from './Manifest.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 
 const JOB_CONCURRENCY = 50;
@@ -119,7 +119,7 @@ export class SnapshotRemoveJob extends Job {
       log.info(`snapshot [${snapshotId}]: bulk deleting ${resourcePath}`);
       await bucket.remove(resourcePath);
       manifest.removeResource(webPath, true);
-      manifest.markUpdated();
+      manifest.markResourceUpdated();
       return { ok: true, status: 204 };
     /* c8 ignore next 4 */
     } catch (e) {
@@ -227,7 +227,6 @@ export class SnapshotRemoveJob extends Job {
             info,
             successfulPaths,
             [...processed],
-            snapshotId,
           );
         }
       } finally {

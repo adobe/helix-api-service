@@ -12,23 +12,20 @@
 
 import { Response } from '@adobe/fetch';
 import { removeSnapshot } from '../contentbus/snapshot.js';
-import { Manifest } from './manifest.js';
+import { Manifest } from './Manifest.js';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
-import { toResourcePath } from '../support/RequestInfo.js';
 
 /**
  * Removes a resource from a snapshot.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
- * @param {string} rawPath raw path of the resource to remove
  * @returns {Promise<Response>} response
  */
-export async function snapshotRemove(context, info, snapshotId, rawPath) {
+export async function snapshotRemove(context, info) {
   const { log } = context;
-  const resourcePath = toResourcePath(rawPath);
-  const response = await removeSnapshot(context, snapshotId, resourcePath);
+  const { snapshotId } = info;
+  const response = await removeSnapshot(context, info);
 
   if (!response.ok) {
     if (response.status === 404 || response.status === 409) {

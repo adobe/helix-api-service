@@ -24,10 +24,9 @@ const SYNCHRONOUS_LIMIT = 200;
  *
  * @param {import('../support/AdminContext').AdminContext} context the context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
  * @returns {Promise<Response>} response
  */
-export async function bulkRemove(context, info, snapshotId) {
+export async function bulkRemove(context, info) {
   const { log, attributes: { authInfo } } = context;
 
   try {
@@ -54,7 +53,7 @@ export async function bulkRemove(context, info, snapshotId) {
       jobClass: SnapshotRemoveJob,
       transient,
       data: {
-        snapshotId,
+        snapshotId: info.snapshotId,
         paths,
       },
       roles: ['author'],

@@ -186,10 +186,18 @@ export class Manifest {
     return this;
   }
 
+  /**
+   * Whether the manifest has been loaded from storage.
+   * @type {boolean}
+   */
   get exists() {
     return this.#exists;
   }
 
+  /**
+   * Whether there are resources whose cache needs to be purged.
+   * @type {boolean}
+   */
   get resourcesNeedPurge() {
     return this.#resourcesToPurge.size > 0;
   }
@@ -218,25 +226,27 @@ export class Manifest {
       this.lastModified = mod;
     }
     await this.#storage.put(this.#key, JSON.stringify(this), 'application/json');
-    const needsPurge = this.#isModified;
+    const wasModified = this.#isModified;
     this.#isModified = false;
     this.#exists = true;
-    return needsPurge;
+    return wasModified;
   }
 
   /**
-   * @returns {Promise<boolean>} `true` if the manifest was deleted
+   * Deletes the manifest from storage.
+   * @returns {Promise<void>}
    */
   async delete() {
-    if (!this.#exists || this.resources.size > 0) {
-      return false;
-    }
     await this.#storage.remove(this.#key);
     this.#exists = false;
-    return true;
   }
 
-  touch(now = new Date()) {
+  /**
+   * Marks the manifest as modified, updating `lastModified`. Called internally by every
+   * mutation (lock, setProperty, addResource, removeResource, setReviewState).
+   * @param {Date} [now] timestamp to use
+   */
+  #markModified(now = new Date()) {
     this.lastModified = now.toISOString();
     if (!this.created) {
       this.created = this.lastModified;
@@ -244,23 +254,38 @@ export class Manifest {
     this.#isModified = true;
   }
 
-  markUpdated(now = new Date()) {
+  /**
+   * Marks the manifest as having a resource change, updating `lastUpdated`.
+   * Called when a resource is added to or removed from the snapshot storage.
+   * @param {Date} [now] timestamp to use
+   */
+  markResourceUpdated(now = new Date()) {
     this.lastUpdated = now.toISOString();
-    this.touch(now);
+    this.#markModified(now);
   }
 
+  /**
+   * Clears the set of resources that need cache purging.
+   */
   markResourcesPurged() {
     this.#resourcesToPurge.clear();
   }
 
+  /**
+   * Sets the review workflow state.
+   * @param {'requested'|'rejected'|undefined} state
+   */
   setReviewState(state) {
     this.review = state;
-    this.touch(new Date());
+    this.#markModified();
   }
 
   /**
-   * @param {boolean} value
-   * @returns {boolean} `true` if the lock state was changed
+   * Locks or unlocks the snapshot. A locked snapshot prevents resource additions and
+   * removals. When locking, sets `locked` to the current ISO timestamp. When unlocking,
+   * removes the `locked` field. No-ops if the snapshot is already in the requested state.
+   * @param {boolean} value `true` to lock, `false` to unlock
+   * @returns {boolean} `true` if the lock state was changed, `false` if already in that state
    */
   lock(value) {
     const enable = !!value;
@@ -273,15 +298,17 @@ export class Manifest {
     } else {
       delete this.locked;
     }
-    this.touch(now);
+    this.#markModified(now);
     return true;
   }
 
   /**
-   * Set custom property.
-   * @param {string} name
-   * @param {string} value
-   * @throws {Error} if operation is invalid due to key or property size
+   * Sets a user-facing custom property on the manifest. Supported properties are
+   * `title` (max 4 KB), `description` (max 16 KB), and `metadata` (max 512 KB).
+   * A falsy value removes the property.
+   * @param {string} name property name (must be in {@link Manifest.CUSTOM_PROPERTIES})
+   * @param {string|object} value property value, or falsy to remove
+   * @throws {Error} if the property name is not supported or the value exceeds the size limit
    */
   setProperty(name, value) {
     if (!Manifest.CUSTOM_PROPERTIES.includes(name)) {
@@ -298,27 +325,29 @@ export class Manifest {
     if (value) {
       if (this[name] !== value) {
         this[name] = value;
-        this.touch(new Date());
+        this.#markModified();
       }
     } else if (this[name] !== undefined) {
       delete this[name];
-      this.touch(new Date());
+      this.#markModified();
     }
   }
 
   /**
-   * @param {string} path
-   * @param {number} [status=200]
+   * Adds or updates a resource in the manifest. If the resource already exists with a
+   * different status, the status is updated and the resource is marked for cache purging.
+   * @param {string} path web path of the resource
+   * @param {number} [status=200] resource status (200 = exists, 404 = marked for deletion)
    */
   addResource(path, status = 200) {
     if (!this.resources.has(path)) {
       this.resources.set(path, { path, status });
-      this.touch(new Date());
+      this.#markModified();
     } else {
       const existing = this.resources.get(path);
       if (existing.status !== status) {
         existing.status = status;
-        this.touch(new Date());
+        this.#markModified();
       }
       // only need to purge if already existed
       this.#resourcesToPurge.add(path);
@@ -326,19 +355,25 @@ export class Manifest {
   }
 
   /**
-   * @param {string} path
-   * @param {boolean} [forcePurge] for orphaned resources
+   * Removes a resource from the manifest and marks it for cache purging.
+   * @param {string} path web path of the resource
+   * @param {boolean} [forcePurge] if true, marks the path for purging even if not in manifest
    */
   removeResource(path, forcePurge) {
     if (this.resources.has(path)) {
       this.resources.delete(path);
-      this.touch(new Date());
+      this.#markModified();
       this.#resourcesToPurge.add(path);
     } else if (forcePurge) {
       this.#resourcesToPurge.add(path);
     }
   }
 
+  /**
+   * Serializes the manifest to a plain object for JSON.stringify. Resources are sorted
+   * alphabetically by path.
+   * @returns {object}
+   */
   toJSON() {
     const obj = {};
     for (const key of SERIALIZED_FIELDS) {
@@ -350,6 +385,11 @@ export class Manifest {
     return obj;
   }
 
+  /**
+   * Returns a JSON response containing the manifest and snapshot links.
+   * @param {RequestInfo} info request info
+   * @returns {Response}
+   */
   toResponse(info) {
     return new Response(JSON.stringify({
       manifest: this,

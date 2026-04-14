@@ -13,74 +13,50 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { createErrorResponse } from './utils.js';
-import { Manifest } from '../snapshot/manifest.js';
+import { Manifest } from '../snapshot/Manifest.js';
 import { toWebPath } from '../support/RequestInfo.js';
 
 /**
- * Creates a snapshot of the resource addressed by the path and stores it in the
- * snapshot folder of the given snapshotId.
+ * Copies a single resource from the source partition into the snapshot folder and records
+ * it in the manifest. The source partition is `preview` by default, or `live` when the
+ * manifest has `fromLive` set.
+ *
+ * Code paths:
+ * - Returns 404 if the resource path targets a filtered location (`.helix/`, `helix-env.json`).
+ * - Returns 409 if the snapshot is locked.
+ * - If the resource path is already inside `/.snapshots/{snapshotId}/`, the resource is
+ *   assumed to exist in storage and is simply registered in the manifest (no copy).
+ * - If the source resource does **not** exist in the source partition, it is recorded in
+ *   the manifest with status 404 (marking it for deletion on publish). If the resource
+ *   previously existed in the snapshot, the old copy is removed. Returns 204.
+ * - If the source resource **does** exist, it is copied into the snapshot folder and
+ *   recorded in the manifest with status 200. Returns 200.
+ *
+ * Metadata added to each copied resource:
+ * - `x-last-modified-by`: authenticated user email or `'anonymous'`
+ * - `last-modified` is renamed to `x-last-previewed` (or `x-last-published` when fromLive)
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} snapshotId snapshot id
- * @param {string} resourcePath resource path
- * @returns {Promise<Response>} response
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} 200 (copied), 204 (source missing, recorded as 404),
+ *   409 (locked), 404 (filtered path), or 5xx (storage error)
  */
-export async function snapshot(context, snapshotId, resourcePath) {
+export async function updateSnapshot(context, info) {
   const { contentBusId, log } = context;
+  const { snapshotId, resourcePath } = info;
   try {
     const contentStorage = HelixStorage.fromContext(context).contentBus();
     const manifest = await Manifest.fromContext(context, snapshotId);
     const { fromLive } = manifest;
-    const previewRoot = `${contentBusId}/preview`; // always used as destination partition
-    const liveRoot = `${contentBusId}/live`;
-    const partitionRoot = fromLive ? liveRoot : previewRoot; // source partition
-
-    const copyOpts = {
-      addMetadata: {
-        'x-last-modified-by': context.attributes?.authInfo?.resolveEmail() || 'anonymous',
-      },
-      renameMetadata: {
-        'last-modified': `x-last-${fromLive ? 'published' : 'previewed'}`,
-      },
-    };
-
-    // filter out special files not relevant for snapshots
-    let keyFilter = (key) => key !== `${partitionRoot}/helix-env.json` // legacy, might still be in content
-      && !key.startsWith(`${partitionRoot}/.helix/`);
-
-    // handle recursive copy
-    if (resourcePath.endsWith('/*')) {
-      keyFilter = (key) => key !== `${partitionRoot}/helix-env.json`
-        && !key.startsWith(`${partitionRoot}/.helix/`)
-        && !key.startsWith(`${partitionRoot}/.snapshots/`); // bulk should ignore snapshots dir
-
-      if (manifest.locked) {
-        return createErrorResponse({ status: 409, log, msg: 'snapshot is locked' });
-      }
-
-      const trimmedPath = resourcePath.substring(0, resourcePath.length - 1);
-
-      const objFilter = (objInfo) => {
-        if (!keyFilter(objInfo.key)) {
-          return false;
-        }
-        const relPath = objInfo.key.substring(partitionRoot.length);
-        manifest.addResource(toWebPath(relPath));
-        return true;
-      };
-
-      const srcKey = `${partitionRoot}${trimmedPath}`;
-      const dstKey = `${previewRoot}/.snapshots/${snapshotId}${trimmedPath}`;
-      await contentStorage.copyDeep(srcKey, dstKey, objFilter, copyOpts);
-
-      manifest.markUpdated();
-
-      return new Response('', { status: 204 });
-    }
+    const previewRoot = `${contentBusId}/preview`;
+    const partitionRoot = fromLive ? `${contentBusId}/live` : previewRoot;
 
     const srcKey = `${partitionRoot}${resourcePath}`;
     const dstKey = `${previewRoot}/.snapshots/${snapshotId}${resourcePath}`;
-    if (!keyFilter(srcKey)) {
+
+    // filter out special files not relevant for snapshots
+    if (srcKey === `${partitionRoot}/helix-env.json`
+      || srcKey.startsWith(`${partitionRoot}/.helix/`)) {
       return new Response('', { status: 404 });
     }
     if (manifest.locked) {
@@ -102,12 +78,19 @@ export async function snapshot(context, snapshotId, resourcePath) {
         manifest.addResource(webPath, 404);
         return new Response('', { status: 204 });
       } else {
-        await contentStorage.copy(srcKey, dstKey, copyOpts);
+        await contentStorage.copy(srcKey, dstKey, {
+          addMetadata: {
+            'x-last-modified-by': context.attributes?.authInfo?.resolveEmail() || 'anonymous',
+          },
+          renameMetadata: {
+            'last-modified': `x-last-${fromLive ? 'published' : 'previewed'}`,
+          },
+        });
         manifest.addResource(webPath, 200);
       }
     }
 
-    manifest.markUpdated();
+    manifest.markResourceUpdated();
     return new Response('', { status: 200 });
     /* c8 ignore next 3 */
   } catch (e) {
@@ -119,13 +102,12 @@ export async function snapshot(context, snapshotId, resourcePath) {
  * Publishes a snapshot content resource by copying the snapshot resource to the live resource.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} snapshotId snapshot id
- * @param {string} resourcePath resource path
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export async function publishSnapshot(context, snapshotId, resourcePath) {
+export async function publishSnapshot(context, info) {
   const { contentBusId, log } = context;
-  const webPath = toWebPath(resourcePath);
+  const { snapshotId, resourcePath, webPath } = info;
   try {
     const contentStorage = HelixStorage.fromContext(context).contentBus();
     const manifest = await Manifest.fromContext(context, snapshotId);
@@ -160,15 +142,25 @@ export async function publishSnapshot(context, snapshotId, resourcePath) {
 }
 
 /**
- * Removes a snapshot resource or tree.
+ * Removes a single snapshot resource from storage and the manifest.
+ *
+ * Code paths:
+ * - Returns 404 if the manifest does not exist.
+ * - Returns 409 if the snapshot is locked.
+ * - If the resource is recorded as 404 in the manifest, removes it from the manifest
+ *   only (no storage deletion needed). Returns 204.
+ * - If the resource does not exist in storage, removes it from the manifest and returns 404.
+ * - Otherwise, deletes the resource from storage, removes it from the manifest,
+ *   and returns 204.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} snapshotId snapshot id
- * @param {string} resourcePath resource path
- * @returns {Promise<Response>} response
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} 204 (deleted), 404 (not found), 409 (locked),
+ *   or 5xx (storage error)
  */
-export async function removeSnapshot(context, snapshotId, resourcePath) {
+export async function removeSnapshot(context, info) {
   const { contentBusId, log } = context;
+  const { snapshotId, resourcePath } = info;
   const contentStorage = HelixStorage.fromContext(context).contentBus();
 
   const manifest = await Manifest.fromContext(context, snapshotId);
@@ -176,60 +168,28 @@ export async function removeSnapshot(context, snapshotId, resourcePath) {
     if (!manifest.exists) {
       return new Response('', { status: 404 });
     }
-
-    const prefix = `${contentBusId}/preview/.snapshots/${snapshotId}`;
-    let fullPath = `${prefix}${resourcePath}`;
-    if (fullPath.endsWith('/*')) {
-      fullPath = fullPath.substring(0, fullPath.length - 2);
-      const keys = (await contentStorage.list(fullPath)).map((inf) => inf.key);
-      if (manifest.locked) {
-        return createErrorResponse({ status: 409, log, msg: 'snapshot is locked' });
-      }
-
-      if (keys.length) {
-        log.info(`snapshot [${snapshotId}]: deleting ${keys.length} below ${fullPath}`);
-
-        for (const key of keys) {
-          manifest.removeResource(toWebPath(key.substring(prefix.length)));
-        }
-        await contentStorage.remove(keys);
-      } else {
-        const orphans = [...manifest.resources.keys()].filter(
-          (p) => `${prefix}${p}`.startsWith(fullPath),
-        );
-        if (orphans.length) {
-          log.info(`snapshot [${snapshotId}]: removing ${orphans.length} orphaned resources below ${fullPath}`);
-          for (const p of orphans) {
-            manifest.removeResource(p);
-          }
-        } else {
-          log.info(`snapshot [${snapshotId}]: no resources below ${fullPath}`);
-        }
-        return new Response('', { status: 404 });
-      }
-    } else {
-      if (manifest.locked) {
-        return createErrorResponse({ status: 409, log, msg: 'snapshot is locked' });
-      }
-
-      const webPath = toWebPath(resourcePath);
-      const existing = manifest.resources.get(webPath);
-      manifest.removeResource(webPath);
-      if (existing && existing.status === 404) {
-        return new Response('', { status: 204 });
-      }
-
-      if (await contentStorage.head(fullPath) === null) {
-        log.info(`snapshot [${snapshotId}]: no such resource ${fullPath} (existed in manifest: ${!!existing})`);
-        return new Response('', { status: 404 });
-      }
-      log.info(`snapshot [${snapshotId}]: deleting ${fullPath} (existed in manifest: ${!!existing})`);
-      await contentStorage.remove(fullPath);
+    if (manifest.locked) {
+      return createErrorResponse({ status: 409, log, msg: 'snapshot is locked' });
     }
-    manifest.markUpdated();
-    return new Response('', {
-      status: 204,
-    });
+
+    const fullPath = `${contentBusId}/preview/.snapshots/${snapshotId}${resourcePath}`;
+    const webPath = toWebPath(resourcePath);
+    const existing = manifest.resources.get(webPath);
+    manifest.removeResource(webPath);
+
+    if (existing && existing.status === 404) {
+      return new Response('', { status: 204 });
+    }
+
+    if (await contentStorage.head(fullPath) === null) {
+      log.info(`snapshot [${snapshotId}]: no such resource ${fullPath} (existed in manifest: ${!!existing})`);
+      return new Response('', { status: 404 });
+    }
+    log.info(`snapshot [${snapshotId}]: deleting ${fullPath} (existed in manifest: ${!!existing})`);
+    await contentStorage.remove(fullPath);
+
+    manifest.markResourceUpdated();
+    return new Response('', { status: 204 });
     /* c8 ignore next 3 */
   } catch (e) {
     return createErrorResponse({ e, log });

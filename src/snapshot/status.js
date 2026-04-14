@@ -12,7 +12,7 @@
 
 import { Response } from '@adobe/fetch';
 import { getContentBusInfo } from '../contentbus/contentbus.js';
-import { Manifest } from './manifest.js';
+import { Manifest } from './Manifest.js';
 import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
 
 /**
@@ -20,13 +20,12 @@ import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context the context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
- * @param {string} rawPath raw path within the snapshot (empty for manifest)
  * @returns {Promise<Response>} response
  */
-export async function snapshotStatus(context, info, snapshotId, rawPath) {
+export async function snapshotStatus(context, info) {
+  const { snapshotId, webPath } = info;
   const manifest = await Manifest.fromContext(context, snapshotId);
-  if (!rawPath) {
+  if (!webPath) {
     // serve manifest json
     if (!manifest.exists) {
       return new Response('', {
@@ -40,7 +39,7 @@ export async function snapshotStatus(context, info, snapshotId, rawPath) {
   }
 
   // get resource status within snapshot
-  const snapshotResourcePath = `/.snapshots/${snapshotId}${toResourcePath(rawPath)}`;
+  const snapshotResourcePath = `/.snapshots/${snapshotId}${toResourcePath(webPath)}`;
   const snapshotInfo = RequestInfo.clone(info, { path: snapshotResourcePath });
 
   const preview = await getContentBusInfo(context, snapshotInfo, 'preview');
@@ -56,7 +55,7 @@ export async function snapshotStatus(context, info, snapshotId, rawPath) {
   }
 
   const resp = {
-    webPath: rawPath,
+    webPath,
     resourcePath: snapshotResourcePath,
     preview,
     snapshot: {
@@ -66,7 +65,7 @@ export async function snapshotStatus(context, info, snapshotId, rawPath) {
     },
     links: info.getAPIUrls('status', 'preview', 'live', 'code'),
   };
-  resp.links.snapshot = info.getLinkUrl(`/${info.org}/sites/${info.site}/snapshots/${snapshotId}${rawPath}`);
+  resp.links.snapshot = info.getLinkUrl(`/${info.org}/sites/${info.site}/snapshots/${snapshotId}${webPath}`);
 
   return new Response(JSON.stringify(resp, null, 2), {
     headers: {

@@ -19,34 +19,11 @@ import { listSnapshots } from './list.js';
 import { snapshotReview } from './review.js';
 import { bulkSnapshot } from './bulk-snapshot.js';
 import { bulkRemove } from './bulk-remove.js';
-import { Manifest } from './manifest.js';
+import { Manifest } from './Manifest.js';
 import { errorResponse } from '../support/utils.js';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 
 const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
-
-/**
- * Parses the snapshot route path into snapshotId and remaining rawPath.
- * The route is `/:org/sites/:site/snapshots/*` where `*` captures e.g. `/mysnap/some/path`.
- *
- * @param {string} webPath the full web path captured by `*`
- * @returns {{ snapshotId: string, rawPath: string }}
- */
-function parseSnapshotPath(webPath) {
-  if (!webPath || webPath === '/') {
-    return { snapshotId: '', rawPath: '' };
-  }
-  // webPath is e.g. '/mysnap/some/path' or '/mysnap' or '/*'
-  const withoutLeading = webPath.startsWith('/') ? webPath.substring(1) : webPath;
-  const slashIdx = withoutLeading.indexOf('/');
-  if (slashIdx < 0) {
-    return { snapshotId: withoutLeading, rawPath: '' };
-  }
-  return {
-    snapshotId: withoutLeading.substring(0, slashIdx),
-    rawPath: withoutLeading.substring(slashIdx),
-  };
-}
 
 /**
  * Handles the /snapshots route.
@@ -66,7 +43,7 @@ export default async function snapshotHandler(context, info) {
 
   authInfo.assertPermissions('snapshot:read');
 
-  const { snapshotId, rawPath } = parseSnapshotPath(info.webPath);
+  const { snapshotId } = info;
 
   // list snapshots: GET with no snapshotId
   if (info.method === 'GET' && !snapshotId) {
@@ -77,33 +54,31 @@ export default async function snapshotHandler(context, info) {
     return errorResponse(log, 400, 'invalid path parameters: "snapshotId" is required');
   }
 
-  const isBulk = rawPath === '/*' && context.data?.paths;
-
   const manifest = await Manifest.fromContext(context, snapshotId);
   let shouldStore = false;
   try {
     if (info.method === 'GET') {
-      return await snapshotStatus(context, info, snapshotId, rawPath);
+      return await snapshotStatus(context, info);
     }
     if (info.method === 'POST') {
       if (context.data?.review) {
-        const res = await snapshotReview(context, info, snapshotId, manifest);
+        const res = await snapshotReview(context, info, manifest);
         shouldStore = res.ok;
         return res;
       }
       if (String(context.data?.publish) === 'true') {
-        return await snapshotPublish(context, info, snapshotId, rawPath, manifest);
+        return await snapshotPublish(context, info, manifest);
       }
       authInfo.assertPermissions('snapshot:write');
       shouldStore = true; // should be true for bulk as well, since the manifest may not exist yet
-      if (isBulk) {
+      if (info.webPath === '/*') {
         const isDelete = String(context.data?.delete) === 'true';
         if (isDelete) {
-          return await bulkRemove(context, info, snapshotId);
+          return await bulkRemove(context, info);
         }
-        return await bulkSnapshot(context, info, snapshotId);
+        return await bulkSnapshot(context, info);
       }
-      return await snapshotUpdate(context, info, snapshotId, rawPath);
+      return await snapshotUpdate(context, info);
     }
 
     // DELETE
@@ -112,7 +87,7 @@ export default async function snapshotHandler(context, info) {
       return new Response('', { status: 404 });
     }
 
-    if (rawPath === '') {
+    if (!info.webPath) {
       // delete entire snapshot, only allowed if empty
       if (manifest.resources.size > 0) {
         return new Response('', {
@@ -126,7 +101,7 @@ export default async function snapshotHandler(context, info) {
       shouldStore = false;
       return new Response('', { status: 204 });
     } else {
-      const res = await snapshotRemove(context, info, snapshotId, rawPath);
+      const res = await snapshotRemove(context, info);
       shouldStore = res.ok;
       return res;
     }

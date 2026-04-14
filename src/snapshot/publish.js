@@ -22,23 +22,23 @@ import purge, { PURGE_LIVE } from '../cache/purge.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
- * @param {string} rawPath raw path within the snapshot
- * @param {import('./manifest').Manifest} manifest snapshot manifest
+ * @param {import('./Manifest.js').Manifest} manifest snapshot manifest
  * @returns {Promise<Response>} response
  */
-export async function snapshotPublish(context, info, snapshotId, rawPath, manifest) {
+export async function snapshotPublish(context, info, manifest) {
   context.attributes.authInfo.assertPermissions('live:write');
+
+  const { webPath } = info;
 
   /** @type {Response} */
   let res;
 
-  if (rawPath === '' || rawPath.endsWith('/*')) {
+  if (!webPath || webPath.endsWith('/*')) {
     // bulk publish all resources in manifest
     let resources = [...manifest.resources.values()];
-    if (rawPath.endsWith('/*')) {
+    if (webPath?.endsWith('/*')) {
       // "resolve" path glob, filter resources
-      const globRoot = rawPath.slice(0, -2);
+      const globRoot = webPath.slice(0, -2);
       resources = resources.filter((p) => p.path.startsWith(globRoot));
     }
     // nothing to do
@@ -50,7 +50,6 @@ export async function snapshotPublish(context, info, snapshotId, rawPath, manife
     const publishPaths = resources.map((r) => r.status !== 404 && r.path).filter(Boolean);
     if (publishPaths.length) {
       context.data.paths = publishPaths;
-      context.data.snapshotId = snapshotId;
       res = await bulkPublish(context, info);
     }
 
@@ -62,22 +61,21 @@ export async function snapshotPublish(context, info, snapshotId, rawPath, manife
     }
   } else {
     // publish or remove resource by path
-    if (!manifest.resources.has(rawPath)) {
+    if (!manifest.resources.has(webPath)) {
       return new Response('', { status: 404 });
     }
 
-    const resource = manifest.resources.get(rawPath);
+    const resource = manifest.resources.get(webPath);
     if (resource.status === 404) {
       // remove
-      context.data.paths = [rawPath];
+      context.data.paths = [webPath];
       res = await unpublish(context, info);
       if (res.ok) {
-        await purge.content(context, info, [rawPath], PURGE_LIVE);
+        await purge.content(context, info, [webPath], PURGE_LIVE);
       }
     } else {
       // publish
-      context.data.paths = [rawPath];
-      context.data.snapshotId = snapshotId;
+      context.data.paths = [webPath];
       res = await liveUpdate(context, info);
     }
   }

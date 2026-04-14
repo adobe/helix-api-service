@@ -35,9 +35,8 @@ export async function liveUpdate(context, info) {
   const { log } = context;
 
   log.info('updating live in content-bus.');
-  const { snapshotId } = context.data ?? {};
-  const response = snapshotId
-    ? await publishSnapshot(context, snapshotId, info.resourcePath)
+  const response = info.snapshotId
+    ? await publishSnapshot(context, info)
     : await contentBusCopy(context, info);
 
   // check if redirect overwrites the content

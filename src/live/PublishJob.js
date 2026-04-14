@@ -151,11 +151,6 @@ export class PublishJob extends Job {
     const start = Date.now();
     const localInfo = RequestInfo.clone(info, { path, route: 'live' });
 
-    // ensure snapshotId is available on context.data for liveUpdate → publishSnapshot
-    if (this.state.data.snapshotId) {
-      ctx.data.snapshotId = this.state.data.snapshotId;
-    }
-
     const res = await liveUpdate(ctx, localInfo);
     const { status } = res;
     resource.setStatus(status);
@@ -236,7 +231,7 @@ export class PublishJob extends Job {
         toNotify.push(resource);
       }
     }
-    await publishBulkResourceNotification(ctx, 'resources-published', info, publishedResourcePaths, toNotify, this.state.data.snapshotId);
+    await publishBulkResourceNotification(ctx, 'resources-published', info, publishedResourcePaths, toNotify);
   }
 
   /**

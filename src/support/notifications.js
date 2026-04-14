@@ -158,7 +158,6 @@ export function splitArray(paths, limit) {
  * @param {{
  *  status?:number; path?:string; webPath?:string; resourcePath:string;
  * }[]} resources all resources, used for error reporting
- * @param {string} [snapshotId] snapshot ID, if applicable
  * @param {
  *  (rsc: { status?: number; }) => boolean
  * } [errorFilter] function to filter errors, defaults to anything not 2xx
@@ -169,9 +168,9 @@ export async function publishBulkResourceNotification(
   info,
   resourcePaths,
   resources,
-  snapshotId,
   errorFilter = ({ status }) => !(status >= 200 && status < 300),
 ) {
+  const { snapshotId } = info;
   try {
     if (ctx.data?.disableNotifications) {
       return;

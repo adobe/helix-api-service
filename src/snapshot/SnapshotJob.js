@@ -14,10 +14,10 @@
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import { Job } from '../job/Job.js';
-import { snapshot } from '../contentbus/snapshot.js';
+import { updateSnapshot } from '../contentbus/snapshot.js';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
-import { Manifest } from './manifest.js';
-import { toWebPath, toResourcePath } from '../support/RequestInfo.js';
+import { Manifest } from './Manifest.js';
+import { RequestInfo, toWebPath, toResourcePath } from '../support/RequestInfo.js';
 import { publishBulkResourceNotification } from '../support/notifications.js';
 
 export const JOB_CONCURRENCY = 50;
@@ -162,7 +162,8 @@ export class SnapshotJob extends Job {
     }
 
     log.info(`updating snapshot in content-bus for: ${snapshotId} ${resourcePath}`);
-    const response = await snapshot(ctx, snapshotId, resourcePath);
+    const localInfo = RequestInfo.clone(this.info, { path: webPath });
+    const response = await updateSnapshot(ctx, localInfo);
     // eslint-disable-next-line no-param-reassign
     resource.status = response.ok && resource.status === 404 ? 404 : response.status;
 
@@ -237,7 +238,6 @@ export class SnapshotJob extends Job {
             info,
             successfulPaths,
             [...processed],
-            snapshotId,
             ({ status }) => status !== 404 && !(status >= 200 && status < 300),
           );
         }

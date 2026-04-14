@@ -24,10 +24,9 @@ const SYNCHRONOUS_LIMIT = 200;
  *
  * @param {import('../support/AdminContext').AdminContext} context the context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
  * @returns {Promise<Response>} response
  */
-export async function bulkSnapshot(context, info, snapshotId) {
+export async function bulkSnapshot(context, info) {
   const { log, attributes: { authInfo } } = context;
 
   try {
@@ -60,7 +59,7 @@ export async function bulkSnapshot(context, info, snapshotId) {
       transient,
       data: {
         paths,
-        snapshotId,
+        snapshotId: info.snapshotId,
         forceUpdate: String(context.data.forceUpdate) === 'true', // ensure boolean
       },
       roles: ['author'],

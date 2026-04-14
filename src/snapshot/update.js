@@ -12,12 +12,11 @@
 
 import { Response } from '@adobe/fetch';
 import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
-import { snapshot } from '../contentbus/snapshot.js';
+import { updateSnapshot } from '../contentbus/snapshot.js';
 import { snapshotStatus } from './status.js';
-import { Manifest } from './manifest.js';
+import { Manifest } from './Manifest.js';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { getNotifier } from '../support/notifications.js';
-import { toResourcePath } from '../support/RequestInfo.js';
 
 /**
  * Updates a snapshot by copying content from preview (or live) to the snapshot location,
@@ -25,14 +24,13 @@ import { toResourcePath } from '../support/RequestInfo.js';
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
- * @param {string} rawPath raw path within the snapshot (empty for manifest update)
  * @returns {Promise<Response>} response
  */
-export async function snapshotUpdate(context, info, snapshotId, rawPath) {
+export async function snapshotUpdate(context, info) {
   const { log } = context;
+  const { snapshotId, webPath } = info;
 
-  if (!rawPath) {
+  if (!webPath) {
     const manifest = await Manifest.fromContext(context, snapshotId);
     if ('locked' in context.data) {
       // boolean from JSON body, string from query params
@@ -45,7 +43,7 @@ export async function snapshotUpdate(context, info, snapshotId, rawPath) {
         });
       }
 
-      const lock = context.data.locked === 'true' || context.data.locked === true;
+      const lock = String(context.data.locked) === 'true';
       if (lock) {
         // only allow to lock if the user has preview permission
         context.attributes.authInfo.assertPermissions('preview:write');
@@ -78,8 +76,7 @@ export async function snapshotUpdate(context, info, snapshotId, rawPath) {
   }
 
   log.info('updating snapshot in content-bus.');
-  const resourcePath = toResourcePath(rawPath);
-  const response = await snapshot(context, snapshotId, resourcePath);
+  const response = await updateSnapshot(context, info);
   let { status } = response;
   if (!response.ok) {
     if (status === 404 || status === 409) {
@@ -111,5 +108,5 @@ export async function snapshotUpdate(context, info, snapshotId, rawPath) {
     return response;
   }
   // single resource changed, respond with its status
-  return snapshotStatus(context, info, snapshotId, rawPath);
+  return snapshotStatus(context, info);
 }

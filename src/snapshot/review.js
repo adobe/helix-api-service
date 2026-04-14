@@ -11,10 +11,11 @@
  */
 
 import { Response } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import bulkPublish from '../live/bulk-publish.js';
 import bulkUnpublish from '../live/bulk-unpublish.js';
-import { snapshotRemove } from './remove.js';
 import { getNotifier } from '../support/notifications.js';
+import { toResourcePath } from '../support/RequestInfo.js';
 
 const REVIEW_TENSES = {
   request: 'requested',
@@ -27,11 +28,11 @@ const REVIEW_TENSES = {
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @param {string} snapshotId snapshot id
- * @param {import('./manifest').Manifest} manifest snapshot manifest
+ * @param {import('./Manifest.js').Manifest} manifest snapshot manifest
  * @returns {Promise<Response>} response
  */
-export async function snapshotReview(context, info, snapshotId, manifest) {
+export async function snapshotReview(context, info, manifest) {
+  const { snapshotId } = info;
   const {
     data: { review, message, keepResources },
     attributes: { authInfo },
@@ -104,7 +105,6 @@ export async function snapshotReview(context, info, snapshotId, manifest) {
         .map((r) => r.status !== 404 && r.path)
         .filter(Boolean);
 
-      context.data.snapshotId = snapshotId;
       res = await bulkPublish(context, info);
       if (!res.ok) {
         res = new Response('', {
@@ -137,7 +137,18 @@ export async function snapshotReview(context, info, snapshotId, manifest) {
       manifest.setReviewState(undefined);
       manifest.lock(false);
       if (!['true', true].includes(keepResources)) {
-        res = await snapshotRemove(context, info, snapshotId, '/*');
+        const { contentBusId } = context;
+        const storage = HelixStorage.fromContext(context).contentBus();
+        const prefix = `${contentBusId}/preview/.snapshots/${snapshotId}`;
+        const keys = [...manifest.resources.values()]
+          .filter((r) => r.status !== 404)
+          .map((r) => `${prefix}${toResourcePath(r.path)}`);
+        if (keys.length) {
+          await storage.remove(keys);
+        }
+        for (const r of manifest.resources.keys()) {
+          manifest.removeResource(r);
+        }
       }
       break;
     }

@@ -12,7 +12,7 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { Manifest } from '../../src/snapshot/manifest.js';
+import { Manifest } from '../../src/snapshot/Manifest.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
@@ -151,9 +151,9 @@ describe('Manifest Tests', () => {
     assert.strictEqual(manifest.review, 'requested');
   });
 
-  it('markUpdated sets lastUpdated', () => {
+  it('markResourceUpdated sets lastUpdated', () => {
     const manifest = new Manifest();
-    manifest.markUpdated();
+    manifest.markResourceUpdated();
     assert.ok(manifest.lastUpdated);
     assert.ok(manifest.lastModified);
   });
@@ -255,22 +255,7 @@ describe('Manifest Tests', () => {
     nock.content().deleteObject('/preview/.snapshots/test-snap/.manifest.json').reply(204);
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
-    const deleted = await manifest.delete();
-    assert.strictEqual(deleted, true);
+    await manifest.delete();
     assert.strictEqual(manifest.exists, false);
-  });
-
-  it('delete fails when manifest has resources', async () => {
-    const manifestData = {
-      id: 'test-snap',
-      created: '2025-01-01T00:00:00Z',
-      lastModified: '2025-01-01T00:00:00Z',
-      resources: [{ path: '/foo', status: 200 }],
-    };
-    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData));
-    const context = createTestContext();
-    const manifest = await Manifest.fromContext(context, 'test-snap');
-    const deleted = await manifest.delete();
-    assert.strictEqual(deleted, false);
   });
 });

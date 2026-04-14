@@ -55,22 +55,18 @@ export default async function snapshotHandler(context, info) {
   }
 
   const manifest = await Manifest.fromContext(context, snapshotId);
-  let shouldStore = false;
   try {
     if (info.method === 'GET') {
       return await snapshotStatus(context, info);
     }
     if (info.method === 'POST') {
       if (context.data?.review) {
-        const res = await snapshotReview(context, info, manifest);
-        shouldStore = res.ok;
-        return res;
+        return await snapshotReview(context, info, manifest);
       }
       if (String(context.data?.publish) === 'true') {
         return await snapshotPublish(context, info, manifest);
       }
       authInfo.assertPermissions('snapshot:write');
-      shouldStore = true; // should be true for bulk as well, since the manifest may not exist yet
       if (info.webPath === '/*') {
         const isDelete = String(context.data?.delete) === 'true';
         if (isDelete) {
@@ -98,19 +94,13 @@ export default async function snapshotHandler(context, info) {
         });
       }
       await manifest.delete();
-      shouldStore = false;
       return new Response('', { status: 204 });
-    } else {
-      const res = await snapshotRemove(context, info);
-      shouldStore = res.ok;
-      return res;
     }
+    return await snapshotRemove(context, info);
   } finally {
-    if (shouldStore) {
-      const needsPurge = await manifest.store();
-      if (needsPurge) {
-        await purge.content(context, info, [`/.snapshots/${manifest.id}/.manifest.json`], PURGE_PREVIEW);
-      }
+    const needsPurge = await manifest.store();
+    if (needsPurge) {
+      await purge.content(context, info, [`/.snapshots/${manifest.id}/.manifest.json`], PURGE_PREVIEW);
     }
   }
 }

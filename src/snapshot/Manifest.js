@@ -70,6 +70,12 @@ export class Manifest {
   #exists = false;
 
   /**
+   * whether the manifest was deleted (prevents store from re-creating it)
+   * @type {boolean}
+   */
+  #deleted = false;
+
+  /**
    * Resources touched since `init` or last call to `markResourcesPurged`.
    * Does not include `/.snapshots/{id}` prefix.
    * @type {Set<string>}
@@ -213,11 +219,11 @@ export class Manifest {
   }
 
   /**
-   * Stores the manifest if modified
-   * @returns {Promise<boolean>} resolves to `true` if manifest was stored
+   * Stores the manifest if modified. No-ops if the manifest was deleted or is unmodified.
+   * @returns {Promise<boolean>} resolves to `true` if manifest was stored and needs cache purge
    */
   async store() {
-    if (!this.#isModified && this.#exists) {
+    if (this.#deleted || !this.#isModified) {
       return false;
     }
     if (!this.#exists) {
@@ -239,6 +245,7 @@ export class Manifest {
   async delete() {
     await this.#storage.remove(this.#key);
     this.#exists = false;
+    this.#deleted = true;
   }
 
   /**

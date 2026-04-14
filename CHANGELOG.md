@@ -1,3 +1,10 @@
+## [1.43.2](https://github.com/adobe/helix-api-service/compare/v1.43.1...v1.43.2) (2026-04-14)
+
+
+### Bug Fixes
+
+* **svg:** check onload script handlers ([#194](https://github.com/adobe/helix-api-service/issues/194)) ([ae1e172](https://github.com/adobe/helix-api-service/commit/ae1e172fabdc52e1c0ebc28c2bb638396b761b49))
+
 ## [1.43.1](https://github.com/adobe/helix-api-service/compare/v1.43.0...v1.43.1) (2026-04-13)
 
 

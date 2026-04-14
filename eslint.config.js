@@ -20,7 +20,7 @@ export default defineConfig([
   ]),
   {
     rules: {
-      'import/no-unresolved': ['error', { ignore: ['@octokit/rest'] }],
+      'import/no-unresolved': ['error', { ignore: ['@octokit/rest', 'file-type'] }],
     },
     plugins: {
       import: recommended.plugins.import,

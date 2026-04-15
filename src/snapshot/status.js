@@ -63,7 +63,7 @@ export async function snapshotStatus(context, info) {
       locked: manifest.locked,
       fromLive: manifest.fromLive,
     },
-    links: info.getAPIUrls('status', 'preview', 'live', 'code'),
+    links: info.getAPIUrls('status', 'preview', 'live', { title: 'code', name: 'repos-code' }),
   };
   resp.links.snapshot = info.getLinkUrl(`/${info.org}/sites/${info.site}/snapshots/${snapshotId}${webPath}`);
 

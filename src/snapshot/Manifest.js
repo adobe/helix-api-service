@@ -194,7 +194,7 @@ export class Manifest {
       }
     }
     this.#exists = !!this.created;
-    if (!this.#exists && [true, 'true'].includes((context.data ?? {}).fromLive)) {
+    if (!this.#exists && [true, 'true'].includes(context.data.fromLive)) {
       this.fromLive = true;
     }
     return this;

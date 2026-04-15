@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 import assert from 'assert';
 import { getSheetData } from '../../src/contentproxy/utils.js';
-import { getSanitizedPath, isIllegalPath } from '../../src/support/utils.js';
+import { getSanitizedPath, isIllegalPath, processPrefixedPaths } from '../../src/support/utils.js';
 import { Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
@@ -47,5 +47,38 @@ describe('ContentProxy Utils Tests', () => {
     assert.strictEqual(isIllegalPath(undefined), true);
     assert.strictEqual(isIllegalPath('/*'), true);
     assert.strictEqual(isIllegalPath('/*', true), false);
+  });
+});
+
+describe('processPrefixedPaths', () => {
+  it('splits paths into prefix and path entries', () => {
+    const result = processPrefixedPaths(['/docs/*', '/blog/post']);
+    assert.deepStrictEqual(result, [
+      { prefix: '/docs/' },
+      { path: '/blog/post' },
+    ]);
+  });
+
+  it('removes specific paths covered by wildcard prefix', () => {
+    const result = processPrefixedPaths(['/docs/*', '/docs/welcome', '/docs/about']);
+    assert.deepStrictEqual(result, [{ prefix: '/docs/' }]);
+  });
+
+  it('removes narrower wildcards covered by broader ones', () => {
+    const result = processPrefixedPaths(['/docs/sub/*', '/*']);
+    assert.deepStrictEqual(result, [{ prefix: '/' }]);
+  });
+
+  it('handles empty array', () => {
+    const result = processPrefixedPaths([]);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it('handles only single paths', () => {
+    const result = processPrefixedPaths(['/foo', '/bar']);
+    assert.deepStrictEqual(result, [
+      { path: '/foo' },
+      { path: '/bar' },
+    ]);
   });
 });

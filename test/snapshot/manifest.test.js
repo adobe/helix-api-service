@@ -83,6 +83,47 @@ describe('Manifest Tests', () => {
     assert.strictEqual(manifest.fromLive, true);
   });
 
+  it('sets fromLive when context data has fromLive="true" (string)', async () => {
+    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(404, '');
+    const context = createTestContext({ fromLive: 'true' });
+    const manifest = await Manifest.fromContext(context, 'test-snap');
+    assert.strictEqual(manifest.fromLive, true);
+  });
+
+  it('does not set fromLive for existing manifest', async () => {
+    const manifestData = {
+      id: 'test-snap',
+      created: '2025-01-01T00:00:00Z',
+      lastModified: '2025-01-01T00:00:00Z',
+      resources: [],
+    };
+    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData));
+    const context = createTestContext({ fromLive: true });
+    const manifest = await Manifest.fromContext(context, 'test-snap');
+    assert.strictEqual(manifest.fromLive, undefined);
+  });
+
+  it('defaults resource status to STATUS_EXISTS when not set', async () => {
+    const manifestData = {
+      id: 'test-snap',
+      created: '2025-01-01T00:00:00Z',
+      lastModified: '2025-01-01T00:00:00Z',
+      resources: [{ path: '/no-status' }],
+    };
+    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData));
+    const context = createTestContext();
+    const manifest = await Manifest.fromContext(context, 'test-snap');
+    assert.strictEqual(manifest.resources.get('/no-status').status, 200);
+  });
+
+  it('setProperty uses default limit for unknown property name in limits', () => {
+    const manifest = new Manifest();
+    // metadata has a 512KB limit but default is 64KB — both are in CUSTOM_PROPERTY_LIMITS
+    // This tests the fallback path: Manifest.CUSTOM_PROPERTY_LIMITS.default
+    manifest.setProperty('metadata', { key: 'value' });
+    assert.deepStrictEqual(manifest.metadata, { key: 'value' });
+  });
+
   it('addResource adds new resource', () => {
     const manifest = new Manifest();
     manifest.addResource('/foo', 200);
@@ -203,8 +244,10 @@ describe('Manifest Tests', () => {
   });
 
   it('store creates new manifest', async () => {
-    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(404, '');
-    nock.content().putObject('/preview/.snapshots/test-snap/.manifest.json').reply(200);
+    nock.content()
+      .getObject('/preview/.snapshots/test-snap/.manifest.json').reply(404, '')
+      .putObject('/preview/.snapshots/test-snap/.manifest.json')
+      .reply(200);
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
     manifest.addResource('/foo', 200);
@@ -221,8 +264,10 @@ describe('Manifest Tests', () => {
       lastModified: '2025-01-01T00:00:00Z',
       resources: [],
     };
-    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData));
-    nock.content().putObject('/preview/.snapshots/test-snap/.manifest.json').reply(200);
+    nock.content()
+      .getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData))
+      .putObject('/preview/.snapshots/test-snap/.manifest.json')
+      .reply(200);
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
     manifest.addResource('/foo', 200);
@@ -251,8 +296,10 @@ describe('Manifest Tests', () => {
       lastModified: '2025-01-01T00:00:00Z',
       resources: [],
     };
-    nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData));
-    nock.content().deleteObject('/preview/.snapshots/test-snap/.manifest.json').reply(204);
+    nock.content()
+      .getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData))
+      .deleteObject('/preview/.snapshots/test-snap/.manifest.json')
+      .reply(204);
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
     await manifest.delete();

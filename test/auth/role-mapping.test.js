@@ -153,87 +153,15 @@ describe('Role Mapping Test.', () => {
     assert.deepStrictEqual(mapping.getRolesForUser('alice'), []);
   });
 
-  it.skip('loads extra config', async () => {
-    const { context } = setupTest({
-      role: {
-        publish: ['*@adobe.com', 'publishers.json'],
-      },
-    });
-    const mapping = await RoleMapping.load(context);
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/publishers.json?x-id=GetObject')
-      .reply(200, {
-        default: {
-          data: [
-            { user: 'foo@adobe-rnd.com' },
-            { User: 'bar@adobe-rnd.com' },
-            { broken: 'bar@adobe-rnd.com' },
-          ],
-        },
-      });
-
-    assert.deepStrictEqual([...mapping.users.keys()], [
-      '*@adobe.com',
-      'foo@adobe-rnd.com',
-      'bar@adobe-rnd.com',
-    ]);
-  });
-
-  it.skip('loads extra empty config', async () => {
-    const { context } = setupTest({
-      role: {
-        publish: ['*@adobe.com', 'publishers.json'],
-      },
-    });
-    const mapping = await RoleMapping.load(context);
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/publishers.json?x-id=GetObject')
-      .reply(200, {
-        notdefault: {
-          data: [
-            { user: 'foo@adobe-rnd.com' },
-          ],
-        },
-      });
-
-    assert.deepStrictEqual([...mapping.users.keys()], [
-      '*@adobe.com',
-    ]);
-  });
-
-  it.skip('ignores extra missing config', async () => {
-    const { context } = setupTest({
-      role: {
-        publish: ['*@adobe.com', 'publishers.json'],
-      },
-    });
-    const mapping = await RoleMapping.load(context);
-
-    nock('https://helix-content-bus.s3.us-east-1.amazonaws.com')
-      .get('/foo-id/preview/.helix/publishers.json?x-id=GetObject')
-      .reply(404);
-
-    assert.deepStrictEqual([...mapping.users.keys()], [
-      '*@adobe.com',
-    ]);
-  });
-
-  it.skip('ignores extra helix5 group references', async () => {
+  it('ignores empty values', async () => {
     const { context } = setupTest({
       role: {
         publish: [
-          '*@adobe.com',
-          'groups/publishers.json',
-          '/groups/publishers.json',
           null,
         ],
       },
     });
     const mapping = await RoleMapping.load(context);
-    assert.deepStrictEqual([...mapping.users.keys()], [
-      '*@adobe.com',
-    ]);
+    assert.deepStrictEqual([...mapping.users.keys()], []);
   });
 });

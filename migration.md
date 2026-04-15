@@ -53,7 +53,7 @@ These require porting entire modules or large subsystems from helix-admin.
   Supports both .aem.page and .aem.live URL formats, mobile/desktop strategies.
   helix-admin: `src/psi/handler.js`.
 
-- [ ] **Port snapshot module** — [adobe/helix-api-service#176](https://github.com/adobe/helix-api-service/issues/176)
+- [x] **Port snapshot module** — [adobe/helix-api-service#176](https://github.com/adobe/helix-api-service/issues/176)
   Content snapshot management: CRUD, bulk ops, review/publish workflow, manifests.
   helix-admin: `src/snapshot/` — 12+ files including bulk-snapshot.js, manifest.js, review.js, publish.js, etc.
 

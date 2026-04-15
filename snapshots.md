@@ -22,7 +22,7 @@ Think of it as a staging area for content changes. Authors add resources to a sn
 | **Snapshot** | A named collection of content resources stored under `preview/.snapshots/{snapshotId}/`. Identified by a user-chosen `snapshotId` string (e.g. `"default"`, `"release-v2"`) |
 | **Snapshot ID** | Unique string identifier for a snapshot. User-chosen, not auto-generated |
 | **Manifest** | A JSON metadata file (`.manifest.json`) stored alongside the snapshot resources. Tracks which resources belong to the snapshot, their status, and review/lock state |
-| **Resource** | An individual content file within a snapshot. Has a `path` (web path) and a `status` (200, 404, or 304) |
+| **Resource** | An individual content file within a snapshot. Has a `path` (web path) and a `status` (`STATUS_EXISTS` = 200, `STATUS_DELETED` = 404) |
 | **Locked** | A snapshot state that prevents further edits. Set via explicit lock or as part of review request. Stored as an ISO timestamp in the manifest |
 | **Review** | Approval workflow state: `"requested"` (locked, awaiting approval), `"rejected"` (unlocked, edits allowed), or absent (no review in progress) |
 | **fromLive** | Boolean flag set at snapshot creation. When `true`, resources are copied from the `live` partition instead of `preview` |
@@ -155,15 +155,15 @@ Only the `main` branch is supported (implicit, not in the URL).
 
 For bulk snapshot or remove operations with a `paths` array in the request body:
 
-- **≤ 200 paths, no wildcards** — executed synchronously, returns `204`
-- **> 200 paths or wildcard paths** — creates an async job (SQS), returns `202` with job status
+- **≤ 200 paths** — executed synchronously as a transient job
+- **> 200 paths** — rejected with 400 (use `forceAsync=true` to override)
+
+Paths are processed via `processPrefixedPaths`: wildcard paths (e.g. `/docs/*`) become prefix entries that list all matching resources from the source partition, while single paths are resolved individually. Paths covered by a broader wildcard are automatically deduplicated.
 
 Bulk jobs run in two phases:
 
-1. **Prepare** — resolve wildcards by listing the source partition, deduplicate paths, check modification times
-2. **Execute** — copy/delete resources in concurrent batches, update the manifest, purge the cache
-
-Path deduplication removes specific paths that are already covered by a parent wildcard, and removes narrower wildcards that are covered by a broader one.
+1. **Prepare** — resolve prefix entries by listing the source partition, check modification times for single paths
+2. **Perform** — copy/delete resources in concurrent batches of 50, update the manifest, purge the cache, send notifications
 
 ## Publishing
 
@@ -187,11 +187,11 @@ Same publish/remove logic as direct publish, but also unlocks the manifest, clea
 
 ### How publish works internally
 
-The snapshot publish delegates to the existing live publish pipeline. The live pipeline is snapshot-aware: when a `snapshotId` is present, it reads resources from `preview/.snapshots/{snapshotId}/` instead of `preview/`, and copies them to `live/`. This ensures snapshot publishes get the same side effects as normal publishes: redirect handling, index updates, sitemap updates, and cache purging.
+The snapshot publish delegates to the existing live publish pipeline. The live pipeline is snapshot-aware: when `info.snapshotId` is present (propagated via `RequestInfo.clone` which preserves router variables), it reads resources from `preview/.snapshots/{snapshotId}/` instead of `preview/`, and copies them to `live/`. This ensures snapshot publishes get the same side effects as normal publishes: redirect handling, index updates, sitemap updates, and cache purging.
 
 ```
 snapshot/publish.js
-  -> live/bulk-publish.js (with snapshotId, transient job)
+  -> live/bulk-publish.js (reads info.snapshotId, transient job)
     -> PublishJob.prepare() reads from /.snapshots/{id}/ instead of preview/
     -> liveUpdate() calls publishSnapshot() instead of contentBusCopy()
       -> S3 copy: preview/.snapshots/{id}{path} -> live{path}

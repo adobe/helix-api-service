@@ -59,7 +59,7 @@ export async function updateSnapshot(context, info) {
       || srcKey.startsWith(`${partitionRoot}/.helix/`)) {
       return new Response('', { status: 404 });
     }
-    if (manifest.locked) {
+    if (manifest.isLocked) {
       return createErrorResponse({ status: 409, log, msg: 'snapshot is locked' });
     }
 
@@ -72,10 +72,10 @@ export async function updateSnapshot(context, info) {
       // check if source resource exists, if not add as 404 to manifest
       if (await contentStorage.head(srcKey) === null) {
         // remove from destination if manifest already exists & resource also exists
-        if (manifest.exists && manifest.resources.get(webPath)?.status !== 404) {
+        if (manifest.getResourceStatus(webPath) === Manifest.STATUS_EXISTS) {
           await contentStorage.remove(dstKey);
         }
-        manifest.addResource(webPath, 404);
+        manifest.addResource(webPath, Manifest.STATUS_DELETED);
         return new Response('', { status: 204 });
       } else {
         await contentStorage.copy(srcKey, dstKey, {
@@ -86,7 +86,7 @@ export async function updateSnapshot(context, info) {
             'last-modified': `x-last-${fromLive ? 'published' : 'previewed'}`,
           },
         });
-        manifest.addResource(webPath, 200);
+        manifest.addResource(webPath, Manifest.STATUS_EXISTS);
       }
     }
 
@@ -111,14 +111,15 @@ export async function publishSnapshot(context, info) {
   try {
     const contentStorage = HelixStorage.fromContext(context).contentBus();
     const manifest = await Manifest.fromContext(context, snapshotId);
-    if (!manifest.resources.has(webPath)) {
+    const resourceStatus = manifest.getResourceStatus(webPath);
+    if (!resourceStatus) {
       return new Response('', { status: 404 });
     }
 
     // if resource is 404, remove from destination
     // otherwise copy from snapshot to destination
     const destination = `${contentBusId}/live${resourcePath}`;
-    if (manifest.resources.get(webPath).status === 404) {
+    if (resourceStatus === Manifest.STATUS_DELETED) {
       log.info(`snapshot [${snapshotId}]: removing ${destination}`);
       await contentStorage.remove(destination);
     } else {
@@ -168,24 +169,24 @@ export async function removeSnapshot(context, info) {
     if (!manifest.exists) {
       return new Response('', { status: 404 });
     }
-    if (manifest.locked) {
+    if (manifest.isLocked) {
       return createErrorResponse({ status: 409, log, msg: 'snapshot is locked' });
     }
 
     const fullPath = `${contentBusId}/preview/.snapshots/${snapshotId}${resourcePath}`;
     const webPath = toWebPath(resourcePath);
-    const existing = manifest.resources.get(webPath);
+    const existingStatus = manifest.getResourceStatus(webPath);
     manifest.removeResource(webPath);
 
-    if (existing && existing.status === 404) {
+    if (existingStatus === Manifest.STATUS_DELETED) {
       return new Response('', { status: 204 });
     }
 
     if (await contentStorage.head(fullPath) === null) {
-      log.info(`snapshot [${snapshotId}]: no such resource ${fullPath} (existed in manifest: ${!!existing})`);
+      log.info(`snapshot [${snapshotId}]: no such resource ${fullPath} (existed in manifest: ${!!existingStatus})`);
       return new Response('', { status: 404 });
     }
-    log.info(`snapshot [${snapshotId}]: deleting ${fullPath} (existed in manifest: ${!!existing})`);
+    log.info(`snapshot [${snapshotId}]: deleting ${fullPath} (existed in manifest: ${!!existingStatus})`);
     await contentStorage.remove(fullPath);
 
     manifest.markResourceUpdated();

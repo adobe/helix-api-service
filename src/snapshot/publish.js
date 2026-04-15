@@ -15,6 +15,7 @@ import bulkPublish from '../live/bulk-publish.js';
 import bulkUnpublish from '../live/bulk-unpublish.js';
 import { liveUpdate } from '../live/publish.js';
 import unpublish from '../live/unpublish.js';
+import { Manifest } from './Manifest.js';
 import purge, { PURGE_LIVE } from '../cache/purge.js';
 
 /**
@@ -47,26 +48,30 @@ export async function snapshotPublish(context, info, manifest) {
     }
 
     // pick the 200s and publish
-    const publishPaths = resources.map((r) => r.status !== 404 && r.path).filter(Boolean);
+    const publishPaths = resources
+      .filter((r) => r.status !== Manifest.STATUS_DELETED)
+      .map((r) => r.path);
     if (publishPaths.length) {
       context.data.paths = publishPaths;
       res = await bulkPublish(context, info);
     }
 
     // then remove all 404s
-    const removePaths = resources.map((r) => r.status === 404 && r.path).filter(Boolean);
+    const removePaths = resources
+      .filter((r) => r.status === Manifest.STATUS_DELETED)
+      .map((r) => r.path);
     if (removePaths.length) {
       context.data.paths = removePaths;
       res = await bulkUnpublish(context, info);
     }
   } else {
     // publish or remove resource by path
-    if (!manifest.resources.has(webPath)) {
+    const resourceStatus = manifest.getResourceStatus(webPath);
+    if (!resourceStatus) {
       return new Response('', { status: 404 });
     }
 
-    const resource = manifest.resources.get(webPath);
-    if (resource.status === 404) {
+    if (resourceStatus === Manifest.STATUS_DELETED) {
       // remove
       context.data.paths = [webPath];
       res = await unpublish(context, info);

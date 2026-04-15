@@ -24,6 +24,12 @@ const SERIALIZED_FIELDS = ['id', 'created', 'lastModified', 'lastUpdated', 'lock
  */
 
 export class Manifest {
+  /** Resource exists in the snapshot and will be copied to live on publish. */
+  static STATUS_EXISTS = 200;
+
+  /** Resource is marked for deletion and will be removed from live on publish. */
+  static STATUS_DELETED = 404;
+
   /**
    * property names that can be updated on the manifest
    * @type {string[]}
@@ -180,7 +186,9 @@ export class Manifest {
       if (json.resources) {
         this.resources = new Map(
           json.resources.map(
-            (resource) => [resource.path, { ...resource, status: resource.status ?? 200 }],
+            (resource) => [resource.path, {
+              ...resource, status: resource.status ?? Manifest.STATUS_EXISTS,
+            }],
           ),
         );
       }
@@ -198,6 +206,14 @@ export class Manifest {
    */
   get exists() {
     return this.#exists;
+  }
+
+  /**
+   * Whether the snapshot is currently locked.
+   * @type {boolean}
+   */
+  get isLocked() {
+    return !!this.locked;
   }
 
   /**
@@ -341,12 +357,21 @@ export class Manifest {
   }
 
   /**
+   * Returns the status of a resource in the manifest, or 0 if not present.
+   * @param {string} path web path of the resource
+   * @returns {number} STATUS_EXISTS, STATUS_DELETED, or 0 if not in the manifest
+   */
+  getResourceStatus(path) {
+    return this.resources.get(path)?.status ?? 0;
+  }
+
+  /**
    * Adds or updates a resource in the manifest. If the resource already exists with a
    * different status, the status is updated and the resource is marked for cache purging.
    * @param {string} path web path of the resource
-   * @param {number} [status=200] resource status (200 = exists, 404 = marked for deletion)
+   * @param {number} [status] resource status (STATUS_EXISTS or STATUS_DELETED)
    */
-  addResource(path, status = 200) {
+  addResource(path, status = Manifest.STATUS_EXISTS) {
     if (!this.resources.has(path)) {
       this.resources.set(path, { path, status });
       this.#markModified();

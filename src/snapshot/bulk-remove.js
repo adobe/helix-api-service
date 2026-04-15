@@ -12,11 +12,12 @@
 
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { error } from '../contentproxy/errors.js';
 import { Job } from '../job/Job.js';
 import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { SnapshotRemoveJob } from './SnapshotRemoveJob.js';
 
-const SYNCHRONOUS_LIMIT = 200;
+const MAX_SYNC_PATHS = 200;
 
 /**
  * Handles bulk snapshot remove.
@@ -45,13 +46,19 @@ export async function bulkRemove(context, info) {
     }
 
     const processedPaths = processPrefixedPaths(paths);
-    const transient = processedPaths.length <= SYNCHRONOUS_LIMIT
-      && !processedPaths.some((p) => p.prefix);
 
-    // create new delete job
+    if (processedPaths.length > MAX_SYNC_PATHS && String(context.data.forceAsync) !== 'true') {
+      return errorResponse(log, 400, error(
+        'Bulk path limit exceeded for $1 content source ($2 > $3). Use forceAsync=true',
+        'this',
+        processedPaths.length,
+        MAX_SYNC_PATHS,
+      ));
+    }
+
     return await Job.create(context, info, SnapshotRemoveJob.TOPIC, {
       jobClass: SnapshotRemoveJob,
-      transient,
+      transient: true,
       data: {
         snapshotId: info.snapshotId,
         paths: processedPaths,

@@ -19,61 +19,64 @@ import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { getNotifier } from '../support/notifications.js';
 
 /**
- * Updates a snapshot by copying content from preview (or live) to the snapshot location,
- * or by updating manifest properties.
+ * Updates manifest properties: lock state, title, description, metadata.
  *
  * @param {import('../support/AdminContext').AdminContext} context context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  * @returns {Promise<Response>} response
  */
-export async function snapshotUpdate(context, info) {
-  const { log } = context;
-  const { snapshotId, webPath } = info;
+async function updateManifestProperties(context, info) {
+  const { snapshotId } = info;
+  const manifest = await Manifest.fromContext(context, snapshotId);
 
-  if (!webPath) {
-    const manifest = await Manifest.fromContext(context, snapshotId);
-    if ('locked' in context.data) {
-      // boolean from JSON body, string from query params
-      if (![true, false, 'true', 'false'].includes(context.data.locked)) {
+  if ('locked' in context.data) {
+    if (![true, false, 'true', 'false'].includes(context.data.locked)) {
+      return new Response('', {
+        status: 400,
+        headers: { 'x-error': 'invalid locked value' },
+      });
+    }
+
+    const lock = String(context.data.locked) === 'true';
+    if (lock) {
+      context.attributes.authInfo.assertPermissions('preview:write');
+    } else {
+      context.attributes.authInfo.assertPermissions('live:write');
+    }
+    const changed = manifest.lock(lock);
+    if (changed && !context.data?.disableNotifications) {
+      await getNotifier(context).publish(`snapshot-${lock ? '' : 'un'}locked`, info, {
+        snapshotId,
+      });
+    }
+  }
+
+  for (const prop of Manifest.CUSTOM_PROPERTIES) {
+    if (prop in context.data) {
+      try {
+        manifest.setProperty(prop, context.data[prop]);
+      } catch (e) {
         return new Response('', {
           status: 400,
-          headers: {
-            'x-error': 'invalid locked value',
-          },
-        });
-      }
-
-      const lock = String(context.data.locked) === 'true';
-      if (lock) {
-        // only allow to lock if the user has preview permission
-        context.attributes.authInfo.assertPermissions('preview:write');
-      } else {
-        // only allow to unlock if the user has publish permission
-        context.attributes.authInfo.assertPermissions('live:write');
-      }
-      const changed = manifest.lock(lock);
-      if (changed && !context.data?.disableNotifications) {
-        await getNotifier(context).publish(`snapshot-${!lock ? 'un' : ''}locked`, info, {
-          snapshotId,
+          headers: { 'x-error': e.message },
         });
       }
     }
-    for (const prop of Manifest.CUSTOM_PROPERTIES) {
-      if (prop in context.data) {
-        try {
-          manifest.setProperty(prop, context.data[prop]);
-        } catch (e) {
-          return new Response('', {
-            status: 400,
-            headers: {
-              'x-error': e.message,
-            },
-          });
-        }
-      }
-    }
-    return manifest.toResponse(info);
   }
+
+  return manifest.toResponse(info);
+}
+
+/**
+ * Adds a single resource to the snapshot by copying it from the source partition.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} response
+ */
+async function addResource(context, info) {
+  const { log } = context;
+  const { snapshotId } = info;
 
   log.info('updating snapshot in content-bus.');
   const response = await updateSnapshot(context, info);
@@ -85,15 +88,12 @@ export async function snapshotUpdate(context, info) {
 
     status = propagateStatusCode(status);
     const level = logLevelForStatusCode(status);
-
     const err = response.headers.get('x-error');
     log[level](`error from content bus: ${response.status} ${err}`);
 
     return new Response('error from content-bus', {
       status,
-      headers: {
-        'x-error': err,
-      },
+      headers: { 'x-error': err },
     });
   }
 
@@ -103,10 +103,24 @@ export async function snapshotUpdate(context, info) {
     manifest.markResourcesPurged();
   }
 
-  // bulk resources added
+  // bulk resources added (204) — nothing more to return
   if (status === 204) {
     return response;
   }
-  // single resource changed, respond with its status
+  // single resource changed — respond with its status
   return snapshotStatus(context, info);
+}
+
+/**
+ * Updates a snapshot: either manifest properties (no path) or adds a resource (with path).
+ *
+ * @param {import('../support/AdminContext').AdminContext} context context
+ * @param {import('../support/RequestInfo').RequestInfo} info request info
+ * @returns {Promise<Response>} response
+ */
+export async function snapshotUpdate(context, info) {
+  if (!info.webPath) {
+    return updateManifestProperties(context, info);
+  }
+  return addResource(context, info);
 }

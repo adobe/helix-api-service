@@ -16,12 +16,70 @@ import bulkPublish from '../live/bulk-publish.js';
 import bulkUnpublish from '../live/bulk-unpublish.js';
 import { getNotifier } from '../support/notifications.js';
 import { toResourcePath } from '../support/RequestInfo.js';
+import { Manifest } from './Manifest.js';
 
-const REVIEW_TENSES = {
-  request: 'requested',
-  reject: 'rejected',
-  approve: 'approved',
-};
+function lockStatusError(locking) {
+  const msg = locking ? 'snapshot already locked' : 'snapshot is not locked';
+  return new Response('', { status: 409, headers: { 'x-error': msg } });
+}
+
+/**
+ * Publish all snapshot resources to live, then optionally clear them.
+ *
+ * @param {import('../support/AdminContext').AdminContext} context
+ * @param {import('../support/RequestInfo').RequestInfo} info
+ * @param {Manifest} manifest
+ * @returns {Promise<Response>}
+ */
+async function publishAndClear(context, info, manifest) {
+  const resources = [...manifest.resources.values()];
+
+  // publish existing resources
+  const publishPaths = resources
+    .filter((r) => r.status !== Manifest.STATUS_DELETED)
+    .map((r) => r.path);
+  if (publishPaths.length) {
+    context.data.paths = publishPaths;
+    const res = await bulkPublish(context, info);
+    if (!res.ok) {
+      return new Response('', {
+        status: res.status,
+        headers: { 'x-error': 'failed to publish snapshot' },
+      });
+    }
+  }
+
+  // remove deleted resources from live
+  const removePaths = resources
+    .filter((r) => r.status === Manifest.STATUS_DELETED)
+    .map((r) => r.path);
+  if (removePaths.length) {
+    context.data.paths = removePaths;
+    const res = await bulkUnpublish(context, info);
+    if (!res.ok) {
+      return new Response('', {
+        status: res.status,
+        headers: { 'x-error': 'failed to remove deleted resources from live' },
+      });
+    }
+  }
+
+  // optionally clear snapshot resources
+  if (!['true', true].includes(context.data.keepResources)) {
+    const { contentBusId } = context;
+    const storage = HelixStorage.fromContext(context).contentBus();
+    const prefix = `${contentBusId}/preview/.snapshots/${info.snapshotId}`;
+    const keys = publishPaths.map((p) => `${prefix}${toResourcePath(p)}`);
+    if (keys.length) {
+      await storage.remove(keys);
+    }
+    for (const r of manifest.resources.keys()) {
+      manifest.removeResource(r);
+    }
+  }
+
+  return new Response('', { status: 204 });
+}
 
 /**
  * Handles review workflow for a snapshot: request, approve, reject.
@@ -39,12 +97,10 @@ export async function snapshotReview(context, info, manifest) {
   } = context;
   authInfo.assertPermissions('snapshot:write');
 
-  if (!(review in REVIEW_TENSES)) {
+  if (!['request', 'reject', 'approve'].includes(review)) {
     return new Response('', {
       status: 400,
-      headers: {
-        'x-error': 'invalid review value',
-      },
+      headers: { 'x-error': 'invalid review value' },
     });
   }
 
@@ -52,116 +108,45 @@ export async function snapshotReview(context, info, manifest) {
     return new Response('', { status: 404 });
   }
 
-  /** @type {Response} */
-  let res = new Response('', { status: 204 });
+  let res;
 
-  switch (review) {
-    case 'request':
-      if (manifest.locked) {
-        res = new Response('', {
-          status: 409,
-          headers: {
-            'x-error': 'snapshot already locked',
-          },
-        });
-        break;
-      }
-      // lock snapshot
-      manifest.setReviewState('requested');
-      manifest.lock(true);
-      break;
-    case 'reject':
-      if (!manifest.locked) {
-        res = new Response('', {
-          status: 409,
-          headers: {
-            'x-error': 'snapshot not locked',
-          },
-        });
-        break;
-      }
-      // unlock snapshot
-      manifest.setReviewState('rejected');
-      manifest.lock(false);
-      break;
-    case 'approve': {
-      authInfo.assertPermissions('snapshot:delete', 'live:write');
-      if (!manifest.locked) {
-        res = new Response('', {
-          status: 409,
-          headers: {
-            'x-error': 'snapshot not locked',
-          },
-        });
-        break;
-      } else if (manifest.resources.size === 0) {
-        manifest.lock(false);
-        manifest.setReviewState(undefined);
-        break;
-      }
-
-      // publish snapshot resources
-      context.data.paths = [...manifest.resources.values()]
-        .map((r) => r.status !== 404 && r.path)
-        .filter(Boolean);
-
-      res = await bulkPublish(context, info);
-      if (!res.ok) {
-        res = new Response('', {
-          status: res.status,
-          headers: {
-            'x-error': 'failed to publish snapshot',
-          },
-        });
-        break;
-      }
-
-      // remove 404s
-      context.data.paths = [...manifest.resources.values()]
-        .map((r) => r.status === 404 && r.path)
-        .filter(Boolean);
-      if (context.data.paths.length) {
-        res = await bulkUnpublish(context, info);
-        if (!res.ok) {
-          res = new Response('', {
-            status: res.status,
-            headers: {
-              'x-error': 'failed to remove snapshot 404s from live',
-            },
-          });
-          break;
-        }
-      }
-
-      // unlock, optionally clear all resources
-      manifest.setReviewState(undefined);
-      manifest.lock(false);
-      if (!['true', true].includes(keepResources)) {
-        const { contentBusId } = context;
-        const storage = HelixStorage.fromContext(context).contentBus();
-        const prefix = `${contentBusId}/preview/.snapshots/${snapshotId}`;
-        const keys = [...manifest.resources.values()]
-          .filter((r) => r.status !== 404)
-          .map((r) => `${prefix}${toResourcePath(r.path)}`);
-        if (keys.length) {
-          await storage.remove(keys);
-        }
-        for (const r of manifest.resources.keys()) {
-          manifest.removeResource(r);
-        }
-      }
-      break;
+  if (review === 'request') {
+    if (!manifest.lock(true)) {
+      return lockStatusError(true);
     }
-    /* c8 ignore next 2 */
-    default:
-      break;
+    manifest.setReviewState('requested');
+    res = new Response('', { status: 204 });
+  } else if (review === 'reject') {
+    if (!manifest.lock(false)) {
+      return lockStatusError(false);
+    }
+    manifest.setReviewState('rejected');
+    res = new Response('', { status: 204 });
+  } else {
+    // approve
+    authInfo.assertPermissions('snapshot:delete', 'live:write');
+    if (!manifest.isLocked) {
+      return lockStatusError(false);
+    }
+    if (manifest.resources.size === 0) {
+      manifest.lock(false);
+      manifest.setReviewState(undefined);
+      res = new Response('', { status: 204 });
+    } else {
+      res = await publishAndClear(context, info, manifest);
+      if (res.ok) {
+        manifest.setReviewState(undefined);
+        manifest.lock(false);
+      }
+    }
   }
 
   if (res.ok) {
-    const op = `review-${REVIEW_TENSES[review]}`;
-    await getNotifier(context).publish(op, info, {
+    await getNotifier(context).publish(`review-${review}d`, info, {
       ...(message ? { message } : {}),
-      ...(typeof keepResources !== 'undefined' ? { keepResources: ['true', true].includes(keepResources) } : {}),
+      ...(typeof keepResources !== 'undefined'
+        ? { keepResources: ['true', true].includes(keepResources) }
+        : {}),
       snapshotId,
     });
   }

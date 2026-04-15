@@ -13,7 +13,7 @@
 import { Response } from '@adobe/fetch';
 import { getContentBusInfo } from '../contentbus/contentbus.js';
 import { Manifest } from './Manifest.js';
-import { RequestInfo, toResourcePath } from '../support/RequestInfo.js';
+import { RequestInfo } from '../support/RequestInfo.js';
 
 /**
  * Retrieves the snapshot status or resource status within a snapshot.
@@ -39,7 +39,7 @@ export async function snapshotStatus(context, info) {
   }
 
   // get resource status within snapshot
-  const snapshotResourcePath = `/.snapshots/${snapshotId}${toResourcePath(webPath)}`;
+  const snapshotResourcePath = `/.snapshots/${snapshotId}${info.resourcePath}`;
   const snapshotInfo = RequestInfo.clone(info, { path: snapshotResourcePath });
 
   const preview = await getContentBusInfo(context, snapshotInfo, 'preview');

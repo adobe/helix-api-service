@@ -12,11 +12,12 @@
 
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import { createErrorResponse } from '../contentbus/utils.js';
+import { error } from '../contentproxy/errors.js';
 import { Job } from '../job/Job.js';
 import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { SnapshotJob } from './SnapshotJob.js';
 
-const SYNCHRONOUS_LIMIT = 200;
+const MAX_SYNC_PATHS = 200;
 
 /**
  * Handles bulk snapshot.
@@ -45,17 +46,23 @@ export async function bulkSnapshot(context, info) {
     }
 
     const processedPaths = processPrefixedPaths(paths);
-    const hasWildcard = processedPaths.some((p) => p.prefix);
-    const transient = processedPaths.length <= SYNCHRONOUS_LIMIT && !hasWildcard;
 
-    if (hasWildcard) {
+    if (processedPaths.some((p) => p.prefix)) {
       authInfo.assertPermissions('preview:list');
     }
 
-    // create new snapshot job
+    if (processedPaths.length > MAX_SYNC_PATHS && String(context.data.forceAsync) !== 'true') {
+      return errorResponse(log, 400, error(
+        'Bulk path limit exceeded for $1 content source ($2 > $3). Use forceAsync=true',
+        'this',
+        processedPaths.length,
+        MAX_SYNC_PATHS,
+      ));
+    }
+
     return await Job.create(context, info, 'snapshot', {
       jobClass: SnapshotJob,
-      transient,
+      transient: true,
       data: {
         paths: processedPaths,
         snapshotId: info.snapshotId,

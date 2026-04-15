@@ -90,6 +90,23 @@ describe('Index Tests', () => {
     assert.strictEqual(await result.text(), '');
   });
 
+  it('returns 405 for routes that are not implemented yet', async () => {
+    nock.siteConfig(SITE_CONFIG);
+
+    const { request, context } = setupTest('/org/sites/site/snapshots/', {
+      attributes: {
+        authInfo: AuthInfo.Default().withAuthenticated(true),
+      },
+    });
+    const result = await main(request, context);
+
+    assert.strictEqual(result.status, 405);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+    });
+  });
+
   it('fails calling status handler without trailing path', async () => {
     const { request, context } = setupTest('/org/sites/site/status', {
       attributes: {

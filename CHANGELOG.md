@@ -1,3 +1,10 @@
+## [1.43.5](https://github.com/adobe/helix-api-service/compare/v1.43.4...v1.43.5) (2026-04-15)
+
+
+### Bug Fixes
+
+* **login:** increase coverage, simplify test descriptions ([f86b7c3](https://github.com/adobe/helix-api-service/commit/f86b7c31a3fd41048122772586bee285f17834c4))
+
 ## [1.43.4](https://github.com/adobe/helix-api-service/compare/v1.43.3...v1.43.4) (2026-04-14)
 
 

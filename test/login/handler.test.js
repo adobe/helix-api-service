@@ -117,8 +117,8 @@ describe('Login Handler Tests', () => {
     return { request, context };
   }
 
-  describe('login and logout', () => {
-    it('/login: renders default login links', async () => {
+  describe('login', () => {
+    it('renders default login links', async () => {
       const { request, context } = setupTest('/login');
       const result = await main(request, context);
 
@@ -144,7 +144,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: renders logout link for profile', async () => {
+    it('renders logout link for profile', async () => {
       const { request, context } = setupTest('/login', {
         authInfo: {
           profile: {
@@ -167,7 +167,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to login link with expired auth info', async () => {
+    it('redirects to login link with expired auth info', async () => {
       const { request, context } = setupTest('/login', {
         authInfo: {
           expired: true,
@@ -208,7 +208,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: sends 404 for missing config', async () => {
+    it('sends 404 for missing config', async () => {
       nock.siteConfig().reply(404);
 
       const { request, context } = setupTest('/login', {
@@ -228,7 +228,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to google login for google project', async () => {
+    it('redirects to google login for google project', async () => {
       nock.siteConfig(SITE_CONFIG);
 
       const { request, context } = setupTest('/login', {
@@ -272,7 +272,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to microsoft login for sharepoint project', async () => {
+    it('redirects to microsoft login for sharepoint project', async () => {
       nock.siteConfig(SITE_1D_CONFIG);
       nock.onedrive(SITE_1D_CONFIG.content).resolveTenant();
 
@@ -317,7 +317,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to microsoft login for sharepoint project (provided tenant id)', async () => {
+    it('redirects to microsoft login for sharepoint project (provided tenant id)', async () => {
       nock.siteConfig(SITE_1D_CONFIG);
 
       const { request, context } = setupTest('/login', {
@@ -362,7 +362,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to microsoft login for sharepoint project (custom tenant id)', async () => {
+    it('redirects to microsoft login for sharepoint project (custom tenant id)', async () => {
       nock.siteConfig(SITE_1D_TENANT_CONFIG);
 
       const { request, context } = setupTest('/login', {
@@ -406,7 +406,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to adobe login for markup project', async () => {
+    it('redirects to adobe login for markup project', async () => {
       nock.siteConfig(SITE_MUP_CONFIG);
 
       const { request, context } = setupTest('/login', {
@@ -449,7 +449,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: redirects to adobe login for DA overlay', async () => {
+    it('redirects to adobe login for DA overlay', async () => {
       nock.siteConfig(SITE_DA_CONFIG);
 
       const { request, context } = setupTest('/login', {
@@ -492,7 +492,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: idp parameter overrides project default', async () => {
+    it('idp parameter overrides project default', async () => {
       nock.siteConfig(SITE_CONFIG);
 
       const { request, context } = setupTest('/login', {
@@ -535,7 +535,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: aem-cli redirects with downstream client info in state', async () => {
+    it('aem-cli redirects with downstream client info in state', async () => {
       nock.siteConfig(SITE_1D_CONFIG);
       nock.onedrive(SITE_1D_CONFIG.content).resolveTenant();
 
@@ -571,7 +571,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/login: aem-cli fails with invalid redirect uri', async () => {
+    it('aem-cli fails with invalid redirect uri', async () => {
       nock.siteConfig(SITE_1D_CONFIG);
       nock.onedrive(SITE_1D_CONFIG.content).resolveTenant();
 
@@ -588,7 +588,7 @@ describe('Login Handler Tests', () => {
       assert.strictEqual(result.status, 401);
     });
 
-    it('/login: fails with invalid client id', async () => {
+    it('fails with invalid client id', async () => {
       nock.siteConfig(SITE_1D_CONFIG);
       nock.onedrive(SITE_1D_CONFIG.content).resolveTenant();
 
@@ -606,13 +606,43 @@ describe('Login Handler Tests', () => {
       assert.strictEqual(result.status, 401);
     });
 
+    it('fails with unknown source type', async () => {
+      nock.siteConfig({
+        ...SITE_CONFIG,
+        content: {
+          ...SITE_CONFIG.content,
+          source: {
+            ...SITE_CONFIG.content.source,
+            type: 'unknown',
+          },
+        },
+      });
+
+      const { request, context } = setupTest('/login', {
+        query: {
+          org: 'org',
+          site: 'site',
+        },
+      });
+      const result = await main(request, context);
+
+      assert.strictEqual(result.status, 401);
+      assert.deepStrictEqual(result.headers.plain(), {
+        'cache-control': 'no-store, private, must-revalidate',
+        'content-type': 'text/plain; charset=utf-8',
+        'x-error': 'no IDP claims mountpoint.',
+      });
+    });
+
     it('microsoft idp has custom issuer validator', async () => {
       const idp = IDPS.find((i) => i.name === 'microsoft');
       assert.strictEqual(idp.validateIssuer('https://login.microsoftonline.com/common'), true);
       assert.strictEqual(idp.validateIssuer('https://www.example/com/common'), false);
     });
+  });
 
-    it('/logout: redirects to login', async () => {
+  describe('logout', () => {
+    it('redirects to login', async () => {
       const { request, context } = setupTest('/logout');
       const result = await main(request, context);
 
@@ -626,7 +656,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/logout: with extension sends message to sidekick', async () => {
+    it('with extension sends message to sidekick', async () => {
       const { request, context } = setupTest('/logout', {
         query: {
           extensionId: '1234',
@@ -644,7 +674,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/logout: with cookie extension sends message to sidekick', async () => {
+    it('with cookie extension sends message to sidekick', async () => {
       const { request, context } = setupTest('/logout', {
         query: {
           extensionId: 'cookie',
@@ -661,7 +691,7 @@ describe('Login Handler Tests', () => {
       });
     });
 
-    it('/logout/owner/repo: redirects to default profile', async () => {
+    it('/owner/repo: redirects to default profile', async () => {
       const { request, context } = setupTest('/logout', {
         query: {
           org: 'org',

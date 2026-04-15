@@ -25,7 +25,7 @@ export async function listSnapshots(context, info) {
   const dir = `${contentBusId}/preview/.snapshots/`;
   const bucket = HelixStorage.fromContext(context).contentBus();
   const paths = await bucket.listFolders(dir);
-  const snapshots = paths.map((p) => p.replace(dir, '').replace(/\/$/, ''));
+  const snapshots = paths.map((p) => p.slice(dir.length, -1));
 
   const body = {
     snapshots,

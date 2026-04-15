@@ -13,9 +13,8 @@
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { Job } from '../job/Job.js';
-import { errorResponse, isIllegalPath } from '../support/utils.js';
+import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { SnapshotJob } from './SnapshotJob.js';
-import { resolveUniquePaths } from './util.js';
 
 const SYNCHRONOUS_LIMIT = 200;
 
@@ -32,7 +31,7 @@ export async function bulkSnapshot(context, info) {
   try {
     authInfo.assertPermissions('snapshot:write');
 
-    let paths = context.data.paths ?? [];
+    const paths = context.data.paths ?? [];
     if (paths.length === 0) {
       return errorResponse(log, 400, 'bulk-snapshot payload is missing \'paths\'.');
     }
@@ -45,9 +44,9 @@ export async function bulkSnapshot(context, info) {
       }
     }
 
-    paths = resolveUniquePaths(paths);
-    const hasWildcard = paths.some((p) => p.endsWith('/*'));
-    const transient = paths.length <= SYNCHRONOUS_LIMIT && !hasWildcard;
+    const processedPaths = processPrefixedPaths(paths);
+    const hasWildcard = processedPaths.some((p) => p.prefix);
+    const transient = processedPaths.length <= SYNCHRONOUS_LIMIT && !hasWildcard;
 
     if (hasWildcard) {
       authInfo.assertPermissions('preview:list');
@@ -58,9 +57,9 @@ export async function bulkSnapshot(context, info) {
       jobClass: SnapshotJob,
       transient,
       data: {
-        paths,
+        paths: processedPaths,
         snapshotId: info.snapshotId,
-        forceUpdate: String(context.data.forceUpdate) === 'true', // ensure boolean
+        forceUpdate: String(context.data.forceUpdate) === 'true',
       },
       roles: ['author'],
     });

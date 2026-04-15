@@ -40,48 +40,45 @@ export class SnapshotRemoveJob extends Job {
   /**
    * Prepare the bulk operation by gathering all paths in the snapshot partition.
    *
-   * @param {string[]} paths paths to remove
+   * @param {Array<{prefix?: string, path?: string}>} paths processed paths
    * @param {string} contentBusId content bus ID
    * @param {import('@adobe/helix-shared-storage').Bucket} bucket bucket
    * @returns {Promise<Resource[]>} resources to remove
    */
   async prepare(paths, contentBusId, bucket) {
     const { ctx, state: { data: { snapshotId } } } = this;
+    const snapshotRoot = `${contentBusId}/preview/.snapshots/${snapshotId}`;
 
     /** @type {Resource[]} */
     const resources = [];
 
     const excluded = (path) => path.startsWith('/.helix/')
       || path.startsWith('/.snapshots/');
-    await processQueue([...paths], async (webPath) => {
-      if (excluded(webPath)) {
-        return;
-      }
 
-      const resourcePath = toResourcePath(webPath);
-      const key = `${contentBusId}/preview/.snapshots/${snapshotId}${resourcePath}`;
-      const resource = {
-        resourcePath,
-        webPath,
-      };
-
-      if (key.endsWith('/*')) {
-        const keyPrefix = key.slice(0, -1);
-        const items = await bucket.list(keyPrefix);
-        items.forEach((item) => {
-          if (item.key.endsWith('/')) {
-            return;
-          }
-
-          const itemResourcePath = `${resourcePath.slice(0, -1)}${item.key.substring(keyPrefix.length)}`;
-          resources.push({
-            resourcePath: itemResourcePath,
-            webPath: toWebPath(itemResourcePath),
-            lastModified: item.lastModified,
+    for (const { prefix, path: webPath } of paths) {
+      if (prefix) {
+        // wildcard: list all resources under the prefix in the snapshot
+        // eslint-disable-next-line no-await-in-loop
+        const items = await bucket.list(`${snapshotRoot}${prefix}`);
+        items
+          .filter((item) => !item.key.endsWith('/'))
+          .forEach((item) => {
+            const itemPath = item.key.substring(snapshotRoot.length);
+            if (!excluded(itemPath)) {
+              resources.push({
+                resourcePath: itemPath,
+                webPath: toWebPath(itemPath),
+                lastModified: item.lastModified,
+              });
+            }
           });
-        });
-      } else {
+      } else if (!excluded(webPath)) {
+        const resourcePath = toResourcePath(webPath);
+        const key = `${snapshotRoot}${resourcePath}`;
+        const resource = { resourcePath, webPath };
+
         try {
+          // eslint-disable-next-line no-await-in-loop
           const { LastModified: lastModified } = await bucket.head(key) ?? {};
           if (lastModified) {
             resource.lastModified = lastModified;
@@ -92,10 +89,9 @@ export class SnapshotRemoveJob extends Job {
         } catch (e) {
           ctx.log.warn(`unable to get lastModified for ${resourcePath}: ${e.message}`);
         }
-
         resources.push(resource);
       }
-    }, JOB_CONCURRENCY);
+    }
 
     return resources;
   }
@@ -173,6 +169,51 @@ export class SnapshotRemoveJob extends Job {
   }
 
   /**
+   * Delete all resources: process in batches, purge cache, and send notifications.
+   *
+   * @param {Manifest} manifest snapshot manifest
+   * @param {import('@adobe/helix-shared-storage').Bucket} bucket content bus bucket
+   * @param {string} contentBusId content bus id
+   */
+  async delete(manifest, bucket, contentBusId) {
+    const { ctx, info } = this;
+
+    const toProcess = Array.from(this.state.data.resources);
+    while (toProcess.length) {
+      if (await this.checkStopped()) {
+        break;
+      }
+      const processed = [];
+      await processQueue(toProcess.splice(0, JOB_CONCURRENCY), async (resource) => {
+        await this.processResource(resource, manifest, bucket, contentBusId);
+        await this.writeStateLazy();
+        processed.push(resource);
+      }, JOB_CONCURRENCY);
+
+      // purge batch
+      if (manifest.resourcesNeedPurge) {
+        await purge.content(ctx, info, manifest.resourcesToPurge, PURGE_PREVIEW);
+        manifest.markResourcesPurged();
+      }
+
+      // send notification
+      const successfulPaths = [];
+      processed.forEach((resource) => {
+        if (resource.status < 300) {
+          successfulPaths.push(resource.resourcePath);
+        }
+      });
+      await publishBulkResourceNotification(
+        ctx,
+        'resources-snapshot-removed',
+        info,
+        successfulPaths,
+        [...processed],
+      );
+    }
+  }
+
+  /**
    * Runs the snapshot remove job.
    *
    * @return {Promise<void>}
@@ -196,46 +237,13 @@ export class SnapshotRemoveJob extends Job {
 
     if (this.state.data.phase === 'remove') {
       try {
-        const toProcess = Array.from(this.state.data.resources);
-        while (toProcess.length) {
-          if (await this.checkStopped()) {
-            break;
-          }
-          const processed = [];
-          await processQueue(toProcess.splice(0, JOB_CONCURRENCY), async (resource) => {
-            await this.processResource(resource, manifest, bucket, contentBusId);
-            await this.writeStateLazy();
-            processed.push(resource);
-          }, JOB_CONCURRENCY);
-
-          // purge batch
-          if (manifest.resourcesNeedPurge) {
-            await purge.content(ctx, info, manifest.resourcesToPurge, PURGE_PREVIEW);
-            manifest.markResourcesPurged();
-          }
-
-          // send notification
-          const successfulPaths = [];
-          processed.forEach((resource) => {
-            if (resource.status < 300) {
-              successfulPaths.push(resource.resourcePath);
-            }
-          });
-          await publishBulkResourceNotification(
-            ctx,
-            'resources-snapshot-removed',
-            info,
-            successfulPaths,
-            [...processed],
-          );
-        }
+        await this.delete(manifest, bucket, contentBusId);
       } finally {
         if (!this.transient) {
           await manifest.store();
           await purge.content(ctx, info, [`/.snapshots/${manifest.id}/.manifest.json`], PURGE_PREVIEW);
         }
       }
-
       await this.setPhase('completed');
     }
   }

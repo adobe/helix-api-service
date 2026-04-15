@@ -38,7 +38,7 @@ export class SnapshotJob extends Job {
   /**
    * Prepare the bulk operation by gathering all paths in the relevant partition.
    *
-   * @param {string[]} paths paths to snapshot
+   * @param {Array<{prefix?: string, path?: string}>} paths processed paths
    * @param {string} contentBusId content bus ID
    * @param {import('@adobe/helix-shared-storage').Bucket} bucket bucket
    * @returns {Promise<Resource[]>} resources to snapshot
@@ -48,41 +48,38 @@ export class SnapshotJob extends Job {
     const { snapshotId } = this.state.data;
     const manifest = await Manifest.fromContext(ctx, snapshotId);
     const { fromLive } = manifest;
+    const partition = `${contentBusId}/${fromLive ? 'live' : 'preview'}`;
 
     /** @type {Resource[]} */
     const resources = [];
 
     const excluded = (path) => path.startsWith('/.helix/')
       || path.startsWith('/.snapshots/');
-    await processQueue([...paths], async (webPath) => {
-      if (excluded(webPath)) {
-        return;
-      }
 
-      const resourcePath = toResourcePath(webPath);
-      const key = `${contentBusId}/${fromLive ? 'live' : 'preview'}${resourcePath}`;
-      const resource = {
-        resourcePath,
-        webPath,
-      };
-
-      if (key.endsWith('/*')) {
-        const keyPrefix = key.slice(0, -1);
-        const items = await bucket.list(keyPrefix);
-        items.forEach((item) => {
-          if (item.key.endsWith('/')) {
-            return;
-          }
-
-          const itemResourcePath = `${resourcePath.slice(0, -1)}${item.key.substring(keyPrefix.length)}`;
-          resources.push({
-            resourcePath: itemResourcePath,
-            webPath: toWebPath(itemResourcePath),
-            lastModified: item.lastModified,
+    for (const { prefix, path: webPath } of paths) {
+      if (prefix) {
+        // wildcard: list all resources under the prefix
+        // eslint-disable-next-line no-await-in-loop
+        const items = await bucket.list(`${partition}${prefix}`);
+        items
+          .filter((item) => !item.key.endsWith('/'))
+          .forEach((item) => {
+            const itemPath = item.key.substring(partition.length);
+            if (!excluded(itemPath)) {
+              resources.push({
+                resourcePath: itemPath,
+                webPath: toWebPath(itemPath),
+                lastModified: item.lastModified,
+              });
+            }
           });
-        });
-      } else {
+      } else if (!excluded(webPath)) {
+        const resourcePath = toResourcePath(webPath);
+        const key = `${partition}${resourcePath}`;
+        const resource = { resourcePath, webPath };
+
         try {
+          // eslint-disable-next-line no-await-in-loop
           const { LastModified: lastModified } = await bucket.head(key) ?? {};
           if (lastModified) {
             resource.lastModified = lastModified;
@@ -93,10 +90,9 @@ export class SnapshotJob extends Job {
         } catch (e) {
           ctx.log.warn(`unable to get lastModified for ${resourcePath}: ${e.message}`);
         }
-
         resources.push(resource);
       }
-    }, JOB_CONCURRENCY);
+    }
 
     return resources;
   }
@@ -177,12 +173,65 @@ export class SnapshotJob extends Job {
   }
 
   /**
+   * Snapshot all resources: process in batches, purge cache, and send notifications.
+   *
+   * @param {string} contentBusId content bus id
+   * @param {import('@adobe/helix-shared-storage').Bucket} bucket content bus bucket
+   * @param {Manifest} manifest snapshot manifest
+   */
+  async snapshot(contentBusId, bucket, manifest) {
+    const { ctx, info, state: { data: { forceUpdate } } } = this;
+
+    const toProcess = Array.from(this.state.data.resources);
+    while (toProcess.length) {
+      if (await this.checkStopped()) {
+        break;
+      }
+
+      /** @type {Resource[]} */
+      const processed = [];
+      await processQueue(toProcess.splice(0, JOB_CONCURRENCY), async (resource) => {
+        await this.processResource(resource, forceUpdate, contentBusId, bucket);
+        await this.writeStateLazy();
+        processed.push(resource);
+      }, JOB_CONCURRENCY);
+
+      // purge batch
+      if (manifest.resourcesNeedPurge) {
+        await purge.content(ctx, info, manifest.resourcesToPurge, PURGE_PREVIEW);
+        manifest.markResourcesPurged();
+      }
+
+      // send notification
+      const successfulPaths = [];
+      processed.forEach((resource) => {
+        if (resource.status < 300 || resource.status === 404) {
+          successfulPaths.push(resource.resourcePath);
+        }
+      });
+      this.setProperties({
+        resources: processed.map(
+          (r) => ({ path: r.webPath, status: r.status }),
+        ),
+      });
+      await publishBulkResourceNotification(
+        ctx,
+        'resources-snapshot',
+        info,
+        successfulPaths,
+        [...processed],
+        ({ status }) => status !== 404 && !(status >= 200 && status < 300),
+      );
+    }
+  }
+
+  /**
    * Runs the snapshot job.
    * @returns {Promise<void>}
    */
   async run() {
     const { ctx, info } = this;
-    const { snapshotId, paths, forceUpdate } = this.state.data;
+    const { snapshotId, paths } = this.state.data;
 
     const bucket = HelixStorage.fromContext(ctx).contentBus();
     const { contentBusId } = ctx;
@@ -199,56 +248,13 @@ export class SnapshotJob extends Job {
 
     if (this.state.data.phase === 'snapshot') {
       try {
-        const toProcess = Array.from(this.state.data.resources);
-        while (toProcess.length) {
-          if (await this.checkStopped()) {
-            break;
-          }
-
-          /** @type {Resource[]} */
-          const processed = [];
-          await processQueue(toProcess.splice(0, JOB_CONCURRENCY), async (resource) => {
-            await this.processResource(resource, forceUpdate, contentBusId, bucket);
-            await this.writeStateLazy();
-            processed.push(resource);
-          }, JOB_CONCURRENCY);
-
-          // purge batch
-          if (manifest.resourcesNeedPurge) {
-            await purge.content(ctx, info, manifest.resourcesToPurge, PURGE_PREVIEW);
-            manifest.markResourcesPurged();
-          }
-
-          // send notification
-          const successfulPaths = [];
-          processed.forEach((resource) => {
-            if (resource.status < 300 || resource.status === 404) {
-              successfulPaths.push(resource.resourcePath);
-            }
-          });
-          // used for audit log
-          this.setProperties({
-            resources: processed.map(
-              (r) => ({ path: r.webPath, status: r.status }),
-            ),
-          });
-          await publishBulkResourceNotification(
-            ctx,
-            'resources-snapshot',
-            info,
-            successfulPaths,
-            [...processed],
-            ({ status }) => status !== 404 && !(status >= 200 && status < 300),
-          );
-        }
+        await this.snapshot(contentBusId, bucket, manifest);
       } finally {
-        // needs to be done for transient jobs, since the manifest purge would have already occurred
         if (!this.transient) {
           await manifest.store();
           await purge.content(ctx, info, [`/.snapshots/${manifest.id}/.manifest.json`], PURGE_PREVIEW);
         }
       }
-
       await this.setPhase('completed');
     }
   }

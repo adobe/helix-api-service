@@ -12,41 +12,37 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { resolveUniquePaths } from '../../src/snapshot/util.js';
+import { processPrefixedPaths } from '../../src/support/utils.js';
 
-describe('resolveUniquePaths', () => {
-  it('deduplicates identical paths', () => {
-    const result = resolveUniquePaths(['/foo', '/foo', '/bar']);
-    assert.deepStrictEqual(result, ['/foo', '/bar']);
+describe('processPrefixedPaths', () => {
+  it('splits paths into prefix and path entries', () => {
+    const result = processPrefixedPaths(['/docs/*', '/blog/post']);
+    assert.deepStrictEqual(result, [
+      { prefix: '/docs/' },
+      { path: '/blog/post' },
+    ]);
   });
 
-  it('removes specific paths covered by wildcard', () => {
-    const result = resolveUniquePaths(['/docs/*', '/docs/welcome', '/docs/about']);
-    assert.deepStrictEqual(result, ['/docs/*']);
+  it('removes specific paths covered by wildcard prefix', () => {
+    const result = processPrefixedPaths(['/docs/*', '/docs/welcome', '/docs/about']);
+    assert.deepStrictEqual(result, [{ prefix: '/docs/' }]);
   });
 
   it('removes narrower wildcards covered by broader ones', () => {
-    const result = resolveUniquePaths(['/docs/sub/*', '/*']);
-    assert.deepStrictEqual(result, ['/*']);
-  });
-
-  it('keeps independent paths and wildcards', () => {
-    const result = resolveUniquePaths(['/docs/*', '/blog/post']);
-    assert.deepStrictEqual(result.sort(), ['/blog/post', '/docs/*']);
-  });
-
-  it('prepends / to paths without it', () => {
-    const result = resolveUniquePaths(['foo', 'bar']);
-    assert.deepStrictEqual(result, ['/foo', '/bar']);
+    const result = processPrefixedPaths(['/docs/sub/*', '/*']);
+    assert.deepStrictEqual(result, [{ prefix: '/' }]);
   });
 
   it('handles empty array', () => {
-    const result = resolveUniquePaths([]);
+    const result = processPrefixedPaths([]);
     assert.deepStrictEqual(result, []);
   });
 
-  it('handles single wildcard covering all', () => {
-    const result = resolveUniquePaths(['/a', '/b', '/*']);
-    assert.deepStrictEqual(result, ['/*']);
+  it('handles only single paths', () => {
+    const result = processPrefixedPaths(['/foo', '/bar']);
+    assert.deepStrictEqual(result, [
+      { path: '/foo' },
+      { path: '/bar' },
+    ]);
   });
 });

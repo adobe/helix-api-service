@@ -13,9 +13,8 @@
 import { AccessDeniedError } from '../auth/AccessDeniedError.js';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { Job } from '../job/Job.js';
-import { errorResponse, isIllegalPath } from '../support/utils.js';
+import { errorResponse, isIllegalPath, processPrefixedPaths } from '../support/utils.js';
 import { SnapshotRemoveJob } from './SnapshotRemoveJob.js';
-import { resolveUniquePaths } from './util.js';
 
 const SYNCHRONOUS_LIMIT = 200;
 
@@ -32,7 +31,7 @@ export async function bulkRemove(context, info) {
   try {
     authInfo.assertPermissions('snapshot:delete');
 
-    let paths = context.data.paths ?? [];
+    const paths = context.data.paths ?? [];
     if (paths.length === 0) {
       return errorResponse(log, 400, 'bulk-snapshot-remove payload is missing \'paths\'.');
     }
@@ -45,8 +44,9 @@ export async function bulkRemove(context, info) {
       }
     }
 
-    paths = resolveUniquePaths(paths);
-    const transient = paths.length <= SYNCHRONOUS_LIMIT && !paths.some((p) => p.endsWith('/*'));
+    const processedPaths = processPrefixedPaths(paths);
+    const transient = processedPaths.length <= SYNCHRONOUS_LIMIT
+      && !processedPaths.some((p) => p.prefix);
 
     // create new delete job
     return await Job.create(context, info, SnapshotRemoveJob.TOPIC, {
@@ -54,7 +54,7 @@ export async function bulkRemove(context, info) {
       transient,
       data: {
         snapshotId: info.snapshotId,
-        paths,
+        paths: processedPaths,
       },
       roles: ['author'],
     });

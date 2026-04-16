@@ -140,10 +140,8 @@ describe('Sitemap Config Update Tests', () => {
             { path: '/page1', lastModified: 1631031300, robots: '' },
           ],
         }))
-        .putObject('/preview/sitemap.xml')
-        .reply(201)
         .putObject('/live/sitemap.xml')
-        .reply(201);
+        .reply(500);
     });
 
     it('is rebuilt', async () => {

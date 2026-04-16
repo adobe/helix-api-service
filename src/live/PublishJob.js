@@ -194,12 +194,12 @@ export class PublishJob extends Job {
   /**
    * Index all successfully published resources.
    *
-   * @param {import('../support/AdminContext').AdminContext} ctx context
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
    * @param {Array<PublishResource>} resources resources that were processed
    */
   // eslint-disable-next-line class-methods-use-this
-  async indexBatch(ctx, info, resources) {
+  async indexBatch(resources) {
+    const { ctx, info } = this;
+
     const toIndex = resources.filter((r) => r.needsIndexing());
     await bulkIndex(ctx, info, {
       paths: toIndex.map((r) => r.path),
@@ -213,12 +213,12 @@ export class PublishJob extends Job {
   /**
    * Send the bulk notification for all resources that were purged and indexed.
    *
-   * @param {import('../support/AdminContext').AdminContext} ctx context
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
    * @param {Array<PublishResource>} resources resources that were processed
    */
   // eslint-disable-next-line class-methods-use-this
-  async notifyBatch(ctx, info, resources) {
+  async notifyBatch(resources) {
+    const { ctx, info } = this;
+
     const publishedResourcePaths = [];
     const toNotify = [];
     for (const resource of resources) {
@@ -236,12 +236,9 @@ export class PublishJob extends Job {
   /**
    * Bulk-reindex the simple sitemap for all paths when publish set `reindexSimpleSitemap`
    * on job state.
-   *
-   * @param {import('../support/AdminContext').AdminContext} ctx context
-   * @param {import('../support/RequestInfo').RequestInfo} info request info
    */
-  async reindexSimpleSitemap(ctx, info) {
-    const { state: { data } } = this;
+  async reindexSimpleSitemap() {
+    const { ctx, info, state: { data } } = this;
     if (!data.reindexSimpleSitemap) {
       return;
     }
@@ -260,7 +257,9 @@ export class PublishJob extends Job {
    * @returns {Promise<void>}
    */
   async publish(contentBusId, storage) {
-    const { ctx, info, state: { data } } = this;
+    const {
+      ctx, info, state: { data, progress },
+    } = this;
 
     await installSimpleSitemap(ctx, info, true);
 
@@ -268,9 +267,9 @@ export class PublishJob extends Job {
     const redirectsResource = data.resources.find((r) => r.redirects);
     if (redirectsResource && !redirectsResource.isProcessed()) {
       await this.processRedirects(redirectsResource, contentBusId, storage);
-      this.state.progress.processed += 1;
+      progress.processed += 1;
       if (redirectsResource.status === 200) {
-        this.state.progress.success += 1;
+        progress.success += 1;
       }
       await this.writeStateLazy();
     }
@@ -283,9 +282,9 @@ export class PublishJob extends Job {
         return; // already processed above
       }
       await this.processResource(resource, contentBusId, storage);
-      this.state.progress.processed += 1;
+      progress.processed += 1;
       if (resource.status === 200) {
-        this.state.progress.success += 1;
+        progress.success += 1;
       }
       await this.writeStateLazy();
     }, JOB_CONCURRENCY);
@@ -343,13 +342,13 @@ export class PublishJob extends Job {
    * @returns {Promise<void>}
    */
   async index() {
-    const { ctx, info, state: { data } } = this;
+    const { state: { data } } = this;
     const { resources } = data;
 
-    await this.indexBatch(ctx, info, resources);
-    await this.notifyBatch(ctx, info, resources);
+    await this.indexBatch(resources);
+    await this.notifyBatch(resources);
     await this.writeStateLazy();
-    await this.reindexSimpleSitemap(ctx, info);
+    await this.reindexSimpleSitemap();
   }
 
   /**

@@ -24,7 +24,7 @@ export function shouldAudit(context, info, res) {
   const { attributes, log } = context;
   const { route, method, org } = info;
 
-  if (['log', 'cron', 'medialog'].includes(route)) {
+  if (['log', 'medialog'].includes(route)) {
     return false;
   }
   if (!['POST', 'DELETE', 'PUT'].includes(method)) {

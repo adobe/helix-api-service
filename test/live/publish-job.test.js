@@ -20,6 +20,7 @@ import { METADATA_JSON_PATH, PURGE_ALL_CONTENT_THRESHOLD, REDIRECTS_JSON_PATH } 
 import { PublishJob } from '../../src/live/PublishJob.js';
 import { JobStorage } from '../../src/job/JobStorage.js';
 import purge from '../../src/cache/purge.js';
+import { Job } from '../../src/job/Job.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
@@ -86,18 +87,6 @@ const createJob = async (ctx, info, paths, { forceUpdate = false } = {}) => {
   job.audit = async function audit() {
     return true;
   };
-  job.indexBatch = async function indexBatch(resources) {
-    const toIndex = resources.filter((r) => r.needsIndexing());
-    for (const resource of toIndex) {
-      resource.setIndexed();
-    }
-  };
-  job.reindexSimpleSitemap = async function reindexSimpleSitemap() {
-    const { state: { data } } = this;
-    if (data.reindexSimpleSitemap) {
-      delete data.reindexSimpleSitemap;
-    }
-  };
   return job;
 };
 
@@ -112,6 +101,7 @@ describe('PublishJob Tests', () => {
   let info;
   let purgeInfos;
   let notified;
+  let jobOptions;
 
   beforeEach(() => {
     nock = new Nock().env();
@@ -120,6 +110,10 @@ describe('PublishJob Tests', () => {
     purgeInfos = [];
     sandbox.stub(purge, 'perform').callsFake((c, i, infos) => {
       purgeInfos.push(...infos);
+    });
+    sandbox.stub(Job, 'create').callsFake((context, _info, topic, opts) => {
+      jobOptions = { topic, opts: opts.data };
+      return new Response('', { status: 202 });
     });
 
     ctx = createContext('/org/sites/site/live/*', {
@@ -154,6 +148,8 @@ describe('PublishJob Tests', () => {
   });
 
   afterEach(() => {
+    jobOptions = null;
+
     sandbox.restore();
     nock.done();
   });
@@ -180,6 +176,13 @@ describe('PublishJob Tests', () => {
     assert.strictEqual(job.state.data.resources[0].status, 200);
 
     assert.strictEqual(notified, 1);
+    assert.deepStrictEqual(jobOptions, {
+      topic: 'index',
+      opts: {
+        paths: [{ path: '/documents/document' }],
+        indexNames: ['#simple'],
+      },
+    });
   });
 
   it('skips a resource that is not modified on live', async () => {

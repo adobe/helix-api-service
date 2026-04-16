@@ -94,7 +94,7 @@ async function upload(context, info) {
  * @return {Promise<Response>} response
  */
 export default async function mediaHandler(context, info) {
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {

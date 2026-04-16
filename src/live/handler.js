@@ -30,7 +30,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function liveHandler(context, info) {
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {

@@ -28,7 +28,7 @@ import { getCodeBusInfo } from '../code/info.js';
  * @returns {Promise<Response>} response
  */
 export default async function status(context, info) {
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
   const { editUrl } = context.data;
 
   if (editUrl && editUrl !== 'auto' && info.webPath !== '/') {

@@ -35,7 +35,7 @@ export default async function codeHandler(context, info) {
     });
   }
 
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
 
   const canonical = checkCanonicalRepo(context, info);
   if (canonical) {

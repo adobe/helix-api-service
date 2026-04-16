@@ -18,7 +18,7 @@ import { RoleMapping } from './RoleMapping.js';
  * @param {import('../support/RequestInfo').RequestInfo} info request info
  */
 export async function authorize(context) {
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
 
   // check if we have any roles or user in the invocation event itself
   if (context?.invocation?.event) {

@@ -135,7 +135,7 @@ export async function viewEntry(context, org, site) {
  * @returns {Promise<Response>} response
  */
 export default async function query(context) {
-  const { attributes: { authInfo }, data: { url: urlString }, log } = context;
+  const { authInfo, data: { url: urlString }, log } = context;
   if (!urlString) {
     const { data: { org, site } } = context;
     if (!(org && site)) {

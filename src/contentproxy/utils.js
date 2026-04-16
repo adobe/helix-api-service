@@ -131,7 +131,7 @@ export function assertValidSheetJSON(obj) {
  * @returns {object} provider headers
  */
 export function getContentSourceHeaders(context, info, source) {
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
   const { headers, rawPath } = info;
   const providerHeaders = {};
 

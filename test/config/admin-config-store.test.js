@@ -1,5 +1,5 @@
 /*
- * Copyright 2043 Adobe. All rights reserved.
+ * Copyright 2025 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at https://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,7 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import purge from '../../src/cache/purge.js';
-import discover from '../../src/discover/reindex.js';
+import discover from '../../src/discover/on-change.js';
 import sitemap from '../../src/sitemap/config-update.js';
 import { AdminConfigStore } from '../../src/config/AdminConfigStore.js';
 import {

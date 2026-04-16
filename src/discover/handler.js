@@ -27,7 +27,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function discoverHandler(context, info) {
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {

@@ -24,7 +24,7 @@ import { updateRedirects } from '../redirects/update.js';
  * @returns {Promise<Response>} response
  */
 export default async function unpreview(context, info) {
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
   const { resourcePath } = info;
 
   if (!authInfo.hasPermissions('preview:delete-forced')) {

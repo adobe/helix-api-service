@@ -20,7 +20,7 @@ import { getCodeBusInfo } from './info.js';
  * @returns {Promise<Response>} response
  */
 export async function status(ctx, info) {
-  ctx.attributes.authInfo.assertPermissions('code:read');
+  ctx.authInfo.assertPermissions('code:read');
   const codeInfo = await getCodeBusInfo(ctx, info);
   if (codeInfo.status === 404) {
     return new Response('', {

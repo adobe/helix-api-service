@@ -54,7 +54,7 @@ export class GoogleMatcher {
   /**
    * Return all custom users that we should use to lookup Google items.
    *
-   * @param {import('../inventory.js').InventoryEntry[]} entries entries
+   * @param {import('../Inventory.js').InventoryEntry[]} entries entries
    * @returns {CustomUser[]}
    */
   #getCustomUsers(entries) {
@@ -173,7 +173,7 @@ export class GoogleMatcher {
    *
    * @param {import('../support/AdminContext').AdminContext} context context
    * @param {URL} url url to extract data from
-   * @param {import('../inventory.js').InventoryEntry} entry entry
+   * @param {import('../Inventory.js').InventoryEntry} entry entry
    * @returns object that contains additional entries to store in inventory
    */
   async extract(context, url, entry) {

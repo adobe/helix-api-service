@@ -16,7 +16,9 @@ import {
   createLocalJWKSet, exportJWK, generateKeyPair,
   jwtVerify,
 } from 'jose';
-import { getSiteAuthToken, getTransientSiteTokenInfo } from '../../src/auth/support.js';
+import {
+  getSiteAuthToken, getTransientSiteTokenInfo, redactPayload,
+} from '../../src/auth/support.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
@@ -49,6 +51,16 @@ describe('Support Test', () => {
     const info = createInfo(suffix).withCode('owner', 'repo');
     return { context, info };
   }
+
+  describe('Redact Payload Test', () => {
+    it('redacts imsToken', () => {
+      const payload = {
+        imsToken: 'foo',
+      };
+      const redacted = redactPayload(payload);
+      assert.strictEqual(redacted.imsToken, '***');
+    });
+  });
 
   describe('Site Auth Test', () => {
     it('creates a valid site auth token', async () => {

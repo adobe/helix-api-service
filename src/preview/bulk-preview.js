@@ -74,7 +74,7 @@ export default async function bulkPreview(context, info) {
 
   if (hasSubtreePath || paths.length > 100) {
     // only assert list permissions when there's a deep path
-    context.attributes.authInfo.assertPermissions('edit:list');
+    context.authInfo.assertPermissions('edit:list');
   }
 
   if (paths.length > MAX_SYNC_PATHS[handler.name] && String(context.data.forceAsync) !== 'true') {

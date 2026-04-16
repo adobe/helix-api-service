@@ -16,7 +16,9 @@ import { Request } from '@adobe/fetch';
 import { AuthInfo } from '../../src/auth/AuthInfo.js';
 import getLiveInfo from '../../src/live/info.js';
 import { main } from '../../src/index.js';
-import { createInfo, Nock, SITE_CONFIG } from '../utils.js';
+import {
+  createContext, createInfo, Nock, SITE_CONFIG,
+} from '../utils.js';
 
 describe('Live Info Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
@@ -94,13 +96,13 @@ describe('Live Info Tests', () => {
 describe('getLiveInfo unit tests', () => {
   it('returns 403 when live:read permission is missing', async () => {
     const info = createInfo('/org/sites/site/live/document');
-    const ctx = {
+    const context = createContext('/org/sites/site/live/document', {
       attributes: {
         authInfo: AuthInfo.Default(),
         config: structuredClone(SITE_CONFIG),
       },
-    };
-    const result = await getLiveInfo(ctx, info);
+    });
+    const result = await getLiveInfo(context, info);
     assert.strictEqual(result.status, 403);
     assert.strictEqual(result.error, 'forbidden');
   });

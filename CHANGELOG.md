@@ -1,3 +1,10 @@
+## [1.45.1](https://github.com/adobe/helix-api-service/compare/v1.45.0...v1.45.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* **coverage:** increase coverage ([20c17d6](https://github.com/adobe/helix-api-service/commit/20c17d6165e51c950a2a04d20500c4061e0ec4e9))
+
 # [1.45.0](https://github.com/adobe/helix-api-service/compare/v1.44.1...v1.45.0) (2026-04-16)
 
 

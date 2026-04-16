@@ -347,6 +347,10 @@ export class RequestInfo {
     return this.#variables;
   }
 
+  get snapshotId() {
+    return this.#variables?.snapshotId;
+  }
+
   /**
    * Create a new request info.
    *
@@ -396,6 +400,7 @@ export class RequestInfo {
       PathInfo.clone(other.#pathInfo, {
         org, site, path, route,
       }),
+      other.#variables,
     );
     info.#owner = other.#owner;
     info.#repo = other.#repo;

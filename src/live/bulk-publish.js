@@ -58,12 +58,14 @@ export default async function bulkPublish(context, info) {
     ));
   }
 
+  const { snapshotId } = info;
   return Job.create(context, info, PublishJob.TOPIC, {
     transient: true,
     jobClass: PublishJob,
     data: {
       paths,
       forceUpdate: String(context.data.forceUpdate) === 'true',
+      ...(snapshotId ? { snapshotId } : {}),
     },
     roles: ['author'],
   });

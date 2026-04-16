@@ -61,8 +61,9 @@ export class PublishJob extends Job {
       const resource = new PublishResource(resourcePath, path);
 
       if (!forceUpdate) {
-        // check if resource exists on preview partition
-        const key = `${contentBusId}/preview${resourcePath}`;
+        // if snapshotId is defined, use snapshot resource's modified date
+        const { snapshotId } = data;
+        const key = `${contentBusId}/preview${snapshotId ? `/.snapshots/${snapshotId}` : ''}${resourcePath}`;
         try {
           const { LastModified: lastModified } = await storage.head(key) ?? {};
           if (lastModified) {

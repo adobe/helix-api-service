@@ -15,6 +15,7 @@ import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-
 import purge, { PURGE_LIVE, PURGE_PREVIEW_AND_LIVE } from '../cache/purge.js';
 import { getMetadataPaths, REDIRECTS_JSON_PATH } from '../contentbus/contentbus.js';
 import contentBusCopy from '../contentbus/copy.js';
+import { publishSnapshot } from '../contentbus/snapshot.js';
 import bulkIndex from '../index/bulk-index.js';
 import indexUpdate from '../index/update.js';
 import { fetchExtendedIndex, getIndexTargets } from '../index/utils.js';
@@ -34,7 +35,9 @@ export async function liveUpdate(context, info) {
   const { log } = context;
 
   log.info('updating live in content-bus.');
-  const response = await contentBusCopy(context, info);
+  const response = info.snapshotId
+    ? await publishSnapshot(context, info)
+    : await contentBusCopy(context, info);
 
   // check if redirect overwrites the content
   const sourceRedirectLocation = await updateRedirect(context, info);

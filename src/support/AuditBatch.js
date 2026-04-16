@@ -116,7 +116,7 @@ async function createNotification(context, info, opts) {
     }
   }
 
-  const user = context.attributes?.authInfo?.resolveEmail();
+  const user = context.authInfo.resolveEmail();
   if (user) {
     notification.user = user;
   }

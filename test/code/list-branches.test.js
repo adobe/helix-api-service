@@ -64,11 +64,11 @@ describe('Code List Branches Tests', () => {
   });
 
   it('list branches needs code:read permissions', async () => {
-    await assert.rejects(listBranches({
-      log: console,
+    const context = createContext('/', {
       attributes: {
-        authInfo: new AuthInfo(),
+        authInfo: AuthInfo.Default(),
       },
-    }, {}), new AccessDeniedError('code:read'));
+    });
+    await assert.rejects(listBranches(context, {}), new AccessDeniedError('code:read'));
   });
 });

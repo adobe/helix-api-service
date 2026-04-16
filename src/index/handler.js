@@ -29,7 +29,7 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  * @returns {Promise<Response>} response
  */
 export default async function indexHandler(context, info) {
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
   const { org, site, webPath } = info;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {

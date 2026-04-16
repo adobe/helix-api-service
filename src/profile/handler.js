@@ -32,7 +32,7 @@ export default async function profileHandler(context, info) {
   }
 
   // send 401 if not authenticated
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
   const { profile } = authInfo;
   if (!profile) {
     const data = {

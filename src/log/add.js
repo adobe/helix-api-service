@@ -22,7 +22,7 @@ import { AuditBatch } from '../support/AuditBatch.js';
  * @returns {Promise<Response>} response
  */
 export default async function add(context, info) {
-  const { attributes: { authInfo }, contentBusId, log } = context;
+  const { authInfo, contentBusId, log } = context;
 
   const { data: { entries } } = context;
   if (!entries || !Array.isArray(entries)) {

@@ -96,7 +96,7 @@ export default async function update(context, info) {
         response.headers.set('redirect-location', redirectLocation);
       }
     }
-    response.headers.set('x-last-modified-by', context.attributes?.authInfo?.resolveEmail() || 'anonymous');
+    response.headers.set('x-last-modified-by', context.authInfo?.resolveEmail() || 'anonymous');
     if (!response.headers.has('last-modified')) {
       response.headers.set('last-modified', new Date().toUTCString());
     }

@@ -58,12 +58,12 @@ describe('Code Status Tests', () => {
   });
 
   it('code status needs code:read permission', async () => {
-    await assert.rejects(status({
-      log: console,
+    const context = createContext('/', {
       attributes: {
-        authInfo: new AuthInfo(),
+        authInfo: AuthInfo.Default().withAuthenticated(true),
       },
-    }, {}), new AccessDeniedError('code:read'));
+    });
+    await assert.rejects(status(context, {}), new AccessDeniedError('code:read'));
   });
 
   it('code status throws error for underlying error', async () => {

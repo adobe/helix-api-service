@@ -14,12 +14,13 @@ import { fetchS3 } from '@adobe/helix-admin-support';
 /**
  * Returns the code bus info for the given resource. If the resource is missing, it will not
  * have a contentType.
- * @param {import('../support/AdminContext').AdminContext} ctx the context
+ * @param {import('../support/AdminContext').AdminContext} context the context
  * @param {import('../support/RequestInfo').RequestInfo} info lookup options
  * @returns {Promise<CodeBusResource>} a resource
  */
-export async function getCodeBusInfo(ctx, info) {
-  if (!ctx.attributes.authInfo.hasPermissions('code:read')) {
+export async function getCodeBusInfo(context, info) {
+  const { authInfo } = context;
+  if (!authInfo.hasPermissions('code:read')) {
     return {
       status: 403,
     };
@@ -27,18 +28,18 @@ export async function getCodeBusInfo(ctx, info) {
   if (!info.rawPath || info.rawPath === '/') {
     return {
       status: 400,
-      permissions: ctx.attributes.authInfo.getPermissions('code:'),
+      permissions: authInfo.getPermissions('code:'),
     };
   }
 
   const ref = info.query.ref || info.ref;
   const branch = info.query.branch || ref;
   const key = `${info.owner}/${info.repo}/${ref}${info.rawPath}`;
-  const resp = await fetchS3(ctx, 'code', key, true);
+  const resp = await fetchS3(context, 'code', key, true);
   const ret = {
     status: resp.status,
-    codeBusId: `${ctx.attributes.bucketMap.code}/${key}`,
-    permissions: ctx.attributes.authInfo.getPermissions('code:'),
+    codeBusId: `${context.attributes.bucketMap.code}/${key}`,
+    permissions: authInfo.getPermissions('code:'),
     // TODO: respect byo git ?
     sourceLocation: `https://raw.githubusercontent.com/${info.owner}/${info.repo}/${branch}${info.rawPath}`,
   };

@@ -49,7 +49,7 @@ export class BaseHandler {
   }
 
   async handleJSON(context, info, op) {
-    const { attributes: { authInfo }, data } = context;
+    const { authInfo, data } = context;
     const { org } = info;
 
     const { type, name, rest = [] } = this.determineConfigType(info);
@@ -105,7 +105,7 @@ export class BaseHandler {
   }
 
   async handle(context, info) {
-    const { attributes: { authInfo }, log } = context;
+    const { authInfo, log } = context;
     const { method } = info;
 
     const op = OPERATIONS[method];

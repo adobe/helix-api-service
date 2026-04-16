@@ -1,3 +1,10 @@
+## [1.43.6](https://github.com/adobe/helix-api-service/compare/v1.43.5...v1.43.6) (2026-04-16)
+
+
+### Bug Fixes
+
+* **test:** cover discover#onProjectChanged ([#201](https://github.com/adobe/helix-api-service/issues/201)) ([8bf5df9](https://github.com/adobe/helix-api-service/commit/8bf5df94de470248148b735060d232444056268d)), closes [discover#onProjectChanged](https://github.com/discover/issues/onProjectChanged)
+
 ## [1.43.5](https://github.com/adobe/helix-api-service/compare/v1.43.4...v1.43.5) (2026-04-15)
 
 

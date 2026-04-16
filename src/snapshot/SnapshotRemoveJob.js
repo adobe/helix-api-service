@@ -23,8 +23,8 @@ export class SnapshotRemoveJob extends SnapshotBaseJob {
   get notificationOp() { return 'resources-snapshot-removed'; }
 
   // eslint-disable-next-line class-methods-use-this
-  getSourceRoot(contentBusId, manifest) {
-    return `${contentBusId}/preview/.snapshots/${manifest.id}`;
+  getSourceRoot(manifest) {
+    return `${this.ctx.contentBusId}/preview/.snapshots/${manifest.id}`;
   }
 
   /**
@@ -33,15 +33,14 @@ export class SnapshotRemoveJob extends SnapshotBaseJob {
    * @param {import('./SnapshotBaseJob').Resource} resource
    * @param {Manifest} manifest
    * @param {import('@adobe/helix-shared-storage').Bucket} bucket
-   * @param {string} contentBusId
    * @returns {Promise<{ok: boolean, status: number}>}
    */
-  async remove(resource, manifest, bucket, contentBusId) {
+  async remove(resource, manifest, bucket) {
     const {
       ctx: { log },
       state: { data: { snapshotId } },
     } = this;
-    const key = `${contentBusId}/preview/.snapshots/${snapshotId}${resource.resourcePath}`;
+    const key = `${this.ctx.contentBusId}/preview/.snapshots/${snapshotId}${resource.resourcePath}`;
     const { webPath } = resource;
 
     try {
@@ -66,17 +65,16 @@ export class SnapshotRemoveJob extends SnapshotBaseJob {
    * @returns {Promise<void>}
    */
   async processResource(resource, manifest, bucket) {
-    const { ctx, state: { data: { snapshotId } } } = this;
-    const { contentBusId, log } = ctx;
+    const { ctx: { log }, state: { progress, data: { snapshotId } } } = this;
     const { webPath, resourcePath } = resource;
-    this.state.progress.processed += 1;
+    progress.processed += 1;
 
     if (resource.isProcessed()) {
       // already processed in a previous run or 404 in prepare
       if (resource.status === 404 && manifest.getResourceStatus(webPath)) {
         log.warn(`resource ${webPath} not found in content-bus, but still in manifest for snapshot ${snapshotId}`);
         manifest.removeResource(webPath);
-        this.state.progress.failed += 1;
+        progress.failed += 1;
       }
       return;
     }
@@ -86,13 +84,13 @@ export class SnapshotRemoveJob extends SnapshotBaseJob {
     }
 
     log.info(`removing snapshot resource in content-bus for: ${snapshotId} ${resourcePath}`);
-    const response = await this.remove(resource, manifest, bucket, contentBusId);
+    const response = await this.remove(resource, manifest, bucket);
     resource.setStatus(response.status);
 
     if (!response.ok) {
       resource.setStatus(response.status, response.headers.get('x-error'));
       log.warn(`unable to remove snapshot resource ${webPath}: (${response.status}) ${resource.error}`);
-      this.state.progress.failed += 1;
+      progress.failed += 1;
     }
   }
 }

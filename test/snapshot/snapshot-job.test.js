@@ -135,7 +135,7 @@ describe('SnapshotBaseJob Tests', () => {
 
     it('getSourceRoot throws on base class', () => {
       assert.throws(
-        () => SnapshotBaseJob.prototype.getSourceRoot('id', {}),
+        () => SnapshotBaseJob.prototype.getSourceRoot({}),
         /subclass must override getSourceRoot/,
       );
     });
@@ -489,7 +489,7 @@ describe('SnapshotJob Tests', () => {
       const job = await createTestJob(ctx, info, SnapshotJob, { paths: [] });
       const manifest = { fromLive: true };
       assert.strictEqual(
-        job.getSourceRoot(CONTENT_BUS_ID, manifest),
+        job.getSourceRoot(manifest),
         `${CONTENT_BUS_ID}/live`,
       );
     });
@@ -529,7 +529,7 @@ describe('SnapshotJob Tests', () => {
       const resource = new SnapshotResource('/documents/doc1.md', '/documents/doc1');
       resource.setLastModified(LAST_MODIFIED_OLD);
 
-      const result = await job.isModified(CONTENT_BUS_ID, bucket, resource);
+      const result = await job.isModified(bucket, resource);
       assert.strictEqual(result, true);
     });
 
@@ -544,7 +544,7 @@ describe('SnapshotJob Tests', () => {
       const resource = new SnapshotResource('/documents/doc1.md', '/documents/doc1');
       resource.setLastModified(LAST_MODIFIED_NEW);
 
-      const result = await job.isModified(CONTENT_BUS_ID, bucket, resource);
+      const result = await job.isModified(bucket, resource);
       assert.strictEqual(result, true);
     });
 
@@ -559,7 +559,7 @@ describe('SnapshotJob Tests', () => {
       const resource = new SnapshotResource('/documents/doc1.md', '/documents/doc1');
       resource.setLastModified(LAST_MODIFIED_OLD);
 
-      const result = await job.isModified(CONTENT_BUS_ID, bucket, resource);
+      const result = await job.isModified(bucket, resource);
       assert.strictEqual(result, false);
     });
   });
@@ -774,7 +774,7 @@ describe('SnapshotRemoveJob Tests', () => {
       const job = await createTestJob(ctx, info, SnapshotRemoveJob, { paths: [] });
       const manifest = { id: 'test-snap' };
       assert.strictEqual(
-        job.getSourceRoot(CONTENT_BUS_ID, manifest),
+        job.getSourceRoot(manifest),
         `${CONTENT_BUS_ID}/preview/.snapshots/test-snap`,
       );
     });

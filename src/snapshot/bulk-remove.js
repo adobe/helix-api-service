@@ -24,7 +24,7 @@ const MAX_SYNC_PATHS = 200;
  *
  * @param {import('../support/AdminContext').AdminContext} context the context
  * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @returns {Promise<Response>} response
+ * @returns {Promise<import('@adobe/fetch').Response>} response
  */
 export async function bulkRemove(context, info) {
   const { log, attributes: { authInfo } } = context;

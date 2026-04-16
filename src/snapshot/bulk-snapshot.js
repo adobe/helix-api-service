@@ -31,7 +31,6 @@ export async function bulkSnapshot(context, info) {
 
   try {
     authInfo.assertPermissions('snapshot:write');
-
     const paths = context.data.paths ?? [];
     if (paths.length === 0) {
       return errorResponse(log, 400, 'bulk-snapshot payload is missing \'paths\'.');
@@ -46,7 +45,6 @@ export async function bulkSnapshot(context, info) {
     }
 
     const processedPaths = processPrefixedPaths(paths);
-
     if (processedPaths.some((p) => p.prefix)) {
       authInfo.assertPermissions('preview:list');
     }

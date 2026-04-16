@@ -28,12 +28,7 @@ export async function snapshotStatus(context, info) {
   if (!webPath) {
     // serve manifest json
     if (!manifest.exists) {
-      return new Response('', {
-        status: 404,
-        headers: {
-          'x-error': 'not found',
-        },
-      });
+      return new Response('', { status: 404 });
     }
     return manifest.toResponse(info);
   }

@@ -11,12 +11,13 @@
  */
 
 import { Response } from '@adobe/fetch';
-import { logLevelForStatusCode, propagateStatusCode } from '@adobe/helix-shared-utils';
+import { propagateStatusCode } from '@adobe/helix-shared-utils';
 import { updateSnapshot } from '../contentbus/snapshot.js';
 import { snapshotStatus } from './status.js';
 import { Manifest } from './Manifest.js';
 import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 import { getNotifier } from '../support/notifications.js';
+import { createErrorResponse } from '../contentbus/utils.js';
 
 /**
  * Updates manifest properties: lock state, title, description, metadata.
@@ -30,14 +31,12 @@ async function updateManifestProperties(context, info) {
   const manifest = await Manifest.fromContext(context, snapshotId);
 
   if ('locked' in context.data) {
-    if (![true, false, 'true', 'false'].includes(context.data.locked)) {
-      return new Response('', {
-        status: 400,
-        headers: { 'x-error': 'invalid locked value' },
-      });
+    const locked = String(context.data.locked);
+    if (locked !== 'true' && locked !== 'false') {
+      return createErrorResponse({ log: context.log, status: 400, msg: 'invalid locked value' });
     }
 
-    const lock = String(context.data.locked) === 'true';
+    const lock = locked === 'true';
     if (lock) {
       context.attributes.authInfo.assertPermissions('preview:write');
     } else {
@@ -85,16 +84,9 @@ async function addResource(context, info) {
     if (status === 404 || status === 409) {
       return response;
     }
-
     status = propagateStatusCode(status);
-    const level = logLevelForStatusCode(status);
-    const err = response.headers.get('x-error');
-    log[level](`error from content bus: ${response.status} ${err}`);
-
-    return new Response('error from content-bus', {
-      status,
-      headers: { 'x-error': err },
-    });
+    const msg = response.headers.get('x-error');
+    return createErrorResponse({ log: context.log, status, msg });
   }
 
   const manifest = await Manifest.fromContext(context, snapshotId);

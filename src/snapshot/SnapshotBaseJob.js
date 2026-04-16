@@ -30,7 +30,7 @@ export const JOB_CONCURRENCY = 50;
  * Common base class for snapshot bulk jobs (add and remove).
  * Subclasses must override:
  * - `get notificationOp()` — the notification operation name
- * - `getSourceRoot(contentBusId, manifest)` — the S3 root for `prepare()`
+ * - `getSourceRoot(manifest)` — the S3 root for `prepare()`
  * - `processResource(resource)` — per-resource logic
  * - `isSuccess(status)` — whether a resource status counts as successful for notifications
  */
@@ -151,12 +151,11 @@ export class SnapshotBaseJob extends Job {
 
   /**
    * Returns the S3 root path for the prepare phase.
-   * @param {string} contentBusId
    * @param {Manifest} manifest
    * @returns {string}
    */
   // eslint-disable-next-line class-methods-use-this,no-unused-vars
-  getSourceRoot(contentBusId, manifest) {
+  getSourceRoot(manifest) {
     throw new Error('subclass must override getSourceRoot');
   }
 
@@ -188,30 +187,29 @@ export class SnapshotBaseJob extends Job {
    */
   async run() {
     const { ctx, info } = this;
-    const { snapshotId, paths } = this.state.data;
+    const { data, data: { snapshotId, paths } } = this.state;
 
     const bucket = HelixStorage.fromContext(ctx).contentBus();
-    const { contentBusId } = ctx;
     const manifest = await Manifest.fromContext(ctx, snapshotId);
-    const root = this.getSourceRoot(contentBusId, manifest);
+    const root = this.getSourceRoot(manifest);
 
-    if (!this.state.data.phase) {
+    if (!data.phase) {
       await this.setPhase('prepare');
-      this.state.data.resources = await this.prepare(paths, root, bucket);
+      data.resources = await this.prepare(paths, root, bucket);
       await this.trackProgress({
-        total: this.state.data.resources.length,
+        total: data.resources.length,
       });
       await this.setPhase('perform');
     } else {
       // hydrate plain objects back into SnapshotResource instances when resuming
-      this.state.data.resources = SnapshotResource.fromJSONArray(this.state.data.resources);
+      data.resources = SnapshotResource.fromJSONArray(data.resources);
     }
 
-    if (this.state.data.phase === 'perform') {
+    if (data.phase === 'perform') {
       try {
         await this.executeBatch(manifest, bucket);
       } finally {
-        const needsPurge = await manifest.store();
+        const needsPurge = await manifest.store(bucket);
         if (needsPurge) {
           await purge.content(ctx, info, [`/.snapshots/${manifest.id}/.manifest.json`], PURGE_PREVIEW);
         }

@@ -13,8 +13,6 @@
 import { Response } from '@adobe/fetch';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 
-// @ts-check
-
 const SERIALIZED_FIELDS = ['id', 'created', 'lastModified', 'lastUpdated', 'locked', 'title', 'description', 'metadata', 'review', 'fromLive'];
 
 /**
@@ -56,12 +54,6 @@ export class Manifest {
    * @type {string}
    */
   #key;
-
-  /**
-   * content storage
-   * @type {Bucket}
-   */
-  #storage;
 
   /**
    * true if manifest was modified
@@ -156,16 +148,17 @@ export class Manifest {
    * @returns {Promise<Manifest>}
    */
   static async fromContext(context, snapshotId) {
-    if (!context.attributes.snapshotManifest) {
-      context.attributes.snapshotManifest = await new Manifest().init(context, snapshotId);
+    const { attributes } = context;
+    if (!attributes.snapshotManifest) {
+      attributes.snapshotManifest = await new Manifest().init(context, snapshotId);
     }
-    return context.attributes.snapshotManifest;
+    return attributes.snapshotManifest;
   }
 
   /**
    * Initializes the manifest by fetching it from the content bus.
    *
-   * @param {AdminContext} context the context
+   * @param {import('../support/AdminContext')} context the context
    * @param {string} snapshotId snapshot id
    * @returns {Promise<Manifest>} this manifest.
    */
@@ -173,9 +166,9 @@ export class Manifest {
     const { contentBusId } = context;
     this.id = snapshotId;
     this.#key = `${contentBusId}/preview/.snapshots/${this.id}/.manifest.json`;
-    this.#storage = HelixStorage.fromContext(context).contentBus();
 
-    const data = await this.#storage.get(this.#key);
+    const storage = HelixStorage.fromContext(context).contentBus();
+    const data = await storage.get(this.#key);
     if (data) {
       const json = JSON.parse(data.toString('utf-8'));
       for (const key of SERIALIZED_FIELDS) {
@@ -236,9 +229,10 @@ export class Manifest {
 
   /**
    * Stores the manifest if modified. No-ops if the manifest was deleted or is unmodified.
+   * @param {Bucket} bucket the storage bucket to use
    * @returns {Promise<boolean>} resolves to `true` if manifest was stored and needs cache purge
    */
-  async store() {
+  async store(bucket) {
     if (this.#deleted || !this.#isModified) {
       return false;
     }
@@ -247,7 +241,7 @@ export class Manifest {
       this.created = mod;
       this.lastModified = mod;
     }
-    await this.#storage.put(this.#key, JSON.stringify(this), 'application/json');
+    await bucket.put(this.#key, JSON.stringify(this), 'application/json');
     const wasModified = this.#isModified;
     this.#isModified = false;
     this.#exists = true;
@@ -256,10 +250,11 @@ export class Manifest {
 
   /**
    * Deletes the manifest from storage.
+   * @param {Bucket} bucket the storage bucket to use
    * @returns {Promise<void>}
    */
-  async delete() {
-    await this.#storage.remove(this.#key);
+  async delete(bucket) {
+    await bucket.remove(this.#key);
     this.#exists = false;
     this.#deleted = true;
   }
@@ -335,7 +330,7 @@ export class Manifest {
    */
   setProperty(name, value) {
     if (!Manifest.CUSTOM_PROPERTIES.includes(name)) {
-      throw Error(`setting ${name} is not supported.`);
+      throw new Error(`setting ${name} is not supported.`);
     }
 
     /* c8 ignore next */

@@ -30,19 +30,18 @@ export class SnapshotJob extends SnapshotBaseJob {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  getSourceRoot(contentBusId, manifest) {
-    return `${contentBusId}/${manifest.fromLive ? 'live' : 'preview'}`;
+  getSourceRoot(manifest) {
+    return `${this.ctx.contentBusId}/${manifest.fromLive ? 'live' : 'preview'}`;
   }
 
   /**
    * Return a flag indicating whether a resource is considered modified.
    *
-   * @param {string} contentBusId content bus id
    * @param {import('@adobe/helix-shared-storage').Bucket} bucket
    * @param {import('./SnapshotResource').SnapshotResource} resource resource
    * @returns {Promise<boolean>} true if preview is not modified, else false
    */
-  async isModified(contentBusId, bucket, resource) {
+  async isModified(bucket, resource) {
     /* c8 ignore next 3 */
     if (!resource.lastModified) {
       return true;
@@ -51,7 +50,7 @@ export class SnapshotJob extends SnapshotBaseJob {
     const { ctx: { log } } = this;
     const { snapshotId } = this.state.data;
     try {
-      const key = `${contentBusId}/preview/.snapshots/${snapshotId}${resource.resourcePath}`;
+      const key = `${this.ctx.contentBusId}/preview/.snapshots/${snapshotId}${resource.resourcePath}`;
       const { LastModified: lastModified } = await bucket.head(key) ?? {};
       if (!lastModified) {
         return true;
@@ -74,16 +73,16 @@ export class SnapshotJob extends SnapshotBaseJob {
    * @returns {Promise<void>}
    */
   async processResource(resource, manifest, bucket) {
-    const { ctx, state: { data: { snapshotId, forceUpdate } } } = this;
-    const { contentBusId, log } = ctx;
+    const { ctx, state: { data: { snapshotId, forceUpdate }, progress } } = this;
+    const { log } = ctx;
     const { webPath, resourcePath } = resource;
-    this.state.progress.processed += 1;
+    progress.processed += 1;
 
     const existingStatus = manifest.getResourceStatus(webPath);
     if (!forceUpdate
       && resource.status !== 404 // source exists (not a 404 from prepare)
       && existingStatus === Manifest.STATUS_EXISTS // already in snapshot as existing
-      && !await this.isModified(contentBusId, bucket, resource)
+      && !await this.isModified(bucket, resource)
     ) {
       log.info(`ignored snapshot update for not modified: ${snapshotId} ${resourcePath}`);
       resource.setStatus(304);
@@ -102,7 +101,7 @@ export class SnapshotJob extends SnapshotBaseJob {
     if (!response.ok) {
       resource.setStatus(response.status, response.headers.get('x-error'));
       log.warn(`unable to snapshot ${webPath}: (${response.status}) ${resource.error}`);
-      this.state.progress.failed += 1;
+      progress.failed += 1;
     }
   }
 }

@@ -25,8 +25,8 @@ import purge, { PURGE_PREVIEW } from '../cache/purge.js';
 export async function snapshotRemove(context, info) {
   const { log } = context;
   const { snapshotId } = info;
-  const response = await removeSnapshot(context, info);
 
+  const response = await removeSnapshot(context, info);
   if (!response.ok) {
     if (response.status === 404 || response.status === 409) {
       return response;

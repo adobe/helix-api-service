@@ -11,6 +11,7 @@
  */
 
 import { Response } from '@adobe/fetch';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { snapshotStatus } from './status.js';
 import { snapshotUpdate } from './update.js';
 import { snapshotRemove } from './remove.js';
@@ -34,8 +35,10 @@ const ALLOWED_METHODS = ['GET', 'POST', 'DELETE'];
  */
 export default async function snapshotHandler(context, info) {
   const { log, attributes: { authInfo } } = context;
+  const { snapshotId, method } = info;
+  const bucket = HelixStorage.fromContext(context).contentBus();
 
-  if (ALLOWED_METHODS.indexOf(info.method) < 0) {
+  if (ALLOWED_METHODS.indexOf(method) < 0) {
     return new Response('method not allowed', {
       status: 405,
     });
@@ -43,10 +46,8 @@ export default async function snapshotHandler(context, info) {
 
   authInfo.assertPermissions('snapshot:read');
 
-  const { snapshotId } = info;
-
   // list snapshots: GET with no snapshotId
-  if (info.method === 'GET' && !snapshotId) {
+  if (method === 'GET' && !snapshotId) {
     return listSnapshots(context, info);
   }
 
@@ -56,10 +57,10 @@ export default async function snapshotHandler(context, info) {
 
   const manifest = await Manifest.fromContext(context, snapshotId);
   try {
-    if (info.method === 'GET') {
+    if (method === 'GET') {
       return await snapshotStatus(context, info);
     }
-    if (info.method === 'POST') {
+    if (method === 'POST') {
       if (context.data?.review) {
         return await snapshotReview(context, info, manifest);
       }
@@ -93,12 +94,12 @@ export default async function snapshotHandler(context, info) {
           },
         });
       }
-      await manifest.delete();
+      await manifest.delete(bucket);
       return new Response('', { status: 204 });
     }
     return await snapshotRemove(context, info);
   } finally {
-    const needsPurge = await manifest.store();
+    const needsPurge = await manifest.store(bucket);
     if (needsPurge) {
       await purge.content(context, info, [`/.snapshots/${manifest.id}/.manifest.json`], PURGE_PREVIEW);
     }

@@ -12,6 +12,7 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import { HelixStorage } from '@adobe/helix-shared-storage';
 import { Manifest } from '../../src/snapshot/Manifest.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
@@ -251,7 +252,7 @@ describe('Manifest Tests', () => {
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
     manifest.addResource('/foo', 200);
-    const needsPurge = await manifest.store();
+    const needsPurge = await manifest.store(HelixStorage.fromContext(context).contentBus());
     assert.strictEqual(needsPurge, true); // addResource called touch() which sets isModified
     assert.strictEqual(manifest.exists, true);
     assert.ok(manifest.created);
@@ -271,7 +272,7 @@ describe('Manifest Tests', () => {
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
     manifest.addResource('/foo', 200);
-    const needsPurge = await manifest.store();
+    const needsPurge = await manifest.store(HelixStorage.fromContext(context).contentBus());
     assert.strictEqual(needsPurge, true);
   });
 
@@ -285,7 +286,7 @@ describe('Manifest Tests', () => {
     nock.content().getObject('/preview/.snapshots/test-snap/.manifest.json').reply(200, JSON.stringify(manifestData));
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
-    const needsPurge = await manifest.store();
+    const needsPurge = await manifest.store(HelixStorage.fromContext(context).contentBus());
     assert.strictEqual(needsPurge, false);
   });
 
@@ -302,7 +303,7 @@ describe('Manifest Tests', () => {
       .reply(204);
     const context = createTestContext();
     const manifest = await Manifest.fromContext(context, 'test-snap');
-    await manifest.delete();
+    await manifest.delete(HelixStorage.fromContext(context).contentBus());
     assert.strictEqual(manifest.exists, false);
   });
 });

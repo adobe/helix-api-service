@@ -144,8 +144,8 @@ export async function snapshotReview(context, info, manifest) {
   if (res.ok) {
     await getNotifier(context).publish(`review-${review}d`, info, {
       ...(message ? { message } : {}),
-      ...(typeof keepResources !== 'undefined'
-        ? { keepResources: ['true', true].includes(keepResources) }
+      ...(keepResources !== undefined
+        ? { keepResources: String(keepResources) === 'true' }
         : {}),
       snapshotId,
     });

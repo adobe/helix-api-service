@@ -80,7 +80,7 @@ export async function updateSnapshot(context, info) {
       } else {
         await contentStorage.copy(srcKey, dstKey, {
           addMetadata: {
-            'x-last-modified-by': context.attributes?.authInfo?.resolveEmail() || 'anonymous',
+            'x-last-modified-by': context.authInfo.resolveEmail() || 'anonymous',
           },
           renameMetadata: {
             'last-modified': `x-last-${fromLive ? 'published' : 'previewed'}`,
@@ -129,7 +129,7 @@ export async function publishSnapshot(context, info) {
         destination,
         {
           addMetadata: {
-            'x-last-modified-by': context.attributes?.authInfo?.resolveEmail() || 'anonymous',
+            'x-last-modified-by': context.authInfo.resolveEmail() || 'anonymous',
           },
         },
       );
@@ -182,7 +182,7 @@ export async function removeSnapshot(context, info) {
       return new Response('', { status: 204 });
     }
 
-    if (await contentStorage.head(fullPath) === null) {
+    if (!await contentStorage.head(fullPath)) {
       log.info(`snapshot [${snapshotId}]: no such resource ${fullPath} (existed in manifest: ${!!existingStatus})`);
       return new Response('', { status: 404 });
     }

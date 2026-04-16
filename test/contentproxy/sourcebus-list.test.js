@@ -14,6 +14,7 @@
 import assert from 'assert';
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
+import xml2js from 'xml2js';
 import { list } from '../../src/contentproxy/source/SourceForest.js';
 import {
   Nock, SITE_CONFIG, createContext, createInfo,
@@ -86,7 +87,43 @@ describe('Source Bus Content Proxy Tests (list)', () => {
     assert.deepStrictEqual(result, JSON.parse(await readFile(specPath('sourcebus/list-documents-result.json'))));
   });
 
-  it('Rejects list if source.url has the correct format', async () => {
+  it('Retrieves tree list from root', async () => {
+    nock.source()
+      .get('/')
+      .query({
+        'list-type': '2',
+        prefix: 'org/site',
+      })
+      .reply(200, new xml2js.Builder().buildObject({
+        ListBucketResult: {
+          Name: 'helix-source-bus',
+          Prefix: 'org/site',
+          KeyCount: 1,
+          Contents: [{
+            Key: 'org/site/index.html',
+            LastModified: '2025-01-01T12:34:56.000Z',
+            Size: 32768,
+          }],
+        },
+      }));
+
+    const { context, info } = setupTest();
+    const result = await list(context, info, ['/*']);
+
+    assert.deepStrictEqual(result, [{
+      path: '/',
+      resourcePath: '/index.md',
+      source: {
+        name: 'index.html',
+        contentType: 'text/html',
+        lastModified: 1735734896000,
+        size: 32768,
+        type: 'source',
+      },
+    }]);
+  });
+
+  it('Rejects list if source.url has the wrong format', async () => {
     const { context, info } = setupTest(undefined, {
       config: {
         ...SITE_MUP_CONFIG('https://api.aem.live/org/sites/status'),
@@ -94,6 +131,7 @@ describe('Source Bus Content Proxy Tests (list)', () => {
     });
     await assert.rejects(list(context, info, ['/documents/*']), new StatusCodeError('Source url must be in the format: https://api.aem.live/<org>/sites/<site>/source. Got: https://api.aem.live/org/sites/status', 400));
   });
+
   it('Rejects list if source.url is on wrong org/site', async () => {
     const { context, info } = setupTest('/org/sites/othersite/contentproxy/', {
       config: {

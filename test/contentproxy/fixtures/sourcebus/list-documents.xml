@@ -10,6 +10,11 @@
         <Size>32768</Size>
     </Contents>
     <Contents>
+        <Key>org/site/documents/</Key>
+        <LastModified>2025-01-01T12:34:56.000Z</LastModified>
+        <Size>0</Size>
+    </Contents>
+    <Contents>
         <Key>org/site/documents/document.html</Key>
         <LastModified>2025-01-01T12:34:56.000Z</LastModified>
         <Size>32768</Size>

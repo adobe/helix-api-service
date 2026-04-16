@@ -1,3 +1,10 @@
+# [1.45.0](https://github.com/adobe/helix-api-service/compare/v1.44.1...v1.45.0) (2026-04-16)
+
+
+### Features
+
+* migrate snapshots ([#197](https://github.com/adobe/helix-api-service/issues/197)) ([c9566c8](https://github.com/adobe/helix-api-service/commit/c9566c84bf5d37cdd618097f1847af541329ca92))
+
 ## [1.44.1](https://github.com/adobe/helix-api-service/compare/v1.44.0...v1.44.1) (2026-04-16)
 
 

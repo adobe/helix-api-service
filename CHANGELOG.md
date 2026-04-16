@@ -1,3 +1,10 @@
+# [1.44.0](https://github.com/adobe/helix-api-service/compare/v1.43.6...v1.44.0) (2026-04-16)
+
+
+### Features
+
+* add authInfo as getter to AdminContext ([#203](https://github.com/adobe/helix-api-service/issues/203)) ([22a4f4e](https://github.com/adobe/helix-api-service/commit/22a4f4e3dfcf0bfea567bc5e468ebc368a18ed8d))
+
 ## [1.43.6](https://github.com/adobe/helix-api-service/compare/v1.43.5...v1.43.6) (2026-04-16)
 
 

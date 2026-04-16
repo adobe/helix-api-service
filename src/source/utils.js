@@ -410,9 +410,7 @@ export async function accessSourceFile(context, key, headRequest) {
  * @return {string} user or 'anonymous'
  */
 export function getUser(context) {
-  const email = context.attributes.authInfo?.profile?.email;
-
-  return email || 'anonymous';
+  return context.authInfo.profile?.email || 'anonymous';
 }
 
 /**

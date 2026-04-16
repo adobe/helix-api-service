@@ -245,7 +245,7 @@ export class Job {
   static async create(ctx, info, topic, opts = {}) {
     const {
       maxQueued = 1024, data = {}, roles = [],
-      user = ctx.attributes?.authInfo?.resolveEmail(),
+      user = ctx.authInfo.resolveEmail(),
       jobClass = Job, noAudit = false,
     } = opts;
     let { transient } = opts;
@@ -778,7 +778,7 @@ export class Job {
 
       this.state = buf ? JSON.parse(buf.toString('utf-8')) : null;
       if (this.state?.user) {
-        const { authInfo } = this.ctx.attributes;
+        const { authInfo } = this.ctx;
         authInfo.withProfile({
           ...(authInfo.profile ?? {}),
           email: this.state.user,
@@ -795,7 +795,7 @@ export class Job {
    */
   async getStatusResponse(report = '') {
     let body;
-    const state = this.ctx.attributes?.authInfo?.hasPermissions?.('log:read')
+    const state = this.ctx.authInfo.hasPermissions?.('log:read')
       ? this.state
       : { ...this.state, user: undefined };
     if (report === 'details') {

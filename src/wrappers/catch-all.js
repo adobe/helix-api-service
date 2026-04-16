@@ -26,7 +26,7 @@ export default function catchAll(func) {
       const response = await func(request, context);
       return response;
     } catch (e) {
-      const { log, attributes: { authInfo } } = context;
+      const { log, authInfo } = context;
       /* c8 ignore start */
       if (e instanceof AccessDeniedError) {
         if (authInfo.authenticated) {

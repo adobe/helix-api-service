@@ -26,7 +26,7 @@ class AggregatedHandler extends BaseHandler {
 
   // eslint-disable-next-line class-methods-use-this
   async getAggregatedSite(context, org, site) {
-    const { attributes: { authInfo } } = context;
+    const { authInfo } = context;
     const isRedacted = !authInfo.hasPermissions('config:read');
 
     const sitesStore = new AdminConfigStore(org, 'sites', site);

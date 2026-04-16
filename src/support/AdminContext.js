@@ -285,6 +285,14 @@ export class AdminContext {
   }
 
   /**
+   * Returns the authentication info for the current request.
+   * @returns {AuthInfo}
+   */
+  get authInfo() {
+    return this.attributes.authInfo;
+  }
+
+  /**
    * Retrieves the index configuration from the underlying storage and stores
    * it in the context as `indexConfig`.
    *

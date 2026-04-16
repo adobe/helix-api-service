@@ -26,7 +26,7 @@ const ALLOWED_METHODS = ['GET', 'POST'];
  * @returns {Promise<Response>} response
  */
 export default async function logHandler(context, info) {
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {

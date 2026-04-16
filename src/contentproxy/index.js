@@ -92,21 +92,19 @@ export async function contentProxy(context, info, opts) {
           mime,
         ));
       }
-      if (validate) {
-        try {
-          await validate(context, resourcePath, buf);
-        } catch (e) {
-          if (e instanceof ValidationError) {
-            return errorResponse(log, 409, e);
-            /* c8 ignore next 8 */
-          } else {
-            // generic error
-            return errorResponse(log, 409, error(
-              'Unable to preview \'$1\': validation failed: $2',
-              resourcePath,
-              e.message,
-            ));
-          }
+      try {
+        await validate?.(context, resourcePath, buf);
+      } catch (e) {
+        if (e instanceof ValidationError) {
+          return errorResponse(log, 409, e);
+          /* c8 ignore next 8 */
+        } else {
+          // generic error
+          return errorResponse(log, 409, error(
+            'Unable to preview \'$1\': validation failed: $2',
+            resourcePath,
+            e.message,
+          ));
         }
       }
       await applyCustomHeaders(context, info, response);

@@ -73,7 +73,7 @@ export class SharepointMatcher {
    * @param {import('../support/AdminContext').AdminContext} context context
    * @param {String[]} segs segments to use for site lookup
    * @param {URL} url original URL
-   * @param {import('../inventory.js').InventoryEntry} candidate candidate entry
+   * @param {import('../Inventory.js').InventoryEntry} candidate candidate entry
    *        that can be used to determine content bus ID and owner
    * @returns matcher
    */
@@ -113,7 +113,7 @@ export class SharepointMatcher {
    *
    * @param {import('../support/AdminContext').AdminContext} context context
    * @param {URL} url url to resolve
-   * @param {import('../inventory.js').Inventory} inventory inventory
+   * @param {import('../Inventory.js').Inventory} inventory inventory
    * @returns resolved URL
    */
   async getMatcher(context, url, inventory) {
@@ -205,7 +205,7 @@ export class SharepointMatcher {
    * Extract some data from a URL to store in the inventory.
    *
    * @param {URL} url url to extract data from
-   * @param {import('../inventory.js').InventoryEntry} entry entry to extract into
+   * @param {import('../Inventory.js').InventoryEntry} entry entry to extract into
    * @returns object that contains additional entries to store in inventory
    */
   async extract(context, url, entry) {

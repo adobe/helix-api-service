@@ -34,7 +34,7 @@ import { loadSiteConfig } from '../config/utils.js';
  */
 export async function logout(context, info) {
   const { data, log } = context;
-  const { org, site, extensionId } = data ?? {};
+  const { org, site, extensionId } = data ?? /* c8 ignore next */ {};
 
   if (extensionId === 'cookie') {
     log.debug('logout: creating html for cookie logout');
@@ -89,7 +89,7 @@ export async function logout(context, info) {
  * @returns {Promise<Response>} response
  */
 export async function login(context, info) {
-  const { log, attributes: { authInfo }, data } = context;
+  const { log, authInfo, data } = context;
 
   // for login requests with repo coordinates, perform mountpoint specific login
   if (data.org && data.site) {
@@ -184,7 +184,7 @@ export async function login(context, info) {
  */
 export async function auth(context, info) {
   const {
-    log, data, attributes: { authInfo }, suffix,
+    log, data, authInfo, suffix,
   } = context;
 
   if (suffix === '/auth/discovery/keys') {

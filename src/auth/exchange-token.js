@@ -17,21 +17,11 @@ import {
   createCloseHtml, createSendMessageHtml, sendAEMCLILoginInfoResponse, createClientSideRedirectHtml,
 } from './responses.js';
 import {
-  decodeIdToken, decodeImsToken,
+  decodeIdToken, decodeImsToken, redactPayload,
   getTransientSiteTokenInfo, PROFILE_PATH,
 } from './support.js';
 import { setAuthCookie } from './cookie.js';
 import localJWKS from '../idp-configs/jwks-json.js';
-
-/**
- * Returns a copy of the decoded token payload with sensitive data masked.
- *
- * @param {object} payload the decoded token payload
- * @returns {object} payload safe for logging
- */
-function redactPayload(payload) {
-  return { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
-}
 
 /**
  * Fetch tokens from IDP.
@@ -286,7 +276,7 @@ export async function exchangeToken(context, info, idp, tenantId) {
     .sign(privateKey);
 
   // ensure that auth cookie is not cleared again in `index.js`
-  context.attributes.authInfo?.withCookieInvalid(false);
+  context.authInfo.withCookieInvalid(false);
 
   // if a extensionId is provided, we send the token via sendmessage
   if (extensionId === 'cookie') {

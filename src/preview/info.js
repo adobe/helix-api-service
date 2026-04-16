@@ -20,7 +20,7 @@ import { toResourcePath } from '../support/RequestInfo.js';
  * @returns {Promise<object>} live info
  */
 export default async function getPreviewInfo(context, info) {
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
 
   if (!authInfo.hasPermissions('preview:read')) {
     return {

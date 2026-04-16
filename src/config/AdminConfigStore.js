@@ -14,7 +14,7 @@ import { ConfigStore, ValidationError } from '@adobe/helix-config-storage';
 import { HelixStorage } from '@adobe/helix-shared-storage';
 import purge from '../cache/purge.js';
 import { error } from '../contentproxy/errors.js';
-import discover from '../discover/reindex.js';
+import discover from '../discover/on-change.js';
 import sitemap from '../sitemap/config-update.js';
 import sourceLock from '../support/source-lock.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';

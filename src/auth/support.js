@@ -74,6 +74,16 @@ function globalFetchAdapter(adobeFetch) {
 }
 
 /**
+ * Returns a copy of the decoded token payload with sensitive data masked.
+ *
+ * @param {object} payload the decoded token payload
+ * @returns {object} payload safe for logging
+ */
+export function redactPayload(payload) {
+  return { ...payload, ...(payload.imsToken && { imsToken: '***' }) };
+}
+
+/**
  * Decodes the given id_token for the given idp. if `lenient` is `true`, the clock tolerance
  * is set to 1 week. this allows to extract some profile information that can be used as login_hint.
  *
@@ -98,6 +108,7 @@ export async function decodeIdToken(context, idp, idToken, opts = {}) {
   });
 
   const validate = idp.validateIssuer ?? ((iss) => (iss) === idp.discovery.issuer);
+  /* c8 ignore next 3 */
   if (!validate(payload.iss)) {
     throw new errors.JWTClaimValidationFailed('unexpected "iss" claim value', 'iss', 'check_failed');
   }
@@ -324,6 +335,7 @@ export async function getTransientSiteTokenInfo(context, info, ids, tokenExpiry)
       siteToken: `hlxtst_${siteToken}`,
       siteTokenExpiry,
     };
+    /* c8 ignore next 4 */
   } catch (e) {
     context.log.warn(`failed to generate transient site tokens: ${e.message}`);
     return null;

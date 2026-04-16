@@ -21,7 +21,7 @@ import { createErrorResponse } from './utils.js';
  * @returns {Promise<Response>} response
  */
 export default async function copy(context, info) {
-  const { attributes, contentBusId, log } = context;
+  const { authInfo, contentBusId, log } = context;
   const { resourcePath } = info;
 
   try {
@@ -31,7 +31,7 @@ export default async function copy(context, info) {
       `${contentBusId}/live${resourcePath}`,
       {
         addMetadata: {
-          'x-last-modified-by': attributes.authInfo?.resolveEmail() || 'anonymous',
+          'x-last-modified-by': authInfo.resolveEmail() || 'anonymous',
         },
       },
     );

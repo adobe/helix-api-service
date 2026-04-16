@@ -98,7 +98,10 @@ async function validateSVG(context, resourcePath, buf) {
   }
 
   const checkForScriptOrHandlers = (node, path) => {
-    if (node.script || node.$?.on) {
+    const hasEventHandler = Object.keys(node.$ ?? {}).some(
+      (attr) => attr.toLowerCase().startsWith('on'),
+    );
+    if (node.script || hasEventHandler) {
       const $2 = path;
 
       throw new ValidationError(
@@ -297,6 +300,13 @@ export const MEDIA_TYPES = [
     name: 'GIF',
     extensions: ['.gif'],
     mime: 'image/gif',
+    redirect: true,
+    validate: validateImage,
+  },
+  {
+    name: 'WebP',
+    extensions: ['.webp'],
+    mime: 'image/webp',
     redirect: true,
     validate: validateImage,
   },

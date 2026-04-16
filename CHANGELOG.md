@@ -1,3 +1,52 @@
+# [1.44.0](https://github.com/adobe/helix-api-service/compare/v1.43.6...v1.44.0) (2026-04-16)
+
+
+### Features
+
+* add authInfo as getter to AdminContext ([#203](https://github.com/adobe/helix-api-service/issues/203)) ([22a4f4e](https://github.com/adobe/helix-api-service/commit/22a4f4e3dfcf0bfea567bc5e468ebc368a18ed8d))
+
+## [1.43.6](https://github.com/adobe/helix-api-service/compare/v1.43.5...v1.43.6) (2026-04-16)
+
+
+### Bug Fixes
+
+* **test:** cover discover#onProjectChanged ([#201](https://github.com/adobe/helix-api-service/issues/201)) ([8bf5df9](https://github.com/adobe/helix-api-service/commit/8bf5df94de470248148b735060d232444056268d)), closes [discover#onProjectChanged](https://github.com/discover/issues/onProjectChanged)
+
+## [1.43.5](https://github.com/adobe/helix-api-service/compare/v1.43.4...v1.43.5) (2026-04-15)
+
+
+### Bug Fixes
+
+* **login:** increase coverage, simplify test descriptions ([f86b7c3](https://github.com/adobe/helix-api-service/commit/f86b7c31a3fd41048122772586bee285f17834c4))
+
+## [1.43.4](https://github.com/adobe/helix-api-service/compare/v1.43.3...v1.43.4) (2026-04-14)
+
+
+### Bug Fixes
+
+* **deps:** update external major (major) ([#196](https://github.com/adobe/helix-api-service/issues/196)) ([9722d55](https://github.com/adobe/helix-api-service/commit/9722d55b3493636b743527cf3456bac87a26fc3a))
+
+## [1.43.3](https://github.com/adobe/helix-api-service/compare/v1.43.2...v1.43.3) (2026-04-14)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes to v3.1020.0 ([#198](https://github.com/adobe/helix-api-service/issues/198)) ([24d8168](https://github.com/adobe/helix-api-service/commit/24d8168e700f47b7be4985b731b53d36eb24d7cb))
+
+## [1.43.2](https://github.com/adobe/helix-api-service/compare/v1.43.1...v1.43.2) (2026-04-14)
+
+
+### Bug Fixes
+
+* **svg:** check onload script handlers ([#194](https://github.com/adobe/helix-api-service/issues/194)) ([ae1e172](https://github.com/adobe/helix-api-service/commit/ae1e172fabdc52e1c0ebc28c2bb638396b761b49))
+
+## [1.43.1](https://github.com/adobe/helix-api-service/compare/v1.43.0...v1.43.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* **deps:** update external fixes ([#195](https://github.com/adobe/helix-api-service/issues/195)) ([e3b489e](https://github.com/adobe/helix-api-service/commit/e3b489e85d07e4c9fd676f85f394bd615f841155))
+
 # [1.43.0](https://github.com/adobe/helix-api-service/compare/v1.42.4...v1.43.0) (2026-04-10)
 
 

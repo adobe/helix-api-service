@@ -136,7 +136,7 @@ export async function sidekickCSRFProtection(context, info) {
   }
 
   const { headers = {} } = info;
-  const { log, attributes: { authInfo } } = context;
+  const { log, authInfo } = context;
 
   if (!authInfo || !authInfo.authenticated || !authInfo.extensionId) {
     // CSRF only applies to authenticated requests

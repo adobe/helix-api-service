@@ -45,14 +45,19 @@ export function getMetadataPaths(context) {
  * @returns {Promise<import('./contentbus.js').ContentBusResource>} a resource
  */
 export async function getContentBusInfo(context, info, partition) {
-  const { attributes } = context;
-  const { content: { contentBusId, source: { type } } } = attributes.config;
+  const {
+    attributes: {
+      bucketMap,
+    }, authInfo, config: {
+      content: { contentBusId, source: { type } },
+    },
+  } = context;
 
   const key = `${contentBusId}/${partition}${info.resourcePath}`;
   const response = await fetchS3(context, 'content', key, true);
   const ret = {
     status: response.status,
-    contentBusId: `${attributes.bucketMap.content}/${key}`,
+    contentBusId: `${bucketMap.content}/${key}`,
   };
   if (response.ok) {
     ret.contentType = response.headers.get('content-type');
@@ -70,7 +75,7 @@ export async function getContentBusInfo(context, info, partition) {
     if (!ret.sourceLocation && type) {
       ret.sourceLocation = `${type}:*`;
     }
-    if (attributes.authInfo?.hasPermissions('log:read')) {
+    if (authInfo.hasPermissions('log:read')) {
       ret.lastModifiedBy = response.headers.get('x-last-modified-by') || undefined;
     }
   } else if (response.status !== 404) {

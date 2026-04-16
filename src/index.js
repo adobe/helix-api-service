@@ -122,7 +122,7 @@ async function run(request, context) {
 
   await context.authenticate(info);
 
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
   if (info.org && !authInfo.authenticated) {
     return new Response('', { status: 401 });
   }

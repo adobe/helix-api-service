@@ -19,7 +19,7 @@ import { HelixStorage } from '@adobe/helix-shared-storage';
  * @returns {Promise<Response>} response
  */
 export async function listBranches(ctx, info) {
-  ctx.attributes.authInfo.assertPermissions('code:read');
+  ctx.authInfo.assertPermissions('code:read');
   const { org, site } = info;
   const codeBus = HelixStorage.fromContext(ctx).codeBus();
   const branches = await codeBus.listFolders(`${org}/${site}/`);

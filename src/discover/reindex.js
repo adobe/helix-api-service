@@ -206,7 +206,7 @@ export async function setOriginalSite(context, org, site) {
  * @returns {Promise<Response>} response
  */
 export async function reindex(context) {
-  const { attributes: { authInfo }, data } = context;
+  const { authInfo, data } = context;
   if (data.org === '*') {
     return reindexAll(context);
   }

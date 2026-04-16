@@ -40,7 +40,7 @@ export const JOB_CLASS = {
  * @returns {Promise<Response>} response
  */
 export default async function jobHandler(ctx, info) {
-  const { log, attributes: { authInfo } } = ctx;
+  const { log, authInfo } = ctx;
 
   if (ALLOWED_METHODS.indexOf(info.method) < 0) {
     return new Response('method not allowed', {
@@ -85,7 +85,7 @@ export default async function jobHandler(ctx, info) {
 
   // list jobs
   if (info.method === 'GET' && !jobName) {
-    ctx.attributes.authInfo.assertPermissions('job:list');
+    authInfo.assertPermissions('job:list');
     return job.list(ctx, info);
   }
 
@@ -111,7 +111,7 @@ export default async function jobHandler(ctx, info) {
   }
 
   // delete job
-  ctx.attributes.authInfo.assertPermissions('job:write');
+  authInfo.assertPermissions('job:write');
   await job.stop();
   return new Response('', {
     status: 204,

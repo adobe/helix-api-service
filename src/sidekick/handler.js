@@ -20,7 +20,7 @@ import { getConfigJsonResponse } from './utils.js';
  * @returns {Promise<Response>} response
  */
 export default async function sidekickHandler(context, info) {
-  const { attributes: { authInfo } } = context;
+  const { authInfo } = context;
 
   if (info.method !== 'GET') {
     return new Response('method not allowed', {

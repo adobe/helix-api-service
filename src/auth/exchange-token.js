@@ -276,7 +276,7 @@ export async function exchangeToken(context, info, idp, tenantId) {
     .sign(privateKey);
 
   // ensure that auth cookie is not cleared again in `index.js`
-  context.attributes.authInfo?.withCookieInvalid(false);
+  context.authInfo.withCookieInvalid(false);
 
   // if a extensionId is provided, we send the token via sendmessage
   if (extensionId === 'cookie') {

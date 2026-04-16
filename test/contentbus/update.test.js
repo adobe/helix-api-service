@@ -34,7 +34,12 @@ describe('ContentBus Remove Tests', () => {
 
   function setupTest(suffix) {
     return {
-      context: createContext(suffix, { env: { HELIX_STORAGE_DISABLE_R2: 'true' } }),
+      context: createContext(suffix, {
+        attributes: {
+          infoMarkerChecked: true,
+        },
+        env: { HELIX_STORAGE_DISABLE_R2: 'true' },
+      }),
       info: createInfo(suffix),
     };
   }
@@ -50,7 +55,7 @@ describe('ContentBus Remove Tests', () => {
     assert.strictEqual(response.headers.get('x-error'), `resource path exceeds ${MAX_KEY_LENGTH - CONTENT_BUS_ID.length - 8} characters`);
   });
 
-  it.skip('fails to redirect media', async () => {
+  it('redirects media', async () => {
     nock.google()
       .user()
       .files([{
@@ -65,12 +70,47 @@ describe('ContentBus Remove Tests', () => {
       });
     nock.media()
       .putObject('/14194ad0b7e2f6d345e3e8070ea9976b588a7d3bc')
-      .reply(500);
+      .reply(201);
+    nock.content()
+      .putObject('/preview/image.png')
+      .reply(201);
 
     const { context, info } = setupTest('/owner/sites/repo/preview/image.png');
 
     const response = await update(context, info);
-    assert.strictEqual(response.status, 400);
-    assert.strictEqual(response.headers.get('x-error'), `resource path exceeds ${MAX_KEY_LENGTH - CONTENT_BUS_ID.length - 8} characters`);
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('preserve redirect', async () => {
+    nock.google()
+      .user()
+      .documents([{
+        mimeType: 'application/vnd.google-apps.document',
+        name: 'index',
+        id: '1jXZBaOHP9x9-2NiYPbeyiWOHbmDRKobIeb11JdCVyUw',
+      }]);
+
+    nock('https://lambda.us-east-1.amazonaws.com')
+      .post('/2015-03-31/functions/helix3--gdocs2md%3Av7/invocations')
+      .reply(200, JSON.stringify({
+        statusCode: 200,
+        headers: {
+          'x-source-location': '1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+        },
+        body: '# hello, world!',
+      }));
+
+    nock.content()
+      .head('/preview/index.md')
+      .reply(200, '', {
+        'x-amz-meta-redirect-location': '/target',
+      })
+      .putObject('/preview/index.md')
+      .reply(201);
+
+    const { context, info } = setupTest('/owner/sites/repo/preview/');
+
+    const response = await update(context, info);
+    assert.strictEqual(response.status, 200);
   });
 });

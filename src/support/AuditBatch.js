@@ -9,8 +9,7 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
-import { BatchedQueueClient, getContentBusId } from '@adobe/helix-admin-support';
+import { BatchedQueueClient } from '@adobe/helix-admin-support';
 import { getPackedMessageQueue, getSingleMessageQueue } from './utils.js';
 
 /**
@@ -21,13 +20,11 @@ import { getPackedMessageQueue, getSingleMessageQueue } from './utils.js';
  * @param {import('@adobe/fetch').Response} res response
  * @returns flag indicating whether the outcome of an action should be logged
  */
-function shouldAudit(context, info, res) {
-  const { attributes, runtime, log } = context;
-  if (!runtime) {
-    return false;
-  }
+export function shouldAudit(context, info, res) {
+  const { attributes, log } = context;
   const { route, method, org } = info;
-  if (['log', 'cron'].includes(route)) {
+
+  if (route === 'log') {
     return false;
   }
   if (!['POST', 'DELETE', 'PUT'].includes(method)) {
@@ -63,7 +60,7 @@ function shouldAudit(context, info, res) {
 }
 
 /**
- * Create a notification
+ * Create a notification.
  *
  * @param {import('./AdminContext.js').AdminContext} context context
  * @param {import('./RequestInfo.js').RequestInfo} info request info
@@ -76,8 +73,9 @@ function shouldAudit(context, info, res) {
  * @param {boolean} [opts.logDetails] flag indicating whether to log errors and details
  * @returns {Promise<Notification>}
  */
-async function createNotification(context, info, opts) {
-  const { route, method } = info;
+export async function createNotification(context, info, opts) {
+  const { attributes, authInfo, contentBusId } = context;
+  const { route, method, webPath: path } = info;
   const {
     res, start, stop, url,
     properties = {}, logDetails = true,
@@ -86,8 +84,6 @@ async function createNotification(context, info, opts) {
   if (res && !shouldAudit(context, info, res)) {
     return null;
   }
-
-  const contentBusId = await getContentBusId(context, info, true);
   if (!contentBusId) {
     return null;
   }
@@ -97,10 +93,6 @@ async function createNotification(context, info, opts) {
     timestamp: start,
     contentBusId,
   };
-
-  const path = route === 'config' && !properties.migrate
-    ? `${context.pathInfo.suffix.substring(7)}`
-    : info.path;
 
   if (res) {
     Object.assign(notification, {
@@ -116,7 +108,7 @@ async function createNotification(context, info, opts) {
     }
   }
 
-  const user = context.authInfo.resolveEmail();
+  const user = authInfo.resolveEmail();
   if (user) {
     notification.user = user;
   }
@@ -132,8 +124,8 @@ async function createNotification(context, info, opts) {
     notification.paths = context.data.paths;
   }
 
-  if (context.attributes?.snapshotManifest) {
-    const { snapshotManifest } = context.attributes;
+  const { snapshotManifest } = attributes;
+  if (snapshotManifest) {
     const { id, resources } = snapshotManifest;
     notification.snapshotId = id;
     if (!notification.resources && resources instanceof Map) {

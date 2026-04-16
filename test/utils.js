@@ -279,7 +279,7 @@ export function Nock() {
     return scope;
   };
 
-  nocker.google = (content) => new GoogleNock(nocker, content);
+  nocker.google = (content = SITE_CONFIG.content) => new GoogleNock(nocker, content);
   nocker.onedrive = (content) => new OneDriveNock(nocker, content);
 
   nocker.sqs = (queue, entries) => new SQSNock(nocker, queue, entries);

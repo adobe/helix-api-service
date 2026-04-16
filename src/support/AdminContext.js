@@ -280,8 +280,8 @@ export class AdminContext {
    * @returns {string} contentBusId
    */
   get contentBusId() {
-    const { attributes: { config: { content: { contentBusId } } } } = this;
-    return contentBusId;
+    const { config } = this;
+    return config?.content?.contentBusId ?? null;
   }
 
   /**

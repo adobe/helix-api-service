@@ -18,7 +18,7 @@ import { createErrorResponse } from './utils.js';
 /**
  * S3 key max length
  */
-const MAX_KEY_LENGTH = 1024;
+export const MAX_KEY_LENGTH = 1024;
 
 /**
  * Fetches content from all sources configured.

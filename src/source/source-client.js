@@ -21,7 +21,6 @@ import { getDocID, MAX_SOURCE_BUCKET_RETRY } from './utils.js';
 export const VERSION_FOLDER = '.versions';
 export class CopyOptions {
   /**
-   * @param {object} options
    * @param {string} options.src source S3 key
    * @param {import('../support/RequestInfo').RequestInfo} options.info destination info
    * @param {boolean} options.move whether to move the source
@@ -31,7 +30,7 @@ export class CopyOptions {
    * @param {object} options.collOpts collision options
    */
   constructor({
-    src, info, move, opts = {}, fnOpts, collOpts,
+    src, info, move, opts, fnOpts, collOpts,
   }) {
     this.src = src;
     this.info = info;

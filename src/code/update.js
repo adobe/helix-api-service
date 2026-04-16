@@ -31,8 +31,7 @@ import { errorResponse } from '../support/utils.js';
  * @param {import('../support/AdminContext').AdminContext} ctx
  */
 function isDeploymentAllowed(ctx) {
-  const { authInfo } = ctx;
-  return authInfo?.hasPermissions('code:write') === true;
+  return ctx.authInfo.hasPermissions('code:write') === true;
 }
 
 /**

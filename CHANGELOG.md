@@ -1,3 +1,10 @@
+## [1.44.1](https://github.com/adobe/helix-api-service/compare/v1.44.0...v1.44.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* **publish-job:** get `ctx` and `info` from Job ([#204](https://github.com/adobe/helix-api-service/issues/204)) ([08c016f](https://github.com/adobe/helix-api-service/commit/08c016f0ede8f6fcc060d0c532908ca2756d2f06))
+
 # [1.44.0](https://github.com/adobe/helix-api-service/compare/v1.43.6...v1.44.0) (2026-04-16)
 
 

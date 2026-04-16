@@ -66,54 +66,13 @@ describe('Source Delete Tests', () => {
     assert.equal(resp.status, 503);
   });
 
-  const BUCKET_LIST_RESULT = `
-  <ListBucketResult>
-    <Name>my-bucket</Name>
-    <Prefix>org1/site2/a/b/</Prefix>
-    <Marker></Marker>
-    <MaxKeys>1000</MaxKeys>
-    <IsTruncated>false</IsTruncated>
-    <Contents>
-      <Key>org1/site2/a/b/c/some.json</Key>
-      <LastModified>2025-01-01T12:34:56.000Z</LastModified>
-      <Size>32768</Size>
-    </Contents>
-    <Contents>
-      <Key>org1/site2/a/b/c/my.pdf</Key>
-      <LastModified>2025-01-01T12:34:56.000Z</LastModified>
-      <Size>111</Size>
-    </Contents>
-    <Contents>
-      <Key>org1/site2/a/b/page.html</Key>
-      <LastModified>2021-12-31T01:01:01.001Z</LastModified>
-      <Size>123</Size>
-    </Contents>
-  </ListBucketResult>`;
-
-  const BUCKET_LIST_EMPTY_TRASH = `
-    <ListBucketResult>
-      <Name>my-bucket</Name>
-      <Marker></Marker>
-      <MaxKeys>1000</MaxKeys>
-      <IsTruncated>false</IsTruncated>
-    </ListBucketResult>`;
-
   it('test delete folder', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        prefix: 'org1/site2/a/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+    nock.listObjects('helix-source-bus', 'org1/site2/.trash/b/', []);
+    nock.listObjects('helix-source-bus', 'org1/site2/a/b/', [
+      { Key: 'c/some.json' },
+      { Key: 'c/my.pdf' },
+      { Key: 'page.html' },
+    ], '');
 
     nock.source()
       .headObject('/org1/site2/a/b/c/some.json')
@@ -172,36 +131,15 @@ describe('Source Delete Tests', () => {
     assert.equal(resp.status, 204);
   });
 
-  const BUCKET_LIST_TRASH = `
-    <ListBucketResult>
-      <Name>my-bucket</Name>
-      <Marker></Marker>
-      <MaxKeys>1000</MaxKeys>
-      <IsTruncated>false</IsTruncated>
-      <Contents>
-        <Key>org1/site2/.trash/b/hello.html</Key>
-        <LastModified>2025-01-01T12:34:56.000Z</LastModified>
-        <Size>3141592653</Size>
-      </Contents>
-    </ListBucketResult>`;
-
   it('test delete folder which is already in the trash', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        delimiter: '/',
-        'list-type': '2',
-        prefix: 'org1/site2/.trash/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_TRASH));
-
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        prefix: 'org1/site2/a/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+    nock.listObjects('helix-source-bus', 'org1/site2/.trash/b/', [
+      { Key: 'hello.html' },
+    ]);
+    nock.listObjects('helix-source-bus', 'org1/site2/a/b/', [
+      { Key: 'c/some.json' },
+      { Key: 'c/my.pdf' },
+      { Key: 'page.html' },
+    ], '');
 
     nock.source()
       .headObject('/org1/site2/a/b/c/some.json')
@@ -265,42 +203,20 @@ describe('Source Delete Tests', () => {
   });
 
   it('test delete folder not found', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/nope/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        prefix: 'org1/site2/nope/',
-      })
-      .reply(200, Buffer.from('<ListBucketResult><Name>abc</Name></ListBucketResult>'));
+    nock.listObjects('helix-source-bus', 'org1/site2/.trash/nope/', []);
+    nock.listObjects('helix-source-bus', 'org1/site2/nope/', [], '');
     const info = createInfo('/org1/sites/site2/source/nope/');
     const resp = await deleteSource(context, info);
     assert.equal(resp.status, 404);
   });
 
   it('test delete folder with file error', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        prefix: 'org1/site2/a/b/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_RESULT));
+    nock.listObjects('helix-source-bus', 'org1/site2/.trash/b/', []);
+    nock.listObjects('helix-source-bus', 'org1/site2/a/b/', [
+      { Key: 'c/some.json' },
+      { Key: 'c/my.pdf' },
+      { Key: 'page.html' },
+    ], '');
 
     nock.source()
       .headObject('/org1/site2/a/b/c/some.json')
@@ -360,15 +276,8 @@ describe('Source Delete Tests', () => {
   });
 
   it('test delete folder error', async () => {
-    nock.source()
-      .get('/')
-      .query({
-        'list-type': '2',
-        delimiter: '/',
-        prefix: 'org1/site2/.trash/nope/',
-      })
-      .reply(200, Buffer.from(BUCKET_LIST_EMPTY_TRASH));
-    nock.source()
+    nock.listObjects('helix-source-bus', 'org1/site2/.trash/nope/', []);
+    nock('https://helix-source-bus.s3.us-east-1.amazonaws.com')
       .get('/')
       .query({
         'list-type': '2',

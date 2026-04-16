@@ -108,9 +108,9 @@ export class PreviewJob extends Job {
     });
   }
 
+  /* c8 ignore next 6 */
   async sleep(retry) {
-    const { ctx } = this;
-    const { log } = ctx;
+    const { ctx: { log } } = this;
 
     log.info(`rate limit exceeded. sleeping for ${retry}s`);
     await sleep(retry * 1000);

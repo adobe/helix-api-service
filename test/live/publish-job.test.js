@@ -86,7 +86,7 @@ const createJob = async (ctx, info, paths, { forceUpdate = false } = {}) => {
   job.audit = async function audit() {
     return true;
   };
-  job.indexBatch = async function indexBatch(_ctx, _info, resources) {
+  job.indexBatch = async function indexBatch(resources) {
     const toIndex = resources.filter((r) => r.needsIndexing());
     for (const resource of toIndex) {
       resource.setIndexed();

@@ -32,11 +32,12 @@ describe('ContentBus Update Tests', () => {
     nock.done();
   });
 
-  function setupTest(suffix) {
+  function setupTest(suffix, { attributes = {} } = {}) {
     return {
       context: createContext(suffix, {
         attributes: {
           infoMarkerChecked: true,
+          ...attributes,
         },
         env: { HELIX_STORAGE_DISABLE_R2: 'true' },
       }),
@@ -106,11 +107,52 @@ describe('ContentBus Update Tests', () => {
         'x-amz-meta-redirect-location': '/target',
       })
       .putObject('/preview/index.md')
-      .reply(201);
+      .reply(500);
 
     const { context, info } = setupTest('/owner/sites/repo/preview/');
 
     const response = await update(context, info);
-    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.status, 500);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': '[S3] UnknownError',
+    });
+  });
+
+  it('fetch from overlay fails', async () => {
+    const config = {
+      ...SITE_CONFIG,
+      content: {
+        ...SITE_CONFIG.content,
+        overlay: {
+          type: 'markup',
+          url: 'https://content.da.live/org/site',
+        },
+      },
+    };
+    nock('https://lambda.us-east-1.amazonaws.com')
+      .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
+      .reply(200, JSON.stringify({
+        statusCode: 429,
+        headers: {},
+        body: '',
+      }));
+
+    const { context, info } = setupTest('/owner/sites/repo/preview/', {
+      attributes: {
+        config,
+      },
+    });
+
+    const response = await update(context, info);
+    assert.strictEqual(response.status, 503);
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'Unable to fetch \'/index.md\' from \'html2md\': (429) - 429',
+      'x-error-code': 'AEM_BACKEND_FETCH_FAILED',
+      'x-severity': 'warn',
+      'x-source-location': 'markup:undefined',
+    });
   });
 });

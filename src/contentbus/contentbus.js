@@ -30,7 +30,6 @@ export function getMetadataPaths(context) {
   const { attributes: { config } } = context;
   return coerceArray(
     config?.metadata?.source
-    || config?.data?.metadata
     || [METADATA_JSON_PATH],
   );
 }

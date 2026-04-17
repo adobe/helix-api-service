@@ -11,10 +11,12 @@
  */
 /* eslint-env mocha */
 import assert from 'assert';
+import sinon from 'sinon';
 import purge, {
   getPurgePathVariants,
   PURGE_LIVE, PURGE_PREVIEW, PURGE_PREVIEW_AND_LIVE,
 } from '../../src/cache/purge.js';
+import resolve from '../../src/cache/resolve.js';
 import {
   createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
@@ -43,11 +45,16 @@ describe('Purge Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {
+    sandbox.restore();
     nock.done();
   });
 
@@ -55,7 +62,7 @@ describe('Purge Tests', () => {
     HLX_FASTLY_PURGE_TOKEN: '1234',
   };
 
-  describe('(url)', () => {
+  describe('url', () => {
     function setupTest(path = '/') {
       const suffix = `/org/sites/site/cache${path}`;
       const context = createContext(suffix, { env: ENV });
@@ -176,7 +183,7 @@ describe('Purge Tests', () => {
     });
   });
 
-  describe('(surrogate)', () => {
+  describe('surrogate', () => {
     function setupTest(path = '/en/query-index.json', { env = ENV, metadata = {} } = {}) {
       const suffix = `/org/sites/site/cache${path}`;
       const context = createContext(suffix, {
@@ -389,7 +396,84 @@ describe('Purge Tests', () => {
     });
   });
 
-  describe('(code)', () => {
+  describe('config', () => {
+    beforeEach(() => {
+      sandbox.stub(resolve, 'isCloudflareZone').returns(true);
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    function setupTest() {
+      const suffix = '/org/sites/site/config.json';
+      const context = createContext(suffix, {
+        env: {
+          ...ENV,
+          AEM_PAGE_ZONE_ID: '1234',
+          AEM_CLOUDFLARE_PAGE_ZONE_ID: '5678',
+          CLOUDFLARE_PURGE_TOKEN: '1234',
+        },
+        attributes: {
+          config: SITE_CONFIG,
+        },
+      });
+      const info = createInfo(suffix)
+        .withCode('owner', 'repo').withRef('main');
+      return { context, info };
+    }
+
+    it('purges site config', async () => {
+      nock('https://api.fastly.com')
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(200)
+        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
+        .reply(200);
+      nock('https://api.cloudflare.com')
+        .post('/client/v4/zones/1234/purge_cache')
+        .times(2)
+        .reply(200, {
+          success: true,
+        })
+        .post('/client/v4/zones/5678/purge_cache')
+        .times(2)
+        .reply(200, {
+          success: true,
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.config(context, info, PURGE_LIVE);
+      assert.strictEqual(result.status, 200);
+    });
+
+    it('purges org config', async () => {
+      nock('https://api.fastly.com')
+        .post('/service/In8SInYz3UQGjyG0GPZM42/purge')
+        .reply(200)
+        .post('/service/SIDuP3HxleUgBDR3Gi8T24/purge')
+        .reply(200);
+      nock('https://api.cloudflare.com')
+        .post('/client/v4/zones/1234/purge_cache')
+        .times(2)
+        .reply(200, {
+          success: true,
+        })
+        .post('/client/v4/zones/5678/purge_cache')
+        .times(2)
+        .reply(200, {
+          success: true,
+        });
+
+      const { context, info } = setupTest();
+      const result = await purge.config(context, {
+        ...info,
+        purgeOrg: true,
+      }, PURGE_LIVE);
+      assert.strictEqual(result.status, 200);
+    });
+  });
+
+  describe('code', () => {
     function toCDNConfig(sheet) {
       const config = {};
       sheet.data.forEach(({ key, value }) => {

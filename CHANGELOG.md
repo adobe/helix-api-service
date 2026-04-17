@@ -1,3 +1,10 @@
+## [1.45.3](https://github.com/adobe/helix-api-service/compare/v1.45.2...v1.45.3) (2026-04-17)
+
+
+### Bug Fixes
+
+* increase coverage of `src/contentbus` to 100% ([0f66dc4](https://github.com/adobe/helix-api-service/commit/0f66dc47b88bb4ca82259e14b9beda36878ce25d))
+
 ## [1.45.2](https://github.com/adobe/helix-api-service/compare/v1.45.1...v1.45.2) (2026-04-17)
 
 

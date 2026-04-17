@@ -1,3 +1,10 @@
+## [1.45.2](https://github.com/adobe/helix-api-service/compare/v1.45.1...v1.45.2) (2026-04-17)
+
+
+### Bug Fixes
+
+* **coverage:** remove unnecessary guards (jobs always have a `path`) ([27c7176](https://github.com/adobe/helix-api-service/commit/27c7176b9f670d988f7b77266ac1d820c6660266))
+
 ## [1.45.1](https://github.com/adobe/helix-api-service/compare/v1.45.0...v1.45.1) (2026-04-16)
 
 

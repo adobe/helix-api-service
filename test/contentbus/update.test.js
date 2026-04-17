@@ -20,7 +20,7 @@ import update, { MAX_KEY_LENGTH } from '../../src/contentbus/update.js';
 
 const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
 
-describe('ContentBus Remove Tests', () => {
+describe('ContentBus Update Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 

@@ -20,8 +20,7 @@ import { Octokit } from '@octokit/rest';
 import { computeSurrogateKey } from '@adobe/helix-shared-utils';
 import { sanitizeName } from '@adobe/helix-shared-string';
 import {
-  createContext, createInfo,
-  Nock, SITE_CONFIG,
+  createContext, createInfo, Nock, SITE_CONFIG,
 } from '../utils.js';
 import { CodeJob } from '../../src/code/CodeJob.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
@@ -30,6 +29,8 @@ import { JobStorage } from '../../src/job/JobStorage.js';
 import { RateLimitError } from '../../src/code/RateLimitError.js';
 import purge from '../../src/cache/purge.js';
 import { CodeResource } from '../../src/code/CodeResource.js';
+
+const CONTENT_BUS_ID = SITE_CONFIG.content.contentBusId;
 
 const DEFAULT_OCTOKIT = (ctx) => new Octokit({
   request: { fetch: ctx.getFetch() },
@@ -218,6 +219,7 @@ describe('Code Job tests', () => {
   let configBus;
   let contentBus;
   let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
     storage = new MockStorageS3();
@@ -233,7 +235,6 @@ describe('Code Job tests', () => {
         HLX_FASTLY_PURGE_TOKEN: '1234',
       },
     });
-    ctx.attributes.config.content.contentBusId = 'foo-id';
     ctx.attributes.octokits = {
       42: DEFAULT_OCTOKIT(ctx),
     };
@@ -1869,7 +1870,7 @@ describe('Code Job tests', () => {
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-query.yaml', 'foo');
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-repository': 'owner/repo',
         'original-site': 'owner/repo',
       });
@@ -1890,7 +1891,7 @@ describe('Code Job tests', () => {
         status: 204,
       }]);
       assert.deepEqual(codeBus.removed, ['/owner/repo/main/helix-query.yaml']);
-      assert.deepEqual(contentBus.removed, ['foo-id/preview/.helix/query.yaml']);
+      assert.deepEqual(contentBus.removed, [`${CONTENT_BUS_ID}/preview/.helix/query.yaml`]);
     });
 
     it('deleting helix-query.yaml on forked repo should not remove query.yaml in content', async () => {
@@ -1901,7 +1902,7 @@ describe('Code Job tests', () => {
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       events.owner = 'other';
       codeBus.withFile('/other/repo/main/helix-query.yaml', 'foo');
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-repository': 'owner/repo',
       });
 
@@ -1930,7 +1931,7 @@ describe('Code Job tests', () => {
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-query.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-query.yaml', 'foo');
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-repository': 'owner/repo',
       });
 
@@ -1959,7 +1960,7 @@ describe('Code Job tests', () => {
         .reply(200, { resources: { core: { limit: 5000, remaining: 4999, reset: 1625731200 } } });
       const events = JSON.parse(await fs.readFile(path.resolve(__testdir, 'code', 'fixtures', 'events-delete-sitemap.json'), 'utf-8'));
       codeBus.withFile('/owner/repo/main/helix-sitemap.yaml', 'foo');
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-repository': 'owner/repo',
         'original-site': 'owner/repo',
       });
@@ -1980,7 +1981,7 @@ describe('Code Job tests', () => {
         status: 204,
       }]);
       assert.deepEqual(codeBus.removed, ['/owner/repo/main/helix-sitemap.yaml']);
-      assert.deepEqual(contentBus.removed, ['foo-id/preview/.helix/sitemap.yaml']);
+      assert.deepEqual(contentBus.removed, [`${CONTENT_BUS_ID}/preview/.helix/sitemap.yaml`]);
     });
 
     it('sync events ignored if job stopped', async () => {
@@ -2256,7 +2257,7 @@ sitemaps:
     it('handles helix-query.yaml update (main)', async () => {
       codeBus
         .withFile('/owner/repo/main/helix-query.yaml', INDEX_NEW);
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-site': 'owner/repo',
       });
 
@@ -2269,12 +2270,12 @@ sitemaps:
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 1);
-      assert.strictEqual(contentBus.added[0].filePath, 'foo-id/preview/.helix/query.yaml');
+      assert.strictEqual(contentBus.added[0].filePath, `${CONTENT_BUS_ID}/preview/.helix/query.yaml`);
       assert.deepEqual(contentBus.added[0].body, INDEX_NEW);
     });
 
     it('handles helix-query.yaml remove (main)', async () => {
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-site': 'owner/repo',
       });
 
@@ -2288,13 +2289,13 @@ sitemaps:
       await job.postProcess();
 
       assert.strictEqual(contentBus.removed.length, 1);
-      assert.strictEqual(contentBus.removed[0], 'foo-id/preview/.helix/query.yaml');
+      assert.strictEqual(contentBus.removed[0], `${CONTENT_BUS_ID}/preview/.helix/query.yaml`);
     });
 
     it('handles error while updating helix-query.yaml', async () => {
       codeBus
         .withFile('/owner/repo/main/helix-query.yaml', 'indices');
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-site': 'owner/repo',
       });
 
@@ -2312,7 +2313,7 @@ sitemaps:
     it('handles helix-sitemap.yaml update (main)', async () => {
       codeBus
         .withFile('/owner/repo/main/helix-sitemap.yaml', SITEMAP_NEW);
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-site': 'owner/repo',
       });
 
@@ -2325,13 +2326,13 @@ sitemaps:
       await job.postProcess();
 
       assert.strictEqual(contentBus.added.length, 1);
-      assert.strictEqual(contentBus.added[0].filePath, 'foo-id/preview/.helix/sitemap.yaml');
+      assert.strictEqual(contentBus.added[0].filePath, `${CONTENT_BUS_ID}/preview/.helix/sitemap.yaml`);
       assert.deepEqual(contentBus.added[0].body, SITEMAP_NEW);
     });
 
     it('ignored helix-sitemap.yaml update (forked)', async () => {
       codeBus.withFile('/other/repo/main/helix-sitemap.yaml', SITEMAP_NEW);
-      contentBus.withFile('foo-id/.hlx.json', {
+      contentBus.withFile(`${CONTENT_BUS_ID}/.hlx.json`, {
         'original-site': 'owner/repo',
       });
 

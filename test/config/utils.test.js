@@ -12,11 +12,65 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
-import { loadOrgConfig, loadSiteConfig } from '../../src/config/utils.js';
-import { Nock } from '../utils.js';
-import { AdminContext } from '../../src/support/AdminContext.js';
+import { loadOrgConfig, loadSiteConfig, getUserListPaths } from '../../src/config/utils.js';
+import { Nock, createContext, SITE_CONFIG } from '../utils.js';
 
 describe('Config Utils Tests', () => {
+  /** @type {import('../utils.js').NockEnv} */
+  let nock;
+
+  /** @type {import('../utils.js').AdminContext} */
+  let context;
+
+  beforeEach(() => {
+    nock = new Nock().env();
+    context = createContext('/org/sites/site/status/index.md');
+  });
+
+  afterEach(() => {
+    nock.done();
+  });
+
+  it('return null for non 404 error config response', async () => {
+    nock.siteConfig()
+      .reply(500);
+
+    const config = await loadSiteConfig(context, 'org', 'site');
+    assert.strictEqual(config, null);
+  });
+
+  it('throws error for error config', async () => {
+    nock.siteConfig()
+      .replyWithError(new Error('boom!'));
+
+    const task = loadSiteConfig(context, 'org', 'site');
+    await assert.rejects(
+      task,
+      /Fetching site config from https:\/\/config.aem.page\/main--site--org\/config.json\?scope=admin failed: boom!/,
+    );
+  });
+
+  it('return null for non 404 error org config response', async () => {
+    nock.orgConfig()
+      .reply(500);
+
+    const config = await loadOrgConfig(context, 'org');
+    assert.strictEqual(config, null);
+  });
+
+  it('throws error for error config', async () => {
+    nock.orgConfig()
+      .replyWithError(new Error('boom!'));
+
+    const task = loadOrgConfig(context, 'org', 'site');
+    await assert.rejects(
+      task,
+      /Fetching org config from https:\/\/config.aem.page\/org\/config.json\?scope=admin failed: boom!/,
+    );
+  });
+});
+
+describe('getUserListPaths', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
@@ -28,69 +82,17 @@ describe('Config Utils Tests', () => {
     nock.done();
   });
 
-  it('return null for non 404 error config response', async () => {
-    nock.siteConfig()
-      .reply(500);
-
-    const cfg = await loadSiteConfig(AdminContext.create({
-      pathInfo: {
-        suffix: '/org/sites/site/status/index.md',
+  it('returns the correct paths', async () => {
+    const access = { admin: { role: { editor: ['/editor'] } } };
+    const context = createContext('/org/sites/site/status/index.md', {
+      attributes: {
+        config: {
+          ...SITE_CONFIG,
+          access,
+        },
       },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }), 'org', 'site');
-    assert.strictEqual(cfg, null);
-  });
-
-  it('throws error for error config', async () => {
-    nock.siteConfig()
-      .replyWithError(new Error('boom!'));
-
-    const task = loadSiteConfig(AdminContext.create({
-      pathInfo: {
-        suffix: '/org/sites/owner/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }), 'org', 'site');
-    await assert.rejects(
-      task,
-      /Fetching site config from https:\/\/config.aem.page\/main--site--org\/config.json\?scope=admin failed: boom!/,
-    );
-  });
-
-  it('return null for non 404 error org config response', async () => {
-    nock.orgConfig()
-      .reply(500);
-
-    const cfg = await loadOrgConfig(AdminContext.create({
-      pathInfo: {
-        suffix: '/org/sites/site/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }), 'org', 'site');
-    assert.strictEqual(cfg, null);
-  });
-
-  it('throws error for error config', async () => {
-    nock.orgConfig()
-      .replyWithError(new Error('boom!'));
-
-    const task = loadOrgConfig(AdminContext.create({
-      pathInfo: {
-        suffix: '/org/sites/owner/status/index.md',
-      },
-      env: {
-        HLX_CONFIG_SERVICE_TOKEN: 'token',
-      },
-    }), 'org', 'site');
-    await assert.rejects(
-      task,
-      /Fetching org config from https:\/\/config.aem.page\/org\/config.json\?scope=admin failed: boom!/,
-    );
+    });
+    const paths = await getUserListPaths(context);
+    assert.deepStrictEqual(paths, ['/editor']);
   });
 });

@@ -13,19 +13,12 @@
 import { Response } from '@adobe/fetch';
 import processQueue from '@adobe/helix-shared-process-queue';
 import { HelixStorage } from '@adobe/helix-shared-storage';
-import { isValid, ulid } from 'ulid';
+import { isValid } from 'ulid';
 import { createErrorResponse } from '../contentbus/utils.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
-
-import {
-  accessSourceFile,
-  getS3Key,
-  getDocID,
-  getUser,
-  MAX_SOURCE_BUCKET_RETRY,
-} from './utils.js';
-
-export const VERSION_FOLDER = '.versions';
+import { getS3Key } from './s3-path-utils.js';
+import { accessSourceFile, VERSION_FOLDER } from './source-client.js';
+import { getDocID } from './utils.js';
 
 function handleNoVersions() {
   const headers = {
@@ -129,88 +122,6 @@ export async function getOrListVersions(context, info, headRequest) {
 
     const versionKey = `${versionDirKey}${versionId}`;
     return await accessSourceFile(context, versionKey, headRequest);
-  } catch (e) {
-    const opts = { e, log: context.log };
-    opts.status = e.$metadata?.httpStatusCode;
-    return createErrorResponse(opts);
-  }
-}
-
-/**
- * Create a version of the source file.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} baseKey base key of the source file, must not start with a slash
- * @param {string} operation operation that triggered the version creation
- * @param {string} comment comment for the version
- * @param {string} etag ETag of the source file to version (optional)
- * @returns {Promise<Response>} response with the file body and metadata
- */
-export async function postVersion(context, baseKey, operation, comment, etag) {
-  if (baseKey.startsWith('/')) {
-    return new Response('', { status: 400 });
-  }
-
-  const { org, site } = context.config;
-
-  try {
-    const bucket = HelixStorage.fromContext(context).sourceBus();
-
-    const maxRetry = context.attributes.maxSourceBucketRetry ?? MAX_SOURCE_BUCKET_RETRY;
-    let attempt = 0;
-    while (true) {
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        const head = await bucket.head(baseKey);
-        if (!head) {
-          return new Response('', { status: 404 });
-        }
-
-        const id = getDocID(head);
-        const versionFolderKey = `${org}/${site}/${VERSION_FOLDER}/${id}/`;
-        const pathName = `/${baseKey.split('/').slice(2).join('/')}`;
-
-        const versionId = ulid();
-        const versionKey = `${versionFolderKey}${versionId}`;
-
-        const addMetadata = {
-          'doc-path-hint': pathName,
-          'doc-last-modified': head.LastModified.toISOString(),
-          'version-by': getUser(context),
-          ...(comment && { 'version-comment': comment }),
-          ...(operation && { 'version-operation': operation }),
-        };
-        const renameMetadata = {
-          'last-modified-by': 'doc-last-modified-by',
-        };
-        const copyOpts = { CopySourceIfMatch: etag || head.ETag };
-
-        // eslint-disable-next-line no-await-in-loop
-        await bucket.copy(baseKey, versionKey, { addMetadata, renameMetadata, copyOpts });
-
-        const headers = {
-          Location: `/${org}/sites/${site}/source${pathName}/${VERSION_FOLDER}/${versionId}`,
-        };
-
-        // copy was successful, we're done
-        return new Response('', { status: 201, headers });
-      } catch (e) {
-        attempt += 1;
-        if (attempt > maxRetry) {
-          throw e;
-        }
-
-        // Retry if we received a 412 precondition failed, but not if the etag was provided to
-        // this function (because in that case looping were won't refesh the etag).
-        if (e.$metadata?.httpStatusCode !== 412 || etag) {
-          throw e;
-        }
-
-        // We end up when the response is a 412 Precondition Failed, which means that
-        // the document that we're about to version has been changed since we obtained
-        // its metadata. We need to redo the operation with fresh metadata.
-      }
-    }
   } catch (e) {
     const opts = { e, log: context.log };
     opts.status = e.$metadata?.httpStatusCode;

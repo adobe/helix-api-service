@@ -9,16 +9,12 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
-import { Response } from '@adobe/fetch';
 import { maxSizeMediaFilter, MediaHandler } from '@adobe/helix-mediahandler';
 import processQueue from '@adobe/helix-shared-process-queue';
-import { HelixStorage } from '@adobe/helix-shared-storage';
 import { format } from 'hast-util-format';
 import { fromHtml } from 'hast-util-from-html';
 import { select } from 'hast-util-select';
 import { toHtml } from 'hast-util-to-html';
-import { ulid } from 'ulid';
 import { visit, CONTINUE } from 'unist-util-visit';
 import { MEDIA_TYPES } from '../media/validate.js';
 import { StatusCodeError } from '../support/StatusCodeError.js';
@@ -105,29 +101,6 @@ function getHast(body) {
   return fromHtml(body.toString(), {
     onerror: validateHtmlError,
   });
-}
-
-/**
- * Get the S3 key from the organization, site, and path.
- *
- * @param {string} org organization
- * @param {string} site site
- * @param {string} path document path
- * @returns {string} the S3 key
- */
-export function getS3Key(org, site, path) {
-  return `${org}/${site}${path}`;
-}
-
-/**
- * Get the source bus key from the request info.
- *
- * @param {import('../support/RequestInfo').RequestInfo} info request info
- * @return {string} the source bus path
- */
-export function getS3KeyFromInfo(info) {
-  const { org, site, resourcePath } = info;
-  return getS3Key(org, site, resourcePath);
 }
 
 /**
@@ -348,93 +321,4 @@ export async function getValidPayload(context, info, mime, internImages) {
       break;
   }
   return body;
-}
-
-/**
- * Get the headers for the source file response.
- *
- * @param {Object} meta The metadata that contains many of the headers
- * @param {number} length The content length
- * @return {Object} headers
- */
-export function getFileHeaders(meta, length) {
-  const headers = {
-    'Content-Type': meta.ContentType,
-    'Last-Modified': meta.LastModified.toUTCString(),
-  };
-  if (length) {
-    headers['Content-Length'] = length;
-  }
-  if (meta.ETag) {
-    headers.ETag = meta.ETag;
-  }
-  return headers;
-}
-
-/**
- * Access a file from the source bus.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} key key to access the file at storage
- * @param {boolean} headRequest whether to return the headers only for a HEAD request
- * @returns {Promise<Response>} response with the file body and metadata
- */
-export async function accessSourceFile(context, key, headRequest) {
-  const bucket = HelixStorage.fromContext(context).sourceBus();
-  if (headRequest) {
-    const head = await bucket.head(key);
-    if (!head) {
-      return new Response('', { status: 404 });
-    }
-
-    const length = head.Metadata?.['uncompressed-length'] || head.ContentLength;
-    const headers = getFileHeaders(head, length);
-    return new Response('', { status: head.$metadata.httpStatusCode, headers });
-  } else {
-    const meta = {};
-    const body = await bucket.get(key, meta);
-    if (!body) {
-      return new Response('', { status: 404 });
-    }
-
-    const headers = getFileHeaders(meta, body.length);
-    return new Response(body, { status: 200, headers });
-  }
-}
-
-/**
- * Get the user from the context and return their email.
- * If no user is found, return 'anonymous'.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @return {string} user or 'anonymous'
- */
-export function getUser(context) {
-  return context.authInfo.profile?.email || 'anonymous';
-}
-
-/**
- * Store file based on key and body in the source bus.
- * The file is assumes already have been validated.
- *
- * @param {import('../support/AdminContext').AdminContext} context context
- * @param {string} key key to store the file at (including extension)
- * @param {string} mime the mime type of the file
- * @param {Buffer} body content body
- * @returns {Promise<Response>} response
- */
-export async function storeSourceFile(context, key, mime, body) {
-  const bucket = HelixStorage.fromContext(context).sourceBus();
-
-  const head = await bucket.head(key);
-  const id = head?.Metadata?.['doc-id'] || ulid();
-
-  const resp = await bucket.put(key, body, mime, {
-    'Last-Modified-By': getUser(context),
-    'Uncompressed-Length': String(body.length),
-    'doc-id': id,
-  }, true);
-
-  const status = resp.$metadata.httpStatusCode === 200 ? 201 : resp.$metadata.httpStatusCode;
-  return new Response('', { status });
 }

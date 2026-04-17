@@ -198,7 +198,7 @@ describe('Source PUT Tests', () => {
     // filter json so that only the src and dst keys are present (so that we only compare those)
     const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
     assert.deepStrictEqual(json, [
-      { src: 'testorg/testsite/src.html', dst: 'testorg/testsite/dst.html' },
+      { src: '/src.html', dst: '/dst.html' },
     ]);
     assert.equal(resp.status, 200);
     assert.equal('application/json', resp.headers.get('content-type'));
@@ -286,7 +286,7 @@ describe('Source PUT Tests', () => {
     const body = await resp.json();
     assert.deepStrictEqual(body, {
       copied: [
-        { src: 'o1/s1/s/src.html', dst: 'o1/s1/t/to.html' },
+        { src: '/s/src.html', dst: '/t/to.html' },
       ],
     });
   });
@@ -315,7 +315,7 @@ describe('Source PUT Tests', () => {
 
     const resp = await putSource(ctx, createInfo(path));
     assert.equal(resp.status, 409);
-    assert.equal(resp.headers.get('x-error'), 'Collision: something is at the destination already, no overwrite option provided');
+    assert.equal(resp.headers.get('x-error'), 'Collision: something is at the destination already');
   });
 
   async function copyTooManyRetries(context, retries) {
@@ -480,6 +480,44 @@ describe('Source PUT Tests', () => {
     assert.equal(500, resp.status);
   });
 
+  it('test putSource moves a file with 412 collision and unique rename', async () => {
+    // First copy attempt returns 412 (destination already exists, IfNoneMatch: * fails)
+    nock.source()
+      .copyObject('/o1/s1/t/to.html')
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
+      .reply(412);
+
+    // In the retry an 8-char suffix to the name is added
+    nock.source()
+      .copyObject(/^\/o1\/s1\/t\/to-.{8}\.html$/)
+      .matchHeader('x-amz-copy-source', 'helix-source-bus/o1/s1/s/src.html')
+      .matchHeader('if-none-match', '*')
+      .reply(200, new xml2js.Builder().buildObject({
+        CopyObjectResult: {
+          ETag: '123',
+        },
+      }));
+
+    nock.source()
+      .deleteObject('/o1/s1/s/src.html')
+      .reply(204);
+
+    const path = '/o1/sites/s1/source/t/to.html';
+    const ctx = setupContext(path, {
+      data: {
+        source: '/s/src.html',
+        collision: 'unique',
+        move: 'true',
+      },
+    });
+    ctx.config.org = 'o1';
+    ctx.config.site = 's1';
+
+    const resp = await putSource(ctx, createInfo(path));
+    assert.equal(resp.status, 200);
+  });
+
   const BUCKET_LIST_RESULT = `
     <ListBucketResult>
       <Name>my-bucket</Name>
@@ -565,9 +603,9 @@ describe('Source PUT Tests', () => {
     // filter json so that only the src and dst keys are present (so that we only compare those)
     const json = body.copied.map((item) => ({ src: item.src, dst: item.dst }));
     assert.deepStrictEqual(json, [
-      { src: 'org1/site2/a/b/c/somejson.json', dst: 'org1/site2/dest/somejson.json' },
-      { src: 'org1/site2/a/b/c/d1.html', dst: 'org1/site2/dest/d1.html' },
-      { src: 'org1/site2/a/b/c/d/d2.html', dst: 'org1/site2/dest/d/d2.html' },
+      { src: '/a/b/c/somejson.json', dst: '/dest/somejson.json' },
+      { src: '/a/b/c/d1.html', dst: '/dest/d1.html' },
+      { src: '/a/b/c/d/d2.html', dst: '/dest/d/d2.html' },
     ]);
     assert.equal(resp.status, 200);
     assert.equal('application/json', resp.headers.get('content-type'));
@@ -615,7 +653,7 @@ describe('Source PUT Tests', () => {
     assert.equal(resp.status, 200);
     const body = await resp.json();
     assert.deepStrictEqual(body.moved, [
-      { src: 'org123/456site/foo/bar/src.html', dst: 'org123/456site/lala/dst.html' },
+      { src: '/foo/bar/src.html', dst: '/lala/dst.html' },
     ]);
     assert.equal('application/json', resp.headers.get('content-type'));
   });
@@ -707,8 +745,8 @@ describe('Source PUT Tests', () => {
     // remove all keys from body except src and dst, for comparison
     const cmp = body.moved.map((item) => ({ src: item.src, dst: item.dst }));
     assert.deepStrictEqual(cmp, [
-      { src: 'o/s/x/x.html', dst: 'o/s/hello/dest/x.html' },
-      { src: 'o/s/x/sub/x.pdf', dst: 'o/s/hello/dest/sub/x.pdf' },
+      { src: '/x/x.html', dst: '/hello/dest/x.html' },
+      { src: '/x/sub/x.pdf', dst: '/hello/dest/sub/x.pdf' },
     ]);
     assert.equal('application/json', resp.headers.get('content-type'));
   });

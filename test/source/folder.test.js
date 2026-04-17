@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 /* eslint-disable no-param-reassign */
 import assert from 'assert';
-import { deleteSource } from '../../src/source/delete.js';
+import { deleteFolder } from '../../src/source/folder.js';
 import { getSource, headSource } from '../../src/source/get.js';
 import { postSource } from '../../src/source/post.js';
 import { createInfo, Nock } from '../utils.js';
@@ -274,7 +274,7 @@ describe('Source List Tests', () => {
       .deleteObject('/org1/site2/a/b/page.html')
       .reply(204);
     const info = createInfo('/org1/sites/site2/source/a/b/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 204);
   });
 
@@ -287,7 +287,7 @@ describe('Source List Tests', () => {
       })
       .reply(200, Buffer.from('<ListBucketResult><Name>abc</Name></ListBucketResult>'));
     const info = createInfo('/org1/sites/site2/source/nope/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 404);
   });
 
@@ -309,7 +309,7 @@ describe('Source List Tests', () => {
       .deleteObject('/org1/site2/a/b/page.html')
       .reply(500);
     const info = createInfo('/org1/sites/site2/source/a/b/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 500);
   });
 
@@ -322,7 +322,7 @@ describe('Source List Tests', () => {
       })
       .reply(503);
     const info = createInfo('/org1/sites/site2/source/nope/');
-    const resp = await deleteSource(context, info);
+    const resp = await deleteFolder(context, info);
     assert.equal(resp.status, 503);
   });
 

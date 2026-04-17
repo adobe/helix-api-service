@@ -12,19 +12,30 @@
 
 /* eslint-env mocha */
 import assert from 'assert';
+import sinon from 'sinon';
+import { Response } from '@adobe/fetch';
 import { getSheetData } from '../../src/contentproxy/utils.js';
-import { getSanitizedPath, isIllegalPath, processPrefixedPaths } from '../../src/support/utils.js';
-import { Nock } from '../utils.js';
+import {
+  applyCustomHeaders, coerceArray, getOrCreateObject, getSanitizedPath,
+  isIllegalPath, logStack, processPrefixedPaths, redactObject,
+  toSISize,
+} from '../../src/support/utils.js';
+import { createContext, createInfo, Nock } from '../utils.js';
 
 describe('ContentProxy Utils Tests', () => {
   /** @type {import('../utils.js').NockEnv} */
   let nock;
 
+  /** @type {import('sinon').SinonSandbox} */
+  let sandbox;
+
   beforeEach(() => {
     nock = new Nock().env();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {
+    sandbox.restore();
     nock.done();
   });
 
@@ -47,6 +58,23 @@ describe('ContentProxy Utils Tests', () => {
     assert.strictEqual(isIllegalPath(undefined), true);
     assert.strictEqual(isIllegalPath('/*'), true);
     assert.strictEqual(isIllegalPath('/*', true), false);
+  });
+});
+
+describe('applyCustomHeaders', () => {
+  const suffix = '/org/sites/site/status/tools/sidekick/';
+
+  it('applies custom headers', () => {
+    const context = createContext(suffix);
+    const info = createInfo(suffix);
+    const response = new Response('Hello, world!');
+
+    applyCustomHeaders(context, info, response);
+
+    assert.deepStrictEqual(response.headers.plain(), {
+      'access-control-allow-origin': '/.*/',
+      'content-type': 'text/plain; charset=utf-8',
+    });
   });
 });
 
@@ -80,5 +108,45 @@ describe('processPrefixedPaths', () => {
       { path: '/foo' },
       { path: '/bar' },
     ]);
+  });
+});
+
+describe('coerceArray', () => {
+  it('creates unique array', () => {
+    assert.deepStrictEqual(coerceArray(['foo', 'foo'], true), ['foo']);
+  });
+});
+
+describe('logStack', () => {
+  it('log TypeError', () => {
+    const stub = sinon.stub(console, 'debug');
+
+    try {
+      throw new TypeError('test');
+    } catch (e) {
+      logStack(console, e);
+    }
+
+    assert.strictEqual(stub.callCount, 1);
+  });
+});
+
+describe('getOrCreateObject', () => {
+  it('creates object', () => {
+    const obj = {};
+    getOrCreateObject(obj, 'a.b.c');
+    assert.deepStrictEqual(obj, { a: { b: { c: {} } } });
+  });
+});
+
+describe('redactObject', () => {
+  it('returns empty object if allowList is not an array', () => {
+    assert.deepStrictEqual(redactObject(null, {}), {});
+  });
+});
+
+describe('toSISize', () => {
+  it('returns 0B for 0', () => {
+    assert.strictEqual(toSISize(0), '0B');
   });
 });

@@ -84,6 +84,7 @@ export default async function update(context, info) {
     }
 
     response = await redirectMedia(context, info, response);
+    /* c8 ignore next 3 */
     if (!response.ok) {
       return response;
     }

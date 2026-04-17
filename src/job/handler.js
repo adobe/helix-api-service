@@ -50,8 +50,8 @@ export default async function jobHandler(ctx, info) {
 
   authInfo.assertPermissions('job:read');
 
-  const { topic } = info.variables;
-  const [, jobName, report] = info.variables.path?.split('/') ?? [];
+  const { path, topic } = info.variables;
+  const [, jobName, report] = path.split('/');
 
   // create test job
   if (info.method === 'POST') {

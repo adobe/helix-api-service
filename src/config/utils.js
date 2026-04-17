@@ -129,11 +129,7 @@ export async function checkPrimarySite(context, contentBusId, info) {
  * @returns {string}
  */
 export function checkCanonicalRepo(context, info) {
-  const { config } = context;
-  if (!config?.code) {
-    return '';
-  }
-  const { code } = context.attributes.config;
+  const { config: { code } } = context;
   const url = new URL(code.source.url);
   // only check for github repos
   if (url.hostname === 'github.com' || url.hostname === 'www.github.com') {

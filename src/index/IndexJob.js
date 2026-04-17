@@ -298,6 +298,7 @@ export class IndexJob extends Job {
     // indexing
     await this.setPhase('indexing');
     await processQueue(indexData.entries(), async ([webPath, indexRecord]) => {
+      /* c8 ignore next 3 (not possible to create a job without running it completely) */
       if (await this.checkStopped()) {
         return;
       }

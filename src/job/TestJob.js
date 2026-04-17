@@ -35,7 +35,7 @@ export class TestJob extends Job {
     // eslint-disable-next-line no-await-in-loop
     while (Date.now() < endTime && !await this.checkStopped()) {
       // eslint-disable-next-line no-await-in-loop
-      await sleep(jobSleep ?? 1000);
+      await sleep(jobSleep ?? /* c8 ignore next */ 1000);
       /* c8 ignore next 3 */
       if (fail) {
         throw new Error('job failed');

@@ -160,6 +160,7 @@ export class CodeJob extends Job {
     this.bytesDownloaded = 0;
   }
 
+  /* c8 ignore next 12 (gets overridden in test) */
   // eslint-disable-next-line class-methods-use-this
   getRateLimit() {
     /**

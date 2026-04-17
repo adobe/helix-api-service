@@ -18,6 +18,7 @@ import { getSheetData } from '../../src/contentproxy/utils.js';
 import {
   applyCustomHeaders, coerceArray, getOrCreateObject, getSanitizedPath,
   isIllegalPath, logStack, processPrefixedPaths, redactObject,
+  toSISize,
 } from '../../src/support/utils.js';
 import { createContext, createInfo, Nock } from '../utils.js';
 
@@ -141,5 +142,11 @@ describe('getOrCreateObject', () => {
 describe('redactObject', () => {
   it('returns empty object if allowList is not an array', () => {
     assert.deepStrictEqual(redactObject(null, {}), {});
+  });
+});
+
+describe('toSISize', () => {
+  it('returns 0B for 0', () => {
+    assert.strictEqual(toSISize(0), '0B');
   });
 });

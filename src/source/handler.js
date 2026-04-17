@@ -13,7 +13,6 @@ import { deleteSource } from './delete.js';
 import { getSource, headSource } from './get.js';
 import { postSource } from './post.js';
 import { putSource } from './put.js';
-import { createErrorResponse } from '../contentbus/utils.js';
 
 /**
  * Handle source route
@@ -23,27 +22,18 @@ import { createErrorResponse } from '../contentbus/utils.js';
  * @return {Promise<Response>} response
  */
 export default async function handle(context, info) {
-  try {
-    switch (info.method) {
-      case 'GET':
-        return await getSource(context, info);
-      case 'POST':
-        return await postSource(context, info);
-      case 'PUT':
-        return await putSource(context, info);
-      case 'HEAD':
-        return await headSource(context, info);
-      case 'DELETE':
-        return await deleteSource(context, info);
-      default:
-        return new Response('method not allowed', { status: 405 });
-    }
-  } catch (e) {
-    const opts = {
-      e,
-      log: context.log,
-      status: e.$metadata?.httpStatusCode,
-    };
-    return createErrorResponse(opts);
+  switch (info.method) {
+    case 'GET':
+      return getSource(context, info);
+    case 'POST':
+      return postSource(context, info);
+    case 'PUT':
+      return putSource(context, info);
+    case 'HEAD':
+      return headSource(context, info);
+    case 'DELETE':
+      return deleteSource(context, info);
+    default:
+      return new Response('method not allowed', { status: 405 });
   }
 }

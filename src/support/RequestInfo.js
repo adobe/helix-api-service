@@ -418,7 +418,7 @@ export class RequestInfo {
   }
 
   getLinkUrl(path, query = {}) {
-    const url = new URL(`${this.scheme ?? 'https'}://${this.host}${path}`);
+    const url = new URL(`${this.scheme}://${this.host}${path}`);
     Object.entries(query).forEach(([name, value]) => {
       if (value !== undefined) {
         url.searchParams.append(name, value);

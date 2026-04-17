@@ -105,7 +105,6 @@ export class AdminContext {
    * @param {import('../support/RequestInfo').RequestInfo} info request info
    * @returns {Promise<AuthInfo>} the authentication info
    */
-  // eslint-disable-next-line no-unused-vars
   async authenticate(info) {
     const { attributes } = this;
 
@@ -113,6 +112,7 @@ export class AdminContext {
 
     if (attributes.authInfo === undefined) {
       attributes.authInfo = await getAuthInfo(this, info);
+      /* c8 ignore next 3 */
       if (process.env.HELIX_SUDO) {
         attributes.authInfo.withRole('ops').withAuthenticated(true);
       }

@@ -103,6 +103,16 @@ describe('RequestInfo Tests', () => {
       ),
       new StatusCodeError('', 404),
     );
+
+    // reject upper case org/site/profile
+    assert.throws(
+      () => RequestInfo.create(
+        new Request('http:/api.aem.live'),
+        undefined,
+        { org: 'Org', path: '/test.aspx' },
+      ),
+      new StatusCodeError('', 400, 'org must be lowercase'),
+    );
   });
 
   it('check cookies', () => {
@@ -115,5 +125,13 @@ describe('RequestInfo Tests', () => {
       key1: 'value1',
       key2: 'value2',
     });
+  });
+
+  it('check `path` access in forbidden', () => {
+    const info = RequestInfo.create(new Request('http:/api.aem.live'));
+    assert.throws(
+      () => info.path,
+      new Error(),
+    );
   });
 });

@@ -223,6 +223,7 @@ describe('Index Tests', () => {
   });
 
   it.skip('fails calling profiles handler with missing org', async () => {
+    // TODO: a missing org should not allow the profiles handler to be called
     nock.orgConfig()
       .reply(404);
 

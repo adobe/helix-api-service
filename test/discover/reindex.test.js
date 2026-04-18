@@ -173,14 +173,12 @@ describe('Discover reindex tests', () => {
       .get('/1234/.hlx.json?x-id=GetObject')
       .reply(200, {
         'original-site': 'org1/site1',
-        'original-repq': 'owner/repo',
       })
       .head('/1234/.helix-auth/auth-google-content.json')
       .reply(404)
       .get('/5678/.hlx.json?x-id=GetObject')
       .reply(200, {
-        'original-site': 'org2/site2',
-        'original-repq': 'owner/repo',
+        'original-repository': 'owner/repo',
       });
 
     const { request, context } = setupTest('*', undefined, {
@@ -199,7 +197,7 @@ describe('Discover reindex tests', () => {
           contentSourceUrl: 'https://drive.google.com/drive/folders/1N2zij7EMeS95cIFiRuxfjY0OxllX8my2',
           gdriveId: '1N2zij7EMeS95cIFiRuxfjY0OxllX8my2',
           org: 'org2',
-          originalSite: 'org2/site2',
+          originalRepository: 'owner/repo',
           site: 'site2',
         },
         {

@@ -102,7 +102,7 @@ export /* abstract */ class Forest {
         } catch (e) {
           const infoPath = `${folderPath}/*`;
           itemList.set(infoPath, {
-            status: e.$metadata.httpStatusCode ?? 500,
+            status: e.$metadata.httpStatusCode ?? /* c8 ignore next */ 500,
             path: infoPath,
             error: String(e),
           });

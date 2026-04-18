@@ -13,11 +13,12 @@ import assert from 'assert';
 
 import {
   rewriteCellUrl, assertValidSheetJSON, computeSourceUrl, addLastModified,
+  updateMarkupSourceInfo,
 } from '../../src/contentproxy/utils.js';
 import { StatusCodeError } from '../../src/support/StatusCodeError.js';
 import { validSheet, validMultiSheet } from './utils.js';
 
-describe('Rewrite URLs test', () => {
+describe('rewriteCellUrl', () => {
   it('returns input for falsy', () => {
     assert.strictEqual(rewriteCellUrl(null), null);
     assert.strictEqual(rewriteCellUrl(''), '');
@@ -63,7 +64,7 @@ describe('Rewrite URLs test', () => {
   });
 });
 
-describe('assertValidSheetJSON() tests', () => {
+describe('assertValidSheetJSON', () => {
   function runCase(obj, err) {
     if (err) {
       assert.throws(() => assertValidSheetJSON(obj), Error(err));
@@ -171,7 +172,7 @@ describe('assertValidSheetJSON() tests', () => {
   });
 });
 
-describe('computeSourceUrl tests', () => {
+describe('computeSourceUrl', () => {
   it('resolves the source url correctly for index.md', async () => {
     assert.deepStrictEqual(
       await computeSourceUrl(
@@ -285,7 +286,31 @@ describe('computeSourceUrl tests', () => {
   });
 });
 
-describe('addLastModified tests', () => {
+describe('updateMarkupSourceInfo', () => {
+  const lastModified = new Date('14 Jun 2017 00:00:00 PDT').getTime();
+
+  it('updates size', () => {
+    const sourceInfo = { lastModified };
+    const response = new Response('hello', { headers: { 'content-length': '5' } });
+
+    updateMarkupSourceInfo(sourceInfo, response);
+
+    assert.strictEqual(sourceInfo.size, 5);
+    assert.strictEqual(sourceInfo.lastModified, lastModified);
+  });
+
+  it('deletes size and lastModified on error', () => {
+    const sourceInfo = { lastModified };
+    const response = new Response('', { status: 404 });
+
+    updateMarkupSourceInfo(sourceInfo, response);
+
+    assert.strictEqual(sourceInfo.size, undefined);
+    assert.strictEqual(Object.hasOwn(sourceInfo, 'lastModified'), false);
+  });
+});
+
+describe('addLastModified', () => {
   it('uses valid value', () => {
     assert.deepStrictEqual(
       addLastModified({

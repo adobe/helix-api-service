@@ -166,8 +166,88 @@ describe('Markup Integration Tests', () => {
     const response = await main(request, context);
     assert.strictEqual(response.status, 200);
     assert.strictEqual(await response.text(), '# hello, world!');
-    assert.strictEqual(response.headers.get('content-length'), '15');
-    assert.strictEqual(response.headers.get('x-source-location'), 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-length': '15',
+      'content-type': 'application/json',
+      vary: 'Accept-Encoding',
+      'x-source-location': 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+    });
+  });
+
+  it('Ignores bad JSON response from html2md', async () => {
+    const svcBody = await gzipAsync('not valid json');
+    nock('https://lambda.us-east-1.amazonaws.com')
+      .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
+      .reply(200, JSON.stringify({
+        statusCode: 200,
+        headers: {
+          'x-source-location': '1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+          'content-length': '14',
+          'content-type': 'application/json',
+          'content-encoding': 'gzip',
+        },
+        isBase64Encoded: true,
+        body: svcBody.toString('base64'),
+      }));
+
+    const { request, context } = setupTest('/', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+        features: {
+          html2md: {
+            unspreadLists: true,
+          },
+        },
+      },
+    });
+    const response = await main(request, context);
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(await response.text(), 'not valid json');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-length': '14',
+      'content-type': 'application/json',
+      vary: 'Accept-Encoding',
+      'x-source-location': 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+    });
+  });
+
+  it('Uses empty string if JSON response is missing markdown', async () => {
+    const svcBody = await gzipAsync(JSON.stringify({ media: [] }));
+    nock('https://lambda.us-east-1.amazonaws.com')
+      .post('/2015-03-31/functions/helix3--html2md%3Av2/invocations')
+      .reply(200, JSON.stringify({
+        statusCode: 200,
+        headers: {
+          'x-source-location': '1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+          'content-type': 'application/json',
+          'content-encoding': 'gzip',
+        },
+        isBase64Encoded: true,
+        body: svcBody.toString('base64'),
+      }));
+
+    const { request, context } = setupTest('/', {
+      config: {
+        ...SITE_MUP_CONFIG(),
+        features: {
+          html2md: {
+            unspreadLists: true,
+          },
+        },
+      },
+    });
+    const response = await main(request, context);
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(await response.text(), '');
+    assert.deepStrictEqual(response.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-length': '0',
+      'content-type': 'application/json',
+      vary: 'Accept-Encoding',
+      'x-source-location': 'markup:1GIItS1y0YXTySslLGqJZUFxwFH1DPlSg3R7ybYY3ATE',
+    });
   });
 
   it('Retrieves Document via html2md from a DA with embedded IMS token', async () => {

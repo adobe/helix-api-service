@@ -31,10 +31,6 @@ export default async function add(context) {
     return errorResponse(log, 400, 'Array in \'entries\' should not contain more than 10 messages');
   }
 
-  if (!contentBusId) {
-    return errorResponse(log, 400, 'Unable to resolve contentBusId for this site');
-  }
-
   const user = authInfo.resolveEmail();
   const batch = new MediaLogBatch(contentBusId);
 

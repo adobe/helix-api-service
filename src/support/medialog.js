@@ -23,11 +23,6 @@ import { getPackedMessageQueue, getSingleMessageQueue } from './utils.js';
 export async function mediaLog(context, contentBusId, notification) {
   const { log, runtime: { region, accountId } } = context;
 
-  if (!contentBusId) {
-    log.warn('Unable to send media log entry: contentBusId is empty');
-    return;
-  }
-
   const message = BatchedQueueClient.createMessage(contentBusId, contentBusId, {
     contentBusId,
     ...notification,
